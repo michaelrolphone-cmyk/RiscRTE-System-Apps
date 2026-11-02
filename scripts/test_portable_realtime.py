@@ -43,7 +43,7 @@ def xtensa(cc, directory, native_exports, fixture=None):
     readelf, strip = cc.replace('gcc', 'readelf'), cc.replace('gcc', 'strip')
     flags = [cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
              '-fvisibility=hidden', '-Wall', '-Wextra', '-Werror',
-             '-I' + str(INCLUDE), '-I' + str(directory)]
+             '-I' + str(INCLUDE), '-I' + str(directory), '-I' + str(ROOT / 'sdk/app')]
     for source in SOURCES:
         run([*flags, '-c', source, '-o', directory / (source.stem + '.o')])
     elf = directory / 'portable-realtime.elf'
@@ -53,7 +53,7 @@ def xtensa(cc, directory, native_exports, fixture=None):
     run([strip, '--strip-unneeded', elf])
     symbols = subprocess.check_output([readelf, '--dyn-syms', '--wide', str(elf)], text=True)
     imports = validate_imports(symbols, firmware_exports(ROOT) | native_exports)
-    assert imports <= {'risc_runtime_get_api', 'memcpy', 'memset'}, imports
+    assert imports <= ({'risc_runtime_get_api', 'memcpy', 'memset'} | ({'memchr'} if fixture else set())), imports
     assert 'risc_runtime_get_api' in imports
     assert any('GLOBAL' in line and 'FUNC' in line and line.split()[-1] == 'app_main'
                for line in symbols.splitlines())
@@ -95,7 +95,7 @@ def main():
     evidence['reconcile'] = args.reconcile
     evidence['civil_policy'] = args.civil_policy
     if args.civil_policy:
-        for relative in ('test/native_apps/home_civil_policy_test.c','Apps/paper_home_civil.inc','sdk/app/RiscCivilClockV1.h'):
+        for relative in ('test/native_apps/home_civil_policy_test.c','Apps/paper_home_civil.inc','sdk/app/RiscCivilClockV1.h','test/native_apps/fixtures/home_civil_policy_elf.c'):
             evidence['source_sha256'][relative]=hashlib.sha256((ROOT/relative).read_bytes()).hexdigest()
     if args.reconcile: evidence['source_sha256']['test/native_apps/portable_realtime_reconcile_test.c'] = hashlib.sha256((ROOT/'test/native_apps/portable_realtime_reconcile_test.c').read_bytes()).hexdigest()
     with tempfile.TemporaryDirectory(prefix='portable-realtime-') as temp:
@@ -112,7 +112,8 @@ def main():
                             timeout=30, text=True, capture_output=True)
             print(completed.stdout, end='')
             evidence['host_'+args.sanitizers if sanitized else 'host_plain'] = completed.stdout.strip()
-        evidence['xtensa'] = xtensa(args.xtensa_cc, directory, {'risc_runtime_get_api'}) if args.xtensa_cc else 'NOT RUN (supply --xtensa-cc)'
+        evidence['xtensa'] = xtensa(args.xtensa_cc, directory, {'risc_runtime_get_api'},
+            ROOT / 'test/native_apps/fixtures/home_civil_policy_elf.c' if args.civil_policy else None) if args.xtensa_cc else 'NOT RUN (supply --xtensa-cc)'
     if args.evidence:
         args.evidence.parent.mkdir(parents=True, exist_ok=True)
         args.evidence.write_text(json.dumps(evidence, indent=2) + '\n')

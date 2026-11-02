@@ -48,7 +48,9 @@ static int32_t cached(void*p,char*out,uint32_t size){
  memcpy(out,"@2007:7,6;M4.1.0,M10.5.0;M3.2.0,M11.1.0",40);return 0;
 }
 static void policy_reset(void){
- reset();desk_promoted=true;desk_retained=civil_owned=civil_absent=civil_short=civil_release_fail=false;
+ /* Home resolves the unique RTC provider; legacy client tests retain their
+  * explicit-instance contract and unchanged acquire assertion. */
+ reset();f.instance=0;desk_promoted=true;desk_retained=civil_owned=civil_absent=civil_short=civil_release_fail=false;
  civil_acquires=civil_releases=interpret_calls=project_calls=0;policy_status=0;policy_offset=0;malformed_project=false;
  desk_rtc_check=(portable_realtime_reconcile_state){0};
  civil_api=(risc_civil_clock_retained_v1){{{1,sizeof(civil_api),NULL,NULL,1,RISC_CIVIL_CLOCK_POLICY_TAG,project,convert},1,RISC_CIVIL_CLOCK_SCHEDULE_TAG,inverse},1,RISC_CIVIL_CLOCK_RETAINED_TAG,cached};
@@ -67,6 +69,7 @@ int main(void){
   assert(got==((cold||drift)?PORTABLE_REALTIME_RECOVERED:PORTABLE_REALTIME_OK));
   assert(result.snapshot.epoch_seconds==epoch&&f.seeds==(cold||drift?1u:0u)&&f.rtc_releases==1);
   assert(!civil_owned&&civil_acquires==civil_releases&&interpret_calls==1);
+  assert(f.instance==0&&f.rtc_acquires==1&&f.rtc_reads==1);
   assert(!portable_realtime_close(&c));
   risc_civil_calendar_v1 local={0};assert(!desk_civil_project(epoch,123456000,&local));
   assert(local.year==2026&&local.hour==0&&local.nanoseconds==123456000&&!strcmp(local.zone,"UTC"));
@@ -91,6 +94,11 @@ int main(void){
  assert(desk_civil_reconcile(&c,&result)==PORTABLE_REALTIME_RETAINED&&desk_retained&&civil_owned&&f.rtc_releases==1);
  policy_reset();desk_promoted=false;risc_civil_calendar_v1 untouched={.year=77};
  assert(desk_civil_project(epoch,0,&untouched)==PORTABLE_REALTIME_DENIED&&untouched.year==77&&!civil_acquires&&!f.rtc_acquires);
+ policy_reset();desk_promoted=false;c=(portable_realtime_client){0};
+ assert(!open_client(&c,1,0));unsigned before=f.event_count;
+ assert(desk_civil_reconcile(&c,&result)==PORTABLE_REALTIME_DENIED);
+ assert(f.event_count==before&&!civil_acquires&&!f.rtc_acquires&&!f.rtc_reads&&!f.seeds);
+ assert(!portable_realtime_close(&c));
  policy_reset();malformed_project=true;untouched=(risc_civil_calendar_v1){.year=77};
  assert(desk_civil_project(epoch,0,&untouched)==PORTABLE_REALTIME_MALFORMED&&untouched.year==77&&!civil_owned&&civil_releases==1);
  policy_reset();policy_status=-9;
