@@ -239,3 +239,9 @@ static inline home_canvas_observation home_canvas_capture(home_canvas_surface*s)
  if(contacts!=local&&!s->retained)free(contacts);
  return o;
 }
+
+static inline bool home_canvas_orientation(home_canvas_surface*s,uint32_t orientation,bool reverse){
+ if(!s||s->retained||s->lease||s->receipt||!risc_canvas_has_orientation(s->presentation))return false;
+ if(!home_canvas_result(s,s->presentation->orientation(s->presentation->context,s->session,orientation,reverse?1u:0u)))return false;
+ s->contact_known=false;return home_canvas_geometry(s);
+}

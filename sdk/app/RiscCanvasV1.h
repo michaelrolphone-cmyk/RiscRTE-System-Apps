@@ -3,6 +3,7 @@
  * Grant-owner serialized; handles/leases/receipts are invocation-local.
  * No callback or caller metadata pointer survives a call. */
 #include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include "RiscInputNavigationV1.h"
 #define RISC_CANVAS_CAPABILITY "ui.canvas"
@@ -99,6 +100,7 @@ typedef struct {
 } risc_canvas_present_v1;
 enum { RISC_CANVAS_PRESENT_RETAINS_IMAGE=1u,RISC_CANVAS_PRESENT_CLEAN_SUPPORTED=2u,
  RISC_CANVAS_PRESENT_HISTORY_SUPPORTED=4u };
+enum { RISC_CANVAS_ORIENTATION_DEFAULT=0,RISC_CANVAS_ORIENTATION_PORTRAIT=1,RISC_CANVAS_ORIENTATION_LANDSCAPE=2 };
 typedef struct {
  uint32_t struct_size,version,tag;
  void *context;
@@ -108,6 +110,9 @@ typedef struct {
   * submitted or cancelled. Unsupported is explicit; never invent history. */
  int32_t (*seed_previous)(void*,uint64_t,uint64_t);
  uint32_t flags; /* Actual semantic support for the opened session. */
+ /* Idle leases/receipts only. Provider maps semantic orientation and reverse180
+  * (0/1) to native raster/input geometry. Base v1 consumers remain unchanged. */
+ int32_t (*orientation)(void*,uint64_t,uint32_t,uint32_t);
 } risc_canvas_presentation_v1;
 typedef struct {
  risc_canvas_open_v1 base;
@@ -115,8 +120,13 @@ typedef struct {
  const risc_canvas_presentation_v1 **presentation_out;
 } risc_canvas_open_presentation_v1;
 static inline const risc_canvas_presentation_v1*risc_canvas_presentation_get_v1(const void*p,size_t bytes){
- if(!p||bytes<sizeof(risc_canvas_presentation_v1))return NULL;
+ const size_t prefix=offsetof(risc_canvas_presentation_v1,flags)+sizeof(uint32_t);
+ if(!p||bytes<prefix)return NULL;
  const risc_canvas_presentation_v1*a=p;
- return a->struct_size>=sizeof(*a)&&a->struct_size<=bytes&&a->version==1&&
+ return a->struct_size>=prefix&&a->struct_size<=bytes&&a->version==1&&
   a->tag==RISC_CANVAS_PRESENTATION_TAG&&a->submit&&a->seed_previous?a:NULL;
+}
+
+static inline bool risc_canvas_has_orientation(const risc_canvas_presentation_v1*p){
+ return p&&p->struct_size>=sizeof(*p)&&p->orientation;
 }
