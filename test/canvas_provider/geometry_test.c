@@ -3,6 +3,39 @@
 #include <string.h>
 #include "canvas_geometry.h"
 int main(void){
+ /* Give all padding different bytes, then assign each semantic field. */
+ canvas_mapping a,b;memset(&a,0xa5,sizeof(a));memset(&b,0x5a,sizeof(b));
+ a.safe.x=b.safe.x=1;
+ a.safe.y=b.safe.y=1;
+ a.safe.width=b.safe.width=1;
+ a.safe.height=b.safe.height=1;
+ a.physical_width=b.physical_width=1;
+ a.physical_height=b.physical_height=1;
+ a.rotation=b.rotation=1;
+ a.width=b.width=1;
+ a.height=b.height=1;
+ a.output_width=b.output_width=1;
+ a.output_height=b.output_height=1;
+ a.wide_x=b.wide_x=1;
+ a.wide_y=b.wide_y=1;
+ a.output_x=b.output_x=1;
+ a.output_y=b.output_y=1;
+ assert(canvas_mapping_equal(&a,&b));
+ b.safe.x=2;assert(!canvas_mapping_equal(&a,&b));b.safe.x=1;
+ b.safe.y=2;assert(!canvas_mapping_equal(&a,&b));b.safe.y=1;
+ b.safe.width=2;assert(!canvas_mapping_equal(&a,&b));b.safe.width=1;
+ b.safe.height=2;assert(!canvas_mapping_equal(&a,&b));b.safe.height=1;
+ b.physical_width=2;assert(!canvas_mapping_equal(&a,&b));b.physical_width=1;
+ b.physical_height=2;assert(!canvas_mapping_equal(&a,&b));b.physical_height=1;
+ b.rotation=2;assert(!canvas_mapping_equal(&a,&b));b.rotation=1;
+ b.width=2;assert(!canvas_mapping_equal(&a,&b));b.width=1;
+ b.height=2;assert(!canvas_mapping_equal(&a,&b));b.height=1;
+ b.output_width=2;assert(!canvas_mapping_equal(&a,&b));b.output_width=1;
+ b.output_height=2;assert(!canvas_mapping_equal(&a,&b));b.output_height=1;
+ b.wide_x=false;assert(!canvas_mapping_equal(&a,&b));b.wide_x=true;
+ b.wide_y=false;assert(!canvas_mapping_equal(&a,&b));b.wide_y=true;
+ b.output_x=2;assert(!canvas_mapping_equal(&a,&b));b.output_x=1;
+ b.output_y=2;assert(!canvas_mapping_equal(&a,&b));b.output_y=1;
  unsigned cases=0;
  for(unsigned rot=0;rot<4;rot++)for(unsigned layout=1;layout<=3;layout++){
   risc_canvas_open_v1 r={sizeof(r),RISC_CANVAS_MONO1,layout,layout==3?0:320,layout==3?0:180};canvas_mapping m;

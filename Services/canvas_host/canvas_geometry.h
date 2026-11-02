@@ -12,6 +12,11 @@ typedef struct {
  bool wide_x,wide_y;
  int64_t output_x,output_y;
 } canvas_mapping;
+/* Compare values, never struct padding: stack/optimization must not create a
+ * spurious geometry revision and invalidate a leased frame. */
+static inline bool canvas_mapping_equal(const canvas_mapping*a,const canvas_mapping*b){
+ return a->safe.x==b->safe.x&&a->safe.y==b->safe.y&&a->safe.width==b->safe.width&&a->safe.height==b->safe.height&&a->physical_width==b->physical_width&&a->physical_height==b->physical_height&&a->rotation==b->rotation&&a->width==b->width&&a->height==b->height&&a->output_width==b->output_width&&a->output_height==b->output_height&&a->wide_x==b->wide_x&&a->wide_y==b->wide_y&&a->output_x==b->output_x&&a->output_y==b->output_y;
+}
 static inline bool canvas_mapping_open(canvas_mapping *out,uint32_t pw,uint32_t ph,
  uint32_t rotation,uint32_t left,uint32_t top,uint32_t right,uint32_t bottom,
  const risc_canvas_open_v1 *request){
