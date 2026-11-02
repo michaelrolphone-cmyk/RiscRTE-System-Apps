@@ -66,13 +66,21 @@ def run():
  exports={'app_main','app_module_init','app_module_fini','risc_resident_app_descriptor_v1'}
  mapping=out/'exports.map';mapping.write_text('{ global: '+'; '.join(sorted(exports))+'; local: *; };\n')
  elf=out/'default.elf'
- command=[str(cc),'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--gc-sections','-Wl,--no-relax','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',
+ command=[str(cc),'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--gc-sections','-Wl,--no-relax','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wl,-Map='+str(out/'default.map')+',--cref','-Wall','-Wextra','-Werror',
  *map(str,common_objects),str(out/'faces/view.o'),str(out/'overview/view.o'),'-lgcc','-o',str(elf)]
  commands.append(command);subprocess.run(command,check=True)
  sys.path.insert(0,str(a.watch/'scripts'))
  from normalize_xtensa_relocations import normalize
  from compact_current_elf import compact
  normalize(elf);compaction=compact(elf,str(cc),debug_path=out/'debug/default.elf')
+ # Retained target section/symbol evidence; diagnostics never change the ELF.
+ reports={}
+ for label,path in (('complete',out/'debug/default.elf'),('faces',out/'faces/view-unprefixed.o'),('overview',out/'overview/view-unprefixed.o')):
+  for kind,args in (('symbols',['nm','-S','--size-sort','--radix=d']),('sections',['readelf','-SW'])):
+   text=subprocess.check_output([str(cc).removesuffix('gcc')+args[0],*args[1:],str(path)],text=True)
+   report=out/(label+'-'+kind+'.txt');report.write_text(text);reports[report.name]=hashlib.sha256(report.read_bytes()).hexdigest()
+   print('TARGET SIZE REPORT '+label+' '+kind+'\\n'+text)
+ (out/'size-reports.json').write_text(json.dumps(reports,sort_keys=True,indent=2)+'\\n')
  validator=out/'validate-elf'
  subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror','-I'+str(ROOT/'test/native_apps/stubs'),'-I'+str(ROOT/'lib/elf_loader/include'),str(ROOT/'lib/elf_loader/src/esp_elf_validate.c'),str(ROOT/'test/native_apps/validate_test.c'),'-o',str(validator)],check=True)
  subprocess.run([str(validator),str(elf)],check=True)
