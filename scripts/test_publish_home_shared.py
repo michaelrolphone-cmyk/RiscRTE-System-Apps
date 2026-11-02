@@ -42,9 +42,12 @@ def make(root,fault):
   for lane in ('watch','wave','x4'):
    mapping={'app.elf':'4'*64,'cohort.json':'6'*64}
    tree_hash=hashlib.sha256((json.dumps(mapping,sort_keys=True,separators=(',',':'))+'\n').encode()).hexdigest()
-   receipt['candidate_input_files'][lane]={which:dict(mapping) for which in ('before','after','after-sd')}
-   binding['products'][lane]={'inventory_sha256':'3'*64,'before_tree_sha256':tree_hash,'after_tree_sha256':tree_hash,'after_sd_tree_sha256':tree_hash}
+   receipt['candidate_input_files'][lane]={which:dict(mapping) for which in ('before','after','stored','after-sd')}
+   binding['products'][lane]={'inventory_sha256':'3'*64,'before_tree_sha256':tree_hash,'after_tree_sha256':tree_hash,'stored_tree_sha256':tree_hash,'after_sd_tree_sha256':tree_hash}
    receipt['products'][lane]={'inputs':{'fixture':'7'*64},'per_tu_dependencies':{'fixture':'8'*64},'results':[{'input':'after','result':{'prepared':True,'cohort_validated':True,'elf_count':1,'hardware_calls':0,'storage_calls':0,'retained_sd_serial_graph_bound':True}}]}
+  if fault=='unrecorded-stored-change':receipt['candidate_input_files']['watch']['stored']['app.elf']='a'*64
+  if fault=='missing-stored':del receipt['candidate_input_files']['watch']['stored']
+  if fault=='unrecorded-decoding':receipt['products']['watch']['results'][0]['result']['encoded_image_count']=1
   if fault=='wrong-native-cohort':receipt['candidate_input_files']['wave']['after']['cohort.json']='7'*64
   if fault=='prepare-only':receipt['prepare_only']=True
   if fault=='null-binding':receipt['product_binding']=None
@@ -68,7 +71,7 @@ def make(root,fault):
  if fault=='traversal':delivery['application']['elf']['path']='../escape'
  (root/'home-delivery.json').write_text(json.dumps(delivery))
  if fault=='tampered':(root/'target/default.elf').write_bytes(b'changed')
-for fault in ('good','wrong-native','missing-native','wrong-native-cohort','wrong-product','changed-input-map','null-binding','wrong-build','missing-view','unpacked','different-elf','prepare-only','failed-admission','wrong-tree','wrong-assembly','hardware','missing-sanitized','wrong-source','traversal','tampered'):
+for fault in ('good','unrecorded-stored-change','missing-stored','unrecorded-decoding','wrong-native','missing-native','wrong-native-cohort','wrong-product','changed-input-map','null-binding','wrong-build','missing-view','unpacked','different-elf','prepare-only','failed-admission','wrong-tree','wrong-assembly','hardware','missing-sanitized','wrong-source','traversal','tampered'):
  with tempfile.TemporaryDirectory() as temporary:
   root=Path(temporary);make(root,fault)
   try:publisher.run(root,False)
@@ -80,4 +83,4 @@ for fault in ('good','wrong-native','missing-native','wrong-native-cohort','wron
    for category in ('artifacts','sources','licenses'):assert any(name.startswith('dependency-0-'+category+'-') for name in plan)
    for lane in ('watch','wave','x4'):
     for category in ('store','sd'):assert any(name.startswith('product-'+lane+'-'+category+'-') for name in plan)
-print('Home publisher offline validator: complete fixture accepted; 19 partial/mismatched/unsafe closures rejected; no network or publication')
+print('Home publisher offline validator: complete fixture accepted; 22 partial/mismatched/unsafe closures rejected; no network or publication')

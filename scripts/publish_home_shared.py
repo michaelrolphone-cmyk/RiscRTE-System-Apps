@@ -63,19 +63,33 @@ def run(root, publish):
   for lane,product in receipt['products'].items():
    require(binding['products'][lane]['inventory_sha256']==assembly['products'][lane]['inventory_sha256'],'Admission inventory mismatch')
    inputs=receipt['candidate_input_files'][lane]
-   require(set(inputs)=={'before','after','after-sd'},'Missing exact tree input map')
+   require(set(inputs)=={'before','after','stored','after-sd'},'Missing exact canonical and physical tree input map')
    require(inputs['after'].get('cohort.json')==assembly['products'][lane]['native_metadata']['after_sha256'],'Admitted cohort metadata differs from native firmware binding')
-   for which,field in (('before','before_tree_sha256'),('after','after_tree_sha256'),('after-sd','after_sd_tree_sha256')):
+   for which,field in (('before','before_tree_sha256'),('after','after_tree_sha256'),('stored','stored_tree_sha256'),('after-sd','after_sd_tree_sha256')):
     mapping=inputs[which]
     require(isinstance(mapping,dict),'Tree input map required')
     for tree_path,file_sha in mapping.items():
      require(not Path(tree_path).is_absolute() and '..' not in Path(tree_path).parts and re.fullmatch('[0-9a-f]{64}',file_sha),'Unsafe tree receipt')
     actual=digest((json.dumps(mapping,sort_keys=True,separators=(',',':'))+'\n').encode())
     require(actual==binding['products'][lane][field],'Actual tree input digest mismatch')
+   encoding=assembly['products'][lane].get('image_storage')
+   if encoding:
+    require(encoding.get('format')=='RTEIMG1' and encoding.get('canonical_recovery_verified') is True,'Canonical recovery missing')
+    require(encoding['canonical_files']==inputs['after'] and encoding['stored_files']==inputs['stored'],'Storage representation not bound to admitted bytes')
+    changed={n for n in inputs['after'] if inputs['after'][n]!=inputs['stored'].get(n)}
+    require(set(inputs['after'])==set(inputs['stored']) and changed==set(encoding['images']) and changed,'Unexplained stored tree changes')
+    for name,image in encoding['images'].items():
+     require(image['canonical_sha256']==inputs['after'][name] and image['stored_sha256']==inputs['stored'][name] and image['roundtrip_verified'] is True,'Encoded image identity differs')
+     require(image['stored_bytes']<image['canonical_bytes'] and image['codec']=='lz4-block' and image['header_bytes']==32,'Encoding does not preserve qualified contract')
+    native=assembly['products'][lane]['native_metadata']['native']
+    require(native['runtime_revision']=='712ecc3f894dba99d9c9638941778a82f5856b97' and native['runtime_version']=='0.4.20','Encoded store lacks exact decoder firmware')
+   else:
+    require(inputs['stored']==inputs['after'],'Raw store differs from canonical tree')
    require(product['inputs'] and product['per_tu_dependencies'],'Exact compiled source closure missing')
    after=[entry['result'] for entry in product['results'] if entry['input']=='after']
    require(len(after)==1,'Exactly one actual after-product result required')
    result=after[0]
+   require(result.get('encoded_image_count',0)==(len(encoding['images']) if encoding else 0),'Actual Runtime decoded-image count differs')
    require(result['prepared'] and result['cohort_validated'] and result['elf_count']>0,'Actual broker/cohort admission failed')
    require(result['hardware_calls']==0 and result['storage_calls']==0,'Admission unexpectedly touched hardware/storage')
    if lane=='x4': require(result['retained_sd_serial_graph_bound'],'X4 retained SD/serial dependency closure missing')
