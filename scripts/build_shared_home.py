@@ -65,8 +65,13 @@ def run():
  imports={r.split()[-1] for r in symbols.splitlines() if ' U ' in ' '+r}
  allowed={'risc_runtime_get_api','memcpy','memset','memcmp','memmove','strcmp','strncmp','strlen','snprintf','malloc','calloc','free','strcpy','memchr','strrchr'}
  if actual!=exports or not imports<=allowed:raise ValueError((actual,imports-allowed))
+ manifest_path=ROOT/'Apps/shared_home.json'
+ manifest=json.loads(manifest_path.read_text())
+ declarations=manifest['requires']+manifest['optional']
+ if len(declarations)>32 or len({d['capability'] for d in declarations})!=len(declarations):raise ValueError('Common declaration capacity/identity mismatch')
+ (out/'default.json').write_text(json.dumps(manifest,indent=2)+'\n')
  raw=elf.read_bytes();digest=hashlib.sha256(raw).hexdigest()
- receipt={'schema':1,'version':'1.0.0','shared_elf':digest,'size_bytes':len(raw),'views':['native-faces','overview-retained-desk'],'commands':commands,'imports':sorted(imports),'exports':sorted(actual),'compiler':version,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'linker_sha256':hashlib.sha256(linker.read_bytes()).hexdigest(),'compaction':compaction,'physical_testing':False}
+ receipt={'schema':1,'version':'1.0.0','shared_elf':digest,'size_bytes':len(raw),'views':['native-faces','overview-retained-desk'],'commands':commands,'imports':sorted(imports),'exports':sorted(actual),'compiler':version,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'linker_sha256':hashlib.sha256(linker.read_bytes()).hexdigest(),'compaction':compaction,'physical_testing':False,'manifest_sha256':hashlib.sha256((out/'default.json').read_bytes()).hexdigest(),'manifest_source_sha256':hashlib.sha256(manifest_path.read_bytes()).hexdigest(),'declared_capabilities':len(declarations)}
  (out/'build.json').write_text(json.dumps(receipt,indent=2)+'\n')
  print('Complete shared Home target structural/import/export qualification PASS',digest,len(raw))
 if __name__=='__main__':run()

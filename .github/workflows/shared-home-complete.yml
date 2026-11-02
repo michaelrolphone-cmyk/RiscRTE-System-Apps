@@ -1,7 +1,7 @@
 name: Complete shared Home ELF
 on:
   pull_request:
-    paths: ['Apps/shared_home.c', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', '.github/workflows/shared-home-complete.yml']
+    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', '.github/workflows/shared-home-complete.yml']
 permissions:
   contents: read
 jobs:
@@ -60,7 +60,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: Independent delivered-product delta conflict regressions
-        run: python3 System/scripts/test_shared_app_cohort.py
+        run: |
+          python3 System/scripts/test_shared_app_cohort.py
+          python3 System/scripts/test_shared_home_manifest.py
       - name: Exact owning source and compiler
         run: |
           set -euo pipefail
