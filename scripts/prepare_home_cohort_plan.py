@@ -5,7 +5,7 @@ namespace keys, aliases and SD routes are retained verbatim.
 """
 import argparse,copy,json,hashlib
 from pathlib import Path
-from assemble_shared_home_cohort import read_lane,inventory,fingerprint,checked_native
+from assemble_shared_home_cohort import read_lane,inventory,fingerprint,checked_native,validate_bootfs_names
 from compose_shared_app_cohort import digest,encode
 ROOT=Path(__file__).resolve().parents[1]
 COMMON_GRANTS=[('ui.home-presentation',1),('ui.canvas.raster',1),('ui.canvas-input',1),('alarm.service.facade',2),('time.civil',1)]
@@ -76,6 +76,7 @@ def row_for(boot,path):
  if len(rows)!=1:raise ValueError('Selected driver row not unique '+path)
  return copy.deepcopy(rows[0])
 def package(packages,name,row):
+ validate_bootfs_names((row['manifest'],str(Path(row['manifest']).parent/'driver.elf')))
  root=packages/name
  return {'package':name,'manifest_sha256':digest((root/'manifest.json').read_bytes()),
          'elf_sha256':digest((root/'driver.elf').read_bytes()),'row':row}
@@ -111,13 +112,13 @@ def generate(cohort,packages,baseline):
   selected=[
    package(packages,'raster',raster),
    package(packages,'input' if lane=='x4' else 'input-touch',inputs),
-   package(packages,'presentation-overview' if lane=='x4' else 'presentation-faces',{'manifest':'home-presentation/manifest.json'}),
+   package(packages,'presentation-overview' if lane=='x4' else 'presentation-faces',{'manifest':'home-policy/manifest.json'}),
    package(packages,'alarm-tagged' if lane=='x4' else 'alarm-legacy',{'manifest':'home-alarm/manifest.json','bindings':[grant('alarm.service',2 if lane=='x4' else 1)]}),
    replacement(packages,'civil-x4' if lane=='x4' else 'civil-watch','civil-clock-x4/manifest.json' if lane=='x4' else 'civil-clock/manifest.json',entries,sd,boot),
    replacement(packages,'scene-'+SCENES[lane],'ui-scene/manifest.json',entries,sd,boot)]
   if lane=='x4':
    selected += [
-    package(packages,'x4-display-power',{'manifest':'home-display-power/manifest.json','bindings':[grant('display.output',1,3),grant('storage.volume',1,9),grant('display.frontlight',1,5),grant('x4.power',1,17)]}),
+    package(packages,'x4-display-power',{'manifest':'home-disp/manifest.json','bindings':[grant('display.output',1,3),grant('storage.volume',1,9),grant('display.frontlight',1,5),grant('x4.power',1,17)]}),
     package(packages,'x4-power',{'manifest':'home-power/manifest.json','bindings':[grant('x4.power',1,17),grant('display.power')]}),
     replacement(packages,'x4-physical-power','power/manifest.json',entries,sd,boot)]
   rows=[r for r in boot['app_capabilities'] if r['manifest']=='contexts.json']

@@ -249,7 +249,14 @@ def packing_inputs(inputs,tools,cohort):
   sizes[lane]=len(raw)
  return sizes,build,read_image
 
+def validate_bootfs_names(names):
+ # Existing owning SPIFFS ABI: 32 bytes includes leading slash and NUL.
+ for name in names:
+  safe(name)
+  if not name.isascii() or len(('/'+name).encode())>=32:raise ValueError('Installed bootfs path exceeds existing name field: '+name)
+
 def pack_candidate(directory,entries,sd,size,build,read_image):
+ validate_bootfs_names(entries)
  image,packing=build(entries,size)
  if len(image)!=size or read_image(image,size)!=entries:raise ValueError('Store roundtrip differs')
  (directory/'store.bin').write_bytes(image)

@@ -2,7 +2,7 @@
 """Synthetic overlay contract regressions; not product binding evidence."""
 import copy,json,tempfile,unittest
 from pathlib import Path
-from assemble_shared_home_cohort import inventory,fingerprint,overlay,pack_candidate,replace_native_metadata
+from assemble_shared_home_cohort import inventory,fingerprint,overlay,pack_candidate,replace_native_metadata,validate_bootfs_names
 from compose_shared_app_cohort import encode,digest
 class Overlay(unittest.TestCase):
  def fixture(self):
@@ -204,6 +204,14 @@ class Overlay(unittest.TestCase):
      b['boot.json']=encode(boot);item['row']=copy.deepcopy(boot['drivers'][0])
     p['inventory_sha256']=fingerprint(inventory(b,sd))
     with self.assertRaises(ValueError):overlay(b,sd,p,b'\x7fELFhome',m,root)
+ def test_existing_bootfs_name_boundary(self):
+  validate_bootfs_names(('a'*30,'home-policy/manifest.json','home-disp/manifest.json'))
+  for name in ('a'*31,'home-presentation/manifest.json','home-display-power/manifest.json','non-ascii-é'):
+   with self.subTest(name=name),self.assertRaises(ValueError):validate_bootfs_names((name,))
+ def test_pack_refuses_invalid_name_before_builder(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   def forbidden(*args):raise AssertionError('Builder must not receive oversized path')
+   with self.assertRaises(ValueError):pack_candidate(Path(tmp),{'a'*31:b'bytes'},{},32,forbidden,forbidden)
  def test_pack_exact_size_and_sd_roundtrip(self):
   with tempfile.TemporaryDirectory() as tmp:
    entries={'default.elf':b'complete'};sd={'book.epub':b'unchanged'}
