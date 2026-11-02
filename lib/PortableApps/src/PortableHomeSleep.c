@@ -51,7 +51,8 @@ int portable_home_sleep_admit(const risc_runtime_api_v1 *runtime){
  home_power=home_sleep_grants[0].api;home_display_power=home_sleep_grants[1].api;home_wake=home_sleep_grants[2].api;
  const risc_retained_wake_api_v1_extended *wake=home_wake?risc_retained_wake_extended(home_wake):NULL;
  portable_home_power physical={.power=home_power,.display=home_display_power};
- home_modes=portable_home_power_modes(&physical,wake&&wake->max_payload_bytes>=PORTABLE_DESK_CLOCK_RECORD_BYTES);
+ home_modes=portable_home_power_modes(&physical,wake&&wake->max_payload_bytes>=PORTABLE_DESK_CLOCK_RECORD_BYTES)&
+  (PORTABLE_HOME_MODE_LIGHT|PORTABLE_HOME_MODE_DEEP); /* This overview policy has no Hybrid controller. */
  return 1;
 }
 /* Foreground policy only: checked shutdown without changing persisted intent.
