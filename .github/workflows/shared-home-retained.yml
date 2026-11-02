@@ -72,9 +72,11 @@ jobs:
           set -euo pipefail
           git -C Utilities fetch --no-tags --depth=1 origin e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d
           git -C Utilities archive e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d lib/Alarm/include Apps/alarm_writer.h LICENSE | gzip -n > qualification/source/Utilities-selected-alarm-sdk.tar.gz
-          bash Tooling/scripts/install_badge_catalog_toolchain.sh "$RUNNER_TEMP/home-toolchain"
-          CC_TARGET="$RUNNER_TEMP/home-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc"
-          echo "f556eb8b42ff8c0bb748243afa391a216b3482b7d3724e5c2aa6870952b76b74  $CC_TARGET" | sha256sum -c -
+          pip install platformio==6.1.19 pyelftools==0.32 Pillow==11.3.0
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          CC_TARGET="$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc"
+          "$CC_TARGET" --version | tee qualification/delivered-compiler-version.txt
+          sha256sum "$CC_TARGET" > qualification/delivered-compiler-sha256.txt
           for source in System Baseline; do
             python X4/minimal/recovery-107/build_clock.py --system "$source" --x4 X4 --runtime Runtime --sdk Reader/sdk/driver --utilities Utilities --reader-scripts Reader/scripts --compiler "$CC_TARGET" --output "qualification/$source-target"
           done
