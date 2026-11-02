@@ -23,3 +23,7 @@ bool frame_can_render(int64_t now,int64_t deadline,bool healthy,bool complete) {
  /* Power on + refresh + power off are bounded to <30 s. Do not start near expiry. */
  return healthy && complete && deadline-now>30000;
 }
+
+bool frame_cursor_new(double sequence,int64_t cursor) {
+ return sequence>0 && sequence>cursor && sequence<=9007199254740991.0 && sequence==(double)(int64_t)sequence;
+}

@@ -51,8 +51,8 @@ static cJSON *json_copy(const cJSON *v){return v?cJSON_Duplicate(v,true):cJSON_C
 static int64_t ms(void){return esp_timer_get_time()/1000;}
 static int64_t server_now(void){return server_anchor+(ms()-mono_anchor);}
 static void stop(const char *why){deadline=0;ESP_LOGE(TAG,"Stopped: %s",why);for(;;)vTaskDelay(pdMS_TO_TICKS(10000));}
-static void save(void){char *s=cJSON_PrintUnformatted(state);if(!s||strlen(s)>JOURNAL_LIMIT)stop("journal bound");esp_err_t e=nvs_set_str(nv,"journal",s);free(s);if(e!=ESP_OK||nvs_commit(nv)!=ESP_OK)stop("journal commit");}
-static cJSON *load_json(const char *key){size_t n=0;if(nvs_get_str(nv,key,NULL,&n)!=ESP_OK)return NULL;if(n>JOURNAL_LIMIT)stop("stored data bound");char *s=malloc(n);if(!s)stop("memory");ESP_ERROR_CHECK(nvs_get_str(nv,key,s,&n));cJSON *v=cJSON_Parse(s);free(s);if(!v)stop("stored JSON invalid");return v;}
+static void save(void){char *s=cJSON_PrintUnformatted(state);if(!s||strlen(s)>JOURNAL_LIMIT)stop("journal bound");esp_err_t e=nvs_set_blob(nv,"journal",s,strlen(s)+1);free(s);if(e!=ESP_OK||nvs_commit(nv)!=ESP_OK)stop("journal commit");}
+static cJSON *load_json(const char *key){size_t n=0;bool blob=!strcmp(key,"journal");if((blob?nvs_get_blob(nv,key,NULL,&n):nvs_get_str(nv,key,NULL,&n))!=ESP_OK)return NULL;if(n>JOURNAL_LIMIT)stop("stored data bound");char *s=malloc(n);if(!s)stop("memory");ESP_ERROR_CHECK(blob?nvs_get_blob(nv,key,s,&n):nvs_get_str(nv,key,s,&n));cJSON *v=cJSON_Parse(s);free(s);if(!v)stop("stored JSON invalid");return v;}
 static void hash(const void *p,size_t n,char out[65]){uint8_t d[32];mbedtls_sha256(p,n,d,0);for(int i=0;i<32;i++)sprintf(out+i*2,"%02x",d[i]);out[64]=0;}
 static void nonce(char *out){uint8_t b[16];esp_fill_random(b,sizeof b);for(int i=0;i<16;i++)sprintf(out+i*2,"%02x",b[i]);out[32]=0;}
 static void net_event(void *arg,esp_event_base_t base,int32_t id,void *data){(void)arg;(void)data;if(base==WIFI_EVENT&&id==WIFI_EVENT_STA_DISCONNECTED){xEventGroupClearBits(wifi_events,1);esp_wifi_connect();}if(base==IP_EVENT&&id==IP_EVENT_STA_GOT_IP)xEventGroupSetBits(wifi_events,1);}
@@ -99,8 +99,8 @@ static void receipt(cJSON *req,cJSON *r){
  if(eq(req,"operation","sync")&&cJSON_IsArray(get(d,"controls"))){
   cJSON *queue=get(state,"controls");if(!queue){queue=cJSON_CreateArray();put(state,"controls",queue);}
   int64_t last=(int64_t)num(state,"cursor");cJSON *control;
-  cJSON_ArrayForEach(control,get(d,"controls")){int64_t seq=(int64_t)num(control,"seq");if(seq<=last)continue;
-   if(seq!=last+1||cJSON_GetArraySize(queue)>=32)stop("control gap or backlog; cursor retained");
+  cJSON_ArrayForEach(control,get(d,"controls")){double raw=num(control,"seq");if(!frame_cursor_new(raw,-1))stop("invalid control sequence");int64_t seq=(int64_t)raw;if(seq<=last)continue;
+   if(!frame_cursor_new(num(control,"seq"),last)||cJSON_GetArraySize(queue)>=32)stop("invalid control sequence or backlog; cursor retained");
    cJSON_AddItemToArray(queue,json_copy(control));last=seq;
   }pn(state,"cursor",last);
  }

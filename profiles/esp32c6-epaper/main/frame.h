@@ -13,3 +13,6 @@ bool frame_valid(const frame_spec *s);
 bool frame_add(size_t *received, uint8_t *dst, const uint8_t *src, size_t length);
 bool frame_path(const char *path, const char *artifact_id);
 bool frame_can_render(int64_t now, int64_t deadline, bool healthy, bool complete);
+
+/* Service control IDs are globally allocated: another participant creates gaps. */
+bool frame_cursor_new(double sequence, int64_t cursor);

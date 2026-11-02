@@ -11,5 +11,6 @@ int main(void){
  assert(frame_path("/v1/artifacts/artifact_abc/bytes?grant=transfer_123","artifact_abc"));
  assert(!frame_path("https://evil.test/a","artifact_abc"));assert(!frame_path("//evil.test/a","artifact_abc"));assert(!frame_path("/v1/artifacts/artifact_other/bytes?grant=x","artifact_abc"));assert(!frame_path("/v1/artifacts/artifact_abc/bytes?grant=x&url=evil","artifact_abc"));
  assert(frame_can_render(1,30002,true,true));assert(!frame_can_render(1,30001,true,true));assert(!frame_can_render(1,50000,false,true));assert(!frame_can_render(1,50000,true,false));assert(!frame_can_render(50000,0,true,true));
+ assert(!frame_cursor_new(0,-1));assert(frame_cursor_new(14,10));assert(!frame_cursor_new(10,10));assert(!frame_cursor_new(9,10));assert(!frame_cursor_new(14.5,10));
  free(out);free(in);puts("frame validation, bounds, path confinement and expiry tests passed");
 }
