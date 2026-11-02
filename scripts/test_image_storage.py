@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import json,unittest
 from compose_shared_app_cohort import digest
-from image_storage import ordinary_images,apply
+from image_storage import ordinary_images,apply,fit
 class Storage(unittest.TestCase):
  def fixture(self):
   data={'default.elf':b'\x7fELF'+b'a'*4092,'driver.elf':b'\x7fELF'+b'b'*4092,'mirror.elf':b'\x7fELF'+b'c'*4092,'data.bin':b'preserved'}
@@ -26,4 +26,17 @@ class Storage(unittest.TestCase):
   for field,value in [('image_source',{'path':'Apps/default.elf'}),('catalog_authority',True)]:
    data=self.fixture();boot=json.loads(data['boot.json']);boot['app_capabilities'].append({'manifest':'default.json',field:value});data['boot.json']=json.dumps(boot).encode()
    self.assertEqual(ordinary_images(data),set())
+ def test_fit_uses_original_capacity_and_preserves_raw_when_possible(self):
+  data=self.fixture()
+  class SpiffsFullError(Exception):pass
+  def pack(entries,size):
+   if sum(map(len,entries.values()))>size:raise SpiffsFullError()
+   return b'image',{}
+  raw,record=fit(data,100000,pack);self.assertEqual(raw,data);self.assertIsNone(record)
+  size=sum(map(len,data.values()))-2000
+  stored,record=fit(data,size,pack)
+  self.assertEqual(record['selected'],['default.elf']);self.assertLess(sum(map(len,stored.values())),size)
+  with self.assertRaises(ValueError):fit(data,1,pack)
+  def broken(entries,size):raise RuntimeError('not capacity')
+  with self.assertRaisesRegex(RuntimeError,'not capacity'):fit(data,1,broken)
 if __name__=='__main__':unittest.main()

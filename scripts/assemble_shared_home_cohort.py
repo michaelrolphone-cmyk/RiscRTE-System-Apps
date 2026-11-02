@@ -299,7 +299,7 @@ def pack_candidate(directory,entries,sd,size,build,read_image):
          'sd_archive_sha256':digest(path.read_bytes()),'packing':packing,
          'store_roundtrip':True,'sd_roundtrip':True}
 
-def run(cohort,plan_path,home,packages,output,inputs=None,bootfs_tools=None):
+def run(cohort,plan_path,home,packages,output,inputs=None,bootfs_tools=None,encoded_storage=False):
  if output.exists():raise ValueError('Output exists')
  plan=json.loads(plan_path.read_text())
  elf=(home/'default.elf').read_bytes();common=json.loads((home/'default.json').read_text())
@@ -319,13 +319,23 @@ def run(cohort,plan_path,home,packages,output,inputs=None,bootfs_tools=None):
  for lane,(after,sd,receipt) in prepared.items():
   write_tree(output/lane/'before',tree(cohort/lane/'before'))
   write_tree(output/lane/'after',after);write_tree(output/lane/'after-sd',sd)
+  stored=after
   if packing:
    sizes,build,read_image=packing
    baseline=tree(cohort/lane/'after')
    stats=payload_inventory(after,baseline,sizes[lane])
    (output/lane/'payload.json').write_bytes(encode(stats))
    print('PACKING INPUT '+lane+' '+json.dumps(stats),flush=True)
-   try:receipt.update(pack_candidate(output/lane,after,sd,sizes[lane],build,read_image))
+   try:
+    if encoded_storage and lane=='watch':
+     native=receipt['native_metadata']['native']
+     if native['runtime_revision']!='712ecc3f894dba99d9c9638941778a82f5856b97' or native['runtime_version']!='0.4.20':
+      raise ValueError('Encoded storage requires exact qualified decoder native dependency')
+     from image_storage import fit
+     stored,encoding=fit(after,sizes[lane],build)
+     receipt['image_storage']=encoding
+    write_tree(output/lane/'stored',stored)
+    receipt.update(pack_candidate(output/lane,stored,sd,sizes[lane],build,read_image))
    except Exception as error:
     errors[lane]={'type':type(error).__name__,'message':str(error)}
     receipt['packing_error']=errors[lane]
@@ -338,6 +348,7 @@ def run(cohort,plan_path,home,packages,output,inputs=None,bootfs_tools=None):
 if __name__=='__main__':
  p=argparse.ArgumentParser(description=__doc__)
  p.add_argument('--cohort',type=Path,required=True);p.add_argument('--inventory-output',type=Path)
+ p.add_argument('--encoded-storage',action='store_true')
  p.add_argument('--inputs',type=Path);p.add_argument('--bootfs-tools',type=Path)
  for name in ('plan','home','packages','output'):p.add_argument('--'+name,type=Path)
  a=p.parse_args()
@@ -346,4 +357,4 @@ if __name__=='__main__':
   a.inventory_output.write_bytes(encode({lane:{'sha256':fingerprint(v),'inventory':v} for lane,v in records.items()}))
  else:
   if not all((a.plan,a.home,a.packages,a.output)):p.error('--plan, --home, --packages and --output required for overlay')
-  run(a.cohort,a.plan,a.home,a.packages,a.output,a.inputs,a.bootfs_tools)
+  run(a.cohort,a.plan,a.home,a.packages,a.output,a.inputs,a.bootfs_tools,a.encoded_storage)

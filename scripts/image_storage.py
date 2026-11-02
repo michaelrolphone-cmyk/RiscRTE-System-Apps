@@ -44,3 +44,24 @@ def apply(entries,selected,expected):
              'canonical_files':{n:digest(b) for n,b in sorted(entries.items())},
              'stored_files':{n:digest(b) for n,b in sorted(out.items())},
              'canonical_recovery_verified':True}
+
+def fit(entries,size,build):
+ """Choose the shortest descending-savings prefix that the actual owning packer admits."""
+ try:
+  build(entries,size)
+  return dict(entries),None
+ except Exception as error:
+  if type(error).__name__!='SpiffsFullError':raise
+ options=candidates(entries)
+ selected=[];expected={}
+ for path in sorted(options,key=lambda n:(-(options[n]['receipt']['canonical_bytes']-options[n]['receipt']['stored_bytes']),n)):
+  selected.append(path);expected[path]=digest(entries[path])
+  stored,record=apply(entries,selected,expected)
+  try:build(stored,size)
+  except Exception as error:
+   if type(error).__name__!='SpiffsFullError':raise
+   continue
+  record['selection']='shortest descending positive-savings prefix admitted by original fixed-size packer'
+  record['selected']=selected
+  return stored,record
+ raise ValueError('Complete canonical app set cannot fit original store under eligible lossless encoding')

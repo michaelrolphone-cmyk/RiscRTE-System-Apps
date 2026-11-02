@@ -321,8 +321,17 @@ int main(int argc, char** argv) {
     }
   }
 #ifdef STORE_ADMISSION_COHORT
-  RiscBoot::Runtime candidate({});unsigned admitted=0;
+  RiscBoot::Runtime candidate({});
+#ifdef STORE_ADMISSION_ENCODED_IMAGES
+  CohortElf::ReadContext context{&candidate};
+  const bool validated=prepared && runtime.validateCohort(candidate,argv[2],CohortElf::file,&context);
+  if(context.retained.retained)std::_Exit(3); // never speculate cleanup after lost custody
+  const unsigned admitted=context.count;
+  fprintf(stderr,"actual Runtime reader admitted %u encoded images\\n",context.encodedCount);
+#else
+  unsigned admitted=0;
   const bool validated=prepared && runtime.validateCohort(candidate,argv[2],CohortElf::file,&admitted);
+#endif
   printf("{\"prepared\":%s,\"cohort_validated\":%s,\"error\":\"%s\",\"hardware_calls\":%u,\"storage_calls\":%u,\"elf_count\":%u,\"cooperative_yields\":%u}\n",
          prepared?"true":"false",validated?"true":"false",prepared?candidate.error():runtime.error(),hardwareCalls,storageCalls,admitted,cooperativeYields);
 #else
