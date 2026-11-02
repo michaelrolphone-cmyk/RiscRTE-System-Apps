@@ -3,8 +3,6 @@ on:
   push:
     branches: ['native/esp32c6-epaper-capability']
     paths: ['profiles/esp32c6-epaper/**', '.github/workflows/esp32c6-epaper.yml']
-  pull_request:
-    paths: ['profiles/esp32c6-epaper/**', '.github/workflows/esp32c6-epaper.yml']
   workflow_dispatch:
 permissions:
   contents: read

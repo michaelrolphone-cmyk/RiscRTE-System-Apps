@@ -76,12 +76,14 @@
               "properties": {
                 "artifact_id": {
                   "type": "string",
-                  "pattern": "^artifact_[a-zA-Z0-9_]+$",
+                  "minLength": 10,
                   "maxLength": 100
                 },
                 "sha256": {
                   "type": "string",
-                  "pattern": "^[a-f0-9]{64}$"
+                  "pattern": "^[a-f0-9]*$",
+                  "minLength": 64,
+                  "maxLength": 64
                 },
                 "size_bytes": {
                   "const": 48000
@@ -127,7 +129,7 @@
       {
         "capability_id": "display.epaper.frame",
         "api_version": 1,
-        "contract_digest": "6be0365e48b310b5453ff6241c2730f31134b94a4c10c07841e300d1ddae456f"
+        "contract_digest": "198ee984cb043c895691e0a697a9d6e12bd986e11cf73bc07a1546f1828dd6db"
       }
     ],
     "requires": [],
@@ -182,7 +184,7 @@
       {
         "capability_id": "display.epaper.frame",
         "api_version": 1,
-        "contract_digest": "6be0365e48b310b5453ff6241c2730f31134b94a4c10c07841e300d1ddae456f"
+        "contract_digest": "198ee984cb043c895691e0a697a9d6e12bd986e11cf73bc07a1546f1828dd6db"
       }
     ],
     "services": [],
@@ -190,5 +192,5 @@
       "display": "uc8179-800x480-bw"
     }
   },
-  "profile_digest": "cbe03b848c74259ded4531653174444f241590051845d0fd366375bef7e713b7"
+  "profile_digest": "f613cc8799dce2ee40b44ebe9cdc115b3dd17aaa78eb32661cb52d3b76e8ce57"
 }

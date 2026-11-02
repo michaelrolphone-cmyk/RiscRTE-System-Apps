@@ -56,7 +56,9 @@ esp_err_t panel_render(const uint8_t *frame) {
  esp_err_t e=power();if(e!=ESP_OK){panel_stop();return e;}
  e=cmd(0x10);uint8_t blank[100]={0};
  for(int y=0;e==ESP_OK&&y<480;y++)e=send(blank,sizeof blank,1);
- if(e==ESP_OK)e=cmd(0x13);if(e==ESP_OK)e=send(frame,FRAME_BYTES,1);
- if(e==ESP_OK)e=cmd(0x12);if(e==ESP_OK)e=handshake(20000);
+ if(e==ESP_OK)e=cmd(0x13);
+ if(e==ESP_OK)e=send(frame,FRAME_BYTES,1);
+ if(e==ESP_OK)e=cmd(0x12);
+ if(e==ESP_OK)e=handshake(20000);
  panel_stop();return e;
 }

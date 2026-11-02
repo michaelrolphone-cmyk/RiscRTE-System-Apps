@@ -47,7 +47,7 @@ static bool eq(const cJSON *o,const char *k,const char *v){return strcmp(str(o,k
 static void put(cJSON *o,const char *k,cJSON *v){cJSON_DeleteItemFromObjectCaseSensitive(o,k);cJSON_AddItemToObject(o,k,v);}
 static void ps(cJSON *o,const char *k,const char *v){put(o,k,cJSON_CreateString(v));}
 static void pn(cJSON *o,const char *k,double v){put(o,k,cJSON_CreateNumber(v));}
-static cJSON *dup(const cJSON *v){return v?cJSON_Duplicate(v,true):cJSON_CreateObject();}
+static cJSON *json_copy(const cJSON *v){return v?cJSON_Duplicate(v,true):cJSON_CreateObject();}
 static int64_t ms(void){return esp_timer_get_time()/1000;}
 static int64_t server_now(void){return server_anchor+(ms()-mono_anchor);}
 static void stop(const char *why){deadline=0;ESP_LOGE(TAG,"Stopped: %s",why);for(;;)vTaskDelay(pdMS_TO_TICKS(10000));}
@@ -101,7 +101,7 @@ static void receipt(cJSON *req,cJSON *r){
   int64_t last=(int64_t)num(state,"cursor");cJSON *control;
   cJSON_ArrayForEach(control,get(d,"controls")){int64_t seq=(int64_t)num(control,"seq");if(seq<=last)continue;
    if(seq!=last+1||cJSON_GetArraySize(queue)>=32)stop("control gap or backlog; cursor retained");
-   cJSON_AddItemToArray(queue,dup(control));last=seq;
+   cJSON_AddItemToArray(queue,json_copy(control));last=seq;
   }pn(state,"cursor",last);
  }
  if(eq(req,"operation","observe")&&get(d,"id")){
@@ -113,7 +113,7 @@ static void receipt(cJSON *req,cJSON *r){
 static cJSON *rpc(const char *family,const char *op,cJSON *args,bool write,int revision){
  cJSON *q=cJSON_CreateObject();ps(q,"protocol_version","1.0");ps(q,"family",family);ps(q,"operation",op);cJSON_AddItemToObject(q,"arguments",args);
  char id[33];nonce(id);ps(q,"operation_id",id);if(revision>=0)pn(q,"expected_revision",revision);
- if(write){if(get(state,"pending"))stop("unresolved mutation");put(state,"pending",dup(q));save();}
+ if(write){if(get(state,"pending"))stop("unresolved mutation");put(state,"pending",json_copy(q));save();}
  char *wire=cJSON_PrintUnformatted(q);if(!wire)stop("request memory");cJSON *r=NULL;
  do{r=exchange(wire,!strcmp(op,"enroll"));if(r&&eq(r,"mutation_outcome","unknown")){cJSON_Delete(r);r=NULL;}if(!r)vTaskDelay(pdMS_TO_TICKS(3000));}while(write&&!r);
  free(wire);
@@ -127,7 +127,7 @@ static cJSON *rpc(const char *family,const char *op,cJSON *args,bool write,int r
 }
 static void recover(void){cJSON *q=get(state,"pending");if(!q)return;char *wire=cJSON_PrintUnformatted(q);if(!wire)stop("memory");for(;;){cJSON *r=exchange(wire,eq(q,"operation","enroll"));if(!r||eq(r,"mutation_outcome","unknown")){cJSON_Delete(r);vTaskDelay(pdMS_TO_TICKS(3000));continue;}if(eq(r,"status","rejected")){cJSON_DeleteItemFromObjectCaseSensitive(state,"pending");save();}else receipt(q,r);cJSON_Delete(r);break;}free(wire);}
 static cJSON *activation(void){cJSON *a=cJSON_CreateObject();ps(a,"protocol_version","provider-activation/1");cJSON_AddBoolToObject(a,"automatic",true);cJSON_AddBoolToObject(a,"available",healthy&&enabled);cJSON *profiles=cJSON_CreateArray();cJSON_AddItemToArray(profiles,cJSON_Parse(PROFILE_JSON));cJSON_AddItemToObject(a,"profiles",profiles);cJSON *report=cJSON_CreateObject();pn(report,"generation",activation_gen);ps(report,"profile_id",str(state,"activation_profile"));ps(report,"state",deadline>ms()?"applied":"idle");cJSON_AddItemToObject(a,"report",report);return a;}
-static void accept(cJSON *d,int64_t started){
+static void activation_accept(cJSON *d,int64_t started){
  deadline=0;offer_ready=false;cJSON *g=get(d,"provider_activation");
  double server=num(d,"server_time");if(server<=0||ms()-started>30000)return;server_anchor=(int64_t)server;mono_anchor=ms();
  if(eq(g,"protocol_version","provider-activation/1")&&eq(g,"action","deactivate")&&eq(g,"state","idle")&&num(g,"generation")>=activation_gen){activation_gen=(int64_t)num(g,"generation");pn(state,"activation_generation",activation_gen);ps(state,"activation_profile","");save();return;}
@@ -142,18 +142,20 @@ static void accept(cJSON *d,int64_t started){
 static cJSON *session_args(void){cJSON *a=cJSON_CreateObject();ps(a,"participant_id",str(state,"participant_id"));ps(a,"session_id",session_id);pn(a,"generation",generation);return a;}
 static bool open_session(void){
  cJSON *a=cJSON_CreateObject();ps(a,"participant_id",str(state,"participant_id"));ps(a,"boot_id",boot_id);cJSON *p=cJSON_CreateArray();cJSON_AddItemToArray(p,cJSON_CreateString("1.0"));cJSON_AddItemToObject(a,"adapter_protocols",p);ps(a,"adapter_version","esp32c6-epaper/1.0.0");pn(a,"contact_interval_ms",15000);pn(a,"response_bytes",12000);cJSON_AddItemToObject(a,"journal_summary",cJSON_CreateObject());cJSON_AddItemToObject(a,"activation_request",activation());
- int64_t started=ms();cJSON *r=rpc("participant","open_session",a,true,-1);if(!r)return false;cJSON *d=get(r,"data");snprintf(session_id,sizeof session_id,"%s",str(d,"id"));generation=(int)num(d,"generation");accept(d,started);cJSON_Delete(r);return session_id[0]&&generation>0;
+ int64_t started=ms();cJSON *r=rpc("participant","open_session",a,true,-1);if(!r)return false;cJSON *d=get(r,"data");snprintf(session_id,sizeof session_id,"%s",str(d,"id"));generation=(int)num(d,"generation");activation_accept(d,started);cJSON_Delete(r);return session_id[0]&&generation>0;
 }
-static bool sync_now(void){cJSON *a=cJSON_CreateObject();ps(a,"session_id",session_id);pn(a,"generation",generation);char cursor[32];snprintf(cursor,sizeof cursor,"%.0f",num(state,"cursor"));ps(a,"cursor",cursor);pn(a,"requested_work",0);cJSON_AddItemToObject(a,"activation_request",activation());int64_t started=ms();cJSON *r=rpc("participant","sync",a,true,-1);if(!r){deadline=0;return false;}accept(get(r,"data"),started);cJSON_Delete(r);return true;}
+static bool sync_now(void){cJSON *a=cJSON_CreateObject();ps(a,"session_id",session_id);pn(a,"generation",generation);char cursor[32];snprintf(cursor,sizeof cursor,"%.0f",num(state,"cursor"));ps(a,"cursor",cursor);pn(a,"requested_work",0);cJSON_AddItemToObject(a,"activation_request",activation());int64_t started=ms();cJSON *r=rpc("participant","sync",a,true,-1);if(!r){deadline=0;return false;}activation_accept(get(r,"data"),started);cJSON_Delete(r);return true;}
 static void offer_id(char out[256]){snprintf(out,256,"%s:riscrte.esp32c6.epaper@1:panel",str(state,"participant_id"));}
 static bool publish_offer(void){
- if(deadline<=ms())return false;char id[256];offer_id(id);cJSON *a=cJSON_CreateObject();ps(a,"kind","offer");ps(a,"entity_id",id);cJSON *existing=rpc("catalog","get",a,false,-1);int rev=existing?(int)num(get(existing,"data"),"revision"):0;cJSON_Delete(existing);
+ if(deadline<=ms())return false;
+ char id[256];offer_id(id);cJSON *a=cJSON_CreateObject();ps(a,"kind","offer");ps(a,"entity_id",id);cJSON *existing=rpc("catalog","get",a,false,-1);int rev=existing?(int)num(get(existing,"data"),"revision"):0;cJSON_Delete(existing);
  a=session_args();cJSON *o=cJSON_CreateObject();ps(o,"offer_id",id);ps(o,"provider_id","riscrte.esp32c6.epaper");pn(o,"provider_revision",1);ps(o,"local_instance_id","panel");pn(o,"offer_generation",generation);pn(o,"valid_until",server_now()+60000);ps(o,"installed_state","active");ps(o,"observed_health","healthy");cJSON *e=cJSON_CreateObject();ps(e,"controller","busy-low-then-high power-on handshake");ps(e,"boot_id",boot_id);cJSON_AddBoolToObject(e,"optical_readback",false);cJSON_AddItemToObject(o,"probe_evidence",e);cJSON_AddItemToObject(o,"pool_bindings",cJSON_CreateObject());cJSON_AddItemToObject(o,"frame_spec",cJSON_Parse(FRAME_JSON));pn(o,"activation_generation",activation_gen);ps(o,"activation_profile","epaper-800x480");cJSON_AddItemToObject(a,"offer",o);
  cJSON *r=rpc("catalog","offer_upsert",a,true,rev);bool ok=r&&cJSON_IsTrue(get(get(r,"data"),"ready"));cJSON_Delete(r);return ok;
 }
-static bool download(cJSON *artifact){
- const char *id=str(artifact,"artifact_id");cJSON *a=cJSON_CreateObject();ps(a,"artifact_id",id);cJSON *r=rpc("artifact","get",a,false,-1);if(!r)return false;cJSON *d=get(r,"data");bool valid=eq(d,"state","verified")&&eq(d,"sha256",str(artifact,"sha256"))&&num(d,"size_bytes")==FRAME_BYTES;cJSON_Delete(r);if(!valid)return false;
- a=cJSON_CreateObject();ps(a,"artifact_id",id);r=rpc("artifact","download_grant",a,true,-1);if(!r)return false;d=get(r,"data");const char *path=str(d,"download_path");bool ok=frame_path(path,id);int n=ok?request(path,NULL,false,frame,FRAME_BYTES):-1;cJSON_Delete(r);if(n!=FRAME_BYTES)return false;char sha[65];hash(frame,FRAME_BYTES,sha);return strcmp(sha,str(artifact,"sha256"))==0;
+/* 1 verified, 0 invalid input/content, -1 transient transport/service failure. */
+static int download(cJSON *artifact){
+ const char *id=str(artifact,"artifact_id");cJSON *a=cJSON_CreateObject();ps(a,"artifact_id",id);cJSON *r=rpc("artifact","get",a,false,-1);if(!r)return -1;cJSON *d=get(r,"data");bool valid=eq(d,"state","verified")&&eq(d,"sha256",str(artifact,"sha256"))&&num(d,"size_bytes")==FRAME_BYTES;cJSON_Delete(r);if(!valid)return 0;
+ a=cJSON_CreateObject();ps(a,"artifact_id",id);r=rpc("artifact","download_grant",a,true,-1);if(!r)return -1;d=get(r,"data");const char *path=str(d,"download_path");bool ok=frame_path(path,id);int n=ok?request(path,NULL,false,frame,FRAME_BYTES):-1;cJSON_Delete(r);if(!ok)return 0;if(n!=FRAME_BYTES)return -1;char sha[65];hash(frame,FRAME_BYTES,sha);return strcmp(sha,str(artifact,"sha256"))==0;
 }
 static void pop_control(void){cJSON_DeleteItemFromArray(get(state,"controls"),0);save();}
 static void desired(cJSON *control){
@@ -163,7 +165,7 @@ static void desired(cJSON *control){
  frame_spec spec={(unsigned)num(input,"width"),(unsigned)num(input,"height"),(unsigned)num(input,"stride_bytes"),(unsigned)num(artifact,"size_bytes"),str(input,"format"),str(artifact,"sha256")};
  const char *status="failed",*reason="invalid_frame_spec";bool rendered=false;
  if(frame_valid(&spec)&&num(input,"width")==800&&num(input,"height")==480&&num(input,"stride_bytes")==100&&num(artifact,"size_bytes")==48000){
-  if(!download(artifact)){cJSON_Delete(r);return;}
+  int downloaded=download(artifact);if(downloaded<0){cJSON_Delete(r);return;}if(!downloaded){reason="artifact_verification_failed";goto report;}
   /* Refresh lease and re-read desired state after transfer. A superseded or
    * withdrawn image must not be committed just because its download finished. */
   if(!sync_now()||!publish_offer()){cJSON_Delete(r);return;}
@@ -173,10 +175,12 @@ static void desired(cJSON *control){
   if(!current||!frame_can_render(ms(),deadline,healthy&&enabled,true)){cJSON_Delete(r);return;}
   /* Durable physical-effect intent. On crash this remains unknown; convergence
    * safely repeats the latest complete frame under a new live lease. */
-  cJSON *intent=cJSON_CreateObject();ps(intent,"desired_id",str(d,"id"));pn(intent,"revision",revision);ps(intent,"sha256",spec.sha256);ps(intent,"status","unknown");put(state,"last_render",intent);save();
+  if(eq(get(state,"last_render"),"boot_id",boot_id)&&eq(get(state,"last_render"),"status","rendered")&&eq(get(state,"last_render"),"sha256",spec.sha256)){rendered=true;status="rendered";reason="same_frame_already_completed_this_boot";goto report;}
+  cJSON *intent=cJSON_CreateObject();ps(intent,"boot_id",boot_id);ps(intent,"desired_id",str(d,"id"));pn(intent,"revision",revision);ps(intent,"sha256",spec.sha256);ps(intent,"status","unknown");put(state,"last_render",intent);save();
   esp_err_t e=panel_render(frame);rendered=e==ESP_OK;status=rendered?"rendered":"unknown";reason=rendered?"controller_busy_completed":"controller_error_or_busy_timeout";
   ps(get(state,"last_render"),"status",status);save();if(!rendered){healthy=false;deadline=0;}
  }
+ report:
  a=cJSON_CreateObject();ps(a,"desired_id",str(d,"id"));pn(a,"desired_revision",revision);pn(a,"provider_generation",generation);ps(a,"participant_id",str(state,"participant_id"));cJSON *actual=cJSON_CreateObject();ps(actual,"status",status);ps(actual,"reason",reason);ps(actual,"sha256",spec.sha256);ps(actual,"boot_id",boot_id);cJSON_AddBoolToObject(actual,"controller_refresh_completed",rendered);cJSON_AddBoolToObject(actual,"optical_readback",false);cJSON_AddItemToObject(a,"actual",actual);
  cJSON *observed=rpc("desired","observe",a,true,-1);if(observed){/* stale observations have no id; still retire the handled control */if(!get(get(observed,"data"),"id"))pop_control();cJSON_Delete(observed);}cJSON_Delete(r);
 }
@@ -198,6 +202,6 @@ void app_main(void){
  if(!strlen(str(state,"participant_id"))){cJSON *a=cJSON_CreateObject();ps(a,"bootstrap_credential",str(cfg,"bootstrap"));ps(a,"display_name","C6 800x480 e-paper");ps(a,"class","physical_device");ps(a,"adapter_kind","esp32");cJSON *identity=cJSON_CreateObject();char sha[65];hash(str(cfg,"participant_credential"),strlen(str(cfg,"participant_credential")),sha);ps(identity,"credential_sha256",sha);cJSON_AddItemToObject(a,"identity_binding",identity);cJSON *labels=cJSON_CreateObject();ps(labels,"arch","riscv32");ps(labels,"display","uc8179-800x480-bw");ps(labels,"firmware","esp32c6-epaper/1.0.0");cJSON_AddItemToObject(a,"labels",labels);cJSON *r=rpc("participant","enroll",a,true,-1);cJSON_Delete(r);if(!strlen(str(state,"participant_id")))stop("enrollment rejected");}
  for(;;){if(!open_session()){vTaskDelay(pdMS_TO_TICKS(10000));continue;}while(sync_now()){
    offer_ready=deadline>ms()&&publish_offer();process_control();
-   vTaskDelay(pdMS_TO_TICKS(5000));
+   vTaskDelay(pdMS_TO_TICKS(15000));
   }}
 }
