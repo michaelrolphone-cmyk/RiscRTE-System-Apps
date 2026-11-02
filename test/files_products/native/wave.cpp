@@ -239,7 +239,11 @@ RiscCpu::Hardware hardware() {
 
 int main(int argc, char** argv) {
 #ifdef STORE_ADMISSION_COHORT
+#ifdef STORE_ADMISSION_USB_SD
+  if (argc != 4) return 2;
+#else
   if (argc != 3) return 2;
+#endif
 #else
   if (argc != 2) return 2;
 #endif
@@ -332,8 +336,20 @@ int main(int argc, char** argv) {
   unsigned admitted=0;const unsigned encodedCount=0;
   const bool validated=prepared && runtime.validateCohort(candidate,argv[2],CohortElf::file,&admitted);
 #endif
-  printf("{\"prepared\":%s,\"cohort_validated\":%s,\"error\":\"%s\",\"hardware_calls\":%u,\"storage_calls\":%u,\"elf_count\":%u,\"encoded_image_count\":%u,\"cooperative_yields\":%u}\n",
-         prepared?"true":"false",validated?"true":"false",prepared?candidate.error():runtime.error(),hardwareCalls,storageCalls,admitted,encodedCount,cooperativeYields);
+  bool sdElfValidated=false;
+#ifdef STORE_ADMISSION_USB_SD
+  {
+    std::ifstream input(argv[3],std::ios::binary);
+    if(!input)return 5;
+    std::vector<uint8_t> bytes(std::istreambuf_iterator<char>(input),{});
+    sdElfValidated=validated && CohortElf::admitElf(bytes.data(),bytes.size());
+    if(!sdElfValidated || bytes.empty())return 5;
+    bytes[0]=0;
+    if(CohortElf::admitElf(bytes.data(),bytes.size()))return 6;
+  }
+#endif
+  printf("{\"sd_elf_validated\":%s,\"prepared\":%s,\"cohort_validated\":%s,\"error\":\"%s\",\"hardware_calls\":%u,\"storage_calls\":%u,\"elf_count\":%u,\"encoded_image_count\":%u,\"cooperative_yields\":%u}\n",
+         sdElfValidated?"true":"false",prepared?"true":"false",validated?"true":"false",prepared?candidate.error():runtime.error(),hardwareCalls,storageCalls,admitted,encodedCount,cooperativeYields);
 #else
   // Runtime errors are constant diagnostics, with no input text or credentials.
   printf("{\"prepared\":%s,\"error\":\"%s\",\"hardware_calls\":%u,\"storage_calls\":%u,\"i2s_tables\":%zu}\n",

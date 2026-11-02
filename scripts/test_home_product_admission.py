@@ -10,7 +10,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser(description=__doc__)
 for name in ('runtime','x4-runtime','assembly','output'):p.add_argument('--'+name,type=pathlib.Path,required=True)
 for name in ('x4-product','watch-product','wave-product'):p.add_argument('--'+name,type=pathlib.Path,required=True)
-p.add_argument('--prepare-only',action='store_true');p.add_argument('--lane',choices=['watch','wave','x4']);p.add_argument('--source-pins',type=pathlib.Path);p.add_argument('--sanitize',action='store_true');args=p.parse_args();args.assembly=args.assembly.resolve();args.output.mkdir(parents=True,exist_ok=False)
+p.add_argument('--usb-transfer',action='store_true');p.add_argument('--prepare-only',action='store_true');p.add_argument('--lane',choices=['watch','wave','x4']);p.add_argument('--source-pins',type=pathlib.Path);p.add_argument('--sanitize',action='store_true');args=p.parse_args();args.assembly=args.assembly.resolve();args.output.mkdir(parents=True,exist_ok=False)
 fixtures=ROOT/'test/files_products/native';templates=json.loads((fixtures/'commands.json').read_text());results={}
 sha=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
 
@@ -87,6 +87,7 @@ for lane,template in templates.items():
  cmd=[x.format(runtime=args.runtime,x4_runtime=args.x4_runtime,fixtures=fixtures,output=args.output) for x in template]
  cmd[1:1]=['-DSTORE_ADMISSION_COHORT','-Wno-misleading-indentation']
  if lane!='x4':cmd[1:1]=['-DSTORE_ADMISSION_ENCODED_IMAGES']
+ if args.usb_transfer and lane=='wave':cmd[1:1]=['-DSTORE_ADMISSION_USB_SD']
  cmd+=['-I'+str((args.x4_runtime if lane=='x4' else args.runtime)/'lib/elf_loader/include'),'-I'+str((args.x4_runtime if lane=='x4' else args.runtime)/'test/native_bank_stubs')]
  if args.sanitize:cmd[1:1]=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
  selected_runtime=args.x4_runtime if lane=='x4' else args.runtime
@@ -119,11 +120,14 @@ for lane,template in templates.items():
   print((q.stdout+q.stderr).decode(errors='replace'),flush=True);raise RuntimeError(lane+' compile failed; see retained log')
  rows=[]
  for which in (() if args.prepare_only else ('after',)):
-  q=subprocess.run([str(args.output/lane),str(args.assembly/lane/'before'),str(args.assembly/lane/'stored')],capture_output=True,text=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+  argv=[str(args.output/lane),str(args.assembly/lane/'before'),str(args.assembly/lane/'stored')]
+  if args.usb_transfer and lane=='wave':argv.append(str(args.assembly/lane/'after-sd/Apps/usb_sd_transfer/usb_sd_transfer.elf'))
+  q=subprocess.run(argv,capture_output=True,text=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
   (args.output/(lane+'-'+which+'.log')).write_text(q.stdout+q.stderr)
   if q.returncode:
    print(q.stdout+q.stderr,flush=True);raise RuntimeError(lane+' '+which+' preparation failed, exit='+str(q.returncode))
   result=json.loads(q.stdout)
+  if args.usb_transfer and lane=='wave' and not result.get('sd_elf_validated'):raise RuntimeError('Actual Wave SD application ELF not admitted')
   encoding=assembly['products'][lane].get('image_storage')
   expected_encoded=len(encoding['images']) if encoding else 0
   if result.get('encoded_image_count',0)!=expected_encoded:raise RuntimeError('Actual stored envelope read count differs '+lane)

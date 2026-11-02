@@ -37,7 +37,8 @@ static bool diagnostic(const char*p){assert(live&&p);return true;}
 static void yield(uint32_t ms){assert(live&&(ms==1||ms==2));assert(++ticks<100);}
 static int32_t begin(void*c,uint64_t*t){
  (void)c;assert(live);++begins;*t=mode==6?0:7;
- if(mode==9)live=false;model_state=RISC_USB_MSC_PREPARING;
+ if(mode==9)live=false;
+ model_state=RISC_USB_MSC_PREPARING;
  return mode==6?RISC_USB_MSC_RETAINED:RISC_USB_MSC_OK;
 }
 static int32_t poll(void*c,uint64_t t,risc_usb_device_msc_status_v1*s){
