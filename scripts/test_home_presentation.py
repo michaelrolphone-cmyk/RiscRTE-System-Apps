@@ -3,7 +3,7 @@ import argparse,json,hashlib,os,pathlib,subprocess,tempfile
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser();p.add_argument('--output',type=pathlib.Path,required=True);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False);cases=[]
 with tempfile.TemporaryDirectory() as temp:
- for view,namespace in [(1,61),(2,62),(1,99)]:
+ for view,namespace in [(1,61),(2,62),(1,99),(1,0),(2,0)]:
   for sanitized in (False,True):
    binary=pathlib.Path(temp)/(str(view)+'-'+str(namespace)+'-'+str(sanitized))
    command=['cc','-std=c11','-Wall','-Wextra','-Werror','-O1','-I'+str(ROOT/'sdk/app'),'-I'+str(ROOT/'lib/PortableApps/include'),

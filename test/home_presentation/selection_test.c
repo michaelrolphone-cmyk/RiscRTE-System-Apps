@@ -10,7 +10,8 @@ int main(void){
  const risc_home_presentation_v1*p=d->capability;assert(risc_home_presentation_get_v1(p,sizeof(*p))==p);
  assert(!risc_home_presentation_get_v1(p,sizeof(*p)-1));
  risc_home_presentation_v1 changed=*p;changed.tag=0;assert(!risc_home_presentation_get_v1(&changed,sizeof(changed)));
- changed=*p;changed.crash_namespace=0;assert(!risc_home_presentation_get_v1(&changed,sizeof(changed)));
+ changed=*p;changed.crash_namespace=0;assert(risc_home_presentation_get_v1(&changed,sizeof(changed))==&changed);
+ assert(portable_home_view_choose(&changed,1,0)==changed.default_view&&risc_home_points_schema(&changed)==HOME_POLICY_POINTS_SCHEMA);
  assert(risc_home_points_schema(p)==HOME_POLICY_POINTS_SCHEMA);
  changed=*p;changed.struct_size=offsetof(risc_home_presentation_v1,points_schema);
  assert(risc_home_presentation_get_v1(&changed,changed.struct_size)&&!risc_home_points_schema(&changed));
