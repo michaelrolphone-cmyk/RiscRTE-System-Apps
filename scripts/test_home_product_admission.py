@@ -20,7 +20,7 @@ def source_head(root):
  return result
 source_commit=source_head(ROOT)
 runtime_heads={role:source_head(root) for role,root in (('runtime',args.runtime),('x4_runtime',args.x4_runtime))}
-if set(runtime_heads.values())!={'0052d1fc42e9cfc82d626c5a247d460919c87935'}:raise ValueError('Exact selected shared Home Runtime required')
+if runtime_heads!={'runtime':'ab2680a7d965e3b6924bef5299eca9addc4a0026','x4_runtime':'0052d1fc42e9cfc82d626c5a247d460919c87935'}:raise ValueError('Exact selected shared Home Runtime required')
 profile=args.x4_product/'profiles/native-shared-home.cmake'
 if sha(profile)!='a08af0c1dac13b3727f87c8223583bb2a88fcad6802dab33ac98dd1d4779e3c8':raise ValueError('Qualified X4 profile differs')
 profile_text=profile.read_text()
@@ -38,8 +38,8 @@ native_profile={'source':source_head(args.x4_product),'path':'profiles/native-sh
 
 native_profiles={'x4':native_profile}
 for lane,root,expected,old in (
- ('watch',args.watch_product,'3dc74a9186b2ccd3261ebd6f8b1a0e5165d68df2','native-provisioning.cmake'),
- ('wave',args.wave_product,'fdaba4530171997f8941a1d8451339f274fba59b','serial-transfer-native.cmake')):
+ ('watch',args.watch_product,'4b2bb4ed185a01e93b66e18d8cb667c5963c2536','native-provisioning.cmake'),
+ ('wave',args.wave_product,'0929eaa599e6051b3f5bbf9dafe0450b5d792e6a','serial-transfer-native.cmake')):
  if source_head(root)!=expected:raise ValueError('Exact owning capacity successor source required '+lane)
  root=root.resolve()
  expected_text='# Preserve the complete selected provisioning profile; increase provider rows only.\ninclude("${CMAKE_CURRENT_LIST_DIR}/'+old+'")\nlist(REMOVE_ITEM RISC_NATIVE_DEFINITIONS RISC_PROVIDER_CAPACITY=40)\nlist(APPEND RISC_NATIVE_DEFINITIONS RISC_PROVIDER_CAPACITY=48)\n'
