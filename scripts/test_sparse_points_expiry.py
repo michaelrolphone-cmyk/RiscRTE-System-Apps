@@ -21,7 +21,7 @@ flags=['-DTEST_NATIVE_LANDSCAPE','-DPORTABLE_DISPLAY_ROTATION=90','-DPORTABLE_AP
  '-DPORTABLE_INPUT_NAVIGATION','-DPORTABLE_APP_SLEEP_LOCAL','-DPORTABLE_CROWN_SLEEP_LOCAL','-DPORTABLE_SLEEP_MANUAL_ONLY',
  '-DPORTABLE_DESK_CLOCK','-DPORTABLE_DESK_CLOCK_SPARSE_START','-DPORTABLE_DESK_LOCK_HOME','-DPORTABLE_DESK_POINTS_FACE',
  '-DPORTABLE_DESK_POINTS_SNAPSHOT','-DPORTABLE_HOME_POINTS_NATIVE_UTC','-DALARM_NATIVE_UTC']
-if a.timer_storage:flags+=['-DTEST_X4_TIMER_STORAGE']
+if a.timer_storage:flags+=['-DTEST_TIMER_STORAGE_SLEEP']
 names='adapter.c desk_clock_faces.c PortableRealtimeClient.c PortableTimeZone.c PortableTimeZoneCatalog.c PortableTimeZonePreference.c'.split()
 sources=[CODE/'Apps/paper_clock.c',*[CODE/'lib/PortableApps/src'/n for n in names],a.sleep_source,ROOT/'test/native_apps/sparse_points_expiry_test.c']
 quick=[CODE/'lib/PortableApps/src'/n for n in 'quick_actions.c quick_render.c quick_session.c quick_radios.c'.split()]
@@ -68,8 +68,8 @@ if a.baseline:
   assert (result.returncode==0)==(case=='valid'),(case,result.stdout,result.stderr)
   baseline.append({'case':case,'returncode':result.returncode,'result':result.stdout+result.stderr})
  (out/'baseline-reproduction.json').write_text(json.dumps(baseline,indent=2)+'\n')
-tracked=[*sources,*quick,ROOT/'Apps/paper_sparse_clock.inc',ROOT/'Apps/paper_home_points.inc',ROOT/'lib/PortableApps/src/sparse_clock_adapter.inc',ROOT/'lib/PortableApps/include/PortableHomePointsCatalog.h',ROOT/'lib/PortableApps/include/PortablePointsState.h',ROOT/'test/native_apps/sparse_clock_startup_test.c',Path(__file__)]
-(out/'receipt.json').write_text(json.dumps({'source':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True)),
+tracked=[*sources,*quick,CODE/'Apps/paper_sparse_clock.inc',CODE/'Apps/paper_home_points.inc',CODE/'lib/PortableApps/src/sparse_clock_adapter.inc',CODE/'lib/PortableApps/include/PortableHomePointsCatalog.h',CODE/'lib/PortableApps/include/PortablePointsState.h',ROOT/'test/native_apps/sparse_clock_startup_test.c',Path(__file__)]
+(out/'receipt.json').write_text(json.dumps({'source':subprocess.check_output(['git','rev-parse','HEAD'],cwd=CODE,text=True).strip(),'fixture_source':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=CODE,text=True)),
  'runs':runs,'process_cases':len(runs),'pixels':'normal and ASan/UBSan byte identical','snapshot_abi_bytes':408,
  'candidate_sdk':str(a.candidate),'baseline':baseline,'source_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in tracked},'hardware':'not run'},indent=2)+'\n')
 print(f'{len(runs)} actual TIMER controller/adapter/sleep cases PASS')
