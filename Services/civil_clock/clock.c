@@ -76,7 +76,7 @@ static int32_t readonly_put(void*c,const char*k,const void*b,uint32_t n){(void)c
 #endif
 static int32_t interpret_rtc(void*ctx,const risc_civil_calendar_v1*raw,int64_t*out){
  (void)ctx;if(!alive())return -9;
- if(!started||!raw||raw->struct_size<sizeof(*raw)||!out||raw->nanoseconds||raw->reserved)return -1;
+ if(!started||!raw||raw->struct_size<sizeof(*raw)||!out||raw->nanoseconds||raw->reserved||raw->year<2000||raw->year>2099)return -1;
  portable_timezone_civil civil={raw->year,raw->month,raw->day,raw->hour,raw->minute,raw->second,raw->weekday};
  int64_t epoch=0;
 #ifdef CIVIL_NATIVE_UTC
@@ -93,7 +93,12 @@ static int32_t interpret_rtc(void*ctx,const risc_civil_calendar_v1*raw,int64_t*o
  if(portable_timezone_civil_to_epoch(&civil,&epoch)!=PORTABLE_TIMEZONE_OK)return -1;
  epoch-=INT64_C(28800); /* Installed Watch RTC domain, not application policy. */
 #endif
+#ifdef CIVIL_NATIVE_UTC
  if(epoch<INT64_C(946684800)||epoch>INT64_C(4102444799))return -1;
+#else
+ /* The first accepted 2000 calendar instant in UTC+8 is still1999 in UTC. */
+ if(epoch<INT64_C(946656000)||epoch>INT64_C(4102444799))return -1;
+#endif
  *out=epoch;return 0;
 }
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
