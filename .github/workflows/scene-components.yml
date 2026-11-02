@@ -2,14 +2,14 @@ name: NOVA scene components
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, work/contexts-scene-footer-20261102]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   scene-components:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -48,12 +48,24 @@ jobs:
       - name: Build and validate the presenter and both device profiles
         run: |
           python scripts/build_scene_services.py --runtime .deps/runtime --output dist/scene
+          python scripts/build_scene_services.py --runtime .deps/runtime --output dist/scene-color --host-profile color-dynamic
+          python scripts/build_scene_services.py --runtime .deps/runtime --output dist/scene-compact --host-profile watch-compact
           python scripts/build_civil_clock.py --runtime .deps/runtime --output dist/civil
+      - name: Publish byte-verified provider dependency prerelease
+        if: github.event_name == 'push' && github.ref == 'refs/heads/work/contexts-scene-footer-20261102'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/publish_scene_footer.py --build dist --runtime .deps/runtime
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: nova-scene-components-${{ github.sha }}
           path: |
             dist/scene/
             dist/civil/
+            dist/scene-color/
+            dist/scene-compact/
+            dist/publication/
+            build/footer*/
           if-no-files-found: error
           retention-days: 14
