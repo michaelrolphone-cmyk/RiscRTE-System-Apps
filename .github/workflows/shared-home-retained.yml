@@ -63,7 +63,7 @@ jobs:
             git -C "$repo" archive HEAD | gzip -n > "qualification/source/$repo.tar.gz"
             git -C "$repo" rev-parse HEAD > "qualification/source/$repo.head"
           done
-          python System/scripts/test_home_retained_clock.py --runtime Runtime --output qualification/controller
+          python System/scripts/test_home_retained_clock.py --runtime Runtime --utilities Utilities --output qualification/controller
           python System/scripts/test_sparse_rtc_reconcile.py --runtime Runtime --x4 X4 --sdk Reader/sdk/driver
           python System/scripts/test_sparse_rtc_reconcile.py --runtime Runtime --x4 X4 --sdk Reader/sdk/driver --sanitizer address,undefined
       - name: Pinned compiler and cumulative source profile

@@ -258,8 +258,9 @@ static bool desk_cycle_present(void *p,bool full){(void)p;return portable_desk_a
 #ifdef PORTABLE_DESK_POINTS_FACE
 static int desk_cycle_refresh(void *p,portable_desk_config *c,int64_t now,bool rewind){(void)p;return desk_points_refresh_timer(c,now,rewind);}
 #endif
-static void desk_cycle_held(void *p,bool held){(void)p;desk_held=held;if(!held)desk_rtc_check.checked=false;}
+static void desk_cycle_held(void *p,bool held){(void)p;desk_held=held;}
 static void desk_cycle_invalidate(void *p){(void)p;portable_desk_adapter_invalidate();}
+static int desk_cycle_resume(void *p){(void)p;int rc=desk_ops->resume(desk_ops->context);if(rc==1)desk_rtc_check.checked=false;return rc;}
 static void desk_cycle_retain(void *p){(void)p;(void)desk_fence();}
 int portable_desk_clock_run(const risc_runtime_api_v1 *runtime,const portable_desk_sleep_ops *ops) {
  if(!runtime || !ops || !ops->cancelled || !ops->stage || !ops->prepare ||
@@ -282,8 +283,11 @@ int portable_desk_clock_run(const risc_runtime_api_v1 *runtime,const portable_de
   .refresh=desk_cycle_refresh,
 #endif
   .held=desk_cycle_held,.invalidate=desk_cycle_invalidate,.retain=desk_cycle_retain};
+ portable_desk_cycle checked;
+ if(!portable_desk_begin(&checked,&config,&desk_boot_record,desk_boot_timer))return 0;
+ portable_desk_sleep_ops cycle_ops=*ops;cycle_ops.resume=desk_cycle_resume;
  bool timer=desk_boot_timer;desk_boot_timer=false;
- return portable_home_retained_run(&config,&desk_boot_record,timer,&hooks,ops);
+ return portable_home_retained_run(&config,&desk_boot_record,timer,&hooks,&cycle_ops);
 }
 static int desk_promote(void) {
  desk_promotion_attempted=true;desk_boot_timer=false;

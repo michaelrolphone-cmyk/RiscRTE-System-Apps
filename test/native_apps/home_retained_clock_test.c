@@ -10,9 +10,9 @@ typedef struct {
  uint8_t staged[PORTABLE_DESK_CLOCK_RECORD_BYTES];
  int64_t epoch;
 } fixture;
-static int point(fixture *s){assert(!s->retained);++s->at;if(s->at!=s->fault)return 1;if(s->kind==2){s->retained=true;return -2;}return 0;}
+static int point(fixture *s){assert(!s->retained);++s->at;if(s->at!=s->fault)return 1;if(s->kind==2){s->retained=true;return -2;}if(s->kind==3)return -2;if(s->kind==4)return 7;return 0;}
 static bool ready(void*p){return !((fixture*)p)->retained;}
-static int cancelled(void*p){fixture*s=p;int r=point(s);return r==1?0:1;}
+static int cancelled(void*p){fixture*s=p;int r=point(s);return r==1?0:(r==0?1:r);}
 static int sample(void*p,risc_realtime_snapshot_v1*out){fixture*s=p;assert(!s->held);++s->samples;int r=point(s);if(r!=1)return PORTABLE_REALTIME_IO;*out=(risc_realtime_snapshot_v1){.struct_size=sizeof(*out),.epoch_seconds=s->epoch,.validity=RISC_REALTIME_VALID};return PORTABLE_REALTIME_OK;}
 static bool project(void*p,const risc_realtime_snapshot_v1*in,portable_realtime_estimate*out,uint32_t*at){fixture*s=p;if(point(s)!=1)return false;*out=(portable_realtime_estimate){in->epoch_seconds,0};if(s->cross&&s->held){out->epoch_seconds+=60;s->epoch+=60;s->cross=false;}*at=100;return true;}
 static bool scene(void*p,const portable_desk_config*c,int64_t minute){fixture*s=p;assert(!s->held);assert(portable_desk_config_valid(c));assert(minute%60==0);++s->scenes;return point(s)==1;}
@@ -48,7 +48,7 @@ int main(void){
  assert(run(false,0,0,false,false)==1);assert(state.seeds==0&&state.refreshes==0);
  assert(run(true,0,0,false,true)==0);assert(state.resumes==1&&!state.held);
  assert(run(true,0,0,true,false)==1);assert(state.resumes==1&&state.presents==2);
- for(int kind=1;kind<=2;kind++)for(int fault=1;fault<=operations;fault++)(void)run(true,fault,kind,false,false);
- printf("shared retained controller: 408-byte roundtrip, timer/foreground, crossing, refusal and %d injected custody paths PASS\n",operations*2);
+ for(int kind=1;kind<=4;kind++)for(int fault=1;fault<=operations;fault++)(void)run(true,fault,kind,false,false);
+ printf("shared retained controller: 408-byte roundtrip, timer/foreground, crossing, refusal and %d injected custody paths PASS\n",operations*4);
  return 0;
 }
