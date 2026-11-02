@@ -1,7 +1,7 @@
 name: Complete shared Home ELF
 on:
   pull_request:
-    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', 'lib/PortableApps/include/PortableAlarm*.h', 'scripts/test_home_alarm_facade_client.py', 'test/native_apps/portable_alarm_v2_test.c', '.github/workflows/shared-home-complete.yml']
+    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/assemble_shared_home_cohort.py', 'scripts/test_shared_home_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', 'lib/PortableApps/include/PortableAlarm*.h', 'scripts/test_home_alarm_facade_client.py', 'test/native_apps/portable_alarm_v2_test.c', '.github/workflows/shared-home-complete.yml']
 permissions:
   contents: read
 jobs:
@@ -63,6 +63,7 @@ jobs:
       - name: Independent delivered-product delta conflict regressions
         run: |
           python3 System/scripts/test_shared_app_cohort.py
+          python3 System/scripts/test_shared_home_cohort.py
           python3 System/scripts/test_shared_home_manifest.py
       - name: Actual alarm facade clients and custody faults
         run: python3 System/scripts/test_home_alarm_facade_client.py --runtime Runtime --utilities AlarmUtilities --output out/alarm-client
@@ -115,7 +116,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verify independent delta conflicts
-        run: python scripts/test_shared_app_cohort.py
+        run: |
+          python scripts/test_shared_app_cohort.py
+          python scripts/test_shared_home_cohort.py
       - name: Retrieve exact completed app qualification archives
         env:
           GH_TOKEN: ${{ github.token }}
@@ -126,6 +129,8 @@ jobs:
           gh api repos/michaelrolphone-cmyk/RiscRTE-Productivity/actions/artifacts/13120780374/zip > archives/lists.zip
           gh api repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/artifacts/13122108650/zip > archives/viewer.zip
           python scripts/prepare_delivered_app_cohort.py --archives archives --output cohort
+          python scripts/assemble_shared_home_cohort.py --cohort cohort/composed --inventory-output cohort/home-authority-inventory.json
+          cat cohort/home-authority-inventory.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -135,5 +140,6 @@ jobs:
             cohort/sources.json
             cohort/inventory.json
             cohort/baseline-inventory.json
+            cohort/home-authority-inventory.json
           include-hidden-files: true
           if-no-files-found: error
