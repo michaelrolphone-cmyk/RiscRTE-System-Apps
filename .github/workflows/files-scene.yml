@@ -1,12 +1,11 @@
 name: Shared Files 1.6.0 qualification
 on:
-  push:
-    branches: ['work/files-1.6.0-qualified-20261101']
   pull_request:
     paths: ['Apps/files_scene*', 'test/files*/**', 'scripts/*files*', 'lib/RemoteFiles/**', '.github/workflows/files-scene.yml']
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
   software:
     runs-on: ubuntu-22.04
@@ -35,6 +34,36 @@ jobs:
           ref: bb0cadf3cec3445a64e11513b47b2676f3fdd92d
           path: RetainedSystem
           persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: 1770250ece443c079d240714ecb3454b4bdbd71b
+          path: Home
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: bb0cadf3cec3445a64e11513b47b2676f3fdd92d
+          path: HomeSystem
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 4fdcad2495c33fe63f5f6faca9b11ced3c739a5b
+          path: HomeUtilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: ab9ff33975680c5bb8d9a2e7ed346d0300732a4e
+          path: Bootfs
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 6a3b3d46f5b2857eacc6e9863799dec1f466b036
+          path: X4Runtime
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -43,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p qualification/source qualification/logs
-          for source in System Utilities Runtime RetainedSystem; do
+          for source in System Utilities Runtime RetainedSystem Home HomeSystem HomeUtilities Bootfs X4Runtime; do
             git -C "$source" archive HEAD | gzip -n > "qualification/source/$source.tar.gz"
             git -C "$source" rev-parse HEAD > "qualification/source/$source.head"
           done
@@ -79,6 +108,66 @@ jobs:
             for provider in System RetainedSystem; do
               python System/scripts/test_files_runtime.py --runtime Runtime --include qualification/prepared/include --provider-system "$provider" --output "qualification/runtime-$provider-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/runtime-$provider-$mode.log"
             done
+          done
+      - name: Verify retained Home dependency overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C HomeSystem rev-parse HEAD)" = bb0cadf3cec3445a64e11513b47b2676f3fdd92d
+          test ! -e HomeSystem/lib/PortableApps/include/PortableResidentSettingsEffects.h
+          cp System/lib/PortableApps/include/PortableResidentSettingsEffects.h HomeSystem/lib/PortableApps/include/
+          echo "617544d7260d73841fbf76b129371cf647cc40577f015ee73f72b47917e2dee5  HomeSystem/lib/PortableApps/include/PortableResidentSettingsEffects.h" | sha256sum -c -
+          cp HomeSystem/lib/PortableApps/include/PortableResidentSettingsEffects.h qualification/source/HomeSystem-PortableResidentSettingsEffects.h
+          printf '%s\n' 'Base bb0cadf3cec3445a64e11513b47b2676f3fdd92d plus the exact public settings-effects header; not an unchanged Git checkout.' > qualification/source/HomeSystem-overlay.txt
+      - name: Home effects and actual Files-to-Home continuation
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in normal sanitized; do
+            flags=(); hflags=()
+            if [ "$mode" = sanitized ]; then flags=(--sanitize); hflags=(--sanitized); fi
+            python Home/scripts/test_resident_effects_full.py --system HomeSystem --utilities HomeUtilities --production-flags --output "qualification/home-effects-$mode" "${hflags[@]}" 2>&1 | tee "qualification/logs/home-effects-$mode.log"
+            python Home/scripts/test_resident_effects_runtime.py --runtime Runtime --output "qualification/home-transport-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/home-transport-$mode.log"
+            python System/scripts/test_files_home.py --home Home --system HomeSystem --utilities HomeUtilities --home-receipt "qualification/home-effects-$mode/receipt.json" --home-fixture "qualification/home-effects-$mode/generated_fixture.c" --composed-commands "qualification/composed-$mode/commands.json" --include qualification/prepared/include --output "qualification/files-home-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/files-home-$mode.log"
+          done
+      - name: Obtain exact original product inputs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir qualification/inputs
+          gh api repos/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/actions/artifacts/13066458995/zip > qualification/inputs/watch.zip
+          gh api repos/michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06/actions/artifacts/13062911920/zip > qualification/inputs/wave.zip
+          gh api repos/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/actions/artifacts/13063884087/zip > qualification/inputs/watchrtc.zip
+          gh api repos/michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06/actions/artifacts/13064145956/zip > qualification/inputs/wavertc.zip
+          gh api -H 'Accept: application/octet-stream' repos/michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO/releases/assets/648840942 > qualification/inputs/x4-store.bin
+          gh api -H 'Accept: application/octet-stream' repos/michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO/releases/assets/648840698 > qualification/inputs/x4-sd.zip
+          python System/scripts/test_derive_files_product_authority.py
+          python System/scripts/derive_files_product_authority.py --inputs qualification/inputs --bootfs-tools Bootfs/scripts --output qualification/original-product-authority.json
+          python System/scripts/prepare_files_selections.py --authority qualification/original-product-authority.json --linked qualification/target --parser qualification/prepared/manifest-test --output qualification/selections
+      - name: Build exact Home packages twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          for lane in watch wave; do
+            flags=(); if [ "$lane" = wave ]; then flags=(--serial-transfer-mode); fi
+            for pass in first repeat; do
+              python System/scripts/build_files_effects_home.py --home Home --system HomeSystem --utilities HomeUtilities --pins System/docs/files-home-effects-source-pins.json --cc "$CC_TARGET" --output "qualification/home/$lane/$pass" "${flags[@]}" 2>&1 | tee "qualification/logs/home-$lane-$pass.log"
+            done
+          done
+          echo '3b7083e435a4c4f02ec96286a7af6495872d1fd4b33a79cdc6f6da5c20a7e8cb  qualification/home/watch/first/default.elf' | sha256sum -c -
+          echo '007b1aa2294b85eaa7dc776480995892513fa4c886eb208d02cda42a3835d534  qualification/home/wave/first/default.elf' | sha256sum -c -
+          cmp qualification/home/watch/first/default.elf qualification/home/watch/repeat/default.elf
+          cmp qualification/home/wave/first/default.elf qualification/home/wave/repeat/default.elf
+      - name: Preserve and admit all three complete products
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/assemble_files_products.py --inputs qualification/inputs --selections qualification/selections --home-packages qualification/home --home-pins System/docs/files-home-effects-source-pins.json --bootfs-tools Bootfs/scripts --output qualification/products 2>&1 | tee qualification/logs/products.log
+          for mode in normal sanitized; do
+            flags=(); if [ "$mode" = sanitized ]; then flags=(--sanitize); fi
+            python System/scripts/test_files_product_admission.py --runtime Runtime --x4-runtime X4Runtime --assembly qualification/products --source-pins System/docs/files-product-runtime-source-pins.json --output "qualification/admission-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/admission-$mode.log"
           done
       - uses: actions/upload-artifact@v4
         if: always()
