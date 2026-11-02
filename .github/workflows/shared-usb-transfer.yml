@@ -1,0 +1,48 @@
+name: Shared USB SD Transfer delivery
+on:
+  pull_request:
+    paths:
+      - 'Apps/usb_sd_transfer*'
+      - 'Apps/shared_usb_sd_transfer.json'
+      - 'scripts/*shared_usb*'
+      - 'test/native_apps/shared_usb*'
+      - '.github/workflows/shared-usb-transfer.yml'
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Canonical MSC contract
+        run: |
+          mkdir -p sdk-msc
+          curl --fail --location --retry 3 https://raw.githubusercontent.com/michaelrolphone-cmyk/T5S3-Reader/322fc9c0fbe6713a9fc0f3175a19550970682eaa/sdk/driver/RiscUsbDeviceMscV1.h -o sdk-msc/RiscUsbDeviceMscV1.h
+          echo 'd55a9340c3ff64e8679c4d9332812f073c30b8aa08ae3e3fb04f9010cf517ed6  sdk-msc/RiscUsbDeviceMscV1.h' | sha256sum --check
+      - name: Actual common controller and scene lifecycle
+        run: python3 scripts/test_shared_usb_transfer.py --msc-sdk sdk-msc --output out/host
+      - name: Pinned compiler
+        run: |
+          curl --fail --location --retry 3 https://github.com/espressif/crosstool-NG/releases/download/esp-15.2.0_20251204/xtensa-esp-elf-15.2.0_20251204-x86_64-linux-gnu.tar.xz -o "$RUNNER_TEMP/xtensa.tar.xz"
+          echo "3d50f5cd5f173acfd524e07c1cd69bc99585731a415ca2e5bce879997fe602b8  $RUNNER_TEMP/xtensa.tar.xz" | sha256sum --check
+          mkdir -p toolchain
+          tar -xJf "$RUNNER_TEMP/xtensa.tar.xz" -C toolchain
+      - name: One target ELF and byte-identical repeat
+        run: |
+          python3 scripts/build_shared_usb_transfer.py --msc-sdk sdk-msc --compiler toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc --output out/target
+          python3 scripts/build_shared_usb_transfer.py --msc-sdk sdk-msc --compiler toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc --output out/repeat
+          cmp out/target/usb_sd_transfer.elf out/repeat/usb_sd_transfer.elf
+          git archive HEAD | gzip -n > out/source.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-usb-${{ github.event.pull_request.head.sha }}
+          path: out/
+          if-no-files-found: error

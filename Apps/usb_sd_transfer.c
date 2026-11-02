@@ -13,8 +13,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifndef PORTABLE_USB_TRANSFER_SHARED
 static const t5_app_api_v1 *app;
 static const paper_presentation *paper;
+#endif
 static const risc_runtime_api_v1 *runtime;
 static risc_runtime_capability_v1 grant;
 static const risc_usb_device_msc_api_v1 *usb;
@@ -289,6 +291,7 @@ static void prepare_once(void) {
     }
     portable_usb_transfer_service();log_result("prepare step completed",result);
 }
+#ifndef PORTABLE_USB_TRANSFER_SHARED
 static int sx(int x){return x*app->screen_width()/480;}
 static int sy(int y){return y*app->screen_height()/800;}
 static void text(int y,const char *s,bool heading) {paper->text(sx(32),sy(y),sx(416),s,(heading?2u:1u)|PAPER_TEXT_FIT,heading,true);}
@@ -311,6 +314,7 @@ static void button(int x,int y,int w,const char *label) {
     app->fill_rect(sx(x+3),sy(y+3),sx(w-6),sy(62),false);
     paper->text(sx(x+12),sy(y+22),sx(w-24),label,1|PAPER_TEXT_FIT,false,true);
 }
+#endif
 static const char *status_name(void) {
     switch(state) {
     case RISC_USB_MSC_PREPARING:return "PREPARING SD";
@@ -324,7 +328,14 @@ static const char *status_name(void) {
     default:return "READY TO TRANSFER";
     }
 }
+#ifndef PORTABLE_USB_TRANSFER_SHARED
+#ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+#include "usb_sd_transfer_native.inc"
+#endif
 static void render(void) {
+#ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+    if(usb_native){usb_native_render();return;}
+#endif
     /* Clear before drawing: servicing a display wait may set dirty again. */
     const uint32_t painted_state=state;
     dirty=false;paper->begin();text(28,"USB SD TRANSFER",true);
@@ -368,11 +379,18 @@ static void render(void) {
     preparing_presented=painted_state==RISC_USB_MSC_PREPARING && state==painted_state && !dirty;
 }
 static bool hit(const t5_app_input_t *in,int y) {
+#ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+    if(usb_native)return in->tapped && usb_native_rect_hit(y==612?usb_layout.primary:usb_layout.secondary,in->touch_x,in->touch_y);
+#endif
     return in->tapped && in->touch_x>=sx(32) && in->touch_x<sx(448) && in->touch_y>=sy(y) && in->touch_y<sy(y+68);
 }
 void app_main(void) {
     app=t5_app_get_api(1);paper=paper_presentation_get();runtime=risc_runtime_get_api(1);
     if(!app || !paper || !runtime || !runtime->acquire || !runtime->release || !runtime->request_launch)return;
+    #ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+    usb_native=portable_usb_transfer_native_available();
+    if(usb_native && !usb_native_layout_open(&usb_layout,app->screen_width(),app->screen_height()))return;
+    #endif
     checkpoint_client=(risc_diagnostic_checkpoint_client_v1){.struct_size=sizeof(checkpoint_client)};
     if(!risc_runtime_diagnostic_checkpoint_client(runtime,&checkpoint_client) ||
        checkpoint_client.api_version!=1 || checkpoint_client.struct_size<sizeof(checkpoint_client) ||
@@ -441,3 +459,7 @@ void app_main(void) {
         if(!contact.down)prepare_once();
     }
 }
+
+#else
+#include "usb_sd_transfer_shared.inc"
+#endif
