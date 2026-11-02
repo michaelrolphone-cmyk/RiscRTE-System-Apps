@@ -47,6 +47,9 @@ typedef struct {
     bool wifi_valid, bluetooth_valid, contexts_available, audio_available;
     bool wifi_available, bluetooth_available;
     bool save_pending, save_cancelled;
+#elif defined(PORTABLE_QUICK_RADIO_AVAILABILITY)
+    /* Independent optional radios; no change to other Quick contracts. */
+    bool wifi_valid, bluetooth_valid, wifi_available, bluetooth_available;
 #endif
     uint8_t brightness, volume, last_nonzero_volume;
 #ifdef PORTABLE_PAPER_TRANSITIONS
