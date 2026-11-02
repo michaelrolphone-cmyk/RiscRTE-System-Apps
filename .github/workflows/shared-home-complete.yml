@@ -600,3 +600,35 @@ jobs:
         with:
           name: home-image-storage-measurement-${{ github.event.pull_request.head.sha }}
           path: measurement/
+
+  publish:
+    needs: [product-assembly]
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-home-qualified-products-${{ github.event.pull_request.head.sha }}
+          path: closure
+      - name: Publish only complete byte-verified three-product closure
+        env:
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 System/scripts/publish_home_shared.py --build closure --publish --expected-source '${{ github.event.pull_request.head.sha }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-publication-${{ github.event.pull_request.head.sha }}
+          path: |
+            closure/publication-plan.json
+            closure/publication.json
+          if-no-files-found: error

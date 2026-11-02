@@ -24,7 +24,7 @@ def run(root, publish, expected_source=None):
  elf=artifact(delivery['application']['elf']); manifest=artifact(delivery['application']['manifest'])
  require(elf.read_bytes()[:4]==b'\x7fELF','Actual ELF required')
  elf_hash=delivery['application']['elf']['sha256']
- files={'home.elf':elf,'home.json':manifest,'home-delivery.json':root/'home-delivery.json',
+ files={'default.elf':elf,'default.json':manifest,'home-delivery.json':root/'home-delivery.json',
         'build.json':artifact(delivery['application']['build'])}
  build=json.loads(files['build.json'].read_text())
  require(build['shared_elf']==elf_hash and build['size_bytes']==delivery['application']['elf']['size'],'Build ELF binding mismatch')
@@ -146,12 +146,20 @@ def run(root, publish, expected_source=None):
   data=body if binary else None if body is None else json.dumps(body).encode()
   with urllib.request.urlopen(urllib.request.Request(url,data=data,headers=headers,method=method),timeout=120) as response:
    result=response.read(); return result if raw else json.loads(result) if result else None
+ def release_assets(release_id):
+  result={};page=1
+  while True:
+   batch=request(base+'/releases/'+str(release_id)+'/assets?per_page=100&page='+str(page))
+   for asset in batch:
+    require(asset['name'] not in result,'Duplicate release asset name');result[asset['name']]=asset
+   if len(batch)<100:return result
+   page+=1
  tag='home-shared-'+commit
  try: release=request(base+'/releases/tags/'+tag)
  except urllib.error.HTTPError as error:
   if error.code!=404: raise
   release=request(base+'/releases',{'tag_name':tag,'target_commitish':commit,'name':'Shared Home '+commit[:12],'draft':True,'prerelease':True,'body':'One byte-identical Home/Clock ELF with three-product store roundtrip and ELF/graph admission. Source, dependencies, admission, provenance and licenses included. Physical testing not performed.'})
- assets={a['name']:a for a in request(base+'/releases/'+str(release['id'])+'/assets')}
+ assets=release_assets(release['id'])
  require(set(assets).issubset(files),'Unexpected assets on immutable release')
  bindings=[]
  for name,path in files.items():
@@ -164,7 +172,8 @@ def run(root, publish, expected_source=None):
   require(digest(request(asset['url'],raw=True))==wanted['sha256'],'Authenticated asset bytes differ')
   bindings.append(dict(name=name,**wanted))
  if release['draft']: release=request(base+'/releases/'+str(release['id']),{'draft':False,'prerelease':True},method='PATCH')
- public={a['name']:a for a in request(base+'/releases/'+str(release['id'])+'/assets')}
+ public=release_assets(release['id'])
+ require(set(public)==set(files),'Public release asset set differs')
  for item in bindings:
   asset=public[item['name']]
   with urllib.request.urlopen(asset['browser_download_url'],timeout=120) as response: data=response.read()
