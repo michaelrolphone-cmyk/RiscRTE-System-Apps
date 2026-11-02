@@ -10,10 +10,10 @@ for san in (False,True):
  target=a.output/('host-'+str(int(san)))
  flags=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if san else []
  cmd=['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror',*flags,'-I'+str(a.msc_sdk),
- '-I'+str(ROOT/'sdk/app'),'-I'+str(ROOT/'lib/PortableApps/include'),
+ '-I'+str(ROOT/'sdk/usb'),'-I'+str(ROOT/'sdk/app'),'-I'+str(ROOT/'lib/PortableApps/include'),
  '-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'test/native_apps/shared_usb_transfer_test.c'),'-o',str(target)]
  subprocess.run(cmd,check=True)
- for mode in range(7):
+ for mode in range(13):
   r=subprocess.run([str(target),str(mode)],text=True,capture_output=True,timeout=20,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
   (a.output/f'case-{int(san)}-{mode}.log').write_text(r.stdout+r.stderr)
   print(r.stdout+r.stderr,flush=True);r.check_returncode()

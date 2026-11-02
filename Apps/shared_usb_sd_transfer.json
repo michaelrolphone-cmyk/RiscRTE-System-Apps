@@ -15,6 +15,10 @@
     {
       "capability": "usb.device.msc",
       "api": 1
+    },
+    {
+      "capability": "alarm.service",
+      "api": 2
     }
   ]
 }
