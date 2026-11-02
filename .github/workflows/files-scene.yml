@@ -1,0 +1,90 @@
+name: Shared Files 1.6.0 qualification
+on:
+  push:
+    branches: ['work/files-1.6.0-qualified-20261101']
+  pull_request:
+    paths: ['Apps/files_scene*', 'test/files*/**', 'scripts/*files*', 'lib/RemoteFiles/**', '.github/workflows/files-scene.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  software:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 8f690e51b8c5f2a1756066879c40636469023639
+          path: Utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: bb0cadf3cec3445a64e11513b47b2676f3fdd92d
+          path: RetainedSystem
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Preserve exact source inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/source qualification/logs
+          for source in System Utilities Runtime RetainedSystem; do
+            git -C "$source" archive HEAD | gzip -n > "qualification/source/$source.tar.gz"
+            git -C "$source" rev-parse HEAD > "qualification/source/$source.head"
+          done
+          sha256sum qualification/source/*.tar.gz > qualification/source/archives.sha256
+      - name: Install pinned target compiler
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash Utilities/scripts/install_badge_catalog_toolchain.sh "$RUNNER_TEMP/files-toolchain"
+          CC_TARGET="$RUNNER_TEMP/files-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc"
+          echo "f556eb8b42ff8c0bb748243afa391a216b3482b7d3724e5c2aa6870952b76b74  $CC_TARGET" | sha256sum -c -
+          echo "CC_TARGET=$CC_TARGET" >> "$GITHUB_ENV"
+      - name: Focused suites and canonical repeated target
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/qualify_files_scene.py --runtime Runtime --utilities Utilities --target-cc "$CC_TARGET" --output qualification/prepared 2>&1 | tee qualification/logs/prepared.log
+          python System/scripts/link_files_scene.py --qualification qualification/prepared --version 1.6.0 --alarm-api 1 --cc "$CC_TARGET" --output qualification/target 2>&1 | tee qualification/logs/target.log
+          echo "8f9860dc07c65345a9bb20ac7686e4d4eca39694f00345b6f87e44e2a89692d9  qualification/target/file_browser.elf" | sha256sum -c -
+          test "$(stat -c %s qualification/target/file_browser.elf)" = 391232
+      - name: Complete root, storage, peer, sharing and actual Runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in normal sanitized; do
+            flags=(); if [ "$mode" = sanitized ]; then flags=(--sanitize); fi
+            python Utilities/scripts/test_files_background.py --runtime Runtime --system System --utilities Utilities --output "qualification/background-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/background-$mode.log"
+            python System/scripts/test_files_composed_root.py --include qualification/prepared/include --output "qualification/composed-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/composed-$mode.log"
+            python System/scripts/test_files_storage_composed.py --commands "qualification/composed-$mode/commands.json" --output "qualification/storage-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/storage-$mode.log"
+            for suite in peer sharing; do
+              python "System/scripts/test_files_${suite}_composed.py" --runtime Runtime --commands "qualification/composed-$mode/commands.json" --output "qualification/$suite-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/$suite-$mode.log"
+            done
+            for provider in System RetainedSystem; do
+              python System/scripts/test_files_runtime.py --runtime Runtime --include qualification/prepared/include --provider-system "$provider" --output "qualification/runtime-$provider-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/runtime-$provider-$mode.log"
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-files-software-${{ github.sha }}
+          path: qualification/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
