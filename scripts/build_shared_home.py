@@ -50,7 +50,7 @@ def run():
  # Quoted includes in PortableHomeBoot must not reopen its frozen local copy.
  common_sdk=out/'common-sdk';shutil.copytree(a.runtime/'sdk/app',common_sdk)
  from shared_home_sdk import stage_home_headers
- common_closure=stage_home_headers(ROOT,common_sdk)
+ common_closure=stage_home_headers(ROOT,common_sdk,roots=('RiscRuntimeV1.h','RiscResidentShellV1.h','PortableHomeBoot.h','PortableHomeSelection.h','PortableHomeBindings.h'))
  if (common_sdk/'RiscRuntimeV1.h').read_bytes()!=(a.runtime/'sdk/app/RiscRuntimeV1.h').read_bytes():raise ValueError('Common Runtime SDK identity changed')
  common_records=[]
  common_objects=[]

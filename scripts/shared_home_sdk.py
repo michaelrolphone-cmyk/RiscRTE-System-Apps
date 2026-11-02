@@ -3,7 +3,7 @@ import hashlib,re,shutil
 from pathlib import Path
 
 QUOTED_INCLUDE=re.compile(r'^\s*#\s*include\s*"([^"]+)"',re.M)
-def stage_home_headers(root, target):
+def stage_home_headers(root, target, roots=None):
     root,target=Path(root),Path(target)
     sdk=root/'sdk/app';portable=root/'lib/PortableApps/include'
     seeds=[*sdk.glob('RiscCanvas*.h'),*(sdk/n for n in (
@@ -15,7 +15,17 @@ def stage_home_headers(root, target):
         shutil.copyfile(source,destination)
         copied[source.relative_to(root).as_posix()]=hashlib.sha256(destination.read_bytes()).hexdigest()
         return destination
-    pending=[copy(source) for source in seeds]
+    if roots is None:
+        pending=[copy(source) for source in seeds]
+    else:
+        pending=[]
+        for name in roots:
+            if Path(name).name!=name:raise ValueError('Invalid shared Home root '+name)
+            destination=target/name
+            if destination.is_file():pending.append(destination);continue
+            source=next((base/name for base in (sdk,portable) if (base/name).is_file()),None)
+            if source is None:raise ValueError('Missing shared Home root '+name)
+            pending.append(copy(source))
     seen=set()
     while pending:
         header=pending.pop().resolve()

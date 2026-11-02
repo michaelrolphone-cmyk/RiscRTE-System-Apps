@@ -31,4 +31,16 @@ class Closure(unittest.TestCase):
    (sdk/'RiscCanvasV1.h').write_text('#include "MissingV1.h"\n')
    with self.assertRaisesRegex(ValueError,'Missing shared Home header MissingV1.h'):
     stage_home_headers(root,target)
+ def test_explicit_roots_do_not_import_other_view_dependencies(self):
+  with tempfile.TemporaryDirectory() as temp:
+   root=Path(temp)/'source';target=Path(temp)/'stage';target.mkdir(parents=True)
+   (root/'sdk/app').mkdir(parents=True);portable=root/'lib/PortableApps/include';portable.mkdir(parents=True)
+   (portable/'PortableHomeBoot.h').write_text('#include "RiscRuntimeV1.h"\n')
+   (portable/'PortableHomeUnselected.h').write_text('#include "ExternalOtherViewOnly.h"\n')
+   (portable/'RiscRuntimeV1.h').write_text('unselected frozen Runtime\n')
+   (target/'RiscRuntimeV1.h').write_text('exact selected Runtime\n')
+   receipt=stage_home_headers(root,target,roots=('PortableHomeBoot.h','RiscRuntimeV1.h'))
+   self.assertEqual((target/'RiscRuntimeV1.h').read_text(),'exact selected Runtime\n')
+   self.assertEqual(len(receipt['closure_sha256']),2)
+   self.assertFalse((target/'PortableHomeUnselected.h').exists())
 if __name__=='__main__':unittest.main()

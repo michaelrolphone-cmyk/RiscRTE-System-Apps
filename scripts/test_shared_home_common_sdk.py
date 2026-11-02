@@ -10,7 +10,7 @@ def main():
  if a.output.exists():raise ValueError('Fresh common SDK fixture output required')
  a.output.mkdir(parents=True);sdk=a.output/'sdk'
  shutil.copytree(a.runtime/'sdk/app',sdk)
- closure=stage_home_headers(ROOT,sdk)
+ closure=stage_home_headers(ROOT,sdk,roots=('RiscRuntimeV1.h','RiscResidentShellV1.h','PortableHomeBoot.h','PortableHomeSelection.h','PortableHomeBindings.h'))
  if (sdk/'RiscRuntimeV1.h').read_bytes()!=(a.runtime/'sdk/app/RiscRuntimeV1.h').read_bytes():raise ValueError('Selected Runtime header changed')
  rows=[]
  for i,source in enumerate((ROOT/'Apps/shared_home.c',ROOT/'lib/PortableApps/src/PortableHomeBoot.c')):

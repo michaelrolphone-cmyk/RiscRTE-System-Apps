@@ -28,5 +28,17 @@
     "run_id": 41451645014,
     "head_sha": "8f2bd2bf0b1ce7a84084d6194d47c389b7441e61",
     "workflow": "Shared Home standard power bridge"
+  },
+  {
+    "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+    "run_id": 41460825317,
+    "head_sha": "c4f4927a6a45790a3326e00eead406a9f17654e2",
+    "workflow": "Combined Home native controller integration"
+  },
+  {
+    "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+    "run_id": 41460825451,
+    "head_sha": "c4f4927a6a45790a3326e00eead406a9f17654e2",
+    "workflow": "Capture-safe Home attention"
   }
 ]
