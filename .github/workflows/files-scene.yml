@@ -146,6 +146,7 @@ jobs:
           gh api repos/michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06/actions/artifacts/13064145956/zip > qualification/inputs/wavertc.zip
           gh api -H 'Accept: application/octet-stream' repos/michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO/releases/assets/648840942 > qualification/inputs/x4-store.bin
           gh api -H 'Accept: application/octet-stream' repos/michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO/releases/assets/648840698 > qualification/inputs/x4-sd.zip
+          python System/scripts/test_files_linked_identity.py
           python System/scripts/test_derive_files_product_authority.py
           python System/scripts/derive_files_product_authority.py --inputs qualification/inputs --bootfs-tools Bootfs/scripts --output qualification/original-product-authority.json
           python System/scripts/prepare_files_selections.py --authority qualification/original-product-authority.json --linked qualification/target --parser qualification/prepared/manifest-test --output qualification/selections

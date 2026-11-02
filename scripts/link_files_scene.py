@@ -15,6 +15,17 @@ def make_manifest(version,alarm_api):
  manifest={'type':'application','id':'file_browser','version':version,'architecture':'xtensa-esp32s3','file_name':'file_browser.elf','entry':'app_main','display_name':'Files','icon':'solid:f07c','requires':[],'optional':[{'capability':n,'api':v} for n,v in optional]}
  return manifest
 
+def verified_linked_manifest(manifest_bytes,receipt):
+ manifest=json.loads(manifest_bytes)
+ if hashlib.sha256(manifest_bytes).hexdigest()!=receipt['manifest_sha256']:
+  raise ValueError('Linked manifest bytes differ from receipt')
+ if manifest['version']!=receipt['version']:
+  raise ValueError('Linked package version differs from receipt')
+ alarms=[d['api'] for d in manifest['optional'] if d['capability']=='alarm.service']
+ if len(alarms)!=1 or alarms[0] not in (1,2) or manifest!=make_manifest(manifest['version'],alarms[0]):
+  raise ValueError('Linked canonical declaration differs')
+ return manifest
+
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--qualification',type=Path,required=True);p.add_argument('--background-object',type=Path,action='append',default=[]);p.add_argument('--version',required=True);p.add_argument('--alarm-api',type=int,choices=(1,2),required=True,help='Manifest API matching existing product authority; does not change the ELF');p.add_argument('--output',type=Path,required=True);p.add_argument('--cc');a=p.parse_args()
  q=a.qualification.resolve();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True);cc=compiler_path(a.cc)
@@ -45,5 +56,5 @@ def main():
  # Requirements describe optional discovery, never grant authority. Product
  # composition must preserve the exact original rows/export namespace maps.
  manifest=make_manifest(a.version,a.alarm_api)
- (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n');(out/'link-receipt.json').write_text(json.dumps({'compaction':compaction,'bytes':len(first),'packaging_source_sha256':hashlib.sha256((ROOT/'scripts/compact_current_elf.py').read_bytes()).hexdigest(),'compiler_support_archive_sha256':hashlib.sha256(libgcc.read_bytes()).hexdigest(),'command':cmd,'sha256':hashlib.sha256(first).hexdigest(),'repeat_identical':True,'hardware_tested':False,'imports':sorted(imports),'exports':sorted(exports),'objects_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in objects},'qualification_sha256':hashlib.sha256((q/'qualification.json').read_bytes()).hexdigest(),'product_admission':'pending parent composition; no new grants authorized'},indent=2)+'\n')
+ (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n');(out/'link-receipt.json').write_text(json.dumps({'version':manifest['version'],'manifest_sha256':hashlib.sha256((out/'file_browser.json').read_bytes()).hexdigest(),'compaction':compaction,'bytes':len(first),'packaging_source_sha256':hashlib.sha256((ROOT/'scripts/compact_current_elf.py').read_bytes()).hexdigest(),'compiler_support_archive_sha256':hashlib.sha256(libgcc.read_bytes()).hexdigest(),'command':cmd,'sha256':hashlib.sha256(first).hexdigest(),'repeat_identical':True,'hardware_tested':False,'imports':sorted(imports),'exports':sorted(exports),'objects_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in objects},'qualification_sha256':hashlib.sha256((q/'qualification.json').read_bytes()).hexdigest(),'product_admission':'pending parent composition; no new grants authorized'},indent=2)+'\n')
 if __name__=='__main__':main()

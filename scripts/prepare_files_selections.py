@@ -4,14 +4,15 @@ No boot/store mutation or claim of complete product admission.
 """
 import argparse,copy,hashlib,json,shutil,subprocess
 from pathlib import Path
-from link_files_scene import make_manifest
+from link_files_scene import make_manifest,verified_linked_manifest
 p=argparse.ArgumentParser(description=__doc__)
 for name in ('authority','linked','parser','output'):p.add_argument('--'+name,type=Path,required=True)
 a=p.parse_args();o=a.output.resolve();o.mkdir(parents=True,exist_ok=False)
 authority=json.loads(a.authority.read_text())['results']['record']['payload']['inline']['products'];link=json.loads((a.linked/'link-receipt.json').read_text());elf=a.linked/'file_browser.elf';digest=hashlib.sha256(elf.read_bytes()).hexdigest();assert digest==link['sha256'] and link['repeat_identical']
+canonical=verified_linked_manifest((a.linked/'file_browser.json').read_bytes(),link)
 receipts={}
 for name,original in authority.items():
- target=o/name;target.mkdir();old=original['manifests']['file_browser.json'];alarm=next(g['api'] for g in original['rows'][0]['grants'] if g['capability']=='alarm.service');new=make_manifest('1.6.0',alarm)
+ target=o/name;target.mkdir();old=original['manifests']['file_browser.json'];alarm=next(g['api'] for g in original['rows'][0]['grants'] if g['capability']=='alarm.service');new=make_manifest(canonical['version'],alarm)
  # Bind optional declarations to admitted authority, preserving all original
  # grant pairs. This also respects retained Runtime declaration capacities.
  admitted={(g['capability'],g['api']) for row in original['rows'] for g in row['grants']}|{('ui.scene',1)}
