@@ -24,6 +24,9 @@ def run(archives,output):
     if n.startswith('products/'):
      dest=output/label/safe(n);dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(z.read(n))
    if label=='viewer':
+    inputs=output/'inputs';inputs.mkdir()
+    for name in ('watch.zip','wave.zip','x4-store.bin'):
+     (inputs/name).write_bytes(z.read('inputs/'+name))
     sd=output/'baseline-sd';sd.mkdir()
     (sd/'x4.zip').write_bytes(z.read('inputs/x4-sd.zip'))
     for lane in ('watch','wave'):
