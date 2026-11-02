@@ -12,6 +12,7 @@ import portable_loading_build
 ROOT=Path(__file__).resolve().parents[1]
 def build():
  p=argparse.ArgumentParser(description=__doc__)
+ p.add_argument('--shared-view-output',type=Path,help='Emit complete overview relocatable view for the single shared Home assembly; no standalone app artifact')
  p.add_argument('--experimental-settings-availability',action='store_true',help='Default-off Home temporary settings status and safe reload; requires atomic Home automatic')
  p.add_argument('--experimental-atomic-home-automatic',action='store_true',help='Default-off X4 Home automatic origins; requires atomic Quick and RF contexts')
  p.add_argument('--experimental-atomic-quick',action='store_true',help='Default-off X4 Home explicit namespace-1 atomic preference intents; no production activation')
@@ -47,7 +48,7 @@ def build():
   p.error('--experimental-atomic-quick requires X4 sparse resident Home, frontlight tone, radios and paper transitions')
  if a.deferred_foreground_services and not (a.sparse_start and a.quick_actions and a.quick_radios and a.resident_shell_host and a.resident_loading_catalog and a.installed_catalog_volume_instance is not None and a.desk_points_face):
   p.error('--deferred-foreground-services requires the full sparse resident Home/Points/Quick-radio/loading/catalog profile')
- if a.installed_catalog_volume_instance is not None and (a.installed_catalog_volume_instance<1 or not a.sparse_start or not a.resident_shell_host):p.error('Home catalog requires sparse resident host and positive SD instance')
+ if a.installed_catalog_volume_instance is not None and (a.installed_catalog_volume_instance<(0 if a.shared_view_output else 1) or not a.sparse_start or not a.resident_shell_host):p.error('Home catalog requires sparse resident host and positive SD instance')
  if a.boot_animation and (not a.relocation_tools or any(not (a.relocation_tools/n).is_file() for n in ('normalize_xtensa_relocations.py',))):p.error('--boot-animation requires canonical --relocation-tools')
  if a.boot_animation and not (a.sparse_start and a.raster_snapshot):p.error('--boot-animation requires --sparse-start and --raster-snapshot')
  if a.resident_loading_catalog and not a.resident_shell_host:p.error('--resident-loading-catalog requires the resident host')
@@ -67,7 +68,7 @@ def build():
   p.error("--contexts-rf-only requires sparse Clock, Quick Actions, tagged alarm and checked X4 idle profile")
  if a.sparse_start:
   if not a.desk_clock:p.error('Sparse startup requires --desk-clock')
-  if a.sleep_capability!='x4.power':p.error('Sparse startup requires the X4 x4.power contract')
+  if a.sleep_capability!=('power.sleep' if a.shared_view_output else 'x4.power'):p.error('Sparse startup requires the X4 x4.power contract')
   for name in ('RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h'):
    if not (a.retained_wake_sdk/name).is_file():p.error('Missing canonical '+name)
   if 'RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE' not in (a.retained_wake_sdk/'RiscRuntimeV1.h').read_text():p.error('Sparse startup requires the canonical invocation-retention Runtime suffix')
@@ -135,7 +136,23 @@ def build():
   flags+=['-DPORTABLE_RESIDENT_LOADING']
  sparse_sources=[ROOT/'lib/PortableApps/src'/name for name in ('PortableRealtimeClient.c','PortableTimeZone.c','PortableTimeZoneCatalog.c','PortableTimeZonePreference.c')] if a.sparse_start else []
  elf=out/'default.elf'
- subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/paper_clock.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(catalog),*map(str,quick_sources),*([str(ROOT/'lib/PortableApps/src/desk_clock_faces.c')] if a.desk_clock else []),*([str(a.local_sleep_source)] if a.local_sleep_source else []),*map(str,sparse_sources),*map(str,catalog_sources),'-lgcc','-o',str(elf)],check=True)
+ command=[cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/paper_clock.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(catalog),*map(str,quick_sources),*([str(ROOT/'lib/PortableApps/src/desk_clock_faces.c')] if a.desk_clock else []),*([str(a.local_sleep_source)] if a.local_sleep_source else []),*map(str,sparse_sources),*map(str,catalog_sources),'-lgcc','-o',str(elf)]
+ if a.shared_view_output:
+  if not a.shared_idle_source or a.local_sleep_source.resolve()!=(ROOT/'lib/PortableApps/src/PortableHomeSleep.c').resolve():p.error('Shared overview requires owning generic sleep and idle sources')
+  # Exact SDK/source closure is staged once; physical bindings remain providers.
+  for source in list((ROOT/'sdk/app').glob('RiscCanvas*.h'))+[ROOT/'sdk/app/RiscHomePresentationV1.h',ROOT/'sdk/app/RiscResidentContextsV1.h']:
+   shutil.copyfile(source,includes/source.name)
+  for source in (ROOT/'lib/PortableApps/include').glob('PortableHome*.h'):shutil.copyfile(source,includes/source.name)
+  extra=['-DPORTABLE_SHARED_HOME_CANVAS','-DPORTABLE_SHARED_HOME_BOOT',
+   '-include',str(includes/'PortableHomeBindings.h'),
+   '-DPORTABLE_CRASH_REPORT_NAMESPACE=portable_home_crash_namespace()',
+   '-DPORTABLE_INSTALLED_VOLUME_INSTANCE=portable_home_catalog_volume()']
+  command=[x for x in command if not x.startswith(('-DPORTABLE_CRASH_REPORT_NAMESPACE=','-DPORTABLE_INSTALLED_VOLUME_INSTANCE='))]
+  command[1:1]=extra
+  from shared_home_objects import emit_command
+  emit_command(command,a.shared_view_output,'home_overview_')
+  return
+ subprocess.run(command,check=True)
  if a.boot_animation:
   for name in ('normalize_xtensa_relocations.py',):subprocess.run(['python3',str(a.relocation_tools/name),str(elf)],check=True)
  symbols=subprocess.check_output([cc.removesuffix('gcc')+'nm','-D',str(elf)],text=True)

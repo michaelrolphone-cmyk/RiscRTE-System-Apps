@@ -18,7 +18,7 @@ def emit_view(compiler,output,prefix,flags,includes,sources):
   else:
    language='-std=c++11' if source.suffix in ('.cpp','.cc') else '-std=c11'
    cc=tool+'g++' if source.suffix in ('.cpp','.cc') else compiler
-   command=[cc,language,'-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-ffunction-sections','-fdata-sections','-Wall','-Wextra','-Werror',*compile_flags,*['-I'+str(p) for p in includes],'-c',str(source),'-o',str(obj)]
+   command=[cc,language,'-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-ffunction-sections','-fdata-sections','-Wall','-Wextra','-Werror',*compile_flags,*['-I'+str(p) for p in includes],'-MMD','-MF',str(output/(str(index)+'.d')),'-c',str(source),'-o',str(obj)]
    subprocess.run(command,check=True);commands.append(command)
   objects.append(obj)
  aggregate=output/'view-unprefixed.o'
@@ -30,5 +30,21 @@ def emit_view(compiler,output,prefix,flags,includes,sources):
  mapping=output/'symbols.map';mapping.write_text(''.join(name+' '+prefix+name+'\n' for name in names))
  target=output/'view.o';subprocess.run([tool+'objcopy','--redefine-syms='+str(mapping),str(aggregate),str(target)],check=True)
  unresolved=subprocess.check_output([tool+'nm','--undefined-only',str(target)],text=True)
- receipt={'prefix':prefix,'commands':commands,'defined_symbols':names,'undefined_symbols':unresolved.splitlines(),'object_sha256':hashlib.sha256(target.read_bytes()).hexdigest(),'sources':{str(p):hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest() for p in sources},'compiler':subprocess.check_output([compiler,'--version'],text=True)}
+ dependencies=set()
+ for dep in output.glob('*.d'):
+  text=dep.read_text().replace('\\\n',' ')
+  dependencies.update(pathlib.Path(p) for p in text.split(':',1)[1].split() if pathlib.Path(p).is_file())
+ receipt={'compiled_headers_sha256':{str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(dependencies)},'prefix':prefix,'commands':commands,'defined_symbols':names,'undefined_symbols':unresolved.splitlines(),'object_sha256':hashlib.sha256(target.read_bytes()).hexdigest(),'sources':{str(p):hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest() for p in sources},'compiler':subprocess.check_output([compiler,'--version'],text=True)}
  (output/'view.json').write_text(json.dumps(receipt,indent=2)+'\n');return target
+
+def emit_command(command,output,prefix):
+ """Consume the owning recipe's exact compiler argv, not a second source list."""
+ compiler=command[0];flags=[];includes=[];sources=[];skip=False
+ for arg in command[1:]:
+  if skip:skip=False;continue
+  if arg=='-o':skip=True;continue
+  if arg in ('-shared','-nostdlib','-nostartfiles') or arg.startswith('-std=') or arg.startswith('-l') or arg.startswith('-Wl,'):continue
+  if arg.startswith('-I'):includes.append(arg[2:])
+  elif pathlib.Path(arg).suffix in ('.c','.cpp','.cc','.o'):sources.append(pathlib.Path(arg))
+  else:flags.append(arg)
+ return emit_view(compiler,output,prefix,flags,includes,sources)
