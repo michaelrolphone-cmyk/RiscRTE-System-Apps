@@ -29,6 +29,11 @@
 #include "frame.h"
 #include "catalog.h"
 #include "presentation.h"
+#include "identity.h"
+#include "esp_attr.h"
+#include "idle_guard.h"
+#include "esp_private/startup_internal.h"
+#include "hal/modem_syscon_ll.h"
 #define API_ORIGIN "https://capabilities-service.cantikash.chatgpt.site"
 #define JSON_LIMIT 18000
 #define JOURNAL_LIMIT 50000
@@ -42,6 +47,19 @@ static bool healthy,enabled=true,offer_ready;
 static uint8_t *frame;
 static const char *TAG="biome-monitor";
 static presentation visible;
+enum { STAGE_START,STAGE_PANEL,STAGE_NVS,STAGE_WIFI,STAGE_RECOVERY,STAGE_ENROLL,STAGE_SESSION,STAGE_HTTP,STAGE_JOURNAL,STAGE_RENDER,STAGE_IDLE };
+static const char *stage_names[]={"start","panel","nvs","wifi","recovery","enroll","session","http","journal","render","idle"};
+RTC_NOINIT_ATTR static struct {uint32_t magic,stage;} boot_trace;
+static uint32_t previous_stage;
+static esp_reset_reason_t reset_reason;
+static void stage(unsigned n){boot_trace.stage=n;}
+/* HP watchdog/USB resets do not necessarily reset the Wi-Fi MAC domain.
+ * Stop any old RX DMA before startup creates the new heap (heap priority100).
+ * See espressif/esp-idf#19223; independent of the WFI avoidance below. */
+ESP_SYSTEM_INIT_FN(biome_radio_boot_reset, CORE, BIT(0), 2) {
+ modem_syscon_ll_reset_wifimac(&MODEM_SYSCON);
+ return ESP_OK;
+}
 /* ESP-IDF 5.4.2 names embedded symbols from the file basename. */
 extern const uint8_t idle_logo[] asm("_binary_idle_logo_bin_start");
 static cJSON *get(const cJSON *o,const char *k){return cJSON_GetObjectItemCaseSensitive(o,k);}
@@ -63,8 +81,18 @@ static void idle_if_due(void){
 static void pause_ms(int64_t duration){int64_t until=ms()+duration;do{idle_if_due();int64_t remaining=until-ms();if(remaining<=0)break;vTaskDelay(pdMS_TO_TICKS(remaining>1000?1000:remaining));}while(ms()<until);}
 static void wait_wifi(void){idle_if_due();while(!(xEventGroupWaitBits(wifi_events,1,pdFALSE,pdTRUE,pdMS_TO_TICKS(1000))&1))idle_if_due();}
 static void stop(const char *why){deadline=0;ESP_LOGE(TAG,"Stopped: %s",why);for(;;)pause_ms(10000);}
-static void save(void){char *s=cJSON_PrintUnformatted(state);if(!s||strlen(s)>JOURNAL_LIMIT)stop("journal bound");esp_err_t e=nvs_set_blob(nv,"journal",s,strlen(s)+1);free(s);if(e!=ESP_OK||nvs_commit(nv)!=ESP_OK)stop("journal commit");}
+static void save(void){stage(STAGE_JOURNAL);char *s=cJSON_PrintUnformatted(state);if(!s||strlen(s)>JOURNAL_LIMIT)stop("journal bound");esp_err_t e=nvs_set_blob(nv,"journal",s,strlen(s)+1);free(s);if(e!=ESP_OK||nvs_commit(nv)!=ESP_OK)stop("journal commit");}
 static cJSON *load_json(const char *key){size_t n=0;bool blob=!strcmp(key,"journal");if((blob?nvs_get_blob(nv,key,NULL,&n):nvs_get_str(nv,key,NULL,&n))!=ESP_OK)return NULL;if(n>JOURNAL_LIMIT)stop("stored data bound");char *s=malloc(n);if(!s)stop("memory");ESP_ERROR_CHECK(blob?nvs_get_blob(nv,key,s,&n):nvs_get_str(nv,key,s,&n));cJSON *v=cJSON_Parse(s);free(s);if(!v)stop("stored JSON invalid");return v;}
+/* Enrollment tickets are consumable. Retain the resulting identity separately
+ * from the request journal so a journal repair never spends a second ticket. */
+static void remember_identity(const char *id){
+ if(!identity_valid(id))stop("invalid participant identity");
+ if(eq(cfg,"participant_id",id))return;
+ ps(cfg,"participant_id",id);char *s=cJSON_PrintUnformatted(cfg);
+ if(!s||strlen(s)>JOURNAL_LIMIT)stop("provisioning bound");
+ esp_err_t e=nvs_set_str(nv,"config",s);free(s);
+ if(e!=ESP_OK||nvs_commit(nv)!=ESP_OK)stop("identity commit");
+}
 static void hash(const void *p,size_t n,char out[65]){uint8_t d[32];mbedtls_sha256(p,n,d,0);for(int i=0;i<32;i++)sprintf(out+i*2,"%02x",d[i]);out[64]=0;}
 static void nonce(char *out){uint8_t b[16];esp_fill_random(b,sizeof b);for(int i=0;i<16;i++)sprintf(out+i*2,"%02x",b[i]);out[32]=0;}
 static void net_event(void *arg,esp_event_base_t base,int32_t id,void *data){(void)arg;(void)data;if(base==WIFI_EVENT&&id==WIFI_EVENT_STA_DISCONNECTED){xEventGroupClearBits(wifi_events,1);esp_wifi_connect();}if(base==IP_EVENT&&id==IP_EVENT_STA_GOT_IP){xEventGroupSetBits(wifi_events,1);ESP_LOGI(TAG,"Wi-Fi connected");}}
@@ -80,6 +108,7 @@ static void wifi(void){
 /* Read a bounded authenticated response. Redirects and arbitrary destinations
  * are refused. Binary artifacts stay within this same configured service. */
 static int request(const char *path,const char *body,bool bootstrap,uint8_t *out,size_t capacity){
+ stage(STAGE_HTTP);
  if(path[0]!='/'||path[1]=='/'||strlen(path)>300)return -1;
  wait_wifi();
  char url[400];snprintf(url,sizeof url,"%s%s",API_ORIGIN,path);
@@ -107,7 +136,7 @@ static cJSON *exchange(const char *wire,bool bootstrap){
  * A replayed lease is never used; callers obtain a fresh sync after recovery. */
 static void receipt(cJSON *req,cJSON *r){
  cJSON *d=get(r,"data"),*a=get(req,"arguments");
- if(eq(req,"operation","enroll")&&get(d,"id"))ps(state,"participant_id",str(d,"id"));
+ if(eq(req,"operation","enroll")&&get(d,"id")){remember_identity(str(d,"id"));ps(state,"participant_id",str(d,"id"));}
  if(eq(req,"operation","sync")&&cJSON_IsArray(get(d,"controls"))){
   cJSON *queue=get(state,"controls");if(!queue){queue=cJSON_CreateArray();put(state,"controls",queue);}
   int64_t last=(int64_t)num(state,"cursor");cJSON *control;
@@ -153,7 +182,7 @@ static void activation_accept(cJSON *d,int64_t started){
 }
 static cJSON *session_args(void){cJSON *a=cJSON_CreateObject();ps(a,"participant_id",str(state,"participant_id"));ps(a,"session_id",session_id);pn(a,"generation",generation);return a;}
 static bool open_session(void){
- cJSON *a=cJSON_CreateObject();ps(a,"participant_id",str(state,"participant_id"));ps(a,"boot_id",boot_id);cJSON *p=cJSON_CreateArray();cJSON_AddItemToArray(p,cJSON_CreateString("1.0"));cJSON_AddItemToObject(a,"adapter_protocols",p);ps(a,"adapter_version","biome-monitor/1.1.1");pn(a,"contact_interval_ms",15000);pn(a,"response_bytes",12000);cJSON_AddItemToObject(a,"journal_summary",cJSON_CreateObject());cJSON_AddItemToObject(a,"activation_request",activation());
+ cJSON *a=cJSON_CreateObject();ps(a,"participant_id",str(state,"participant_id"));ps(a,"boot_id",boot_id);cJSON *p=cJSON_CreateArray();cJSON_AddItemToArray(p,cJSON_CreateString("1.0"));cJSON_AddItemToObject(a,"adapter_protocols",p);ps(a,"adapter_version","biome-monitor/1.1.2");pn(a,"contact_interval_ms",15000);pn(a,"response_bytes",12000);cJSON *diag=cJSON_CreateObject();pn(diag,"reset_reason",reset_reason);ps(diag,"previous_stage",stage_names[previous_stage]);pn(diag,"uptime_ms",ms());cJSON_AddItemToObject(a,"journal_summary",diag);cJSON_AddItemToObject(a,"activation_request",activation());
  int64_t started=ms();cJSON *r=rpc("participant","open_session",a,true,-1);if(!r)return false;cJSON *d=get(r,"data");snprintf(session_id,sizeof session_id,"%s",str(d,"id"));generation=(int)num(d,"generation");activation_accept(d,started);cJSON_Delete(r);return session_id[0]&&generation>0;
 }
 static bool sync_now(void){cJSON *a=cJSON_CreateObject();ps(a,"session_id",session_id);pn(a,"generation",generation);char cursor[32];snprintf(cursor,sizeof cursor,"%.0f",num(state,"cursor"));ps(a,"cursor",cursor);pn(a,"requested_work",0);cJSON_AddItemToObject(a,"activation_request",activation());int64_t started=ms();cJSON *r=rpc("participant","sync",a,true,-1);if(!r){deadline=0;return false;}activation_accept(get(r,"data"),started);cJSON_Delete(r);return true;}
@@ -202,7 +231,7 @@ static void desired(cJSON *control){
    rendered=true;status="rendered";reason="same_frame_still_displayed";goto report;
   }
   cJSON *intent=cJSON_CreateObject();ps(intent,"boot_id",boot_id);ps(intent,"desired_id",str(d,"id"));pn(intent,"revision",revision);ps(intent,"sha256",spec.sha256);ps(intent,"status","unknown");put(state,"last_render",intent);save();
-  esp_err_t e=panel_render(frame);rendered=e==ESP_OK;status=rendered?"rendered":"unknown";reason=rendered?"controller_busy_completed":"controller_error_or_busy_timeout";
+  stage(STAGE_RENDER);esp_err_t e=panel_render(frame);rendered=e==ESP_OK;status=rendered?"rendered":"unknown";reason=rendered?"controller_busy_completed":"controller_error_or_busy_timeout";
   if(rendered)presentation_set_frame(&visible,str(d,"id"),revision,spec.sha256,expires_ms);
   else{visible=(presentation){0};healthy=false;deadline=0;}
   ps(get(state,"last_render"),"status",status);save();
@@ -220,21 +249,30 @@ static void process_control(void){cJSON *c=cJSON_GetArrayItem(get(state,"control
  deadline=0;enabled=false;ESP_LOGE(TAG,"Unsupported control retained: %s",str(c,"kind"));
 }
 void app_main(void){
+ reset_reason=esp_reset_reason();previous_stage=boot_trace.magic==0x42494f4d&&boot_trace.stage<=STAGE_IDLE?boot_trace.stage:STAGE_START;
+ boot_trace.magic=0x42494f4d;stage(STAGE_START);
+ ESP_LOGW(TAG,"Boot reset=%d previous_stage=%s",(int)reset_reason,stage_names[previous_stage]);
+ ESP_ERROR_CHECK(biome_idle_guard_install());
+ ESP_LOGW(TAG,"C6 idle guard active; interrupt and task watchdogs remain enabled");
  /* Show the built-in logo before NVS, credentials, Wi-Fi or service availability. */
  /* Seengreat ESP32-C6 E-Paper Driver Board v1.4: recovered source is authoritative. */
- panel_pins pins={2,6,3,7,4,5};ESP_ERROR_CHECK(panel_init(pins));healthy=panel_probe()==ESP_OK;
+ stage(STAGE_PANEL);panel_pins pins={2,6,3,7,4,5};ESP_ERROR_CHECK(panel_init(pins));healthy=panel_probe()==ESP_OK;
  idle_if_due();
- ESP_ERROR_CHECK(nvs_flash_init());ESP_ERROR_CHECK(nvs_open("epaper",NVS_READWRITE,&nv));cfg=load_json("config");if(!cfg)stop("Provision config NVS first; see README");
+ stage(STAGE_NVS);ESP_ERROR_CHECK(nvs_flash_init());ESP_ERROR_CHECK(nvs_open("epaper",NVS_READWRITE,&nv));cfg=load_json("config");if(!cfg)stop("Provision config NVS first; see README");
  if(!strlen(str(cfg,"ssid"))||strlen(str(cfg,"ssid"))>32||strlen(str(cfg,"password"))>63)stop("invalid Wi-Fi provisioning");
  state=load_json("journal");if(!state)state=cJSON_CreateObject();nonce(boot_id);activation_gen=(int64_t)num(state,"activation_generation");
- frame=malloc(FRAME_BYTES);if(!frame)stop("frame memory");wifi();
+ identity_action identity=identity_resolve(str(state,"participant_id"),str(cfg,"participant_id"));
+ if(identity==IDENTITY_INVALID)stop("provisioned identity conflicts with journal");
+ if(identity==IDENTITY_RESTORE){ps(state,"participant_id",str(cfg,"participant_id"));save();ESP_LOGW(TAG,"Restored provisioned participant identity");}
+ if(identity==IDENTITY_JOURNAL)remember_identity(str(state,"participant_id"));
+ frame=malloc(FRAME_BYTES);if(!frame)stop("frame memory");stage(STAGE_WIFI);wifi();
  /* A Wi-Fi-only installation still joins its configured network and shows the
   * logo. Service credentials can be provisioned later without changing code. */
  if(strlen(str(cfg,"participant_credential"))<32||strlen(str(cfg,"participant_credential"))>1024||strlen(str(cfg,"site_access"))<1||strlen(str(cfg,"site_access"))>1024)stop("Wi-Fi connected; Capabilities Service provisioning required");
- recover();
- if(!strlen(str(state,"participant_id"))){cJSON *a=cJSON_CreateObject();ps(a,"bootstrap_credential",str(cfg,"bootstrap"));ps(a,"display_name","Biome Monitor");ps(a,"class","physical_device");ps(a,"adapter_kind","esp32");cJSON *identity=cJSON_CreateObject();char sha[65];hash(str(cfg,"participant_credential"),strlen(str(cfg,"participant_credential")),sha);ps(identity,"credential_sha256",sha);cJSON_AddItemToObject(a,"identity_binding",identity);cJSON *labels=cJSON_CreateObject();ps(labels,"arch","riscv32");ps(labels,"display","uc8179-800x480-bw");ps(labels,"firmware","biome-monitor/1.1.1");cJSON_AddItemToObject(a,"labels",labels);cJSON *r=rpc("participant","enroll",a,true,-1);cJSON_Delete(r);if(!strlen(str(state,"participant_id")))stop("enrollment rejected");}
- for(;;){if(!open_session()){pause_ms(10000);continue;}while(sync_now()){
+ stage(STAGE_RECOVERY);recover();
+ while(!strlen(str(state,"participant_id"))){stage(STAGE_ENROLL);cJSON *a=cJSON_CreateObject();ps(a,"bootstrap_credential",str(cfg,"bootstrap"));ps(a,"display_name","Biome Monitor");ps(a,"class","physical_device");ps(a,"adapter_kind","esp32");cJSON *binding=cJSON_CreateObject();char sha[65];hash(str(cfg,"participant_credential"),strlen(str(cfg,"participant_credential")),sha);ps(binding,"credential_sha256",sha);cJSON_AddItemToObject(a,"identity_binding",binding);cJSON *labels=cJSON_CreateObject();ps(labels,"arch","riscv32");ps(labels,"display","uc8179-800x480-bw");ps(labels,"firmware","biome-monitor/1.1.2");cJSON_AddItemToObject(a,"labels",labels);cJSON *r=rpc("participant","enroll",a,true,-1);cJSON_Delete(r);if(!strlen(str(state,"participant_id"))){ESP_LOGE(TAG,"Enrollment unavailable; keeping Wi-Fi alive and retrying in 30 seconds. Existing devices need participant_id provisioning.");pause_ms(30000);}}
+ for(;;){stage(STAGE_SESSION);if(!open_session()){pause_ms(30000);continue;}while(sync_now()){
    offer_ready=deadline>ms()&&publish_offer();process_control();
-   pause_ms(15000);
+   stage(STAGE_IDLE);pause_ms(15000);
   }}
 }

@@ -11,9 +11,15 @@ def validate_config(config):
  for key in service:
   c.setdefault(key,'')
   if not isinstance(c[key],str):raise ValueError('Expected string: '+key)
- if any(c[key] for key in service):
-  if not 32<=len(c['participant_credential'])<=1024 or not 1<=len(c['site_access'])<=1024 or not c['bootstrap'] or not c['enrollment_id']:
-   raise ValueError('Incomplete service provisioning; supply all service fields or none')
+ participant=c.get('participant_id','')
+ if not isinstance(participant,str):raise ValueError('Expected string: participant_id')
+ if participant and (not participant.startswith('participant_') or not 12<len(participant)<128 or any(not (x.isascii() and (x.isalnum() or x in '_-')) for x in participant)):
+  raise ValueError('Invalid participant_id')
+ if participant or any(c[key] for key in service):
+  if not 32<=len(c['participant_credential'])<=1024 or not 1<=len(c['site_access'])<=1024:
+   raise ValueError('Service provisioning requires participant and Site credentials')
+  if not participant and (not c['bootstrap'] or not c['enrollment_id']):
+   raise ValueError('Supply an existing participant_id or a complete fresh enrollment ticket')
  return c
 
 def main():

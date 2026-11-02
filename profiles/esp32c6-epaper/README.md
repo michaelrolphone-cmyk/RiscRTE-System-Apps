@@ -1,4 +1,38 @@
-# Biome Monitor firmware 1.1.1
+# Biome Monitor firmware 1.1.2
+
+## Watchdog and reflash recovery
+
+Version 1.1.2 restores an existing `participant_id` from private provisioning
+when the request journal is empty. Enrollment tickets are single-use: replaying
+an already redeemed ticket with a new request ID returns `UNAUTHENTICATED`.
+Existing-device provisioning needs `participant_id`, `participant_credential`
+and `site_access`; it does not need another bootstrap ticket. Successful fresh
+enrollment also saves the identity in the configuration partition. A conflicting
+configuration/journal identity fails closed. Rejected enrollment retries with
+Wi-Fi alive instead of permanently stopping.
+
+The reported 1.1.1 reset PC `0x408072f6` was resolved against a rebuild whose
+entire 106316-byte IRAM segment matched the original binary (SHA-256
+`4bd7d10325d0db17a95222ec8ef62ac90401d9945d06cd645f32ae0cc20d6107`).
+It is `esp_cpu_wait_for_intr`'s `wfi` instruction. The supported FreeRTOS idle
+callback now prevents that wait while keeping the normal idle task, interrupts,
+300 ms interrupt watchdog and task watchdog enabled. **CPU idle power is higher.**
+This avoids the observed wait path; it does not prove the underlying silicon
+fault or physical reliability without testing on the board.
+
+A priority-2 C6 startup hook resets the Wi-Fi MAC before heap initialization
+(priority 100), preventing old RX DMA descriptors from surviving HP watchdog or
+USB resets into the new heap. The independently reported same-silicon failure
+and workaround are documented in
+https://github.com/espressif/esp-idf/issues/19223. That report used IDF6.1;
+this firmware uses the corresponding C6 reset primitive in IDF5.4.2. It is a
+reset-recovery safeguard, not proof that stale DMA caused the reported WFI reset.
+
+Boot logs now include reset reason and the preceding boot/runtime stage retained
+in RTC memory. The same diagnostics are sent in `open_session.journal_summary`.
+Every package retains its matching ELF and map under `debug/` with SHA-256 pins.
+Physical watchdog endurance, controller/display output and live firmware
+enrollment remain qualification steps after flashing this version.
 
 This is a native ESP-IDF firmware for the **Seengreat ESP32-C6 E-Paper Driver Board v1.4 (ESP32-C6FH4)** and its **800×480, 7.5-inch black/white UC8179-class panel**. The recovered Vector Arcade `c6_0.3.2` archive is the hardware source of truth. It is an **ESP32-C6 image**, not an ESP32-C3 image.
 
@@ -65,7 +99,7 @@ python -m esptool --chip esp32c6 --port PORT write_flash \
   0x9000 device-nvs.bin 0x30000 firmware.bin
 ```
 
-For manual installation, the release also contains `biome-monitor-esp32c6-v1.1.1-0x0.bin`: flash that single file at **0x0** on the recovered C6 board. It contains bootloader, partition table and application, with **blank NVS**. It shows the logo without provisioning, but Wi-Fi and service access still need the separate private NVS image at `0x9000`. The merged image overwrites existing NVS; for an already provisioned device use the separate application image at `0x30000` to preserve configuration.
+For manual installation, the release also contains `biome-monitor-esp32c6-v1.1.2-0x0.bin`: flash that single file at **0x0** on the recovered C6 board. It contains bootloader, partition table and application, with **blank NVS**. It shows the logo without provisioning, but Wi-Fi and service access still need the separate private NVS image at `0x9000`. A privately provisioned merged image must include the existing participant ID as described above. The merged image overwrites existing NVS; for an already provisioned device use the separate application image at `0x30000` to preserve configuration.
 
 This is a new partition layout. Replacing NVS removes enrollment and outstanding local journal state; do not write the provisioning partition as a routine firmware update. The factory image requires 4 MiB flash. No OTA path is provided in this release.
 

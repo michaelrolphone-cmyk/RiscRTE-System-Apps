@@ -23,6 +23,16 @@ class ContractTests(unittest.TestCase):
   with Image.open(ROOT/'assets/idle-logo.png') as im:
    self.assertEqual(im.size,(800,480));self.assertEqual(pack(im),data)
 
+ def test_existing_identity_does_not_require_reusing_enrollment(self):
+  c={'ssid':'test','password':'test','site_access':'test-site','participant_credential':'x'*32,'participant_id':'participant_existing'}
+  result=validate_config(c)
+  self.assertEqual(result['participant_id'],'participant_existing')
+  self.assertEqual(result['bootstrap'],'')
+  self.assertEqual(result['enrollment_id'],'')
+  for invalid in ['participant_','participant_bad/path','participant_'+'x'*128]:
+   with self.assertRaises(ValueError):validate_config(dict(c,participant_id=invalid))
+  with self.assertRaises(ValueError):validate_config({'ssid':'test','password':'test','participant_id':'participant_existing'})
+
  def test_catalog_pins_and_generated_header(self):
   catalog=json.loads((ROOT/'catalog.json').read_text());self.assertEqual(catalog['contract'],CONTRACT);self.assertEqual(catalog['provider'],PROVIDER);self.assertEqual(PROVIDER['provides'][0]['contract_digest'],digest(CONTRACT));self.assertIn(digest(PROFILE),(ROOT/'main/catalog.h').read_text())
  def test_public_geometry(self):

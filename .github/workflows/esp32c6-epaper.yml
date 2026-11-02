@@ -23,6 +23,10 @@ jobs:
           /tmp/panel-test
           gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -I main main/presentation.c tests/presentation_test.c -o /tmp/presentation-test
           /tmp/presentation-test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -I main main/identity.c tests/identity_test.c -o /tmp/identity-test
+          /tmp/identity-test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -I tests/idle_stubs -I "$IDF_PATH/components/esp_system/include" -I main "$IDF_PATH/components/esp_system/freertos_hooks.c" main/idle_guard.c tests/idle_guard_test.c -o /tmp/idle-guard-test
+          /tmp/idle-guard-test
       - name: Build the recovered C6 board target
         shell: bash
         run: |
@@ -33,6 +37,6 @@ jobs:
           python3 tools/package.py
       - uses: actions/upload-artifact@v4
         with:
-          name: biome-monitor-esp32c6-v1.1.1
+          name: biome-monitor-esp32c6-v1.1.2
           path: profiles/esp32c6-epaper/dist/
           if-no-files-found: error
