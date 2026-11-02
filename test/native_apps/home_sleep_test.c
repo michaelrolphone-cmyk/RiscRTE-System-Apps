@@ -66,7 +66,8 @@ static int32_t alarm_status(void*p,alarm_status_v1*out){(void)p;safe();assert(!h
 static int32_t alarm_simple(void*p){(void)p;safe();assert(!held);return 0;}
 static int32_t alarm_ack(void*p,const alarm_token_v1*t){(void)t;return alarm_simple(p);}
 static int32_t alarm_prepare(void*p,alarm_sleep_v1*out){(void)p;safe();assert(!held&&!input_hold&&power_prepared);if(is("alarm-retained")||is("alarm-unknown")){terminal=true;return is("alarm-unknown")?-99:ALARM_RETAINED;}
- if(is("alarm-context"))context_lost=true;ticket=(alarm_sleep_v1){sizeof(ticket),7,1000,1010};*out=ticket;ticket_ready=true;return 0;}
+ if(is("alarm-context")){context_lost=true;}
+ ticket=(alarm_sleep_v1){sizeof(ticket),7,1000,1010};*out=ticket;ticket_ready=true;return 0;}
 static int32_t alarm_resume(void*p,const alarm_sleep_v1*t){(void)p;safe();assert(!held&&!input_hold&&!panel_prepared&&!power_prepared&&!memcmp(t,&ticket,sizeof(ticket)));resumes++;return 0;}
 static const alarm_service_descriptor_v2 alarm={{2,sizeof(alarm),NULL,alarm_status,alarm_simple,alarm_simple,alarm_ack,alarm_prepare,alarm_simple},ALARM_SERVICE_DESCRIPTOR_TAG,1,0,ALARM_DESCRIPTOR_RESUME_SLEEP,alarm_resume};
 static portable_idle_ui_result begin_ui(void*p){(void)p;safe();assert(ticket_ready&&!held);return is("ui-refused")?PORTABLE_IDLE_UI_REFUSED:PORTABLE_IDLE_UI_READY;}

@@ -1,0 +1,167 @@
+{
+  "schema": 1,
+  "releases": {
+    "scene": {
+      "tag": "scene-host-0.4.15-footer-30923eed576c",
+      "repository": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "assets": [
+        {
+          "name": "qualification.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/qualification.json",
+          "bytes": 2722,
+          "sha256": "492368e3d6f5859e1ef88acfc70d9fe8c0b6f76d229e33a20a30afdfb533ee25"
+        },
+        {
+          "name": "scene-host-color-dynamic-build.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-host-color-dynamic-build.json",
+          "bytes": 13090,
+          "sha256": "4759bae7b55882041056ed92641ca36dcf1e30295f76f3553322d58487b824ea"
+        },
+        {
+          "name": "scene-host-color-dynamic.elf",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-host-color-dynamic.elf",
+          "bytes": 345048,
+          "sha256": "f9f94b8031d081201278b088f2195bfcba64a5e2f38fa0dd6748800f8001d3e6"
+        },
+        {
+          "name": "scene-host-color-dynamic.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-host-color-dynamic.json",
+          "bytes": 526,
+          "sha256": "c2847dbaaf89b86e4ecd0056c3fd1c675adebb49974f1d195e8cddd1b2c3988b"
+        },
+        {
+          "name": "scene-host-full-build.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-host-full-build.json",
+          "bytes": 13060,
+          "sha256": "cf18bd9cc0295caf06eebb9094a71d1fd75d33997129105934dee9ada35ad842"
+        },
+        {
+          "name": "scene-host-full.elf",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-host-full.elf",
+          "bytes": 506180,
+          "sha256": "75c0ed7b6d22b4fd6f75cf4b1e4a29c04fc138b52ef2c77c87304b73c5f014b5"
+        },
+        {
+          "name": "scene-host-full.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-host-full.json",
+          "bytes": 594,
+          "sha256": "aae268826cd2869fc956d35af5f91f5ac7ad8923f00ab81547720a6670ac9073"
+        },
+        {
+          "name": "scene-host-watch-compact-build.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-host-watch-compact-build.json",
+          "bytes": 13122,
+          "sha256": "1b349a8a457b785774d2ece6cd7be172d9b19658aa4e01294577de41f1184c51"
+        },
+        {
+          "name": "scene-host-watch-compact.elf",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-host-watch-compact.elf",
+          "bytes": 284624,
+          "sha256": "a181001d81e1c795a30f15c64deb75f826a7d9f309cc7f7feb9b0e7bfcdf88a2"
+        },
+        {
+          "name": "scene-host-watch-compact.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-host-watch-compact.json",
+          "bytes": 526,
+          "sha256": "c2847dbaaf89b86e4ecd0056c3fd1c675adebb49974f1d195e8cddd1b2c3988b"
+        },
+        {
+          "name": "scene-profile-compact-color-build.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-profile-compact-color-build.json",
+          "bytes": 7159,
+          "sha256": "0da042267e99bb518a9f7fa5f2d5a5d67f224d27cd06857a9c4faa950201b3b4"
+        },
+        {
+          "name": "scene-profile-compact-color.elf",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-profile-compact-color.elf",
+          "bytes": 2276,
+          "sha256": "4556ce0cb7a660712b3a032e77e0589a1e20edf78a9f90417894e1fd8bb77a5b"
+        },
+        {
+          "name": "scene-profile-compact-color.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-profile-compact-color.json",
+          "bytes": 281,
+          "sha256": "6f3f1205b23e745ed7011bf0b9e99f5eccc1a247512639bc21c8c5a0fd642884"
+        },
+        {
+          "name": "scene-profile-portrait-monochrome-build.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-profile-portrait-monochrome-build.json",
+          "bytes": 7238,
+          "sha256": "3016de562496841f30f40bdc47392a084b94f8b1eaee3d9e2bc1626fa424c2e7"
+        },
+        {
+          "name": "scene-profile-portrait-monochrome.elf",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-profile-portrait-monochrome.elf",
+          "bytes": 2284,
+          "sha256": "81793b9d445b495b6e324f03e445d4922abb48101b62ba35482046a3abafd341"
+        },
+        {
+          "name": "scene-profile-portrait-monochrome.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-profile-portrait-monochrome.json",
+          "bytes": 287,
+          "sha256": "f85d3c86848887ba49133eeb395825d867e83bdbda469758f98b641baaa2a218"
+        },
+        {
+          "name": "scene-provider-bundle.zip",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/scene-provider-bundle.zip",
+          "bytes": 2045999,
+          "sha256": "eb2c25328a4636758fd0b21508e09a296c8ebb4a3b547b14c7b707c49243f88a"
+        },
+        {
+          "name": "SHA256SUMS",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/SHA256SUMS",
+          "bytes": 1728,
+          "sha256": "f482ce8d5a46147ec4a63cbb3b66fe32934d4dc8d73a87f9502812cb92e8113b"
+        },
+        {
+          "name": "source.zip",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/scene-host-0.4.15-footer-30923eed576c/source.zip",
+          "bytes": 8610210,
+          "sha256": "dd6580abc37213680d07c94cf86a5416123de7e8edcac3327cf0f4127d3e0ce0"
+        }
+      ]
+    },
+    "contexts": {
+      "tag": "contexts-shared-0.5.0-dev-59006b1d91cd",
+      "repository": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities",
+      "assets": [
+        {
+          "name": "build.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/build.json",
+          "bytes": 46988,
+          "sha256": "a5e43424418ca40a977d77f2d8bd515e788c41c0c4016f23a9ff8351212bfc68"
+        },
+        {
+          "name": "contexts.elf",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/contexts.elf",
+          "bytes": 88316,
+          "sha256": "c756ed88cfa7a0a44a6de16a595e7e1a41d514c72846e842a1bd60f7f4d6fdb9"
+        },
+        {
+          "name": "contexts.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/contexts.json",
+          "bytes": 963,
+          "sha256": "bc6dedd9c853480d8bdb6a8204b0b95b9c9263d6bc23948822bdf5911873f818"
+        },
+        {
+          "name": "delivery.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/delivery.json",
+          "bytes": 48521,
+          "sha256": "8bc2eeaed322d2cb69c600312b63f28114b110041c69035dcc0fdd3716c60685"
+        },
+        {
+          "name": "qualification.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/qualification.json",
+          "bytes": 636653,
+          "sha256": "d4606acc944d2046700055065038e82e6599c1603d8e9f2bdaf9f5ad879c8ed6"
+        },
+        {
+          "name": "source-lock.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/source-lock.json",
+          "bytes": 215,
+          "sha256": "901fcd953a881f4a51b75c1c5141486d5c7b3fda9d3c1679de3583ff6b460aa3"
+        }
+      ]
+    }
+  }
+}
