@@ -295,7 +295,11 @@ int main(int argc, char** argv) {
     [](void*){return true;}};
   runtimePort.fileSource=&fileSource;
 #endif
+#ifdef STORE_ADMISSION_COHORT
+  RiscTest::FileSources files({std::string(argv[1]),std::string(argv[2])},owner,owner);
+#else
   RiscTest::FileSources files({std::string(argv[1])},owner,owner);
+#endif
   runtimePort.files=files.sources();
   RiscBoot::Runtime runtime(runtimePort);
   const bool prepared = runtime.prepare(argv[1]);

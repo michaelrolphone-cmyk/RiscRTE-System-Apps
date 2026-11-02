@@ -2,7 +2,7 @@
   "watch": {
     "fixtures/app_data_admission_backend.h": "cc854d0c9d083272b09c031f404a5c8b1c9ed3a8fa3c2271ed99efd3233aef26",
     "fixtures/cohort_elf_admission.h": "525e956fab608220414cba9822603b59dc5087e06e02edf4060623f0a30c4525",
-    "fixtures/watch.cpp": "6e40f296492a59405c0c642206ba944bc06940846376bac3c283c1240a88c13a",
+    "fixtures/watch.cpp": "23c01f323d9b21e7a71678514abf3a6ffbfd787ff22edee912034207748a6ee5",
     "runtime/lib/ArduinoJson/src/ArduinoJson.h": "5d2f09f1bf64f0859918420fcaf3221a05b1f4dd75c26aacb0db4a18b208b636",
     "runtime/lib/ArduinoJson/src/ArduinoJson.hpp": "36695bc1cb58a4dbbc85f50f142f0476108cc676622b6ee945d43585107131b6",
     "runtime/lib/ArduinoJson/src/ArduinoJson/Configuration.hpp": "905b896b905b04787f2b865484afa1a8a7cb7dc34dfb6de60713ee640f2199e4",
@@ -201,7 +201,7 @@
     "fixtures/app_data_admission_backend.h": "cc854d0c9d083272b09c031f404a5c8b1c9ed3a8fa3c2271ed99efd3233aef26",
     "fixtures/cohort_elf_admission.h": "525e956fab608220414cba9822603b59dc5087e06e02edf4060623f0a30c4525",
     "fixtures/wave-settings.h": "37ddfd9feb4b70fbcd9f87b523dec3847a77d4c4bcb6d9b9da5f7fc39fb5382b",
-    "fixtures/wave.cpp": "df9cda13bb63b2536e8bb6b3c0c550730076c714f03c05250f19e45cfb987ef7",
+    "fixtures/wave.cpp": "31a3fd694e865b3f53b1adf5023e59f51c67aa117992cec2360dd3cd74bb3816",
     "runtime/experimental/native_replica/NativeAtomicKeyValue.h": "266dcc07aa67b1f741ca6cb9efd98a3b6a1b0f0c10e4a72299ca08241f087693",
     "runtime/experimental/native_replica/NativeReplicaCore.h": "0ad4fb883a32803298eb53c102edb40556dcc007ba858333276e1012598b8112",
     "runtime/experimental/native_replica/NativeReplicaJob.h": "95ff9daceeb8664ad49a61eac56df3ff957ecd589cdcf3273f43fe59196adbc3",
