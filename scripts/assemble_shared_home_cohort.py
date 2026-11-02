@@ -16,7 +16,8 @@ def inventory(entries, sd):
   manifests[name]=json.loads(entries[name])
  return {'files':{n:digest(b) for n,b in sorted(entries.items())},
          'sd_files':{n:digest(b) for n,b in sorted(sd.items())},
-         'boot':boot,'manifests':manifests}
+         'boot':boot,'manifests':manifests,
+         'deployment_metadata':{n:json.loads(entries[n]) for n in ('cohort.json',) if n in entries}}
 
 def read_lane(cohort,lane):
  entries=tree(cohort/lane/'after')

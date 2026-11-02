@@ -41,6 +41,13 @@ class Overlay(unittest.TestCase):
   with self.assertRaises(ValueError):self.apply(b,sd,p,m)
  def test_all_boot_manifests(self):
   b,sd,p,m=self.fixture();self.assertEqual(set(inventory(b,sd)['manifests']),{'default.json','clock.json'})
+ def test_deployment_metadata_inventory(self):
+  b,sd,p,m=self.fixture()
+  value={'firmware_size':123,'firmware_sha256':'original','runtime_version':'old','extra':{'preserve':True}}
+  b['cohort.json']=encode(value)
+  record=inventory(b,sd)
+  self.assertEqual(record['deployment_metadata'],{'cohort.json':value})
+  self.assertEqual(record['files']['cohort.json'],digest(b['cohort.json']))
  def test_trampoline_refusal(self):
   b,sd,p,m=self.fixture();a=p['aliases'][0];a['manifest']='clock.json';a['route']['path']='clock.elf'
   a['original_policy_rows']=[{'manifest':'clock.json','grants':[]}];a['policy_rows']=copy.deepcopy(a['original_policy_rows'])

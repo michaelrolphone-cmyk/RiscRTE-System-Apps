@@ -35,6 +35,7 @@ def run(archives,output):
  for lane in ('watch','wave','x4'):
   base=output/'files'/'products'/lane/'before'
   baseline[lane]={'boot':json.loads((base/'boot.json').read_text()),'manifests':{str(p.relative_to(base)):json.loads(p.read_text()) for p in base.rglob('*.json') if p.name in ('default.json','manifest.json')}}
+  baseline[lane]['deployment_metadata']={n:json.loads((base/n).read_text()) for n in ('cohort.json',) if (base/n).is_file()}
  (output/'baseline-inventory.json').write_text(json.dumps(baseline,indent=2)+'\n')
  print('HOME_BASELINE_INVENTORY '+json.dumps(baseline,sort_keys=True),flush=True)
  compose([output/label/'products' for label in ARTIFACTS],output/'baseline-sd',output/'composed')
@@ -43,7 +44,7 @@ def run(archives,output):
   base=output/'composed'/lane/'after'
   boot=json.loads((base/'boot.json').read_text())
   manifests={str(p.relative_to(base)):json.loads(p.read_text()) for p in base.rglob('*.json') if p.name in ('default.json','manifest.json')}
-  inventory[lane]={'boot':boot,'manifests':manifests}
+  inventory[lane]={'boot':boot,'manifests':manifests,'deployment_metadata':{n:json.loads((base/n).read_text()) for n in ('cohort.json',) if (base/n).is_file()}}
  (output/'inventory.json').write_text(json.dumps(inventory,indent=2)+'\n')
  print('HOME_COHORT_INVENTORY '+json.dumps(inventory,sort_keys=True),flush=True)
  (output/'sources.json').write_text(json.dumps(retained,indent=2)+'\n')
