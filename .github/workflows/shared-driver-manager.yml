@@ -1,7 +1,7 @@
 name: Shared Driver Manager qualification
 on:
   pull_request:
-    paths: ['Apps/driver_manager*', 'scripts/*driver_manager*', 'test/driver_manager/**', 'docs/shared-driver-manager/**', '.github/workflows/shared-driver-manager.yml']
+    paths: ['Apps/driver_manager*', 'Apps/driver_manager/**', 'scripts/*driver_manager*', 'test/driver_manager/**', 'docs/shared-driver-manager/**', '.github/workflows/shared-driver-manager.yml']
 permissions:
   contents: read
 jobs:
@@ -12,7 +12,13 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
-      - run: python3 scripts/test_driver_manager_presenter.py --output out/presenter
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 712ecc3f894dba99d9c9638941778a82f5856b97
+          path: Runtime
+          persist-credentials: false
+      - run: python3 scripts/test_driver_manager_presenter.py --runtime Runtime --output out/presenter
       - uses: actions/upload-artifact@v4
         if: always()
         with:
