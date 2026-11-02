@@ -87,7 +87,7 @@ static int32_t next_scene(void*c,uint64_t t,risc_scene_event_v1*e){
  if(mode==7&&ticks==14)action=USB_ALARM_DISMISS;
  if((mode==10||mode==13)&&ticks==10)action=USB_BACK;
  if(mode==11&&ticks==3)action=USB_BACK;
- if(mode==11&&ticks==9)action=USB_BACK;
+ if((mode==11||mode==17||mode==18||mode==19)&&ticks==9)action=USB_BACK;
  if(mode==1&&ticks==4)action=USB_START_STOP;
  if(mode==1&&ticks==9)action=USB_BACK;
  if(mode==2&&ticks==9)action=USB_BACK;
@@ -102,6 +102,9 @@ static int32_t next_scene(void*c,uint64_t t,risc_scene_event_v1*e){
  *e=(risc_scene_event_v1){.struct_size=sizeof(*e),.kind=RISC_SCENE_ACTION_EVENT,
  .document_revision=revision,.node=(mode==11&&ticks==3)?999:action==USB_BACK||action==USB_KEEP?21:action==USB_CONTROLS?23:20,.action=action,.sequence=++sequence};
  if(mode==13&&ticks==3){e->kind=RISC_SCENE_CONTROLS_EVENT;e->node=e->action=0;}
+ if(mode==17&&ticks==3)e->struct_size=1;
+ if(mode==18&&ticks==3)--e->document_revision;
+ if(mode==19&&ticks==3)e->sequence=0;
  return 0;
 }
 static int32_t close_scene(void*c,uint64_t t){(void)c;assert(live&&t==9&&!token);REVOKE("close",RISC_SCENE_OK);return 0;}
@@ -152,7 +155,7 @@ int main(int argc,char**argv){
  if(mode==8){assert(retains==1&&!launches);}
  if(mode==9){assert(!live&&begins==1&&!polls&&!steps&&!ends&&!launches&&!retains);}
  if(mode==10||mode==13){assert(controls==1&&!begins&&launches==1&&!retains);}
- if(mode==11){assert(!begins&&launches==1&&ticks>=9&&!retains);}
+ if(mode==11||mode==17||mode==18||mode==19){assert(!begins&&launches==1&&ticks>=9&&!retains);}
  if(mode>=14&&mode<=16){assert(!begins&&!alarm_steps&&!retains&&!launches&&releases==(mode==14?2:3));}
  if(mode==12){assert(begins==1&&ends==1&&!launches&&!retains);}
  printf("shared USB scenario %d PASS ticks=%d polls=%d steps=%d\n",mode,ticks,polls,steps);

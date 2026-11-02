@@ -162,7 +162,7 @@ static void shared_document(void) {
                     RISC_SCENE_DESTRUCTIVE);
         shared_node(21,RISC_SCENE_ACTION,"KEEP TRANSFERRING","",USB_KEEP,0);
     } else {
-        const char *message=state==RISC_USB_MSC_PREPARING?
+        const char *message=!msc_available?"USB SD transfer is not available here. Back returns to apps.":state==RISC_USB_MSC_PREPARING?
             "Finishing log writes. Keep this screen open or cancel.":
             unknown_custody?"Ownership is uncertain. Restart required.":
             state==RISC_USB_MSC_FAULT_RETAINED?
@@ -336,7 +336,7 @@ __attribute__((visibility("default"))) void app_main(void) {
             shared_retain();return;
         }
         bool consumed=false;
-        if(rc==RISC_SCENE_OK && event.sequence>event_sequence) {
+        if(rc==RISC_SCENE_OK && event.struct_size>=sizeof(event) && event.sequence>event_sequence) {
             event_sequence=event.sequence;
             if(event.document_revision==document.revision && event.kind==RISC_SCENE_CONTROLS_EVENT &&
                !event.node && !event.action && !event.value && resident.invocation &&
