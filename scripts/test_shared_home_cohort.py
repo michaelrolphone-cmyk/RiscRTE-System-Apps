@@ -2,7 +2,7 @@
 """Synthetic overlay contract regressions; not product binding evidence."""
 import copy,json,tempfile,unittest
 from pathlib import Path
-from assemble_shared_home_cohort import inventory,fingerprint,overlay,pack_candidate,replace_native_metadata,validate_bootfs_names
+from assemble_shared_home_cohort import inventory,fingerprint,overlay,pack_candidate,replace_native_metadata,validate_bootfs_names,payload_inventory
 from compose_shared_app_cohort import encode,digest
 class Overlay(unittest.TestCase):
  def fixture(self):
@@ -204,6 +204,12 @@ class Overlay(unittest.TestCase):
      b['boot.json']=encode(boot);item['row']=copy.deepcopy(boot['drivers'][0])
     p['inventory_sha256']=fingerprint(inventory(b,sd))
     with self.assertRaises(ValueError):overlay(b,sd,p,b'\x7fELFhome',m,root)
+ def test_payload_inventory_exact_delta(self):
+  report=payload_inventory({'keep':b'ab','new':b'1234'},{'keep':b'a'},64)
+  self.assertEqual(report['store_bytes'],64)
+  self.assertEqual(report['payload_bytes'],6)
+  self.assertEqual(report['before_payload_bytes'],1)
+  self.assertEqual([(x['path'],x['delta_bytes']) for x in report['files']],[('new',4),('keep',1)])
  def test_existing_bootfs_name_boundary(self):
   validate_bootfs_names(('a'*30,'home-policy/manifest.json','home-disp/manifest.json'))
   for name in ('a'*31,'home-presentation/manifest.json','home-display-power/manifest.json','non-ascii-é'):

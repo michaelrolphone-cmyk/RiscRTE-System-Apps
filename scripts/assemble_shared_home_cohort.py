@@ -255,6 +255,13 @@ def validate_bootfs_names(names):
   safe(name)
   if not name.isascii() or len(('/'+name).encode())>=32:raise ValueError('Installed bootfs path exceeds existing name field: '+name)
 
+def payload_inventory(entries,before,size):
+ return {'store_bytes':size,'payload_bytes':sum(map(len,entries.values())),
+         'before_payload_bytes':sum(map(len,before.values())),
+         'files':[{'path':n,'bytes':len(b),'before_bytes':len(before[n]) if n in before else None,
+                   'delta_bytes':len(b)-len(before.get(n,b'')),'sha256':digest(b)}
+                  for n,b in sorted(entries.items(),key=lambda item:(-len(item[1]),item[0]))]}
+
 def pack_candidate(directory,entries,sd,size,build,read_image):
  validate_bootfs_names(entries)
  image,packing=build(entries,size)
@@ -288,14 +295,24 @@ def run(cohort,plan_path,home,packages,output,inputs=None,bootfs_tools=None):
   prepared[lane]=overlay(before,sd,plan[lane],elf,common,packages)
  # Validate every lane before writing any candidate.
  output.mkdir(parents=True)
+ errors={}
  for lane,(after,sd,receipt) in prepared.items():
   write_tree(output/lane/'before',tree(cohort/lane/'before'))
   write_tree(output/lane/'after',after);write_tree(output/lane/'after-sd',sd)
   if packing:
    sizes,build,read_image=packing
-   receipt.update(pack_candidate(output/lane,after,sd,sizes[lane],build,read_image))
+   baseline=tree(cohort/lane/'after')
+   stats=payload_inventory(after,baseline,sizes[lane])
+   (output/lane/'payload.json').write_bytes(encode(stats))
+   print('PACKING INPUT '+lane+' '+json.dumps(stats),flush=True)
+   try:receipt.update(pack_candidate(output/lane,after,sd,sizes[lane],build,read_image))
+   except Exception as error:
+    errors[lane]={'type':type(error).__name__,'message':str(error)}
+    receipt['packing_error']=errors[lane]
+    print('PACKING FAILED '+lane+' '+json.dumps(errors[lane]),flush=True)
   results[lane]=receipt
- (output/'assembly.json').write_bytes(encode({'products':results,'byte_identical_home':digest(elf),'packed':bool(packing)}))
+ (output/'assembly.json').write_bytes(encode({'products':results,'byte_identical_home':digest(elf),'packed':bool(packing) and not errors}))
+ if errors:raise ValueError('Fixed-size product packing failed: '+json.dumps(errors))
  return results
 
 if __name__=='__main__':
