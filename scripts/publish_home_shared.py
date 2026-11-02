@@ -5,8 +5,8 @@ from pathlib import Path
 def digest(data): return hashlib.sha256(data).hexdigest()
 def require(ok, message):
  if not ok: raise ValueError(message)
-def run(root, publish):
- repo=os.environ['GITHUB_REPOSITORY']; commit=os.environ['GITHUB_SHA']
+def run(root, publish, expected_source=None):
+ repo=os.environ['GITHUB_REPOSITORY']; commit=expected_source if expected_source is not None else os.environ['GITHUB_SHA']
  require(repo=='michaelrolphone-cmyk/RiscRTE-System-Apps','Owning repository required')
  require(re.fullmatch('[0-9a-f]{40}',commit),'Exact source commit required')
  root=root.resolve()
@@ -19,7 +19,8 @@ def run(root, publish):
   require(digest(data)==item['sha256'] and len(data)==item['size'],'Artifact hash/size mismatch: '+str(relative))
   return path
  delivery=json.loads((root/'home-delivery.json').read_text())
- require(delivery['source_commit']==commit,'Exact delivery source required')
+ print('Delivery source binding: receipt='+str(delivery.get('source_commit'))+' expected='+str(commit),flush=True)
+ require(delivery['source_commit']==commit,'Exact delivery source required: receipt='+str(delivery.get('source_commit'))+' expected='+str(commit))
  elf=artifact(delivery['application']['elf']); manifest=artifact(delivery['application']['manifest'])
  require(elf.read_bytes()[:4]==b'\x7fELF','Actual ELF required')
  elf_hash=delivery['application']['elf']['sha256']
@@ -173,5 +174,5 @@ def run(root, publish):
  (root/'publication.json').write_text(json.dumps(receipt,indent=2)+'\n')
  print(json.dumps(receipt,indent=2))
 if __name__=='__main__':
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--build',type=Path,required=True);p.add_argument('--publish',action='store_true')
- a=p.parse_args();run(a.build,a.publish)
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--build',type=Path,required=True);p.add_argument('--publish',action='store_true');p.add_argument('--expected-source')
+ a=p.parse_args();run(a.build,a.publish,a.expected_source)

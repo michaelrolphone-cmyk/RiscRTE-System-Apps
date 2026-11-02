@@ -95,19 +95,22 @@ def make(root,fault):
  if fault=='traversal':delivery['application']['elf']['path']='../escape'
  (root/'home-delivery.json').write_text(json.dumps(delivery))
  if fault=='tampered':(root/'target/default.elf').write_bytes(b'changed')
-for fault in ('good','encoded-good','encoded-wrong-runtime','encoded-no-recovery','encoded-wrong-codec','encoded-no-reader','encoded-wrong-order','encoded-missing-guide','encoded-missing-sanitized-proof','missing-product-lane','missing-product-assets','missing-home-route','unrecorded-stored-change','missing-stored','unrecorded-decoding','wrong-native','missing-native','wrong-native-cohort','wrong-product','changed-input-map','null-binding','wrong-build','missing-view','unpacked','different-elf','prepare-only','failed-admission','wrong-tree','wrong-assembly','hardware','missing-sanitized','wrong-source','traversal','tampered'):
+for fault in ('good','explicit-source','wrong-explicit-source','encoded-good','encoded-wrong-runtime','encoded-no-recovery','encoded-wrong-codec','encoded-no-reader','encoded-wrong-order','encoded-missing-guide','encoded-missing-sanitized-proof','missing-product-lane','missing-product-assets','missing-home-route','unrecorded-stored-change','missing-stored','unrecorded-decoding','wrong-native','missing-native','wrong-native-cohort','wrong-product','changed-input-map','null-binding','wrong-build','missing-view','unpacked','different-elf','prepare-only','failed-admission','wrong-tree','wrong-assembly','hardware','missing-sanitized','wrong-source','traversal','tampered'):
  with tempfile.TemporaryDirectory() as temporary:
   root=Path(temporary);make(root,fault)
   try:
    # This unit fixture mocks only the independently tested archive parser.
    # Owning CI supplies and verifies real bootloader/log archives end-to-end.
    with patch.object(stage_home_upgrade_qualification,'verify_archive',side_effect=lambda raw:None if raw==b'fixture proof' else (_ for _ in ()).throw(ValueError('fixture bytes'))) as verifier:
-    publisher.run(root,False)
+    if fault=='explicit-source':
+     with patch.dict(os.environ,{'GITHUB_SHA':'b'*40}):publisher.run(root,False,COMMIT)
+    elif fault=='wrong-explicit-source':publisher.run(root,False,'b'*40)
+    else:publisher.run(root,False)
     if fault=='encoded-good':assert verifier.call_count==2
   except (ValueError,TypeError,KeyError):
-   assert fault not in ('good','encoded-good'),fault
+   assert fault not in ('good','explicit-source','encoded-good'),fault
   else:
-   assert fault in ('good','encoded-good'),fault
+   assert fault in ('good','explicit-source','encoded-good'),fault
    plan=json.loads((root/'publication-plan.json').read_text())['assets']
    for category in ('artifacts','sources','licenses'):assert any(name.startswith('dependency-0-'+category+'-') for name in plan)
    for lane in ('watch','wave','x4'):

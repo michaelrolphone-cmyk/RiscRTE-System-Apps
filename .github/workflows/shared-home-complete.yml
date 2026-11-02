@@ -540,7 +540,7 @@ jobs:
           set -euo pipefail
           python3 System/scripts/archive_home_evidence.py --incoming incoming --closure closure --system System
           python3 System/scripts/build_home_delivery.py --root closure --system System
-          python3 System/scripts/publish_home_shared.py --build closure
+          python3 System/scripts/publish_home_shared.py --build closure --expected-source '${{ github.event.pull_request.head.sha }}'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
