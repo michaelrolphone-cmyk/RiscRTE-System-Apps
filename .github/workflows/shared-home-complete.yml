@@ -1,7 +1,7 @@
 name: Complete shared Home ELF
 on:
   pull_request:
-    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/build_home_dependencies.py', 'scripts/prepare_home_cohort_plan.py', 'scripts/stage_home_published_dependencies.py', 'docs/shared-home/**', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/assemble_shared_home_cohort.py', 'scripts/test_shared_home_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', 'lib/PortableApps/include/PortableAlarm*.h', 'scripts/test_home_alarm_facade_client.py', 'test/native_apps/portable_alarm_v2_test.c', 'scripts/test_home_points_custody.py', 'test/native_apps/home_points_custody_test.c', 'scripts/test_home_crash_bindings.py', 'scripts/test_home_product_admission.py', 'scripts/test_home_admission_binding.py', 'scripts/publish_home_shared.py', 'scripts/test_publish_home_shared.py', '.github/workflows/shared-home-complete.yml']
+    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/build_home_dependencies.py', 'scripts/prepare_home_cohort_plan.py', 'scripts/compact_home_dependency_packages.py', 'scripts/stage_home_published_dependencies.py', 'docs/shared-home/**', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/assemble_shared_home_cohort.py', 'scripts/test_shared_home_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', 'lib/PortableApps/include/PortableAlarm*.h', 'scripts/test_home_alarm_facade_client.py', 'test/native_apps/portable_alarm_v2_test.c', 'scripts/test_home_points_custody.py', 'test/native_apps/home_points_custody_test.c', 'scripts/test_home_crash_bindings.py', 'scripts/test_home_product_admission.py', 'scripts/test_home_admission_binding.py', 'scripts/publish_home_shared.py', 'scripts/test_publish_home_shared.py', '.github/workflows/shared-home-complete.yml']
 permissions:
   contents: read
 jobs:
@@ -67,7 +67,7 @@ jobs:
           python3 System/scripts/test_shared_home_manifest.py
           python3 System/scripts/test_home_admission_binding.py
           python3 System/scripts/test_publish_home_shared.py
-          python3 -m py_compile System/scripts/build_home_dependencies.py System/scripts/prepare_home_cohort_plan.py System/scripts/stage_home_published_dependencies.py
+          python3 -m py_compile System/scripts/build_home_dependencies.py System/scripts/prepare_home_cohort_plan.py System/scripts/stage_home_published_dependencies.py System/scripts/compact_home_dependency_packages.py
       - name: Exact owning source and compiler
         run: |
           set -euo pipefail
@@ -165,13 +165,25 @@ jobs:
           ref: e361e73de14314bb4b8d2fb3a24eb81e2390b0ee
           path: X4Product
           persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: 3dc74a9186b2ccd3261ebd6f8b1a0e5165d68df2
+          path: WatchProduct
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06
+          ref: fdaba4530171997f8941a1d8451339f274fba59b
+          path: WaveProduct
+          persist-credentials: false
       - name: Compile exact final admission harnesses only
         run: |
           set -euo pipefail
           python3 System/scripts/test_home_admission_binding.py
           for mode in normal sanitized; do
             flags=(); if [ "$mode" = sanitized ]; then flags+=(--sanitize); fi
-            python3 System/scripts/test_home_product_admission.py --runtime Runtime --x4-runtime Runtime --x4-product X4Product --assembly not-yet-assembled --output "out/$mode" --prepare-only "${flags[@]}"
+            python3 System/scripts/test_home_product_admission.py --runtime Runtime --x4-runtime Runtime --x4-product X4Product --watch-product WatchProduct --wave-product WaveProduct --assembly not-yet-assembled --output "out/$mode" --prepare-only "${flags[@]}"
           done
       - uses: actions/upload-artifact@v4
         if: always()

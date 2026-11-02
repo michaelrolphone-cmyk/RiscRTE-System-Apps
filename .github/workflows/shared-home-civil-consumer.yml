@@ -1,5 +1,7 @@
 name: Shared Home foreground civil consumer
 on:
+  push:
+    branches: [fix/home-civil-unique-rtc-fixture-20261102]
   pull_request:
     paths: ['lib/PortableApps/src/home_settings_availability.inc', 'test/native_apps/home_optional_settings_test.c', 'test/native_apps/home_local_custody_test.c', 'lib/PortableApps/src/native_custody_adapter.inc', 'Apps/paper_home_civil.inc', 'Apps/paper_sparse_clock.inc', 'lib/PortableApps/include/PortableRealtimeClient.h', 'lib/PortableApps/src/PortableRealtimeClient.c', 'test/native_apps/home_civil_policy_test.c', 'scripts/test_portable_realtime.py', '.github/workflows/shared-home-civil-consumer.yml']
   workflow_dispatch:
@@ -23,6 +25,11 @@ jobs:
       - run: |
           python3 scripts/test_portable_realtime.py --runtime-repo deps/runtime --reconcile --evidence qualification/reconcile.json
           python3 scripts/test_portable_realtime.py --runtime-repo deps/runtime --civil-policy --evidence qualification/civil-policy.json
+      - name: Actual Home civil adapter target link and loader proof
+        run: |
+          python3 -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python3 scripts/test_portable_realtime.py --runtime-repo deps/runtime --civil-policy --xtensa-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" --evidence qualification/civil-policy-target.json
       - name: Actual optional settings controller
         run: |
           for mode in normal sanitized; do

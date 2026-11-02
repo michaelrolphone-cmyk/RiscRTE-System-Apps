@@ -9,7 +9,7 @@ import argparse,pathlib,json,subprocess,hashlib,shlex,os,re
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser(description=__doc__)
 for name in ('runtime','x4-runtime','assembly','output'):p.add_argument('--'+name,type=pathlib.Path,required=True)
-p.add_argument('--x4-product',type=pathlib.Path,required=True)
+for name in ('x4-product','watch-product','wave-product'):p.add_argument('--'+name,type=pathlib.Path,required=True)
 p.add_argument('--prepare-only',action='store_true');p.add_argument('--lane',choices=['watch','wave','x4']);p.add_argument('--source-pins',type=pathlib.Path);p.add_argument('--sanitize',action='store_true');args=p.parse_args();args.assembly=args.assembly.resolve();args.output.mkdir(parents=True,exist_ok=False)
 fixtures=ROOT/'test/files_products/native';templates=json.loads((fixtures/'commands.json').read_text());results={}
 sha=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
@@ -35,6 +35,31 @@ templates['x4']=[('-DRISC_APP_REQUIREMENT_ROWS=32' if x=='-DRISC_APP_REQUIREMENT
 native_profile={'source':source_head(args.x4_product),'path':'profiles/native-shared-home.cmake','sha256':sha(profile),'definitions':profile_values,
  'fixture_exclusions':{'RISC_NATIVE_SERIAL_BOOT_FILES':0,'RISC_NATIVE_SERIAL_APPDATA_FILES':0},
  'scope':'Owning no-I/O admission models retained SD graph only; boot/private serial preparation performs storage provisioning and is covered by full native firmware source/build, not this fixture.'}
+
+native_profiles={'x4':native_profile}
+for lane,root,expected,old in (
+ ('watch',args.watch_product,'3dc74a9186b2ccd3261ebd6f8b1a0e5165d68df2','native-provisioning.cmake'),
+ ('wave',args.wave_product,'fdaba4530171997f8941a1d8451339f274fba59b','serial-transfer-native.cmake')):
+ if source_head(root)!=expected:raise ValueError('Exact owning capacity successor source required '+lane)
+ root=root.resolve()
+ expected_text='# Preserve the complete selected provisioning profile; increase provider rows only.\ninclude("${CMAKE_CURRENT_LIST_DIR}/'+old+'")\nlist(REMOVE_ITEM RISC_NATIVE_DEFINITIONS RISC_PROVIDER_CAPACITY=40)\nlist(APPEND RISC_NATIVE_DEFINITIONS RISC_PROVIDER_CAPACITY=48)\n'
+ profile=root/'profiles/shared-home-capacity.cmake'
+ if profile.read_text()!=expected_text:raise ValueError('Capacity-only derivative differs '+lane)
+ expanded=args.output/(lane+'-native-profile.txt');probe=args.output/(lane+'-native-profile.cmake')
+ probe.write_text('set(RISC_RUNTIME_ROOT "'+str(args.runtime.resolve())+'")\ninclude("'+str(profile)+'")\nfile(WRITE "'+str(expanded)+'" "${RISC_NATIVE_DEFINITIONS}")\n')
+ subprocess.run(['cmake','-P',str(probe)],check=True)
+ definitions=expanded.read_text().split(';')
+ limits={}
+ for key in ('RISC_APP_POLICY_ROWS','RISC_APP_REQUIREMENT_ROWS','RISC_PROVIDER_CAPACITY','RISC_PLATFORM_CAPACITY'):
+  values=[int(x.split('=',1)[1]) for x in definitions if x.startswith(key+'=')]
+  if len(values)!=1:raise ValueError('Ambiguous expanded native capacity '+lane+'/'+key)
+  limits[key]=values[0]
+ if limits!={'RISC_APP_POLICY_ROWS':32,'RISC_APP_REQUIREMENT_ROWS':32,'RISC_PROVIDER_CAPACITY':48,'RISC_PLATFORM_CAPACITY':32}:raise ValueError('Owning native capacities differ '+lane)
+ if templates[lane].count('-DRISC_PROVIDER_CAPACITY=40')!=1:raise ValueError('Original fixture capacity changed '+lane)
+ templates[lane]=['-DRISC_PROVIDER_CAPACITY=48' if x=='-DRISC_PROVIDER_CAPACITY=40' else x for x in templates[lane]]
+ native_profiles[lane]={'source':expected,'path':'profiles/shared-home-capacity.cmake','sha256':sha(profile),'definitions':definitions,'capacities':limits,
+  'scope':'CMake-expanded owning profile; separate full native firmware compilation and linked array proof required.'}
+
 def tree_pins(root):
  if root.name=='after-sd' and not root.exists():return {}
  if not root.is_dir():raise ValueError('Missing candidate inventory '+str(root))
@@ -107,4 +132,4 @@ for lane,template in templates.items():
   if sha(args.assembly/'assembly.json')!=binding['assembly_sha256']:raise RuntimeError('Assembly receipt mutated')
   if {which:tree_pins(args.assembly/lane/which) for which in ('before','after','after-sd')}!=product_pins[lane]:raise RuntimeError('Candidate inventory mutated')
  results[lane]={'command':cmd,'inputs':before,'per_tu_dependencies':per,'results':rows,'binary_sha256':sha(args.output/lane)}
- (args.output/'receipt.json').write_text(json.dumps({'schema':1,'sanitized':args.sanitize,'scope':__doc__,'products':results,'runtime_sources':runtime_heads,'native_profile':native_profile,'product_binding':binding,'candidate_input_files':product_pins,'prepare_only':args.prepare_only},indent=2)+'\n');print(lane,'PASS',flush=True)
+ (args.output/'receipt.json').write_text(json.dumps({'schema':1,'sanitized':args.sanitize,'scope':__doc__,'products':results,'runtime_sources':runtime_heads,'native_profile':native_profile,'native_profiles':native_profiles,'product_binding':binding,'candidate_input_files':product_pins,'prepare_only':args.prepare_only},indent=2)+'\n');print(lane,'PASS',flush=True)
