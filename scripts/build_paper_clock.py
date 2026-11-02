@@ -284,7 +284,7 @@ def build():
                  timer_preferences='retained-only',foreground_promotion=True,invocation_retention=True,
                  time_resolution='native microsecond snapshot before holds; bounded same-boot projection after holds; physical accuracy and entry latency unqualified')
    record['desk_sdk_headers'].update({name:hashlib.sha256((includes/name).read_bytes()).hexdigest() for name in ('RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h')})
-   paths=['lib/PortableApps/boot_logo/RiscRteLogo.h','lib/PortableApps/boot_logo/logo.svg','lib/PortableApps/boot_logo/SOURCES.json','Apps/paper_sparse_clock.inc','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/home_points_catalog_adapter.inc','lib/PortableApps/src/alarm.inc','lib/PortableApps/src/nova.inc','lib/PortableApps/src/quick_adapter.inc',
+   paths=['lib/PortableApps/boot_logo/RiscRteLogo.h','lib/PortableApps/boot_logo/logo.svg','lib/PortableApps/boot_logo/SOURCES.json','Apps/paper_sparse_clock.inc','lib/PortableApps/include/PortableHomeRetainedClock.h','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/home_points_catalog_adapter.inc','lib/PortableApps/src/alarm.inc','lib/PortableApps/src/nova.inc','lib/PortableApps/src/quick_adapter.inc',
           'lib/PortableApps/include/PortableRealtimeClient.h','lib/PortableApps/include/PortableTimeZone.h',
           'lib/PortableApps/include/PortableTimeZonePreference.h','lib/PortableApps/include/PortableRtcBasis.h']
    if a.boot_animation:paths.extend(['Apps/paper_boot_animation.inc','lib/PortableApps/boot_logo/RiscRteBootAnimation.h','lib/PortableApps/boot_logo/StartupScreen.reference.cpp','lib/PortableApps/boot_logo/ANIMATION-SOURCES.json'])
