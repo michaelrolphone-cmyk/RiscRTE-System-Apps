@@ -14,3 +14,7 @@ for test in ('presenter','selection','controller'):
   run=subprocess.run([str(exe.resolve())],env=env,text=True,capture_output=True)
   (a.output/(name+'.log')).write_text(run.stdout+run.stderr)
   print(name+': '+run.stdout+run.stderr,flush=True);run.check_returncode()
+
+subprocess.run(['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-pedantic',
+ '-I'+str(a.runtime/'sdk/app'),'-I'+str(a.runtime/'sdk/driver'),'-I'+str(root/'sdk/app'),
+ '-I'+str(root/'lib/PortableApps/include'),'-c',str(root/'Apps/driver_manager_scene.c'),'-o',str(a.output/'scene.o')],check=True)
