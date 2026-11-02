@@ -513,6 +513,9 @@ jobs:
           set -euo pipefail
           python3 System/scripts/prepare_home_cohort_plan.py --cohort incoming/cohort/composed --packages closure/packages --output closure/plan.json
           python3 System/scripts/assemble_shared_home_cohort.py --cohort incoming/cohort/composed --plan closure/plan.json --home closure/application --packages closure/packages --output closure/assembly --inputs incoming/cohort/inputs --bootfs-tools Bootfs/scripts
+      - name: Measure hypothetical lossless store fit only
+        if: ${{ !cancelled() && hashFiles('closure/assembly/assembly.json') != '' }}
+        run: python3 System/scripts/measure_home_image_storage.py --elf closure/application/default.elf --assembly closure/assembly --bootfs-tools Bootfs/scripts --output closure/storage-measurement/image.json
       - name: Actual candidate Runtime graph and ELF admission (independent of packing)
         if: ${{ !cancelled() && hashFiles('closure/assembly/assembly.json') != '' }}
         run: |
