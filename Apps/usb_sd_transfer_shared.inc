@@ -253,8 +253,10 @@ __attribute__((visibility("default"))) void app_main(void) {
     scene_grant=(risc_runtime_capability_v1){.struct_size=sizeof(scene_grant)};
     if(!runtime->acquire(RISC_SCENE_CAPABILITY,1,0,&scene_grant)) {
         if(scene_grant.api || scene_grant.slot || scene_grant.generation)shared_retain();
-        else if(shared_live()&&runtime->diagnostic)
-            runtime->diagnostic("USB SD Transfer: semantic presentation unavailable");
+        else if(shared_live()) {
+            if(runtime->diagnostic)runtime->diagnostic("USB SD Transfer: semantic presentation unavailable");
+            if(shared_live())(void)alarm_close();
+        }
         return;
     }
     if(!shared_live()){shared_retain();return;}
@@ -263,14 +265,15 @@ __attribute__((visibility("default"))) void app_main(void) {
     if(!components || !scene->next || !scene->snapshot || !scene->close ||
        !components->lifecycle.configure) {
         if(runtime->diagnostic)runtime->diagnostic("USB SD Transfer: incompatible semantic presentation");
-        (void)shared_close();return;
+        if(shared_close() && shared_live())(void)alarm_close();
+        return;
     }
     shared_document();painted_state=state;
     risc_scene_navigation_v1 nav={.api_version=1,.struct_size=sizeof(nav),.depth=1,.routes={1}};
     int32_t rc=components->open(scene->context,&document,&nav,&scene_session);
     if(!shared_result(rc)) {
         if(scene_session || rc==RISC_SCENE_AGAIN)shared_retain();
-        else (void)shared_close();
+        else if(shared_close() && shared_live())(void)alarm_close();
         return;
     }
     if(!scene_session){shared_retain();return;}

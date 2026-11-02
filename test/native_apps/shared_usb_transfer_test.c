@@ -24,9 +24,9 @@ const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version
 static bool acquire(const char *name,uint32_t api,uint64_t instance,risc_runtime_capability_v1*out){
  assert(live&&instance==0);
  REVOKE("acquire",false);
- if(!strcmp(name,"alarm.service")){assert(api==2);if(mode!=7&&mode!=8)return false;out->api=&alarm_fixture;out->slot=3;out->generation=1;return true;}
+ if(!strcmp(name,"alarm.service")){assert(api==2);if(mode!=7&&mode!=8&&mode!=14&&mode!=15&&mode!=16)return false;out->api=&alarm_fixture;out->slot=3;out->generation=1;return true;}
  assert(api==1);
- if(!strcmp(name,"ui.scene"))out->api=&presenter;
+ if(!strcmp(name,"ui.scene")){if(mode==14)return false;out->api=&presenter;}
  else {assert(!strcmp(name,"usb.device.msc"));if(mode==2)return false;out->api=&msc;}
  out->slot=!strcmp(name,"ui.scene")?1:2;out->generation=1;return true;
 }
@@ -63,7 +63,8 @@ static int32_t prepare(void*c,uint64_t t){
  assert(!dirty);++steps;if(steps==2)model_state=RISC_USB_MSC_WAITING;return 0;
 }
 static int32_t open_scene(void*c,const risc_components_document_v1*d,const risc_scene_navigation_v1*n,uint64_t*t){
- (void)c;assert(live&&d->node_count&&n->depth==1);REVOKE("open",RISC_SCENE_OK);if(mode==2){assert(state==RISC_USB_MSC_MEDIA_UNAVAILABLE);bool unavailable=false;
+ (void)c;assert(live&&d->node_count&&n->depth==1);REVOKE("open",RISC_SCENE_OK);
+ if(mode==16)return RISC_SCENE_UNAVAILABLE;if(mode==2){assert(state==RISC_USB_MSC_MEDIA_UNAVAILABLE);bool unavailable=false;
  for(unsigned i=0;i<d->node_count;i++)if(d->nodes[i].action==USB_START_STOP)unavailable=(d->nodes[i].flags&RISC_SCENE_DISABLED)!=0;
  assert(unavailable&&strstr(detail,"unavailable"));}
  revision=d->revision;*t=9;pending=2;return 0;
@@ -139,6 +140,7 @@ int main(int argc,char**argv){
  presenter=(risc_scene_components_api_v1){.lifecycle={.base={.api_version=1,
  .struct_size=sizeof(presenter),.next=next_scene,.snapshot=snapshot_scene,.close=close_scene},
  .configure=configure},.tag=RISC_COMPONENTS_TAG,.version=1,.open=open_scene,.update=update_scene};
+ if(mode==15)presenter.tag=0;
  assert(app_module_init()==0);app_main();app_module_fini();
  if(*fault){assert(fault_hit&&!live&&!launches&&!retains);printf("shared USB revoked callback %s PASS\n",fault);return 0;}
  if(mode==0){assert(begins==1&&steps==2&&ends==1&&launches==1&&!retains);}
@@ -151,6 +153,7 @@ int main(int argc,char**argv){
  if(mode==9){assert(!live&&begins==1&&!polls&&!steps&&!ends&&!launches&&!retains);}
  if(mode==10||mode==13){assert(controls==1&&!begins&&launches==1&&!retains);}
  if(mode==11){assert(!begins&&launches==1&&ticks>=9&&!retains);}
+ if(mode>=14&&mode<=16){assert(!begins&&!alarm_steps&&!retains&&!launches&&releases==(mode==14?2:3));}
  if(mode==12){assert(begins==1&&ends==1&&!launches&&!retains);}
  printf("shared USB scenario %d PASS ticks=%d polls=%d steps=%d\n",mode,ticks,polls,steps);
  return 0;
