@@ -61,6 +61,9 @@ static int shared_home_contexts_query(uint32_t reason) {
  state.wifi=quick.ui.wifi_available&&quick.ui.wifi_valid;
  state.bluetooth=quick.ui.bluetooth_available&&quick.ui.bluetooth_valid;
 #endif
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!portable_home_settings_available())state=(portable_home_readiness){0};
+#endif
  const alarm_service_descriptor_v2*descriptor=alarm_service_descriptor(alarms.api);
  if(!descriptor)state.power_modes=0;
  else if(!(descriptor->features&ALARM_DESCRIPTOR_RESUME_SLEEP))state.power_modes&=~(PORTABLE_HOME_MODE_LIGHT|PORTABLE_HOME_MODE_HYBRID);

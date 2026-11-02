@@ -1,7 +1,7 @@
 name: Shared Home foreground civil consumer
 on:
   pull_request:
-    paths: ['Apps/paper_home_civil.inc', 'Apps/paper_sparse_clock.inc', 'lib/PortableApps/include/PortableRealtimeClient.h', 'lib/PortableApps/src/PortableRealtimeClient.c', 'test/native_apps/home_civil_policy_test.c', 'scripts/test_portable_realtime.py', '.github/workflows/shared-home-civil-consumer.yml']
+    paths: ['lib/PortableApps/src/home_settings_availability.inc', 'test/native_apps/home_optional_settings_test.c', 'Apps/paper_home_civil.inc', 'Apps/paper_sparse_clock.inc', 'lib/PortableApps/include/PortableRealtimeClient.h', 'lib/PortableApps/src/PortableRealtimeClient.c', 'test/native_apps/home_civil_policy_test.c', 'scripts/test_portable_realtime.py', '.github/workflows/shared-home-civil-consumer.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,6 +23,14 @@ jobs:
       - run: |
           python3 scripts/test_portable_realtime.py --runtime-repo deps/runtime --reconcile --evidence qualification/reconcile.json
           python3 scripts/test_portable_realtime.py --runtime-repo deps/runtime --civil-policy --evidence qualification/civil-policy.json
+      - name: Actual optional settings controller
+        run: |
+          for mode in normal sanitized; do
+            flags=""
+            if [ "$mode" = sanitized ]; then flags="-fsanitize=address,undefined -fno-sanitize-recover=all -no-pie"; fi
+            cc -std=c11 -O1 -Wall -Wextra -Werror $flags -Ilib/PortableApps/include -Isdk/app -Ideps/runtime/sdk/app test/native_apps/home_optional_settings_test.c -o "qualification/settings-$mode"
+            ASAN_OPTIONS=detect_leaks=0 "qualification/settings-$mode" | tee "qualification/settings-$mode.log"
+          done
       - name: Exact source receipts
         if: always()
         run: |
