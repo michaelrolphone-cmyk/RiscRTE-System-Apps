@@ -53,8 +53,17 @@ def cohort_measure(root,tools,out):
  from read_only_spiffs import read_image
  entries=tree(root/'watch/after');size=json.loads((root/'watch/payload.json').read_text())['store_bytes']
  rows={};encoded={'lz4':{},'deflate':{}}
- for name,raw in entries.items():
-  if not name.endswith('.elf'):continue
+ boot=json.loads(entries['boot.json']);ordinary=set()
+ for row in boot.get('app_capabilities',[]):
+  manifest=json.loads(entries[row['manifest']])
+  if manifest.get('type')!='application':raise ValueError('App policy names non-application')
+  image=row.get('image_source')
+  if image and not image.get('internal_fallback'):continue
+  name=str(Path(row['manifest']).parent/manifest['file_name'])
+  if name not in entries:raise ValueError('Missing ordinary application image')
+  ordinary.add(name)
+ for name in sorted(ordinary):
+  raw=entries[name]
   blocks={'lz4':lz4_block(raw)}
   c=zlib.compressobj(9,zlib.DEFLATED,-15);blocks['deflate']=c.compress(raw)+c.flush()
   if decode(blocks['lz4'],len(raw))!=raw or zlib.decompress(blocks['deflate'],-15)!=raw:raise ValueError('Roundtrip differs '+name)
