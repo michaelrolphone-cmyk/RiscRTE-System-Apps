@@ -4,6 +4,7 @@
 #include <string.h>
 #include "../../lib/PortableApps/src/PortableHomeSleep.c"
 static const char *scenario;
+static bool context_lost;
 static bool terminal,timer_only,held,input_hold,power_prepared,panel_prepared,ticket_ready,staged;
 static unsigned calls,entries,resumes,clears,radio_acquires,ui_restores;
 static uint32_t now=100,entered_ms;
@@ -49,21 +50,34 @@ static bool acquire(const char*name,uint32_t version,uint64_t instance,risc_runt
  if((!strcmp(name,"net.wifi")&&has_wifi)||(!strcmp(name,"bluetooth.hci")&&has_ble)){
   g->api=!strcmp(name,"net.wifi")?(const void*)&wifi:(const void*)&bluetooth;g->slot=4;g->generation=1;return true;
  }
- return false;}if(is("absent")&&!strcmp(name,"power.sleep"))return false;g->api=is("null-table")?NULL:!strcmp(name,"power.sleep")?(void*)&power:!strcmp(name,"display.power")?(void*)&panel:(void*)&checkpoint;g->slot=1;g->generation=1;return true;}
+ return false;}if((is("absent")&&!strcmp(name,"power.sleep"))||(!strncmp(scenario,"boot-",5)&&!strcmp(name,RISC_RETAINED_WAKE_CAPABILITY))){
+ if(is("boot-context"))context_lost=true;
+ if(is("boot-dirty"))g->slot=1;
+ return false;
+ }g->api=is("null-table")?NULL:!strcmp(name,"power.sleep")?(void*)&power:!strcmp(name,"display.power")?(void*)&panel:(void*)&checkpoint;g->slot=1;g->generation=1;return true;}
 static unsigned releases;
 static bool release(risc_runtime_capability_v1*g){safe();assert(!held&&!input_hold);releases++;if(is("release-failed")||(is("light-radio-release-failed")&&g->slot==4))return false;memset(g,0,sizeof(*g));return true;}
 static bool health(risc_runtime_health_v1*out){safe();out->uptime_ms=now;return true;}
 static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.acquire=acquire,.release=release,.health=health};
+const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){assert(version==1);return context_lost?NULL:&runtime;}
+int32_t portable_home_boot_read(const risc_retained_wake_api_v1*w,uint32_t t,uint32_t s,risc_retained_wake_record_v1*r,uint32_t*c){(void)w;(void)t;(void)s;(void)r;(void)c;assert(0);return -1;}
+int32_t portable_home_boot_read_bytes(const risc_retained_wake_api_v1_extended*w,uint32_t t,uint32_t s,void*p,uint32_t cap,uint32_t*n,uint32_t*c){(void)w;(void)t;(void)s;(void)p;(void)cap;(void)n;(void)c;assert(0);return -1;}
 static int32_t alarm_status(void*p,alarm_status_v1*out){(void)p;safe();assert(!held);out->error=0;out->output_uncertain=0;return 0;}
 static int32_t alarm_simple(void*p){(void)p;safe();assert(!held);return 0;}
 static int32_t alarm_ack(void*p,const alarm_token_v1*t){(void)t;return alarm_simple(p);}
-static int32_t alarm_prepare(void*p,alarm_sleep_v1*out){(void)p;safe();assert(!held&&!input_hold&&power_prepared);if(is("alarm-retained")){terminal=true;return ALARM_RETAINED;}ticket=(alarm_sleep_v1){sizeof(ticket),7,1000,1010};*out=ticket;ticket_ready=true;return 0;}
+static int32_t alarm_prepare(void*p,alarm_sleep_v1*out){(void)p;safe();assert(!held&&!input_hold&&power_prepared);if(is("alarm-retained")||is("alarm-unknown")){terminal=true;return is("alarm-unknown")?-99:ALARM_RETAINED;}
+ if(is("alarm-context"))context_lost=true;ticket=(alarm_sleep_v1){sizeof(ticket),7,1000,1010};*out=ticket;ticket_ready=true;return 0;}
 static int32_t alarm_resume(void*p,const alarm_sleep_v1*t){(void)p;safe();assert(!held&&!input_hold&&!panel_prepared&&!power_prepared&&!memcmp(t,&ticket,sizeof(ticket)));resumes++;return 0;}
 static const alarm_service_descriptor_v2 alarm={{2,sizeof(alarm),NULL,alarm_status,alarm_simple,alarm_simple,alarm_ack,alarm_prepare,alarm_simple},ALARM_SERVICE_DESCRIPTOR_TAG,1,0,ALARM_DESCRIPTOR_RESUME_SLEEP,alarm_resume};
 static portable_idle_ui_result begin_ui(void*p){(void)p;safe();assert(ticket_ready&&!held);return is("ui-refused")?PORTABLE_IDLE_UI_REFUSED:PORTABLE_IDLE_UI_READY;}
 static portable_idle_ui_result restore_ui(void*p){(void)p;safe();assert(!held&&!input_hold&&!power_prepared&&!panel_prepared);ui_restores++;return PORTABLE_IDLE_UI_READY;}
 int main(int argc,char**argv){
  assert(argc==2);scenario=argv[1];timer_only=strncmp(scenario,"light",5)&&strncmp(scenario,"ui",2)&&!is("absent");
+ if(!strncmp(scenario,"boot-",5)){
+  portable_desk_record record={0};
+  assert(portable_desk_clock_boot_read(&runtime,&record)==(is("boot-absent")?0:-2));
+  assert(!releases&&!entries);return 0;
+ }
  if(is("wake-clear-missing"))checkpoint.base.clear=NULL;
  if(is("null-table")||is("release-failed")||is("wake-clear-missing")){
   assert(portable_home_sleep_admit(&runtime)==1);

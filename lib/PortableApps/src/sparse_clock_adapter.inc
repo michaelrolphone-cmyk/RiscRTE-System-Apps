@@ -389,6 +389,9 @@ int portable_desk_adapter_start(unsigned mode) {
  alarm_pixels=malloc((size_t)(surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2)*info.height);
  if(!alarm_pixels)return desk_start_error();
  if(!portable_alarm_open(&alarms,rt)){
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+  if(alarms.malformed&&!alarms.retained&&!native_sleep_retained)return desk_start_error();
+#endif
 #ifdef PORTABLE_SHARED_HOME_CANVAS
   if(native_sleep_retained||alarms.grant.api||alarms.grant.slot||alarms.grant.generation||
      alarms.grant.struct_size!=sizeof(alarms.grant)){

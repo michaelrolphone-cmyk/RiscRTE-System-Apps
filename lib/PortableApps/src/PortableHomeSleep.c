@@ -121,12 +121,12 @@ int portable_desk_clock_boot_read(const risc_runtime_api_v1 *rt,portable_desk_re
 #endif
     if(!out || !desk_runtime_valid(rt))return 0;
     risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
-    /* Demand-start failure can retain provider cleanup without a token. */
-    if(!rt->acquire(RISC_RETAINED_WAKE_CAPABILITY,1,0,&grant))return -2;
-#else
-    if(!rt->acquire(RISC_RETAINED_WAKE_CAPABILITY,1,0,&grant))return 0;
-#endif
+    bool acquired=rt->acquire(RISC_RETAINED_WAKE_CAPABILITY,1,0,&grant);
+    if(risc_runtime_get_api(1)!=rt)return -2;
+    if(!acquired){
+        if(grant.struct_size!=sizeof(grant)||grant.api||grant.slot||grant.generation)return -2;
+        return 0; /* Clean optional absence: no checkpoint, not retained custody. */
+    }
     const risc_retained_wake_api_v1 *wake=grant.api;
     portable_desk_record record={0};int valid=0;
 #if defined(PORTABLE_DESK_CLOCK_SPARSE_START) && defined(PORTABLE_STAGE_LOGS)
@@ -203,13 +203,18 @@ static int desk_resume(void*context){
  return 1;
 }
 static int desk_refuse(home_desk_sleep*s){return desk_resume(s)==1?0:-2;}
+static bool desk_alarm_terminal(int32_t rc){
+ return rc==ALARM_OUTPUT||rc<ALARM_FOREGROUND||rc>ALARM_PENDING;
+}
 static int desk_alarm_state(home_desk_sleep *s,int32_t rc) {
+    if(desk_alarm_terminal(rc)||!risc_runtime_get_api(1))return desk_retain(s);
 #ifdef ALARM_SERVICE_TAGGED_V2
     if(rc==ALARM_RETAINED)return desk_retain(s);
 #endif
     if(rc==ALARM_OUTPUT)return desk_retain(s);
     alarm_status_v1 status={.struct_size=sizeof(status)};
     int32_t got=s->alarms->status(s->alarms->context,&status);
+    if(desk_alarm_terminal(got)||!risc_runtime_get_api(1)||desk_alarm_terminal(status.error))return desk_retain(s);
 #ifdef ALARM_SERVICE_TAGGED_V2
     if(got==ALARM_RETAINED || status.error==ALARM_RETAINED)return desk_retain(s);
 #endif
@@ -228,6 +233,7 @@ static int desk_alarm_prepare(home_desk_sleep *s) {
         if(!s->rt->health(&sampled))return 0;
         decision=(alarm_sleep_v1){.struct_size=sizeof(decision)};
         ready=s->alarms->prepare_sleep(s->alarms->context,&decision);
+        if(desk_alarm_terminal(ready)||!risc_runtime_get_api(1))return desk_retain(s);
         desk_exit_stage(s,"alarm-prepare",ready);
         /* No further alarm-service/writer calls after OK. Only reversible
          * peripheral work and clock/key reads follow on the serialized owner. */
@@ -368,7 +374,7 @@ int portable_home_light_sleep_with_ui(const risc_runtime_api_v1*rt,const risc_di
  result=0;
  if(status==RISC_LIGHT_SLEEP_OK){
   int32_t resumed=alarm_service_resume(alarms,&s.alarm_ticket);
-  if(resumed==ALARM_RETAINED||resumed==ALARM_OUTPUT||resumed<ALARM_FOREGROUND||resumed>ALARM_PENDING)return desk_retain(&s);
+  if(desk_alarm_terminal(resumed)||!risc_runtime_get_api(1))return desk_retain(&s);
   result=resumed==ALARM_OK?1:-1;
  }
 restore:

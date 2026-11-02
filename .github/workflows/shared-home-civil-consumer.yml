@@ -1,7 +1,7 @@
 name: Shared Home foreground civil consumer
 on:
   pull_request:
-    paths: ['lib/PortableApps/src/home_settings_availability.inc', 'test/native_apps/home_optional_settings_test.c', 'Apps/paper_home_civil.inc', 'Apps/paper_sparse_clock.inc', 'lib/PortableApps/include/PortableRealtimeClient.h', 'lib/PortableApps/src/PortableRealtimeClient.c', 'test/native_apps/home_civil_policy_test.c', 'scripts/test_portable_realtime.py', '.github/workflows/shared-home-civil-consumer.yml']
+    paths: ['lib/PortableApps/src/home_settings_availability.inc', 'test/native_apps/home_optional_settings_test.c', 'test/native_apps/home_local_custody_test.c', 'lib/PortableApps/src/native_custody_adapter.inc', 'Apps/paper_home_civil.inc', 'Apps/paper_sparse_clock.inc', 'lib/PortableApps/include/PortableRealtimeClient.h', 'lib/PortableApps/src/PortableRealtimeClient.c', 'test/native_apps/home_civil_policy_test.c', 'scripts/test_portable_realtime.py', '.github/workflows/shared-home-civil-consumer.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,8 +28,10 @@ jobs:
           for mode in normal sanitized; do
             flags=""
             if [ "$mode" = sanitized ]; then flags="-fsanitize=address,undefined -fno-sanitize-recover=all -no-pie"; fi
-            cc -std=c11 -O1 -Wall -Wextra -Werror $flags -Ilib/PortableApps/include -Isdk/app -Ideps/runtime/sdk/app test/native_apps/home_optional_settings_test.c -o "qualification/settings-$mode"
-            ASAN_OPTIONS=detect_leaks=0 "qualification/settings-$mode" | tee "qualification/settings-$mode.log"
+            for test in home_optional_settings home_local_custody; do
+              cc -std=c11 -O1 -Wall -Wextra -Werror $flags -Ilib/PortableApps/include -Isdk/app -Ideps/runtime/sdk/app "test/native_apps/${test}_test.c" -o "qualification/$test-$mode"
+              ASAN_OPTIONS=detect_leaks=0 "qualification/$test-$mode" | tee "qualification/$test-$mode.log"
+            done
           done
       - name: Exact source receipts
         if: always()
