@@ -13,18 +13,21 @@ static risc_home_presentation_v1 policy;
 static bool policy_loaded,terminal,overview_initialized;
 static void retain(void){
  terminal=true;
- if(runtime&&runtime->struct_size>=RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE&&runtime->retain_invocation)(void)runtime->retain_invocation();
+ if(runtime&&risc_runtime_get_api(1)==runtime&&runtime->struct_size>=RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE&&runtime->retain_invocation)(void)runtime->retain_invocation();
 }
 static bool bindings(void){
  if(terminal)return false;
  if(policy_loaded)return true;
  risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
- if(!runtime->acquire(RISC_HOME_PRESENTATION_CAPABILITY,1,0,&grant))return false;
+ bool acquired=runtime->acquire(RISC_HOME_PRESENTATION_CAPABILITY,1,0,&grant);
+ if(risc_runtime_get_api(1)!=runtime){terminal=true;return false;}
+ if(!acquired)return false;
  const risc_home_presentation_v1*p=grant.api;
  p=p?risc_home_presentation_get_v1(p,p->struct_size):NULL;
- if(!p){if(!runtime->release(&grant))retain();return false;}
+ if(!p){if(!runtime->release(&grant))retain();if(risc_runtime_get_api(1)!=runtime)terminal=true;return false;}
  memset(&policy,0,sizeof(policy));memcpy(&policy,p,p->struct_size<sizeof(policy)?p->struct_size:sizeof(policy));
  if(!runtime->release(&grant)){retain();return false;}
+ if(risc_runtime_get_api(1)!=runtime){terminal=true;return false;}
  policy_loaded=true;return true;
 }
 bool portable_home_bindings_retained(void){return terminal;}
@@ -45,9 +48,13 @@ __attribute__((visibility("default"))) void app_main(void){
   if(!bindings()){if(!terminal&&runtime->diagnostic)runtime->diagnostic("HOME presentation policy unavailable");return;}
   unsigned saved=0;int state=PORTABLE_HOME_VIEW_UNAVAILABLE;
   risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
-  if(runtime->acquire(RISC_KEY_VALUE_CAPABILITY,1,PORTABLE_HOME_VIEW_INSTANCE,&grant)){
+  bool acquired=runtime->acquire(RISC_KEY_VALUE_CAPABILITY,1,PORTABLE_HOME_VIEW_INSTANCE,&grant);
+  if(risc_runtime_get_api(1)!=runtime){terminal=true;return;}
+  if(acquired){
    state=portable_home_view_load(grant.api,&saved);
+   if(risc_runtime_get_api(1)!=runtime){terminal=true;return;}
    if(!runtime->release(&grant)){retain();return;}
+   if(risc_runtime_get_api(1)!=runtime){terminal=true;return;}
   }
   view=portable_home_view_choose(&policy,state,saved);
  }
