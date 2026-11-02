@@ -12,6 +12,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: System
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
@@ -27,6 +28,13 @@ jobs:
           python3 -m pip install platformio==6.1.19
           pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
           python3 System/scripts/build_canvas_services.py --runtime Runtime --output packages
+      - name: Preserve exact owning source
+        if: always()
+        run: |
+          mkdir -p source
+          git -C System rev-parse HEAD > source/system.head
+          git -C System archive HEAD | gzip -n > source/system.tar.gz
+          git -C Runtime rev-parse HEAD > source/runtime.head
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -36,3 +44,4 @@ jobs:
             runtime-normal/
             runtime-sanitized/
             packages/
+            source/
