@@ -27,6 +27,7 @@ static inline int portable_home_retained_fence(const portable_home_retained_hook
  h->retain(h->context);return -2;
 }
 static inline int portable_home_retained_cancelled(const portable_home_retained_hooks *h) {
+ if(!h->ready(h->context))return portable_home_retained_fence(h);
  int rc=h->cancelled(h->context);
  if((rc!=0&&rc!=1)||!h->ready(h->context))return portable_home_retained_fence(h);
  return rc;
