@@ -107,7 +107,7 @@ def replace_native_metadata(entries,spec,packages):
  return {'path':'cohort.json','before_sha256':digest(oldbytes),'after_sha256':digest(entries['cohort.json']),
          'descriptor_sha256':spec['descriptor_sha256'],'native':native,'product_version':spec['product_version']}
 
-def validate_grant_substitutions(oldgrants,newgrants,substitutions,manifest,available):
+def validate_grant_substitutions(oldgrants,newgrants,substitutions,manifest,available,bindings):
  declared=declarations(manifest,'requires')|declarations(manifest,'optional')
  removed=[]
  for item in substitutions:
@@ -118,6 +118,7 @@ def validate_grant_substitutions(oldgrants,newgrants,substitutions,manifest,avai
   if (old['capability'],old['api']) in declared or (new['capability'],new['api']) not in declared:raise ValueError('Substitution does not match new declarations')
   for grant in (old,new):
    if (grant['capability'],grant['api'],grant['instance_id']) not in available:raise ValueError('Substitution provider absent')
+  if old not in bindings.get(available[(new['capability'],new['api'],new['instance_id'])],[]):raise ValueError('Facade does not retain original provider binding')
   removed.append(old)
  if any(g not in newgrants and g not in removed for g in oldgrants):raise ValueError('Existing grant removed without explicit substitution')
  return removed
@@ -132,7 +133,7 @@ def overlay(before, before_sd, plan, elf, common, packages):
  out=dict(before);sd=dict(before_sd);boot=copy.deepcopy(original['boot'])
  aliases=plan['aliases']
  if not aliases:raise ValueError('No reviewed Home aliases')
- names=set();routes=set()
+ names=set();routes=set();grant_checks=[]
  for alias in aliases:
   name=safe(alias['manifest'])
   if name in names:raise ValueError('Duplicate alias')
@@ -164,7 +165,7 @@ def overlay(before, before_sd, plan, elf, common, packages):
    a=copy.deepcopy(oldrow);b=copy.deepcopy(newrow)
    oldgrants=a.pop('grants',[]);newgrants=b.pop('grants',[])
    if a!=b:raise ValueError('Only explicit grant changes are permitted')
-   validate_grant_substitutions(oldgrants,newgrants,alias.get('grant_substitutions',[]),common,providers(out,boot))
+   grant_checks.append((oldgrants,newgrants,alias.get('grant_substitutions',[])))
    if len({encode(g) for g in newgrants})!=len(newgrants):raise ValueError('Duplicate grant')
    boot['app_capabilities'][boot['app_capabilities'].index(oldrow)]=copy.deepcopy(newrow)
  # Provider packages and exact binding rows come only from the reviewed plan.
@@ -211,7 +212,10 @@ def overlay(before, before_sd, plan, elf, common, packages):
    if {k:v for k,v in previous.items() if k!='version'}!={k:v for k,v in m.items() if k!='version'}:
     raise ValueError('Replacement provider changes selected profile or contract')
   out[path]=mbytes;out[binary]=pbytes;provider_paths.update((path,binary))
- providers(out,boot)
+ available=providers(out,boot)
+ binding_rows={row['manifest']:row.get('bindings',[]) for row in boot.get('drivers',[])}
+ for oldgrants,newgrants,substitutions in grant_checks:
+  validate_grant_substitutions(oldgrants,newgrants,substitutions,common,available,binding_rows)
  # Top-level namespace maps and every unrelated app/driver field are unchanged.
  out['boot.json']=encode(boot)
  for name in before:

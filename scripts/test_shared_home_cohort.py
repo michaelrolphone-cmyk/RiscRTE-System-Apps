@@ -210,8 +210,8 @@ class Overlay(unittest.TestCase):
   keep={'capability':'storage.key-value','api':1,'instance_id':5}
   manifest={'requires':[],'optional':[{'capability':'service.facade','api':2}]}
   providers={('old.service',2,0):'old',('service.facade',2,0):'new'}
-  change={'from':old,'to':new}
-  self.assertEqual(validate_grant_substitutions([old,keep],[new,keep],[change],manifest,providers),[old])
+  change={'from':old,'to':new};bindings={'new':[old]}
+  self.assertEqual(validate_grant_substitutions([old,keep],[new,keep],[change],manifest,providers,bindings),[old])
   for before,after,changes,m,available in (
     ([old,keep],[new],[change],manifest,providers),
     ([old,keep],[new,keep],[],manifest,providers),
@@ -219,7 +219,8 @@ class Overlay(unittest.TestCase):
     ([old,keep],[new,keep],[change,change],manifest,providers),
     ([old,keep],[new,keep],[change],{'requires':[],'optional':[]},providers),
     ([old,keep],[new,keep],[{'from':keep,'to':new}],manifest,providers)):
-   with self.assertRaises(ValueError):validate_grant_substitutions(before,after,changes,m,available)
+   with self.assertRaises(ValueError):validate_grant_substitutions(before,after,changes,m,available,bindings)
+  with self.assertRaisesRegex(ValueError,'original provider binding'):validate_grant_substitutions([old,keep],[new,keep],[change],manifest,providers,{})
  def test_payload_inventory_exact_delta(self):
   report=payload_inventory({'keep':b'ab','new':b'1234'},{'keep':b'a'},64)
   self.assertEqual(report['store_bytes'],64)

@@ -104,6 +104,14 @@ def generate(cohort,packages,baseline):
    if g not in updated[0]['grants']:updated[0]['grants'].append(g)
   if lane=='x4':
    for cap in ('power.sleep','display.power'):updated[0]['grants'].append(grant(cap))
+  delegated={'input.touch.raw':grant('ui.canvas-input'),'input.navigation':grant('ui.canvas-input'),
+             'alarm.service':grant('alarm.service.facade',2),'x4.power':grant('power.sleep')}
+  home_substitutions=[]
+  for old in policy[0]['grants']:
+   if old['capability'] in delegated:
+    new=delegated[old['capability']]
+    if new not in updated[0]['grants']:raise ValueError('Missing delegated Home authority')
+    updated[0]['grants'].remove(old);home_substitutions.append({'from':copy.deepcopy(old),'to':new})
   if len(updated[0]['grants'])>32:raise ValueError('Home declared grant capacity exceeds qualified profile')
   viewer=row_for(boot,'viewer-canvas/manifest.json')
   physical={b['capability']:b for b in viewer['bindings']}
@@ -140,7 +148,7 @@ def generate(cohort,packages,baseline):
           'manifest_sha256':digest((ctx/'contexts.json').read_bytes()),'elf_sha256':digest((ctx/'contexts.elf').read_bytes()),
           'route':route,'original_policy_rows':rows,'policy_rows':changed,'grant_substitutions':substitutions,
           'replace':{'manifest_sha256':digest(entries['contexts.json']),'elf_sha256':digest(oldelf)}}
-  plans[lane]={'inventory_sha256':fingerprint(actual),'aliases':[{'role':'controller','manifest':'default.json','route':{'storage':'internal','path':'default.elf'},'original_policy_rows':policy,'policy_rows':updated}],
+  plans[lane]={'inventory_sha256':fingerprint(actual),'aliases':[{'role':'controller','manifest':'default.json','route':{'storage':'internal','path':'default.elf'},'original_policy_rows':policy,'policy_rows':updated,'grant_substitutions':home_substitutions}],
                'providers':selected,'app_updates':[update],'native_metadata':native_metadata_plan(entries,packages,lane)}
  return plans
 if __name__=='__main__':
