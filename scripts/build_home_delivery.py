@@ -21,6 +21,7 @@ def main():
  archive=source/'System.tar.gz'
  if not archive.exists():
   raw=subprocess.check_output(['git','-C',str(a.system),'archive','--format=tar.gz','HEAD']);archive.write_bytes(raw)
+ if (source/'System.head').read_text().strip()!=head:raise ValueError('Application owning source archive differs')
  commits={'system_apps':head}
  for marker in source.glob('*.head'):
   revision=marker.read_text().strip()
@@ -67,7 +68,8 @@ def main():
  product_assets={lane:{'store':ref(root/'assembly'/lane/'store.bin'),'sd':ref(root/'assembly'/lane/'sd-apps.zip')} for lane in ('watch','wave','x4')}
  for name in ('qualification.zip','provenance.zip'):
   if not (root/name).is_file():raise ValueError('Actual retained evidence archive required '+name)
- delivery={'schema':1,'source_commit':head,'application':application,'assembly':assembly,'admissions':admissions,'dependencies':dependencies,'product_assets':product_assets,
+ native_firmware={lane:{key:ref(root/'packages'/('native-'+lane)/filename) for key,filename in [('firmware','firmware.bin'),('qualification','qualification.json'),('descriptor','native.json')]} for lane in ('watch','wave','x4')}
+ delivery={'native_firmware':native_firmware,'schema':1,'source_commit':head,'application':application,'assembly':assembly,'admissions':admissions,'dependencies':dependencies,'product_assets':product_assets,
   'source_archive':ref(archive),'source_lock':ref(root/'source-lock.json'),'provenance':ref(root/'provenance.zip'),'licenses':licenses,'qualification':ref(root/'qualification.zip')}
  (root/'home-delivery.json').write_text(json.dumps(delivery,sort_keys=True,indent=2)+'\n')
  print('Joined closure described; publisher must verify actual assembly and admission bindings')

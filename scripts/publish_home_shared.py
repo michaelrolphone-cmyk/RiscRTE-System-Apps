@@ -38,6 +38,16 @@ def run(root, publish):
   require(product['store_roundtrip'] and product['sd_roundtrip'],'Full store and SD roundtrip required')
   for field in ('store_sha256','sd_archive_sha256','inventory_sha256'):
    require(re.fullmatch('[0-9a-f]{64}',product[field]),'Missing product digest: '+lane+'/'+field)
+ require(set(delivery['native_firmware'])=={'watch','wave','x4'},'All three exact native firmware dependencies required')
+ for lane,refs in delivery['native_firmware'].items():
+  binding=assembly['products'][lane]['native_metadata'];native=binding['native']
+  descriptor=artifact(refs['descriptor'])
+  require(refs['descriptor']['sha256']==binding['descriptor_sha256'] and json.loads(descriptor.read_text())==native,'Native descriptor not bound to assembly')
+  for category in ('firmware','qualification'):
+   path=artifact(refs[category]);expected=native[category]
+   require(refs[category]['sha256']==expected['sha256'] and refs[category]['size']==expected['bytes'],'Native dependency bytes differ: '+lane+'/'+category)
+   files['native-'+lane+'-'+category+path.suffix]=path
+  files['native-'+lane+'-descriptor.json']=descriptor
  require(set(delivery['admissions'])=={'normal','sanitized'},'Both actual admission modes required')
  for mode,reference in delivery['admissions'].items():
   path=artifact(reference); receipt=json.loads(path.read_text())
@@ -54,6 +64,7 @@ def run(root, publish):
    require(binding['products'][lane]['inventory_sha256']==assembly['products'][lane]['inventory_sha256'],'Admission inventory mismatch')
    inputs=receipt['candidate_input_files'][lane]
    require(set(inputs)=={'before','after','after-sd'},'Missing exact tree input map')
+   require(inputs['after'].get('cohort.json')==assembly['products'][lane]['native_metadata']['after_sha256'],'Admitted cohort metadata differs from native firmware binding')
    for which,field in (('before','before_tree_sha256'),('after','after_tree_sha256'),('after-sd','after_sd_tree_sha256')):
     mapping=inputs[which]
     require(isinstance(mapping,dict),'Tree input map required')

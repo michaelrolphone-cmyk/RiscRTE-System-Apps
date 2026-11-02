@@ -16,26 +16,36 @@ def make(root,fault):
  elf=put(root,'target/default.elf',b'\x7fELFfixture-not-a-target-proof')
  manifest=put(root,'target/default.json',{'name':'home'})
  packed_store=put(root,'store.bin',b'fixture store');packed_sd=put(root,'sd.zip',b'fixture sd')
+ native_refs={};native_bindings={}
+ for lane in ('watch','wave','x4'):
+  firmware=put(root,lane+'/firmware.bin',b'fixture firmware');qualification=put(root,lane+'/qualification.json',{'fixture':True})
+  native={key:{'path':Path(value['path']).name,'bytes':value['size'],'sha256':value['sha256']} for key,value in [('firmware',firmware),('qualification',qualification)]}
+  descriptor=put(root,lane+'/native.json',native)
+  native_refs[lane]={'firmware':firmware,'qualification':qualification,'descriptor':descriptor}
+  native_bindings[lane]={'native':native,'descriptor_sha256':descriptor['sha256'],'after_sha256':'6'*64}
  assembly={'packed':True,'byte_identical_home':elf['sha256'],'products':{}}
  for lane in ('watch','wave','x4'):
   assembly['products'][lane]={'home_sha256':elf['sha256'],'packed':True,'store_roundtrip':True,'sd_roundtrip':True,
-    'store_sha256':packed_store['sha256'],'sd_archive_sha256':packed_sd['sha256'],'inventory_sha256':'3'*64}
+    'store_sha256':packed_store['sha256'],'sd_archive_sha256':packed_sd['sha256'],'inventory_sha256':'3'*64,'native_metadata':native_bindings[lane]}
  if fault=='unpacked': assembly['packed']=False
  if fault=='different-elf':assembly['products']['wave']['home_sha256']='b'*64
  assembly_ref=put(root,'assembly.json',assembly)
  delivery={'source_commit':COMMIT,'application':{'elf':elf,'manifest':manifest,'build':put(root,'target/build.json',{'shared_elf':elf['sha256'],'manifest_sha256':manifest['sha256'],'size_bytes':elf['size'],'views':['native-faces','overview-retained-desk']})},
-  'assembly':assembly_ref,'admissions':{},'dependencies':[]}
+  'assembly':assembly_ref,'admissions':{},'dependencies':[],'native_firmware':native_refs}
  delivery['product_assets']={lane:{'store':packed_store,'sd':packed_sd} for lane in ('watch','wave','x4')}
+ if fault=='wrong-native':delivery['native_firmware']['wave']['firmware']=put(root,'wrong-native.bin',b'wrong firmware')
+ if fault=='missing-native':del delivery['native_firmware']['x4']
  if fault=='wrong-product':delivery['product_assets']['wave']['store']=put(root,'wrong-store.bin',b'wrong')
  for mode in ('normal','sanitized'):
   binding={'source_commit':COMMIT,'assembly_sha256':assembly_ref['sha256'],'products':{}}
   receipt={'schema':1,'sanitized':mode=='sanitized','products':{},'product_binding':binding,'candidate_input_files':{}}
   for lane in ('watch','wave','x4'):
-   mapping={'app.elf':'4'*64}
+   mapping={'app.elf':'4'*64,'cohort.json':'6'*64}
    tree_hash=hashlib.sha256((json.dumps(mapping,sort_keys=True,separators=(',',':'))+'\n').encode()).hexdigest()
    receipt['candidate_input_files'][lane]={which:dict(mapping) for which in ('before','after','after-sd')}
    binding['products'][lane]={'inventory_sha256':'3'*64,'before_tree_sha256':tree_hash,'after_tree_sha256':tree_hash,'after_sd_tree_sha256':tree_hash}
    receipt['products'][lane]={'inputs':{'fixture':'7'*64},'per_tu_dependencies':{'fixture':'8'*64},'results':[{'input':'after','result':{'prepared':True,'cohort_validated':True,'elf_count':1,'hardware_calls':0,'storage_calls':0,'retained_sd_serial_graph_bound':True}}]}
+  if fault=='wrong-native-cohort':receipt['candidate_input_files']['wave']['after']['cohort.json']='7'*64
   if fault=='prepare-only':receipt['prepare_only']=True
   if fault=='null-binding':receipt['product_binding']=None
   if fault=='changed-input-map':receipt['candidate_input_files']['watch']['after']['app.elf']='5'*64
@@ -58,7 +68,7 @@ def make(root,fault):
  if fault=='traversal':delivery['application']['elf']['path']='../escape'
  (root/'home-delivery.json').write_text(json.dumps(delivery))
  if fault=='tampered':(root/'target/default.elf').write_bytes(b'changed')
-for fault in ('good','wrong-product','changed-input-map','null-binding','wrong-build','missing-view','unpacked','different-elf','prepare-only','failed-admission','wrong-tree','wrong-assembly','hardware','missing-sanitized','wrong-source','traversal','tampered'):
+for fault in ('good','wrong-native','missing-native','wrong-native-cohort','wrong-product','changed-input-map','null-binding','wrong-build','missing-view','unpacked','different-elf','prepare-only','failed-admission','wrong-tree','wrong-assembly','hardware','missing-sanitized','wrong-source','traversal','tampered'):
  with tempfile.TemporaryDirectory() as temporary:
   root=Path(temporary);make(root,fault)
   try:publisher.run(root,False)
@@ -70,4 +80,4 @@ for fault in ('good','wrong-product','changed-input-map','null-binding','wrong-b
    for category in ('artifacts','sources','licenses'):assert any(name.startswith('dependency-0-'+category+'-') for name in plan)
    for lane in ('watch','wave','x4'):
     for category in ('store','sd'):assert any(name.startswith('product-'+lane+'-'+category+'-') for name in plan)
-print('Home publisher offline validator: complete fixture accepted; 16 partial/mismatched/unsafe closures rejected; no network or publication')
+print('Home publisher offline validator: complete fixture accepted; 19 partial/mismatched/unsafe closures rejected; no network or publication')
