@@ -37,8 +37,9 @@ static int32_t clear_record(void*p){(void)p;safe();assert(!held&&!input_hold&&!p
 static int32_t read_bytes(void*p,uint32_t t,uint32_t s,void*out,uint32_t cap,uint32_t*size,uint32_t*c){(void)p;(void)t;(void)s;(void)out;(void)cap;(void)size;safe();*c=RISC_BOOT_RESET;return RISC_RETAINED_WAKE_ABSENT;}
 static int32_t stage_bytes(void*p,uint32_t type,uint32_t schema,const void*bytes,uint32_t size){(void)p;safe();assert(!held&&!input_hold&&!panel_prepared&&!power_prepared&&type==PORTABLE_DESK_CLOCK_RECORD_TYPE&&schema==3&&size==408);memcpy(staged_bytes,bytes,size);staged=true;if(is("stage-retained")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}return is("stage-refused")?RISC_RETAINED_WAKE_INVALID:0;}
 static risc_retained_wake_api_v1_extended checkpoint={{1,sizeof(checkpoint),NULL,read_record,stage_record,clear_record},RISC_RETAINED_WAKE_EXTENDED_TAG,1,512,0,read_bytes,stage_bytes};
-static bool acquire(const char*name,uint32_t version,uint64_t instance,risc_runtime_capability_v1*g){safe();assert(version==1&&instance==0&&!held);if(!strcmp(name,"net.wifi")||!strcmp(name,"bluetooth.hci")){assert(!timer_only);radio_acquires++;return false;}if(is("absent")&&!strcmp(name,"power.sleep"))return false;g->api=!strcmp(name,"power.sleep")?(void*)&power:!strcmp(name,"display.power")?(void*)&panel:(void*)&checkpoint;g->slot=1;g->generation=1;return true;}
-static bool release(risc_runtime_capability_v1*g){safe();assert(!held&&!input_hold);memset(g,0,sizeof(*g));return true;}
+static bool acquire(const char*name,uint32_t version,uint64_t instance,risc_runtime_capability_v1*g){safe();assert(version==1&&instance==0&&!held);if(!strcmp(name,"net.wifi")||!strcmp(name,"bluetooth.hci")){assert(!timer_only);radio_acquires++;return false;}if(is("absent")&&!strcmp(name,"power.sleep"))return false;g->api=is("null-table")?NULL:!strcmp(name,"power.sleep")?(void*)&power:!strcmp(name,"display.power")?(void*)&panel:(void*)&checkpoint;g->slot=1;g->generation=1;return true;}
+static unsigned releases;
+static bool release(risc_runtime_capability_v1*g){safe();assert(!held&&!input_hold);releases++;if(is("release-failed"))return false;memset(g,0,sizeof(*g));return true;}
 static bool health(risc_runtime_health_v1*out){safe();out->uptime_ms=now;return true;}
 static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.acquire=acquire,.release=release,.health=health};
 static int32_t alarm_status(void*p,alarm_status_v1*out){(void)p;safe();assert(!held);out->error=0;out->output_uncertain=0;return 0;}
@@ -51,7 +52,12 @@ static portable_idle_ui_result begin_ui(void*p){(void)p;safe();assert(ticket_rea
 static portable_idle_ui_result restore_ui(void*p){(void)p;safe();assert(!held&&!input_hold&&!power_prepared&&!panel_prepared);ui_restores++;return PORTABLE_IDLE_UI_READY;}
 int main(int argc,char**argv){
  assert(argc==2);scenario=argv[1];timer_only=strncmp(scenario,"light",5)&&strncmp(scenario,"ui",2)&&!is("absent");
- if(is("light")||is("light-refused")||is("light-retained")||is("ui-refused")||is("absent")){
+ if(is("null-table")||is("release-failed")){
+  assert(portable_home_sleep_admit(&runtime)==1);
+  if(is("null-table"))assert(!portable_home_sleep_modes());
+  assert(portable_home_sleep_close()==(is("release-failed")?-2:1));
+  assert(releases==(is("release-failed")?1u:3u));
+ }else if(is("light")||is("light-refused")||is("light-retained")||is("ui-refused")||is("absent")){
   const portable_idle_sleep_ui ui={NULL,begin_ui,restore_ui};
   int result=portable_home_light_sleep_with_ui(&runtime,NULL,NULL,&alarm.base,&ui);
   if(is("light-retained"))assert(result==-2&&terminal&&!resumes&&!ui_restores);

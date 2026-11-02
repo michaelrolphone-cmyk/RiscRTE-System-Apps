@@ -21,6 +21,7 @@ static int portable_home_canvas_resume_sleep(void){return 1;}
 static bool portable_home_canvas_sleep_available(void){return true;}
 #endif
 static risc_runtime_capability_v1 home_sleep_grants[3];
+static bool home_sleep_owned[3];
 static const risc_runtime_api_v1 *home_sleep_runtime;
 static const risc_power_sleep_api_v1 *home_power;
 static const risc_display_power_api_v1 *home_display_power;
@@ -31,7 +32,10 @@ unsigned portable_home_sleep_modes(void){return home_sleep_retained||!portable_h
 static int home_sleep_fence(void){home_sleep_retained=true;home_modes=0;portable_adapter_retain_silent();return -2;}
 int portable_home_sleep_close(void){
  if(home_sleep_retained||portable_adapter_retained())return -2;
- for(unsigned i=3;i;i--)if(home_sleep_grants[i-1].api&&!home_sleep_runtime->release(&home_sleep_grants[i-1]))return home_sleep_fence();
+ for(unsigned i=3;i;i--)if(home_sleep_owned[i-1]){
+  if(!home_sleep_runtime->release(&home_sleep_grants[i-1]))return home_sleep_fence();
+  home_sleep_owned[i-1]=false;
+ }
  home_sleep_runtime=NULL;home_power=NULL;home_display_power=NULL;home_wake=NULL;home_modes=0;return 1;
 }
 int portable_home_sleep_admit(const risc_runtime_api_v1 *runtime){
@@ -47,6 +51,7 @@ int portable_home_sleep_admit(const risc_runtime_api_v1 *runtime){
    if(i==2)break; /* Light does not require a retained checkpoint. */
    return portable_home_sleep_close(); /* Explicit unavailable, not fake readiness. */
   }
+  home_sleep_owned[i]=true;
  }
  home_power=home_sleep_grants[0].api;home_display_power=home_sleep_grants[1].api;home_wake=home_sleep_grants[2].api;
  const risc_retained_wake_api_v1_extended *wake=home_wake?risc_retained_wake_extended(home_wake):NULL;

@@ -9,14 +9,17 @@ static home_canvas_touch shared_canvas_touch;
 static risc_runtime_capability_v1 shared_canvas_grant,shared_canvas_input_grant;
 static const risc_canvas_input_v1 *shared_canvas_input;
 static bool shared_canvas_input_active,shared_canvas_input_prepared;
+static bool shared_canvas_owned,shared_canvas_input_owned,shared_outputs_owned;
 static const risc_display_output_api_v1 *shared_outputs;
 static void shared_canvas_retained(void *unused){(void)unused;portable_adapter_retain_silent();}
 static inline bool shared_canvas_open(void) {
  if(!rt->acquire("display.output",1,0,&dg))return false;
+ shared_outputs_owned=true;
  shared_outputs=dg.api;
  if(!shared_outputs||shared_outputs->api_version!=1||shared_outputs->struct_size<sizeof(*shared_outputs))return false;
  shared_canvas_grant=(risc_runtime_capability_v1){.struct_size=sizeof(shared_canvas_grant)};
  if(!rt->acquire(RISC_CANVAS_CAPABILITY,1,0,&shared_canvas_grant))return false;
+ shared_canvas_owned=true;
  const risc_canvas_api_v1 *api=shared_canvas_grant.api;
  api=api?risc_canvas_get_v1(api,api->struct_size):NULL;
  if(!api)return false;
@@ -32,17 +35,28 @@ static inline bool shared_canvas_close(void) {
   if(!home_canvas_result(&shared_canvas,shared_canvas_input->deactivate(shared_canvas_input->context,shared_canvas.session))){portable_adapter_retain_silent();return false;}
   shared_canvas_input_active=false;
  }
- if(shared_canvas_input_grant.api&&!rt->release(&shared_canvas_input_grant)){portable_adapter_retain_silent();return false;}
+ if(shared_canvas_input_owned){
+  if(!rt->release(&shared_canvas_input_grant)){portable_adapter_retain_silent();return false;}
+  shared_canvas_input_owned=false;
+ }
  shared_canvas_input=NULL;
  if(shared_canvas.session&&!home_canvas_close(&shared_canvas)){portable_adapter_retain_silent();return false;}
- if(shared_canvas_grant.api&&!rt->release(&shared_canvas_grant)){portable_adapter_retain_silent();return false;}
+ if(shared_canvas_owned){
+  if(!rt->release(&shared_canvas_grant)){portable_adapter_retain_silent();return false;}
+  shared_canvas_owned=false;
+ }
+ if(shared_outputs_owned){
+  if(!rt->release(&dg)){portable_adapter_retain_silent();return false;}
+  shared_outputs_owned=false;dg=(risc_runtime_capability_v1){.struct_size=sizeof(dg)};
+ }
  shared_outputs=NULL;return true;
 }
 static inline bool shared_canvas_touch_open(portable_touch*t,const risc_runtime_api_v1 *runtime) {
  if(shared_canvas.retained)return false;
- if(!shared_canvas_input_grant.api){
+ if(!shared_canvas_input_owned){
   shared_canvas_input_grant=(risc_runtime_capability_v1){.struct_size=sizeof(shared_canvas_input_grant)};
   if(!runtime->acquire(RISC_CANVAS_INPUT_CAPABILITY,1,0,&shared_canvas_input_grant))return false;
+  shared_canvas_input_owned=true;
   const risc_canvas_input_v1 *api=shared_canvas_input_grant.api;
   shared_canvas_input=api?risc_canvas_input_get_v1(api,api->struct_size):NULL;
   if(!shared_canvas_input)return false;
@@ -108,14 +122,13 @@ static inline bool shared_canvas_geometry_sync(void) {
  * all physical resources before the alarm ticket. TIMER has no input grant. */
 bool portable_home_canvas_sleep_available(void) {
  return !shared_canvas.retained&&!native_custody_retained&&
-  (!shared_canvas_input_active||(shared_canvas_input&&shared_canvas_input->struct_size>=sizeof(*shared_canvas_input)&&
-   shared_canvas_input->prepare_sleep&&shared_canvas_input->resume_sleep));
+  (!shared_canvas_input_active||risc_canvas_input_sleep_supported(shared_canvas_input));
 }
 int portable_home_canvas_prepare_sleep(void) {
  if(shared_canvas.retained||native_custody_retained)return -2;
  if(!home_canvas_quiesce(&shared_canvas))return shared_canvas.retained?-2:0;
  if(!shared_canvas_input_active)return 1;
- if(shared_canvas_input->struct_size<sizeof(*shared_canvas_input)||!shared_canvas_input->prepare_sleep||!shared_canvas_input->resume_sleep)return 0;
+ if(!risc_canvas_input_sleep_supported(shared_canvas_input))return 0;
  shared_canvas_input_prepared=true;
  int32_t rc=shared_canvas_input->prepare_sleep(shared_canvas_input->context,shared_canvas.session,1000);
  if(rc==RISC_CANVAS_UNSUPPORTED){shared_canvas_input_prepared=false;return 0;}
