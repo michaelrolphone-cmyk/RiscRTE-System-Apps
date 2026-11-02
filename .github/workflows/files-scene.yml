@@ -14,6 +14,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: CurrentSystem
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: db47bebca498e1eb44559fdbf69002b935f42dac
           path: System
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -72,11 +78,39 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p qualification/source qualification/logs
-          for source in System Utilities Runtime RetainedSystem Home HomeSystem HomeUtilities Bootfs X4Runtime; do
+          for source in CurrentSystem System Utilities Runtime RetainedSystem Home HomeSystem HomeUtilities Bootfs X4Runtime; do
             git -C "$source" archive HEAD | gzip -n > "qualification/source/$source.tar.gz"
             git -C "$source" rev-parse HEAD > "qualification/source/$source.head"
           done
           sha256sum qualification/source/*.tar.gz > qualification/source/archives.sha256
+          printf '%s\n' '{"System":"immutable completed Files db47 replay","CurrentSystem":"current PR shared-source regression; not deployed Files"}' > qualification/source/source-roles.json
+      - name: Verify immutable replay and current regression routing
+        shell: bash
+        env:
+          EXPECTED_CURRENT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git -C System rev-parse HEAD)" = db47bebca498e1eb44559fdbf69002b935f42dac
+          test "$(git -C CurrentSystem rev-parse HEAD)" = "$EXPECTED_CURRENT_SHA"
+          python - <<'PY'
+          from pathlib import Path
+          w=Path('CurrentSystem/.github/workflows/files-scene.yml').read_text()
+          replay=w.split('      - name: Immutable delivered Files reconstruction and exact original hashes\n',1)[1].split('      - name:',1)[0]
+          assert '8f9860dc07c65345a9bb20ac7686e4d4eca39694f00345b6f87e44e2a89692d9' in replay
+          assert '8d19aa1d7f5115c8a21cc293d14178d9e0b2c3edb2b42f9f85ed1f8022f16d94' in replay
+          assert 'python System/scripts/qualify_files_scene.py' in replay
+          regression=w.split('      - name: Complete root, storage, peer, sharing and actual Runtime\n',1)[1].split('      - name:',1)[0]
+          assert 'python CurrentSystem/scripts/test_files_composed_root.py' in regression
+          assert 'python "CurrentSystem/scripts/test_files_${suite}_composed.py"' in regression
+          assert 'for provider in CurrentSystem RetainedSystem' in regression
+          assert '--include qualification/current-prepared/include' in regression
+          selection=w.split('      - name: Obtain exact original product inputs\n',1)[1].split('      - name:',1)[0]
+          assert '--linked qualification/target --parser qualification/prepared/manifest-test' in selection
+          admission=w.split('      - name: Preserve and admit all three complete products\n',1)[1].split('      - uses:',1)[0]
+          assert 'python System/scripts/test_files_product_admission.py' in admission
+          assert '--source-pins System/docs/files-product-runtime-source-pins.json' in admission
+          print('Frozen Files artifact selection and current provider regression routing PASS')
+          PY
       - name: Install pinned target compiler
         shell: bash
         run: |
@@ -87,7 +121,7 @@ jobs:
           echo "CC_TARGET=$CC_TARGET" >> "$GITHUB_ENV"
       - name: Install declared Home recipe dependencies
         run: python3 -m pip install -r Home/scripts/requirements.txt
-      - name: Focused suites and canonical repeated target
+      - name: Immutable delivered Files reconstruction and exact original hashes
         shell: bash
         run: |
           set -euo pipefail
@@ -98,20 +132,29 @@ jobs:
           echo "8d19aa1d7f5115c8a21cc293d14178d9e0b2c3edb2b42f9f85ed1f8022f16d94  qualification/target/file_browser.elf" | sha256sum -c -
           test "$(stat -c %s qualification/target/file_browser.elf)" = 250020
           python System/scripts/test_files_elf_compaction.py --full qualification/target/file_browser.full.elf --compact qualification/target/file_browser.elf --cc "$CC_TARGET" 2>&1 | tee qualification/logs/compaction.log
+      - name: Current shared-source Files regression target (not a delivered replacement)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python CurrentSystem/scripts/qualify_files_scene.py --runtime Runtime --utilities Utilities --target-cc "$CC_TARGET" --output qualification/current-prepared 2>&1 | tee qualification/logs/current-prepared.log
+          python CurrentSystem/scripts/link_files_scene.py --qualification qualification/current-prepared --version 1.6.1 --alarm-api 1 --cc "$CC_TARGET" --output qualification/current-target 2>&1 | tee qualification/logs/current-target.log
+          cmp qualification/current-target/file_browser.full.elf qualification/current-target/file_browser.repeat.full.elf
+          cmp qualification/current-target/file_browser.elf qualification/current-target/file_browser.repeat.elf
+          python CurrentSystem/scripts/test_files_elf_compaction.py --full qualification/current-target/file_browser.full.elf --compact qualification/current-target/file_browser.elf --cc "$CC_TARGET" 2>&1 | tee qualification/logs/current-compaction.log
       - name: Complete root, storage, peer, sharing and actual Runtime
         shell: bash
         run: |
           set -euo pipefail
           for mode in normal sanitized; do
             flags=(); if [ "$mode" = sanitized ]; then flags=(--sanitize); fi
-            python Utilities/scripts/test_files_background.py --runtime Runtime --system System --utilities Utilities --output "qualification/background-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/background-$mode.log"
-            python System/scripts/test_files_composed_root.py --include qualification/prepared/include --output "qualification/composed-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/composed-$mode.log"
-            python System/scripts/test_files_storage_composed.py --commands "qualification/composed-$mode/commands.json" --output "qualification/storage-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/storage-$mode.log"
+            python Utilities/scripts/test_files_background.py --runtime Runtime --system CurrentSystem --utilities Utilities --output "qualification/background-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/background-$mode.log"
+            python CurrentSystem/scripts/test_files_composed_root.py --include qualification/current-prepared/include --output "qualification/composed-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/composed-$mode.log"
+            python CurrentSystem/scripts/test_files_storage_composed.py --commands "qualification/composed-$mode/commands.json" --output "qualification/storage-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/storage-$mode.log"
             for suite in peer sharing; do
-              python "System/scripts/test_files_${suite}_composed.py" --runtime Runtime --commands "qualification/composed-$mode/commands.json" --output "qualification/$suite-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/$suite-$mode.log"
+              python "CurrentSystem/scripts/test_files_${suite}_composed.py" --runtime Runtime --commands "qualification/composed-$mode/commands.json" --output "qualification/$suite-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/$suite-$mode.log"
             done
-            for provider in System RetainedSystem; do
-              python System/scripts/test_files_runtime.py --runtime Runtime --include qualification/prepared/include --provider-system "$provider" --output "qualification/runtime-$provider-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/runtime-$provider-$mode.log"
+            for provider in CurrentSystem RetainedSystem; do
+              python CurrentSystem/scripts/test_files_runtime.py --runtime Runtime --include qualification/current-prepared/include --provider-system "$provider" --output "qualification/runtime-$provider-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/runtime-$provider-$mode.log"
             done
           done
       - name: Verify retained Home dependency overlay
@@ -133,7 +176,7 @@ jobs:
             if [ "$mode" = sanitized ]; then flags=(--sanitize); hflags=(--sanitized); fi
             python Home/scripts/test_resident_effects_full.py --system HomeSystem --utilities HomeUtilities --production-flags --output "qualification/home-effects-$mode" "${hflags[@]}" 2>&1 | tee "qualification/logs/home-effects-$mode.log"
             python Home/scripts/test_resident_effects_runtime.py --runtime Runtime --output "qualification/home-transport-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/home-transport-$mode.log"
-            python System/scripts/test_files_home.py --home Home --system HomeSystem --utilities HomeUtilities --home-receipt "qualification/home-effects-$mode/receipt.json" --home-fixture "qualification/home-effects-$mode/generated_fixture.c" --composed-commands "qualification/composed-$mode/commands.json" --include qualification/prepared/include --output "qualification/files-home-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/files-home-$mode.log"
+            python CurrentSystem/scripts/test_files_home.py --home Home --system HomeSystem --utilities HomeUtilities --home-receipt "qualification/home-effects-$mode/receipt.json" --home-fixture "qualification/home-effects-$mode/generated_fixture.c" --composed-commands "qualification/composed-$mode/commands.json" --include qualification/current-prepared/include --output "qualification/files-home-$mode" "${flags[@]}" 2>&1 | tee "qualification/logs/files-home-$mode.log"
           done
       - name: Obtain exact original product inputs
         shell: bash

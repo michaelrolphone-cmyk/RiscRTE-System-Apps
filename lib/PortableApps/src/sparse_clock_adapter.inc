@@ -134,7 +134,26 @@ static int32_t desk_kv_put(void *context,const char *key,const void *data,uint32
 static bool desk_acquire(const char *name,uint32_t version,uint64_t instance,
                          risc_runtime_capability_v1 *grant) {
  if(native_sleep_retained || desk_phase==DESK_FINALIZED)return false;
- if(!desk_runtime->acquire(name,version,instance,grant)) {
+ bool acquired=desk_runtime->acquire(name,version,instance,grant);
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(risc_runtime_get_api(1)!=desk_runtime){
+  native_sleep_retained=native_custody_retained=failed=true;return false;
+ }
+#endif
+ if(!acquired) {
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  bool optional=(version==1&&instance==0&&
+     (!strcmp(name,"power.sleep")||!strcmp(name,"display.power")||!strcmp(name,"runtime.retained-wake")||
+      !strcmp(name,"net.wifi")||!strcmp(name,"bluetooth.hci")||!strcmp(name,"board.battery")||!strcmp(name,"time.civil")||
+      !strcmp(name,RISC_CANVAS_INPUT_CAPABILITY)||!strcmp(name,"software.installed-apps"))) ||
+     (version==1&&(!strcmp(name,"storage.volume")||!strcmp(name,"storage.key-value")||
+      !strcmp(name,"storage.key-value.availability"))) ||
+     (version==2&&instance==0&&!strcmp(name,PORTABLE_ALARM_CAPABILITY));
+  if(optional&&grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {
+   if(risc_runtime_get_api(1)!=desk_runtime)portable_desk_adapter_retain();
+   return false;
+  }
+#endif
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
   if(!strcmp(name,"storage.key-value.atomic")&&version==1&&instance==1&&
      grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {
@@ -219,12 +238,15 @@ static bool desk_radios_apply(pqa_radios *state,pqa_state *ui,const risc_runtime
  return !native_sleep_retained;
 }
 #endif
+#ifndef PORTABLE_SHARED_HOME_CANVAS
+/* Shared Home drains Wi-Fi and Bluetooth in PortableHomeSleep before holds. */
 static bool desk_radios_suspend(const risc_runtime_api_v1 *runtime) {
  (void)runtime;
  if(native_sleep_retained)return false;
  if(!pqa_radios_suspend(&desk_quick_runtime)){portable_desk_adapter_retain();return false;}
  return !native_sleep_retained;
 }
+#endif
 static bool desk_radios_resume(pqa_radios *state,pqa_state *ui,const risc_runtime_api_v1 *runtime) {
  (void)runtime;
  if(native_sleep_retained)return false;
@@ -266,14 +288,33 @@ static int desk_open_foreground(void) {
 #endif
  /* A failure after a subscription/claim may conceal retained native state.
   * No cleanup is attempted on these ambiguous outcomes. */
- if(!portable_touch_open(&touch,rt)){portable_desk_adapter_retain();return desk_start_error();}
+ if(!portable_touch_open(&touch,rt)){
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(shared_canvas_input_owned||shared_canvas.retained)portable_desk_adapter_retain();
+#else
+  portable_desk_adapter_retain();
+#endif
+  return desk_start_error();
+ }
 #ifdef PORTABLE_INPUT_NAVIGATION
  if(!input_navigation_open()){portable_desk_adapter_retain();return desk_start_error();}
 #endif
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(rt->acquire("board.battery",1,0,&bg)){
+  gauge=bg.api;
+  if(!gauge||gauge->api_version!=1||gauge->struct_size<sizeof(*gauge)||!gauge->read){
+   portable_desk_adapter_retain();return desk_start_error();
+  }
+ }else{
+  if(native_sleep_retained)return desk_start_error();
+  gauge=NULL; /* Clean absence renders an unavailable battery, not a false level. */
+ }
+#else
  if(!rt->acquire("board.battery",1,0,&bg))return desk_start_error();
  gauge=bg.api;
  if(!gauge || gauge->api_version!=1 || gauge->struct_size<sizeof(*gauge) || !gauge->read)
   return desk_start_error();
+#endif
 #ifdef PORTABLE_QUICK_ACTIONS
  quick.ui.paper=pp_enabled();
  if(!pqa_session_load(&quick,rt) || native_sleep_retained)return desk_start_error();
@@ -282,7 +323,7 @@ static int desk_open_foreground(void) {
   * opening providers. Restore the persisted on/off and exact saved level only
   * for an interactive GPIO wake, never a minute timer or cold boot. */
  if(portable_desk_clock_boot_is_interactive() &&
-    !pqa_session_sync_brightness(&quick,display)) {
+    !pqa_session_sync_brightness(&quick,shared_home_outputs(display))) {
   portable_desk_adapter_retain();return desk_start_error();
  }
 #endif
@@ -290,7 +331,7 @@ static int desk_open_foreground(void) {
 #ifdef PORTABLE_FRONTLIGHT_TONE
  /* Configure tone without changing cold-boot/off brightness. Sparse timer
   * execution never enters this foreground-only capability path. */
- if(quick.ui.paper && !pqa_session_sync_tone(&quick,display)) {
+ if(quick.ui.paper && !pqa_session_sync_tone(&quick,shared_home_outputs(display))) {
   portable_desk_adapter_retain();return desk_start_error();
  }
 #endif
@@ -315,6 +356,9 @@ static int desk_open_foreground(void) {
 #endif
  last_activity=last_poll_at=input_sampled_at=millis_now();
  if(failed)return desk_start_error();
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(portable_home_sleep_admit(rt)!=1)return desk_start_error();
+#endif
  desk_phase=DESK_FOREGROUND;return 1;
 }
 int portable_desk_adapter_start(unsigned mode) {
@@ -324,6 +368,9 @@ int portable_desk_adapter_start(unsigned mode) {
  if(desk_phase==wanted && !failed)return 1;
  if(desk_phase!=DESK_INITIALIZED || failed)return 0;
  desk_phase=DESK_STARTING;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(!shared_canvas_open())return desk_start_error();
+#else
  if(!rt->acquire("display.output",1,0,&dg))return desk_start_error();
  display=dg.api;
  if(!display || display->api_version!=1 || display->struct_size<sizeof(*display) ||
@@ -341,8 +388,22 @@ int portable_desk_adapter_start(unsigned mode) {
 #ifdef PORTABLE_NOVA_UI
  if(!pp_enabled() && (info.width!=240 || info.height!=240))return desk_start_error();
 #endif
+#endif
  alarm_pixels=malloc((size_t)(surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2)*info.height);
- if(!alarm_pixels || !portable_alarm_open(&alarms,rt))return desk_start_error();
+ if(!alarm_pixels)return desk_start_error();
+ if(!portable_alarm_open(&alarms,rt)){
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+  if(alarms.malformed&&!alarms.retained&&!native_sleep_retained)return desk_start_error();
+#endif
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(native_sleep_retained||alarms.grant.api||alarms.grant.slot||alarms.grant.generation||
+     alarms.grant.struct_size!=sizeof(alarms.grant)){
+   portable_desk_adapter_retain();return desk_start_error();
+  }
+#else
+  return desk_start_error();
+#endif
+ }
 #ifndef PORTABLE_FORCE_FULL_FRAMES
  if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && (info.flags&RISC_DISPLAY_INFO_PARTIAL_DAMAGE))
   paper_previous=malloc((size_t)((info.width+7)/8)*info.height);
@@ -383,7 +444,7 @@ static void desk_finalize(void) {
  }
  if(!portable_alarm_close(&alarms,rt))return;
 #ifdef PORTABLE_QUICK_ACTIONS
- if(quick.ui.torch && !pqa_session_restore(&quick,display)){portable_desk_adapter_retain();return;}
+ if(quick.ui.torch && !pqa_session_restore(&quick,shared_home_outputs(display))){portable_desk_adapter_retain();return;}
 #endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
  raster_discard();
@@ -402,6 +463,10 @@ static void desk_finalize(void) {
  if(!portable_touch_close(&touch,rt)){portable_desk_adapter_retain();return;}
  np_close();if(native_sleep_retained)return;
  if(bg.api && !rt->release(&bg))return;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(portable_home_sleep_close()!=1)return;
+ if(!shared_canvas_close())return;
+#endif
  if(dg.api && !rt->release(&dg))return;
  free(alarm_pixels);alarm_pixels=NULL;alarm_pixels_valid=false;
 #ifdef PORTABLE_QUICK_ACTIONS

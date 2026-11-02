@@ -71,6 +71,9 @@ static bool desk_halted(int status) {
  return status==PORTABLE_REALTIME_CONTEXT || status==PORTABLE_REALTIME_UNCERTAIN ||
         status==PORTABLE_REALTIME_RETAINED;
 }
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+#include "paper_home_civil.inc"
+#endif
 /* Every native client is invocation-local and cleanly closed before returning.
  * A retained client must not be released, retried, or replaced by another one. */
 static int desk_sample(bool recover,risc_realtime_snapshot_v1 *out) {
@@ -82,11 +85,19 @@ static int desk_sample(bool recover,risc_realtime_snapshot_v1 *out) {
  if(desk_halted(status))return desk_fence();
  if(status!=PORTABLE_REALTIME_OK)return status;
  if(recover)desk_rtc_check.checked=false;
- if(desk_promoted && desk_zone_known && desk_basis_known && paper_frame_idle()) {
+ if(desk_promoted &&
+#ifndef PORTABLE_SHARED_HOME_CANVAS
+    desk_zone_known && desk_basis_known &&
+#endif
+    paper_frame_idle()) {
+  portable_realtime_recovery_result result;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  status=desk_civil_reconcile(&client,&result);
+#else
   portable_realtime_recovery_policy policy={.rtc_instance=0,.rule=desk_rule,
       .basis=desk_basis,.fold_choice=-1,.allow_basis_change=false};
-  portable_realtime_recovery_result result;
   status=portable_realtime_reconcile_rtc(&client,&policy,&desk_rtc_check,&result);
+#endif
   /* A safely rejected RTC sample does not erase an already valid native
    * display. Uncertain ownership still fences below; no retry in this frame. */
   if(status<0 && !desk_halted(status) && !result.seeded)
@@ -112,8 +123,15 @@ static bool desk_home_valid;
 #endif
 static bool read_clock(twatch_rtc_time_v1 *out) {
  risc_realtime_snapshot_v1 sample;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ risc_civil_calendar_v1 local;
+ bool valid=desk_sample(false,&sample)==PORTABLE_REALTIME_OK&&
+  desk_civil_project(sample.epoch_seconds,sample.nanoseconds,&local)==PORTABLE_REALTIME_OK;
+ if(valid)*out=(twatch_rtc_time_v1){(uint16_t)local.year,local.month,local.day,local.weekday,local.hour,local.minute,local.second};
+#else
  bool valid=desk_zone_known && desk_sample(false,&sample)==PORTABLE_REALTIME_OK &&
         desk_local(&desk_configuration,sample.epoch_seconds,out);
+#endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  desk_home_valid=valid;
  if(valid)desk_home_epoch=sample.epoch_seconds;
@@ -146,7 +164,15 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
 #endif
  portable_desk_config config={0};
  risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
- if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&grant)){desk_fence();return false;}
+ if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&grant)){
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(!portable_app_sleep_retained()&&grant.struct_size==sizeof(grant)&&!grant.api&&!grant.slot&&!grant.generation){
+   desk_config_pending=true;desk_config_retry_at=app->millis()+1000u;
+   portable_desk_adapter_settings_pending(true);return false;
+  }
+#endif
+  desk_fence();return false;
+ }
  if(!grant.api || !grant.slot || !grant.generation){desk_fence();return false;}
  unsigned face,time_format,language,flip,sleep_mode;
  portable_rtc_basis next_basis;
@@ -182,6 +208,13 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
  portable_desk_adapter_settings_pending(desk_config_pending);
  if(desk_config_pending){desk_config_retry_at=app->millis()+250u;return false;}
  desk_basis=next_basis;*mode=sleep_mode;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ /* The installed provider owns the effective clock domain, including defaults.
+  * Keep stored X4 metadata untouched; no app offset/device choice is inferred. */
+ int effective_status=desk_civil_cached_rule(config.time_zone);
+ if(desk_retained)return false;
+ zone=effective_status==PORTABLE_REALTIME_OK?PORTABLE_TIMEZONE_LOADED:PORTABLE_TIMEZONE_INVALID;
+#endif
  desk_zone_known=(zone==PORTABLE_TIMEZONE_LOADED || zone==PORTABLE_TIMEZONE_MISSING) &&
      portable_timezone_resolve(config.time_zone,sizeof(config.time_zone),&desk_rule)==PORTABLE_TIMEZONE_OK;
  desk_basis_known=basis==PORTABLE_RTC_BASIS_LOADED || basis==PORTABLE_RTC_BASIS_MISSING;

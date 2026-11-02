@@ -2,6 +2,9 @@
   if(!portable_broadcast_stop())return -1;
 #endif
 /* Included at the legacy init point or explicit native Settings app_main start. */
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(!shared_canvas_open())return -1;
+#else
   if (!rt->acquire("display.output", 1, 0, &dg))
     return -1;
   display = dg.api;
@@ -46,6 +49,7 @@
   paper_rotated=PORTABLE_DISPLAY_ROTATION==90 && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) && info.width>info.height;
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && !pp_enabled())return -1;
+#endif
 #ifdef PORTABLE_PAPER_PREFERENCES
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && pp_enabled()) {
     paper_preferences_grant=(risc_runtime_capability_v1){.struct_size=sizeof(paper_preferences_grant)};unsigned value=0;
@@ -143,7 +147,7 @@
     (info.flags&RISC_DISPLAY_INFO_BRIGHTNESS)!=0;
   quick_paper_capabilities();
 #ifdef PORTABLE_FRONTLIGHT_TONE
-  if(quick.ui.paper && !pqa_session_sync_tone(&quick,display)){
+  if(quick.ui.paper && !pqa_session_sync_tone(&quick,shared_home_outputs(display))){
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
    /* A refused provider operation may already own terminal custody. */
    portable_adapter_retain_silent();
@@ -167,5 +171,8 @@
   foreground_idle_configured=foreground_idle_retry_pending=false;
   foreground_idle_retry_delay=0;
   if(!foreground_idle_configure_once(millis_now()))return -1;
+#endif
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(portable_home_sleep_admit(rt)!=1)return -1;
 #endif
   return failed?-1:0;

@@ -229,8 +229,18 @@ static void printPlatformReceipt(const RiscBoot::Runtime& runtime) {
 }
 static bool bindRetainedSd(RiscBoot::Runtime& runtime) {
   namespace S=RiscCpu::NativeSerialStorage;
-  if(!S::prepare(owner,owner) || !S::bindSd(runtime,owner,owner))return false;
+  if(!S::prepare(owner,owner)){fprintf(stderr,"SD prepare failed\n");return false;}
+  // Negative controls: Firmware ownership must not admit either missing lifecycle endpoint.
+  auto shutdown=runtime.port_.serialFilesShutdown;auto stop=runtime.port_.serialFilesStop;
+  runtime.port_.serialFilesShutdown=nullptr;
+  const bool admittedWithoutShutdown=S::bindSd(runtime,owner,owner);
+  runtime.port_.serialFilesShutdown=shutdown;runtime.port_.serialFilesStop=nullptr;
+  const bool admittedWithoutStop=S::bindSd(runtime,owner,owner);
+  runtime.port_.serialFilesStop=stop;
+  if(admittedWithoutShutdown||admittedWithoutStop){fprintf(stderr,"SD lifecycle negative control admitted\\n");return false;}
+  if(!S::bindSd(runtime,owner,owner)){fprintf(stderr,"SD bind failed platforms=%zu error=%s\n",runtime.platformCount_,runtime.error());return false;}
   const auto* admission=S::admission();
+  fprintf(stderr,"SD receipt count=%zu ready=%d namespace=%u writable=%d bound=%d retained=%d\n",admission?admission->count:0,admission?int(admission->ready()):0,admission&&admission->count?unsigned(admission->namespaces[0].id):0,admission&&admission->count?int(admission->namespaces[0].writable):0,int(S::sdFiles().bound()),int(S::sdFiles().retained()));
   return admission && admission->count==1 && admission->ready() &&
     admission->namespaces[0].id==12 && admission->namespaces[0].writable &&
     admission->namespaces[0].files==&S::sdFiles() &&
@@ -304,6 +314,10 @@ int main(int argc, char** argv) {
 #else
   RiscTest::FileSources metadataFiles({std::string(argv[1])},owner,owner);
 #endif
+  // Match production Firmware-lifetime serial endpoint presence. Admission must
+  // not invoke either endpoint; a call is counted and refuses clean success.
+  runtimePort.serialFilesShutdown=[](){++storageCalls;return false;};
+  runtimePort.serialFilesStop=[](){++storageCalls;return false;};
   runtimePort.files=metadataFiles.sources();
   RiscBoot::Runtime runtime(runtimePort);
   const bool prepared = runtime.prepare(argv[1]);

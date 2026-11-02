@@ -6,7 +6,7 @@ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--watch',type=Pat
 root=Path(__file__).resolve().parents[1];out=a.output.resolve();out.mkdir(parents=True,exist_ok=True);runs=[]
 for mode in ('normal','sanitized'):
  flags=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if mode=='sanitized' else []
- binary=out/mode;command=['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror',*flags,'-I'+str(root/'lib/PortableApps/include'),'-I'+str(a.watch/'sdk/driver'),str(root/'test/native_apps/home_power_test.c'),'-o',str(binary)]
+ binary=out/mode;command=['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror',*flags,'-I'+str(root/'lib/PortableApps/include'),'-I'+str(root/'sdk/app'),'-I'+str(a.watch/'sdk/driver'),str(root/'test/native_apps/home_power_test.c'),'-o',str(binary)]
  subprocess.run(command,check=True);result=subprocess.run([str(binary)],capture_output=True,text=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
  (out/(mode+'.log')).write_text(result.stdout+result.stderr)
  if result.returncode:print(result.stdout+result.stderr);result.check_returncode()

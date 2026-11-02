@@ -1,25 +1,36 @@
 #pragma once
 #include "canvas_frames.h"
+#include "canvas_snapshot.h"
 #include "RiscTouchV1.h"
+#include "RiscCanvasInputV1.h"
 typedef struct {
  canvas_frames frames;
  risc_canvas_open_v1 request;
  const risc_touch_api_v1 *touch;
  const risc_input_navigation_api_v1 *navigation;
  uint64_t subscription,input_sequence,raw_sequence;
- uint32_t rotation,touch_rotation,preferred_format;
+ uint32_t rotation,touch_rotation,preferred_format,orientation,reverse;
  risc_input_navigation_frame_v1 previous_navigation;
  bool claimed,input_gap,gap_emitted,geometry_changed;
  bool captured[UINT8_MAX+1u];
  risc_canvas_api_v1 api;
+ risc_canvas_binding_v1 binding;
+ bool companion_bound;
+ risc_canvas_presentation_v1 presentation;
 } canvas_provider;
 static inline int32_t canvas_provider_geometry_refresh(canvas_provider*p){
  risc_display_info_v1 info={0};canvas_mapping m;
  bool read=p->frames.display->get_info(p->frames.display->context,&info);
  if(!canvas_frames_alive(&p->frames))return RISC_CANVAS_RETAINED;
  if(!read)return RISC_CANVAS_UNAVAILABLE;
- if(!canvas_mapping_open(&m,info.width,info.height,p->rotation,info.safe_insets.left,info.safe_insets.top,info.safe_insets.right,info.safe_insets.bottom,&p->request))return RISC_CANVAS_UNSUPPORTED;
- uint64_t stride=p->request.encoding==RISC_CANVAS_RGBA8?(uint64_t)m.width*4:((uint64_t)m.width+7)/8;
+ uint32_t rotation=p->rotation;
+ uint32_t logical_width=rotation%2?info.height:info.width,logical_height=rotation%2?info.width:info.height;
+ if((p->orientation==RISC_CANVAS_ORIENTATION_PORTRAIT&&logical_width>logical_height)||
+    (p->orientation==RISC_CANVAS_ORIENTATION_LANDSCAPE&&logical_width<logical_height))rotation=(rotation+1)%4;
+ rotation=(rotation+2*p->reverse)%4;
+ if(!canvas_mapping_open(&m,info.width,info.height,rotation,info.safe_insets.left,info.safe_insets.top,info.safe_insets.right,info.safe_insets.bottom,&p->request))return RISC_CANVAS_UNSUPPORTED;
+ uint64_t stride=p->request.encoding==RISC_CANVAS_RGBA8?(uint64_t)m.width*4:
+  p->request.encoding==RISC_CANVAS_RGB565_ADAPTIVE?(uint64_t)m.width*2:((uint64_t)m.width+7)/8;
  if(stride>UINT32_MAX||m.height>SIZE_MAX/stride)return RISC_CANVAS_UNSUPPORTED;
  if(!canvas_mapping_equal(&m,&p->frames.mapping)){
   if(p->frames.revision==UINT32_MAX)return RISC_CANVAS_UNAVAILABLE;
@@ -67,8 +78,23 @@ static int32_t canvas_provider_open(void*ctx,const risc_canvas_open_v1*request,u
  canvas_provider*p=ctx;canvas_frames*c=&p->frames;
  if(!canvas_frames_alive(c))return RISC_CANVAS_RETAINED;
  if(!request||request->struct_size<sizeof(*request)||!out)return RISC_CANVAS_INVALID;
+ if(request->struct_size>=sizeof(risc_canvas_open_input_binding_v1)){
+  const risc_canvas_open_input_binding_v1*q=(const risc_canvas_open_input_binding_v1*)request;
+  if(q->binding_tag==RISC_CANVAS_BINDING_TAG){
+   if(!q->binding_out||request->encoding||request->layout||request->logical_width||request->logical_height)return RISC_CANVAS_INVALID;
+   *q->binding_out=NULL;
+   int32_t rc=canvas_frames_fence(c,q->session);if(rc)return rc;
+   *q->binding_out=&p->binding;*out=q->session;return RISC_CANVAS_OK;
+  }
+ }
+ const risc_canvas_open_presentation_v1*extended=NULL;
+ if(request->struct_size>=sizeof(risc_canvas_open_presentation_v1)){
+  extended=(const risc_canvas_open_presentation_v1*)request;
+  if(extended->presentation_tag!=RISC_CANVAS_PRESENTATION_TAG||!extended->presentation_out)return RISC_CANVAS_UNSUPPORTED;
+  *extended->presentation_out=NULL;
+ }
  if(c->session)return RISC_CANVAS_BUSY; /* Single physical foreground owner. */
- if(request->encoding!=RISC_CANVAS_MONO1&&request->encoding!=RISC_CANVAS_RGBA8)return RISC_CANVAS_UNSUPPORTED;
+ if(request->encoding!=RISC_CANVAS_MONO1&&request->encoding!=RISC_CANVAS_RGBA8&&request->encoding!=RISC_CANVAS_RGB565_ADAPTIVE)return RISC_CANVAS_UNSUPPORTED;
  const risc_display_output_api_v1*d=c->display;
  if(!d||d->api_version!=1||d->struct_size<offsetof(risc_display_output_api_v1,present_status)+sizeof(d->present_status)||!d->get_info||!d->acquire||!d->release||!d->submit||!d->present_status)return RISC_CANVAS_UNAVAILABLE;
  risc_display_info_v1 info={0};bool read=d->get_info(d->context,&info);if(!canvas_frames_alive(c))return RISC_CANVAS_RETAINED;if(!read)return RISC_CANVAS_UNAVAILABLE;
@@ -76,12 +102,16 @@ static int32_t canvas_provider_open(void*ctx,const risc_canvas_open_v1*request,u
  if(format!=RISC_DISPLAY_FORMAT_MONO1&&format!=RISC_DISPLAY_FORMAT_RGB565)return RISC_CANVAS_UNSUPPORTED;
  if(!(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(format)))return RISC_CANVAS_UNSUPPORTED;
  if(request->encoding==RISC_CANVAS_RGBA8&&format!=RISC_DISPLAY_FORMAT_RGB565)return RISC_CANVAS_UNSUPPORTED;
- p->request=*request;int32_t rc=canvas_provider_geometry_refresh(p);if(rc)return rc;
+ p->orientation=p->reverse=0;p->request=*request;int32_t rc=canvas_provider_geometry_refresh(p);if(rc)return rc;
  if(c->serial==UINT64_MAX)return RISC_CANVAS_UNAVAILABLE;
  rc=canvas_provider_input_acquire(p);
  if(rc){int32_t cleanup=canvas_provider_input_release(p);return cleanup?cleanup:rc;}
  c->encoding=request->encoding;c->format=format;c->session=++c->serial;c->quiesced=false;
- memset(p->captured,0,sizeof(p->captured));memset(&p->previous_navigation,0,sizeof(p->previous_navigation));p->raw_sequence=0;p->geometry_changed=false;p->input_gap=true;p->gap_emitted=false;*out=c->session;return RISC_CANVAS_OK;
+ memset(p->captured,0,sizeof(p->captured));memset(&p->previous_navigation,0,sizeof(p->previous_navigation));p->raw_sequence=0;p->geometry_changed=false;p->input_gap=true;p->gap_emitted=false;
+ p->presentation.flags=((info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE)?RISC_CANVAS_PRESENT_RETAINS_IMAGE:0)|
+  ((info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_CANVAS_PRESENT_CLEAN_SUPPORTED:0)|
+  (risc_display_output_history(d)?RISC_CANVAS_PRESENT_HISTORY_SUPPORTED:0);
+ *out=c->session;if(extended)*extended->presentation_out=&p->presentation;return RISC_CANVAS_OK;
 }
 static int32_t canvas_provider_geometry(void*ctx,uint64_t session,risc_canvas_geometry_v1*out){
  canvas_provider*p=ctx;int32_t rc=canvas_frames_fence(&p->frames,session);if(rc)return rc;
@@ -115,7 +145,7 @@ static bool canvas_provider_touch_point(canvas_provider*p,uint32_t x,uint32_t y,
  if(!w||!h||x>=w||y>=h)return false;
  uint32_t tx=x,ty=y,tw=w,th=h;
  switch(p->touch_rotation){case 1:tx=h-1-y;ty=x;tw=h;th=w;break;case 2:tx=w-1-x;ty=h-1-y;break;case 3:tx=y;ty=w-1-x;tw=h;th=w;break;default:break;}
- canvas_mapping*m=&p->frames.mapping;uint32_t lw=m->rotation%2?m->physical_height:m->physical_width,lh=m->rotation%2?m->physical_width:m->physical_height;
+ canvas_mapping base=p->frames.mapping;base.rotation=p->rotation;canvas_mapping*m=&base;uint32_t lw=m->rotation%2?m->physical_height:m->physical_width,lh=m->rotation%2?m->physical_width:m->physical_height;
  uint32_t lx=(uint64_t)tx*lw/tw,ly=(uint64_t)ty*lh/th;
  canvas_mapping_physical(m,lx,ly,px,py);return true;
 }
@@ -195,7 +225,51 @@ static int32_t canvas_provider_next(void*ctx,uint64_t s,risc_canvas_event_v1*out
  }else if(!event.kind)return RISC_CANVAS_IDLE;
  event.sequence=++p->input_sequence;*out=event;return RISC_CANVAS_OK;
 }
+static int32_t canvas_provider_present(void*ctx,uint64_t session,uint64_t lease,const risc_canvas_present_v1*intent,uint64_t*out){
+ canvas_provider*p=ctx;int32_t rc=canvas_frames_fence(&p->frames,session);if(rc)return rc;
+ rc=canvas_provider_geometry_refresh(p);return rc?rc:canvas_frames_submit_options(&p->frames,session,lease,intent,out);
+}
+static int32_t canvas_provider_seed(void*ctx,uint64_t session,uint64_t lease){
+ canvas_provider*p=ctx;int32_t rc=canvas_frames_fence(&p->frames,session);if(rc)return rc;
+ rc=canvas_provider_geometry_refresh(p);return rc?rc:canvas_frames_seed(&p->frames,session,lease);
+}
+static int32_t canvas_provider_orientation(void*ctx,uint64_t session,uint32_t orientation,uint32_t reverse){
+ canvas_provider*p=ctx;int32_t rc=canvas_frames_fence(&p->frames,session);if(rc)return rc;
+ if(orientation>RISC_CANVAS_ORIENTATION_LANDSCAPE||reverse>1)return RISC_CANVAS_INVALID;
+ if(p->frames.lease||p->frames.receipts||p->frames.seeded.frame)return RISC_CANVAS_BUSY;
+ uint32_t old=p->orientation,old_reverse=p->reverse;
+ p->orientation=orientation;p->reverse=reverse;
+ rc=canvas_provider_geometry_refresh(p);
+ if(rc){p->orientation=old;p->reverse=old_reverse;return rc;}
+ memset(p->captured,0,sizeof(p->captured));p->input_gap=true;p->gap_emitted=false;
+ return RISC_CANVAS_OK;
+}
+static int32_t canvas_provider_copy_completed(void*ctx,uint64_t session,uint32_t revision,void*out,size_t size,uint32_t stride){
+ canvas_provider*p=ctx;int32_t rc=canvas_frames_fence(&p->frames,session);if(rc)return rc;
+ rc=canvas_provider_geometry_refresh(p);return rc?rc:canvas_frames_copy_completed(&p->frames,session,revision,out,size,stride);
+}
+static int32_t canvas_provider_bind_inputs(void*ctx,uint64_t session,const risc_touch_api_v1*t,const risc_input_navigation_api_v1*n){
+ canvas_provider*p=ctx;int32_t rc=canvas_frames_fence(&p->frames,session);if(rc)return rc;
+ if(p->frames.lease||p->frames.receipts||p->companion_bound)return RISC_CANVAS_BUSY;
+ if(p->touch||p->navigation||(!t&&!n))return RISC_CANVAS_UNSUPPORTED;
+ p->touch=t;p->navigation=n;
+ rc=canvas_provider_input_acquire(p);
+ if(rc){int32_t cleanup=canvas_provider_input_release(p);if(cleanup)return cleanup;p->touch=NULL;p->navigation=NULL;return rc;}
+ p->companion_bound=true;p->input_gap=true;p->gap_emitted=false;return RISC_CANVAS_OK;
+}
+static int32_t canvas_provider_unbind_inputs(void*ctx,uint64_t session){
+ canvas_provider*p=ctx;
+ if(!canvas_frames_alive(&p->frames))return RISC_CANVAS_RETAINED;
+ if(session!=p->frames.session&&p->frames.session)return RISC_CANVAS_STALE;
+ if(!p->companion_bound)return RISC_CANVAS_OK;
+ if(p->frames.lease||p->frames.receipts)return RISC_CANVAS_BUSY;
+ int32_t rc=canvas_provider_input_release(p);if(rc)return rc;
+ p->touch=NULL;p->navigation=NULL;p->companion_bound=false;p->input_gap=true;p->gap_emitted=false;
+ memset(p->captured,0,sizeof(p->captured));return RISC_CANVAS_OK;
+}
 static inline void canvas_provider_init(canvas_provider*p,const risc_display_output_api_v1*display,const risc_touch_api_v1*touch,uint32_t rotation){
  memset(p,0,sizeof(*p));p->frames.display=display;p->touch=touch;p->rotation=rotation;
+ p->presentation=(risc_canvas_presentation_v1){sizeof(p->presentation),1,RISC_CANVAS_PRESENTATION_TAG,p,canvas_provider_present,canvas_provider_seed,0,canvas_provider_orientation,canvas_provider_copy_completed};
  p->api=(risc_canvas_api_v1){1,sizeof(p->api),RISC_CANVAS_TAG,p,canvas_provider_open,canvas_provider_geometry,canvas_provider_begin,canvas_provider_submit,canvas_provider_cancel,canvas_provider_poll,canvas_provider_forget,canvas_provider_next,canvas_provider_contacts,canvas_provider_quiesce,canvas_provider_resume,canvas_provider_close};
+ p->binding=(risc_canvas_binding_v1){sizeof(p->binding),1,RISC_CANVAS_BINDING_TAG,p,canvas_provider_bind_inputs,canvas_provider_unbind_inputs};
 }

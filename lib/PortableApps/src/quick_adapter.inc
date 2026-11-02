@@ -151,9 +151,9 @@ static bool low_battery_poll_inner(void) {
  if(!portable_radio_suspend())return false;
 #endif
  if(!pqa_session_load(&quick,rt)||!pqa_radios_load(&quick_radios,&quick.ui,rt) ||
-    !pqa_session_restore(&quick,display))return false;
+    !pqa_session_restore(&quick,shared_home_outputs(display)))return false;
 #ifdef PORTABLE_PAPER_TRANSITIONS
- if(quick.ui.paper && !pqa_session_sync_brightness(&quick,display))return false;
+ if(quick.ui.paper && !pqa_session_sync_brightness(&quick,shared_home_outputs(display)))return false;
 #endif
  rt->diagnostic(result&PORTABLE_LOW_BATTERY_ERROR?"LOW_BATTERY crossing=partial-once":"LOW_BATTERY crossing=applied-once");return true;
 }
@@ -230,7 +230,7 @@ static bool quick_apply(uint32_t actions) {
 #endif
  bool changed=false;
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
- if(!pqa_session_apply(&quick,rt,display,actions,&changed)){
+ if(!pqa_session_apply(&quick,rt,shared_home_outputs(display),actions,&changed)){
 #if defined(PORTABLE_FRONTLIGHT_TONE) && defined(PORTABLE_ALARM_TERMINAL_RETENTION)
   if(quick.retained)portable_adapter_retain_silent();else
 #endif
@@ -238,7 +238,7 @@ static bool quick_apply(uint32_t actions) {
   return false;
  }
 #else
- if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
+ if(!pqa_session_apply(&quick,rt,shared_home_outputs(display),actions,&changed))return false;
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
  if(actions&PQA_CONTEXTS)portable_contexts_settings_changed(&contexts_client,quick.ui.contexts_valid);
@@ -352,7 +352,7 @@ static bool quick_interrupt(void) {
  if(raster_sealed)raster_saved_app_frame=false;
 #endif
  if(quick_background && alarm_pixels){memcpy(alarm_pixels,quick_background,quick_frame_bytes());alarm_pixels_valid=true;}
- return !quick.ui.torch_valid || pqa_session_restore(&quick,display);
+ return !quick.ui.torch_valid || pqa_session_restore(&quick,shared_home_outputs(display));
 }
 static void quick_time(char out[6]) {
  memcpy(out,"--:--",6);
@@ -508,7 +508,7 @@ static bool quick_foreground(bool *consumed) {
  if(!pqa_session_load(&quick,rt))return false;
  quick_paper_capabilities();
 #ifdef PORTABLE_PAPER_TRANSITIONS
- if(quick.ui.paper && quick.ui.torch_valid && !pqa_session_sync_brightness(&quick,display)) {
+ if(quick.ui.paper && quick.ui.torch_valid && !pqa_session_sync_brightness(&quick,shared_home_outputs(display))) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
 #if defined(PORTABLE_FRONTLIGHT_TONE) && defined(PORTABLE_ALARM_TERMINAL_RETENTION)
   if(quick.retained)portable_adapter_retain_silent();else

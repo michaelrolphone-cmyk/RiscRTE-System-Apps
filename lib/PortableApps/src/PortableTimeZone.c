@@ -101,7 +101,9 @@ static int valid_transition(const portable_timezone_transition *t) {
 static int valid_rule(const portable_timezone_rule *r) {
     return r && r->standard_offset>=-86400 && r->standard_offset<=86400 &&
         r->daylight_offset>=-86400 && r->daylight_offset<=86400 && r->has_daylight<=1 &&
-        (!r->has_daylight || (valid_transition(&r->start) && valid_transition(&r->end)));
+        (!r->has_daylight || (valid_transition(&r->start) && valid_transition(&r->end))) &&
+        (!r->era_year || (r->has_daylight && r->era_year>=PORTABLE_TIMEZONE_MIN_YEAR &&
+         r->era_year<=PORTABLE_TIMEZONE_MAX_YEAR && valid_transition(&r->era_start) && valid_transition(&r->era_end)));
 }
 int portable_timezone_parse(const char *posix,size_t capacity,portable_timezone_rule *out) {
     if (!out) return PORTABLE_TIMEZONE_INVALID;
@@ -123,8 +125,28 @@ int portable_timezone_parse(const char *posix,size_t capacity,portable_timezone_
     if (p.p!=p.end || !valid_rule(&r)) return PORTABLE_TIMEZONE_BAD_RULE;
     *out=r; return PORTABLE_TIMEZONE_OK;
 }
+static int retained_rule(const char *id,size_t capacity,portable_timezone_rule *out) {
+    size_t n=text_length(id,capacity,PORTABLE_TIMEZONE_ID_BYTES);
+    if(!n||n==PORTABLE_TIMEZONE_ID_BYTES)return PORTABLE_TIMEZONE_BAD_RULE;
+    parser p={id,id+n};portable_timezone_rule r={0};int year=0;int32_t offset;
+    if(!consume(&p,'@'))return PORTABLE_TIMEZONE_BAD_RULE;
+    for(unsigned i=0;i<4;i++) {
+        if(p.p==p.end||!digit(*p.p))return PORTABLE_TIMEZONE_BAD_RULE;
+        year=year*10+(*p.p++-'0');
+    }
+    if(year<PORTABLE_TIMEZONE_MIN_YEAR||year>PORTABLE_TIMEZONE_MAX_YEAR||!consume(&p,':')||
+       !clock_seconds(&p,24,&offset))return PORTABLE_TIMEZONE_BAD_RULE;
+    r.standard_offset=-offset;
+    if(!consume(&p,',')||!clock_seconds(&p,24,&offset))return PORTABLE_TIMEZONE_BAD_RULE;
+    r.daylight_offset=-offset;r.has_daylight=1;r.era_year=(uint16_t)year;
+    if(!consume(&p,';')||!transition(&p,&r.start)||!consume(&p,',')||!transition(&p,&r.end)||
+       !consume(&p,';')||!transition(&p,&r.era_start)||!consume(&p,',')||!transition(&p,&r.era_end)||
+       p.p!=p.end||!valid_rule(&r))return PORTABLE_TIMEZONE_BAD_RULE;
+    *out=r;return PORTABLE_TIMEZONE_OK;
+}
 int portable_timezone_resolve(const char *id,size_t capacity,portable_timezone_rule *out) {
     if (!out) return PORTABLE_TIMEZONE_INVALID;
+    if(id&&capacity&&id[0]=='@')return retained_rule(id,capacity,out);
     int index=portable_timezone_find(id,capacity);
     const portable_timezone_entry *entry=portable_timezone_get(index<0?0u:(unsigned)index);
     int rc=portable_timezone_parse(entry->posix,PORTABLE_TIMEZONE_RULE_BYTES,out);
@@ -189,8 +211,10 @@ static int rule_offset(const portable_timezone_rule *r,int64_t epoch,int32_t *of
         /* Check adjacent years as offsets/signed transition times can cross
          * New Year; southern seasons then follow naturally from last event. */
         for (int32_t year=utc.year-1;year<=utc.year+1;++year) {
-            int64_t start=transition_epoch(year,&r->start,r->standard_offset);
-            int64_t end=transition_epoch(year,&r->end,r->daylight_offset);
+            const portable_timezone_transition *start_rule=r->era_year&&year>=r->era_year?&r->era_start:&r->start;
+            const portable_timezone_transition *end_rule=r->era_year&&year>=r->era_year?&r->era_end:&r->end;
+            int64_t start=transition_epoch(year,start_rule,r->standard_offset);
+            int64_t end=transition_epoch(year,end_rule,r->daylight_offset);
             if (start<=epoch && start>latest) { latest=start; *daylight=1; }
             if (end<=epoch && end>=latest) { latest=end; *daylight=0; }
         }

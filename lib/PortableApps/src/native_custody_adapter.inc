@@ -21,6 +21,18 @@ static void portable_adapter_retain_inner(bool log) {
 #else
 void portable_adapter_retain(void) {
 #endif
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  /* Runtime may have already fenced the invocation during a refused acquire
+   * or callback. Only local bookkeeping is legal after that identity loss. */
+  if(risc_runtime_get_api(1)!=native_custody_runtime){
+    native_custody_retained=true;failed=true;gauge=NULL;
+    native_custody_surface=surface;surface=(risc_display_surface_v1){0};
+#ifdef PORTABLE_ALARM_CLIENT
+    native_sleep_retained=true;
+#endif
+    return;
+  }
+#endif
 #ifdef PORTABLE_LAST_ATTEMPT_CHECKPOINT
   portable_last_attempt_stop();
 #endif
