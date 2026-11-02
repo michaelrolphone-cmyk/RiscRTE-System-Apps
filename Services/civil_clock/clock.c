@@ -8,6 +8,7 @@
 #include "RiscPlatformRealtimeV1.h"
 #include "RiscBoundKeyValueV1.h"
 #include "PortableTimeZonePreference.h"
+#include "PortableRtcBasis.h"
 static const risc_platform_realtime_api_v1 *realtime;
 static const risc_bound_key_value_v1 *preferences;
 #else
@@ -47,6 +48,54 @@ static int32_t read_time(void *ctx,risc_civil_time_v1 *out){
     if(portable_timezone_civil_to_epoch(&local,&epoch)!=PORTABLE_TIMEZONE_OK)return -1;
     result.day=(int32_t)((uint32_t)(epoch-INT64_C(946684800))/86400u);*out=result;return 0;
 }
+/* Full-clock policy suffix: application owns acquisition/seed cadence; provider
+ * owns installed clock-domain interpretation. Never mutates persistent state. */
+static int32_t policy_rule(char zone[40],portable_timezone_rule*rule){
+#ifdef CIVIL_NATIVE_UTC
+ const risc_key_value_v1 kv={1,sizeof(kv),NULL,preference_get,NULL};
+ int rc=portable_timezone_preference_load(&kv,zone);if(!alive())return -9;
+ if(rc!=PORTABLE_TIMEZONE_LOADED&&rc!=PORTABLE_TIMEZONE_MISSING)return -1;
+#else
+ snprintf(zone,40,"%s",portable_time_zone());
+#endif
+ return portable_timezone_resolve(zone,40,rule)==PORTABLE_TIMEZONE_OK?0:-1;
+}
+static int32_t project_time(void*ctx,int64_t epoch,uint32_t nanoseconds,risc_civil_calendar_v1*out){
+ (void)ctx;if(!alive())return -9;
+ if(!started||!out||out->struct_size<sizeof(*out)||nanoseconds>=1000000000u)return -1;
+ risc_civil_calendar_v1 result={.struct_size=sizeof(result),.nanoseconds=nanoseconds};
+ portable_timezone_rule rule;int rc=policy_rule(result.zone,&rule);if(rc)return rc;
+ portable_timezone_civil local;
+ if(portable_timezone_utc_to_local(&rule,epoch,&local,NULL)!=PORTABLE_TIMEZONE_OK||local.year<2000||local.year>2099)return -1;
+ result.year=local.year;result.month=local.month;result.day=local.day;result.hour=local.hour;
+ result.minute=local.minute;result.second=local.second;result.weekday=local.weekday;
+ *out=result;return 0;
+}
+#ifdef CIVIL_NATIVE_UTC
+static int32_t readonly_put(void*c,const char*k,const void*b,uint32_t n){(void)c;(void)k;(void)b;(void)n;return -1;}
+#endif
+static int32_t interpret_rtc(void*ctx,const risc_civil_calendar_v1*raw,int64_t*out){
+ (void)ctx;if(!alive())return -9;
+ if(!started||!raw||raw->struct_size<sizeof(*raw)||!out||raw->nanoseconds||raw->reserved)return -1;
+ portable_timezone_civil civil={raw->year,raw->month,raw->day,raw->hour,raw->minute,raw->second,raw->weekday};
+ int64_t epoch=0;
+#ifdef CIVIL_NATIVE_UTC
+ char zone[40];portable_timezone_rule rule;int rc=policy_rule(zone,&rule);if(rc)return rc;
+ /* Existing codec requires a complete KV table, but this adapter never writes. */
+ const risc_key_value_v1 kv={1,sizeof(kv),NULL,preference_get,readonly_put};
+ portable_rtc_basis basis;rc=portable_rtc_basis_load(&kv,&basis);if(!alive())return -9;
+ if(rc!=PORTABLE_RTC_BASIS_LOADED&&rc!=PORTABLE_RTC_BASIS_MISSING)return -1;
+ portable_timezone_rtc_result interpreted;
+ if(portable_timezone_interpret_rtc(&rule,&civil,basis.stores_utc,basis.reference_epoch,-1,&interpreted)!=PORTABLE_TIMEZONE_OK||
+    interpreted.mode_changed)return -1; /* Delivered explicit no-basis-change policy. */
+ epoch=interpreted.epoch;
+#else
+ if(portable_timezone_civil_to_epoch(&civil,&epoch)!=PORTABLE_TIMEZONE_OK)return -1;
+ epoch-=INT64_C(28800); /* Installed Watch RTC domain, not application policy. */
+#endif
+ if(epoch<INT64_C(946684800)||epoch>INT64_C(4102444799))return -1;
+ *out=epoch;return 0;
+}
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||retained||!deps)return false;
 #ifdef CIVIL_NATIVE_UTC
@@ -66,6 +115,6 @@ static bool start(const risc_provider_dependency_v1 *deps,size_t count){
 }
 static bool quiesce(void){return !retained;}
 static void stop(void){if(!retained)started=false;}
-static const risc_civil_clock_api_v1 api={1,sizeof(api),NULL,read_time};
+static const risc_civil_clock_policy_v1 api={1,sizeof(api),NULL,read_time,1,RISC_CIVIL_CLOCK_POLICY_TAG,project_time,interpret_rtc};
 static const risc_driver_v2 driver={2,sizeof(driver),CIVIL_CLOCK_ID,RISC_CIVIL_CLOCK_CAPABILITY,1,&api,start,stop,quiesce};
 __attribute__((visibility("default"))) const risc_driver_v2 *t5_driver_get(uint32_t version){return version==2?&driver:NULL;}

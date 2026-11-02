@@ -4,7 +4,7 @@
 #include "PortableBluetoothControl.h"
 #include "WifiApi.h"
 typedef struct {uint8_t flags;bool valid,available;
-#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+#if defined(PORTABLE_QUICK_CAPABILITY_SAFE) || defined(PORTABLE_QUICK_RADIO_AVAILABILITY)
  bool wifi_available,bluetooth_available;
 #endif
 } pqa_radios;

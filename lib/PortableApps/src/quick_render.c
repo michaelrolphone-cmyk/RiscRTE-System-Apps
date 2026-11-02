@@ -155,7 +155,7 @@ static bool render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char
     if(!f || !s || !f->pixels || f->pixel_format!=RISC_DISPLAY_FORMAT_RGB565)return false;
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
     if(s->native_width && (
-#ifdef PORTABLE_QUICK_SAFE_CONTENT
+#if defined(PORTABLE_QUICK_SAFE_CONTENT) || defined(PORTABLE_QUICK_RADIO_AVAILABILITY)
         true ||
 #endif
         s->native_width!=240 || s->logical_height!=240))

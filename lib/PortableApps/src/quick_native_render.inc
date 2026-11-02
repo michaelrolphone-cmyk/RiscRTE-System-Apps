@@ -89,15 +89,21 @@ static void native_panel_row(pqa_row *r,const pqa_state *s,const pqa_layout *l,c
     for(int i=0;i<6;++i) {
         pqa_rect tile=l->tiles[i];
         bool disabled=(i==1&&!s->dnd_valid)||((i==2||i==4||(i==3&&s->radio_controls))&&!s->radios_valid)||(i==0&&!s->volume_valid);
-#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+#if defined(PORTABLE_QUICK_CAPABILITY_SAFE) || defined(PORTABLE_QUICK_RADIO_AVAILABILITY)
         if(i==2)disabled=!s->radios_valid;
         if(i==3 && s->radio_controls)disabled=!s->wifi_valid;
         if(i==4)disabled=!s->bluetooth_valid;
+#ifdef PORTABLE_QUICK_RADIO_AVAILABILITY
+        if((i==3||i==4)&&!s->radios_valid)disabled=true;
+#endif
 #endif
         bool on=(i==1&&s->dnd_valid&&s->dnd_enabled)||(i==0&&s->volume_valid&&!s->volume)||(i==5&&s->torch)||(s->radios_valid&&((i==2&&s->airplane)||(i==3&&s->wifi_enabled)||(i==4&&s->bluetooth_enabled)));
-#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+#if defined(PORTABLE_QUICK_CAPABILITY_SAFE) || defined(PORTABLE_QUICK_RADIO_AVAILABILITY)
         if(i==3)on=s->wifi_valid&&s->wifi_enabled;
         if(i==4)on=s->bluetooth_valid&&s->bluetooth_enabled;
+#ifdef PORTABLE_QUICK_RADIO_AVAILABILITY
+        if((i==3||i==4)&&!s->radios_valid)on=false;
+#endif
 #endif
         int border=pqa_layout_size(l,1),radius=pqa_layout_size(l,12);
         rect(r,tile.x,tile.y,tile.w,tile.h,radius,on?CYAN:LINE,256);
@@ -110,7 +116,7 @@ static void native_panel_row(pqa_row *r,const pqa_state *s,const pqa_layout *l,c
         if((i==3&&(s->error_flags&PQA_ERROR_WIFI))||(i==1&&(s->error_flags&PQA_ERROR_DND)))color=RGB(255,135,65);
         native_icon(r,l,icons[i],tile.x+tile.w/2,tile.y+pqa_layout_scale(l,6+(18-icons[i]->height)/2),color,256);
         const char *label=i==3&&s->radio_controls?"WI-FI":labels[i];
-#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+#if defined(PORTABLE_QUICK_CAPABILITY_SAFE) || defined(PORTABLE_QUICK_RADIO_AVAILABILITY)
         if(disabled&&i==2)label="NOT READY";
         if(disabled&&i==3)label=s->wifi_available?"CHECK WI-FI":"NO WI-FI";
         if(disabled&&i==4)label=s->bluetooth_available?"CHECK BT":"NO BT";
