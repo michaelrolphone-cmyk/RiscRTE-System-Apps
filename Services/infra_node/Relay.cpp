@@ -21,7 +21,7 @@ int Node::relayPost(JsonObjectConst event){
  relayYield=true;return send(false);
 }
 int Node::sentinelStep(){
- if(config["relay"].isNull()||relayBlocked||now()<relayRetryAt)return 0;
+ if(config["relay"].isNull()||now()<sentinelRetryAt)return 0;
  const uint64_t wall=net.wall(now())*1000;if(!wall)return 0;
  auto r=journal.state["relay"].as<JsonObject>();if(r.isNull()){r=journal.state["relay"].to<JsonObject>();r["schema_version"]=1;r["subscriptions"]=config["relay"]["subscriptions"];r["subscription_revision"]=0;r["attachments"].to<JsonArray>();r["pending"]=nullptr;r["allowed_origins"]=config["relay"]["allowed_origins"];r["webhook_credential_refs"]=config["relay"]["webhook_credential_refs"];r["secrets"].to<JsonObject>();r["deliveries"].to<JsonObject>();for(const char* k:{"subscriptions","allowed_origins","webhook_credential_refs"})if(r[k].isNull())r[k].to<JsonArray>();}
  auto s=r["sentinel"].as<JsonObject>();if(s.isNull())s=r["sentinel"].to<JsonObject>();
@@ -36,19 +36,19 @@ int Node::sentinelStep(){
  auto a=busRequest(*this,s["phase"]=="start"?Action::RelayChallenge:Action::RelayChallengeStatus,s["phase"]=="start"?"challenge":"challenge_status");a["challenge_id"]=s["id"];relayYield=true;return send(false);
 }
 int Node::relayStep(){
- if(!strcmp(agentMode(configuration()),"sentinel"))return sentinelStep();
+ if(hasMode(configuration(),"sentinel"))if(int r=sentinelStep())return r;
  auto policy=config["relay"].as<JsonObjectConst>();if(!relayMode()||policy.isNull()||relayBlocked||now()<relayRetryAt)return 0;
  if(!relayPolicy(policy)){relayBlocked=true;copy(relayError,sizeof(relayError),"relay_policy_invalid");return 0;}
  auto r=journal.state["relay"].as<JsonObject>();
  if(r.isNull()){r=journal.state["relay"].to<JsonObject>();r["schema_version"]=1;r["subscriptions"]=policy["subscriptions"];r["subscription_revision"]=0;r["attachments"].to<JsonArray>();r["pending"]=nullptr;r["allowed_origins"]=policy["allowed_origins"];r["webhook_credential_refs"]=policy["webhook_credential_refs"];r["secrets"].to<JsonObject>();r["deliveries"].to<JsonObject>();for(const char* k:{"subscriptions","allowed_origins","webhook_credential_refs"})if(r[k].isNull())r[k].to<JsonArray>();return persist(Phase::Ready);}
  if(r["schema_version"]!=1||r["subscriptions"].size()>RelaySubscriptionsMax||r["attachments"].size()>RelayAttachmentsMax||r["deliveries"].size()>RelaySubscriptionsMax){relayBlocked=true;copy(relayError,sizeof(relayError),"relay_state_invalid");return 0;}
- if(!strcmp(agentMode(configuration()),"continuity")&&!sharedRelay()){copy(relayError,sizeof(relayError),"standby_requires_shared_relay");return 0;}
+ if((hasMode(configuration(),"continuity")&&!hasMode(configuration(),"relay")&&!hasMode(configuration(),"explorer"))&&!sharedRelay()){copy(relayError,sizeof(relayError),"standby_requires_shared_relay");return 0;}
  if(!roleReady()&&!roleBusy())return 0;
  if(sharedRelay()){
   if(!relayFence||now()+60000>=relayLeaseUntil){
    if(now()<relayLeaseRetryAt)return 0;
    // Give an already-running primary first opportunity on standby boot.
-   if(!relayLeaseRetryAt&&!strcmp(agentMode(configuration()),"continuity")){relayLeaseRetryAt=now()+30000;return 0;}
+   if(!relayLeaseRetryAt&&(hasMode(configuration(),"continuity")&&!hasMode(configuration(),"relay")&&!hasMode(configuration(),"explorer"))){relayLeaseRetryAt=now()+30000;return 0;}
    response.clear();response["subscriptions"]=policy["subscriptions"];response["allowed_origins"]=policy["allowed_origins"];char hash[65];canonicalDigest(response.as<JsonObjectConst>(),hash);
    auto a=busRequest(*this,Action::RelayLease,"lease");a["session"]=boot;a["configuration_digest"]=hash;relayYield=true;return send(false);
   }
@@ -103,7 +103,7 @@ int Node::relayTransmit(){
  const bool post=action==Action::RelayPost||action==Action::RelayVerify;auto policy=config["relay"].as<JsonObjectConst>();auto p=relayPending();auto sub=action==Action::RelayVerify?journal.state["relay"]["verification"]["subscription"].as<JsonObjectConst>():target(p);
  auto scope=action==Action::RelayVerify?journal.state["relay"]["verification"].as<JsonObjectConst>():journal.state["relay"].as<JsonObjectConst>();
  if(post&&(!relaySubscription(sub,scope["allowed_origins"],scope["webhook_credential_refs"])||!secretsReady(*this,sub)))return relayFailure("relay_secret_missing");
- const bool monitor=action==Action::RelayChallenge||action==Action::RelayChallengeStatus;const char* bearer=credential(monitor?(policy["monitor_credential_ref"]|(policy["credential_ref"]|"")):(policy["credential_ref"]|""));if(!post&&!bearer[0]){relayBlocked=true;return relayFailure("relay_bus_credential_missing");}
+ const bool monitor=action==Action::RelayChallenge||action==Action::RelayChallengeStatus;const char* bearer=credential(monitor?(policy["monitor_credential_ref"]|(policy["credential_ref"]|"")):(policy["credential_ref"]|""));if(!post&&!bearer[0]){if(!monitor)relayBlocked=true;return relayFailure("relay_bus_credential_missing");}
  if(sharedRelay()&&action!=Action::RelayLease&&action!=Action::RelayChallenge&&action!=Action::RelayChallengeStatus){
   // Monotonic deadline includes network response time and drift allowance.
   // Never begin an HTTP effect that could outlive this executor's lease.
@@ -128,6 +128,11 @@ static void receipt(Node& n,bool accepted,const char* error){auto p=n.relayPendi
 int Node::relayFailure(const char* why){
  if(!strcmp(why,"relay_network_failure")||!strcmp(why,"relay_transport_open"))networkFailed();
  copy(relayError,sizeof(relayError),why);relayYield=true;phase=Phase::Ready;
+ if(action==Action::RelayChallenge||action==Action::RelayChallengeStatus){
+  // Monitoring has its own backoff and failure observation. A bad monitor
+  // credential must not stop event delivery when both roles share a device.
+  auto s=journal.state["relay"]["sentinel"].as<JsonObject>();s["result"]["challenge_id"]=s["id"];s["result"]["state"]="failed";s["result"]["healthy"]=false;s["result"]["error"]=why;s["result"]["business_completion_proven"]=false;sentinelRetryAt=now()+5000;return persist(Phase::Ready);
+ }
  if(action==Action::RelayVerify){net.outcome=-1;return enrollmentVerified();}
  if(action==Action::RelayPost){auto p=relayPending();receipt(*this,false,why);if(relayMcp(target(p))&&(net.info.status_code==410||net.info.status_code==413)){p["terminal"]=true;p["error_code"]=net.info.status_code==410?"callback_gone":"payload_rejected";if(net.info.status_code==410)for(auto sub:journal.state["relay"]["subscriptions"].as<JsonArray>())if(sub["id"]==target(p)["id"])sub["enabled"]=false;}const unsigned failures=p["attempts"];const uint32_t delays[]={5000,30000,120000,600000};p["not_before_ms"]=net.wall(now())*1000+(failures<=4?delays[failures-1]:0);return persist(Phase::Ready);}
  if(action==Action::RelayLease){relayFence=relayLeaseUntil=0;}
@@ -137,8 +142,9 @@ int Node::relayFailure(const char* why){
 }
 int Node::relayReceived(){
  if(action==Action::RelayVerify)return enrollmentVerified();
- if(sharedRelay()&&net.info.status_code==409){relayFence=relayLeaseUntil=0;relayLeaseRetryAt=now()+10000;relayReady=false;return relayFailure("relay_lease_or_configuration_rejected");}
- if(net.outcome||net.info.status_code<200||net.info.status_code>=300){if(action!=Action::RelayPost&&action!=Action::RelayVerify&&(net.info.status_code==401||net.info.status_code==403))relayBlocked=true;const auto result=relayFailure(net.outcome?"relay_network_failure":"relay_http_failure");if(net.outcome&&result==1)transportReason();return result;}
+ const bool monitor=action==Action::RelayChallenge||action==Action::RelayChallengeStatus;
+ if(!monitor&&sharedRelay()&&net.info.status_code==409){relayFence=relayLeaseUntil=0;relayLeaseRetryAt=now()+10000;relayReady=false;return relayFailure("relay_lease_or_configuration_rejected");}
+ if(net.outcome||net.info.status_code<200||net.info.status_code>=300){if(!monitor&&action!=Action::RelayPost&&action!=Action::RelayVerify&&(net.info.status_code==401||net.info.status_code==403))relayBlocked=true;const auto result=relayFailure(net.outcome?"relay_network_failure":"relay_http_failure");if(net.outcome&&result==1)transportReason();return result;}
  networkSucceeded();
  auto r=journal.state["relay"].as<JsonObject>();auto p=relayPending();
  if(action==Action::RelayPost){receipt(*this,true,"");relayError[0]=0;status.completed++;return persist(Phase::Ready);}

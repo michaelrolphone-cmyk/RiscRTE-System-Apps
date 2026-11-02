@@ -37,6 +37,31 @@ int main(int argc,char** argv){
   assert(policy(rc));Node n;init(n,rc);for(auto e:rc["endpoints"].as<JsonArrayConst>())n.journal.state["credentials"][e["credential_ref"]|""]="endpoint-token";n.journal.state["credentials"]["relay-token"]="relay-secret";n.journal.state["credentials"]["monitor-token"]="monitor-secret";
   JsonDocument ps;n.roleProfiles(ps.to<JsonArray>());assert(ps.size()==5);
   for(const char* mode:{"relay","explorer","sentinel","reconciler","continuity"})assert(!find(ps.as<JsonArrayConst>(),"mode",mode).isNull());
+  // Every nonempty subset, including all five, runs as one bounded schedule.
+  // Duplicate bindings from Explorer/Reconciler/Continuity are never multiplied.
+  JsonDocument mixed;auto mg=mixed.to<JsonObject>();mg["protocol_version"]="infra-allocation/2";mg["state"]="assigned";mg["expires_at"]=n.net.wall(ticks)*1000+120000;mg["lease_ms"]=120000;
+  const char* names[]={"relay","explorer","sentinel","reconciler","continuity"};
+  for(unsigned mask=1;mask<32;++mask){
+   mg["generation"]=mask;auto selected=mg["assignments"].to<JsonArray>();
+   for(unsigned i=0;i<5;++i)if(mask&(1<<i)){auto own=find(ps.as<JsonArrayConst>(),"mode",names[i]);auto a=selected.add<JsonObject>();a["demand_id"]=names[i];a["profile_id"]=names[i];a["mode"]=names[i];a["services"]=own["services"];}
+   n.net.started=ticks;assert(n.roleGrant(mg)&&!n.roleReady());assert(n.roleStep()==1);saved(n);assert(n.roleReady());
+   for(unsigned i=0;i<5;++i)assert(hasMode(n.configuration(),names[i])==bool(mask&(1<<i)));
+   bool maintenance=mask&((1<<1)|(1<<3)|(1<<4)),observation=mask&((1<<1)|(1<<2));
+   assert(n.configuration()["active_bindings"].size()==unsigned(2*maintenance+2*observation));
+   for(unsigned i=0;i<n.bindings().size();++i)assert(n.bindingDisabled[i]==!(i<2?maintenance:observation));
+   // Same generation can renew but cannot change its role-set membership.
+   assert(n.roleGrant(mg));auto old=selected[0]["mode"].as<const char*>();std::string savedMode=old;selected[0]["mode"]="unknown";assert(!n.roleGrant(mg));selected[0]["mode"]=savedMode;
+  }
+  JsonDocument offer;n.roleOffer(offer.to<JsonObject>(),"scheduler.drive");assert(offer["activation_generation"]==31&&text(offer["activation_profile"],128));
+  // The mixed schedule must actually service Sentinel and Relay in the same
+  // configuration, rather than returning early forever from one role.
+  {Node combined;init(combined,rc);combined.journal.state["credentials"]=n.journal.state["credentials"];combined.net.started=ticks;assert(combined.roleGrant(mg)&&combined.roleStep()==1);saved(combined);assert(combined.relayStep()==1);saved(combined);assert(combined.relayStep()==1&&combined.action==Action::RelayChallenge);std::string cid=combined.journal.state["relay"]["sentinel"]["id"]|"";std::string pending="{\"protocol_version\":\"relay/1\",\"status\":\"completed\",\"result\":{\"challenge_id\":\""+cid+"\",\"state\":\"pending\"}}";reply(combined,pending.c_str());saved(combined);assert(combined.relayStep()==1&&combined.action==Action::RelayLease);combined.action=Action::RelayChallengeStatus;combined.net.info.status_code=403;combined.net.outcome=0;assert(combined.relayReceived()==1);saved(combined);assert(!combined.relayBlocked&&combined.relayRetryAt==0&&combined.sentinelRetryAt>ticks);assert(combined.relayStep()==1&&combined.action==Action::RelayLease);combined.phase=Phase::Stopped;combined.dispose();}
+  JsonDocument report;n.roleRequest(report.to<JsonObject>());assert(report["role_request"]["protocol_version"]=="infra-allocation/2"&&report["role_request"]["max_assignments"]==5&&report["role_request"]["report"]["profile_ids"].size()==5);
+  Node restarted;init(restarted,rc);std::string snapshot;serializeJson(n.journal.state,snapshot);assert(parseJournal(restarted.journal.state,snapshot.data(),snapshot.size())&&restarted.journal.valid());assert(!restarted.roleReady());restarted.net.started=ticks;assert(restarted.roleGrant(mg)&&restarted.roleReady());restarted.phase=Phase::Stopped;restarted.dispose();
+  mg["generation"]=32;mg["activate_after_ms"]=30000;mg["assignments"].as<JsonArray>().remove(4);assert(n.roleGrant(mg)&&n.roleStep()==0&&!n.roleReady());ticks+=30000;assert(n.roleStep()==1);saved(n);assert(n.roleReady());
+  mg["generation"]=33;mg["activate_after_ms"]=0;mg["assignments"].as<JsonArray>().remove(3);n.journal.state["relay"]["deliveries"]["pending"]["cursor"]=1;assert(n.roleGrant(mg)&&n.roleStep()==0);n.journal.state["relay"]["deliveries"].clear();assert(n.roleStep()==1);saved(n);
+  // Reset the test installation before the independent single-role cases.
+  n.journal.state.remove("allocation");n.journal.state.remove("configuration");n.journal.state.remove("relay");n.roleLeaseUntil=0;
   n.journal.state["credentials"].remove("relay-token");ps.clear();n.roleProfiles(ps.to<JsonArray>());assert(find(ps.as<JsonArrayConst>(),"mode","relay").isNull());
   n.journal.state["credentials"]["relay-token"]="relay-secret";n.config["relay"].remove("shared");ps.clear();n.roleProfiles(ps.to<JsonArray>());assert(ps.size()==4);assert(find(ps.as<JsonArrayConst>(),"mode","relay")["features"][0]=="relay.deliver");
   JsonDocument target;auto g=target.to<JsonObject>();g["protocol_version"]="infra-allocation/1";g["generation"]=1;g["profile_id"]="relay";g["mode"]="relay";g["demand_id"]="delivery";g["services"].to<JsonArray>().add("relay:group");g["expires_at"]=n.net.wall(ticks)*1000+120000;g["lease_ms"]=120000;g["state"]="assigned";n.net.started=ticks;

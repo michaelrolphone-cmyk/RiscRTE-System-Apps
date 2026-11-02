@@ -95,3 +95,33 @@ power-loss and prolonged network-partition qualification remain separate.
 Relay is independently selectable and automatically assignable through the generic capability controller. Its potential feature is `relay.deliver`, scoped to `relay:<relay_id>`. Shared configurations also advertise `relay.shared`; single-executor configurations retain their existing enrollment path. A missing relay policy or credential does not advertise Relay availability. All five modes remain selectable even when some profiles are unavailable on a particular board. Existing configurations without a mode still use Explorer to preserve behavior.
 
 Baseline demand counts are staffing policy, not the inventory of modes. The three initial capability demands do not remove Explorer or Relay. Services can request Relay capacity using `relay.deliver`; the allocator sends a leased Relay assignment and drains existing custody before switching away.
+
+## Mixed roles and failure recovery — v1.9.0
+
+Automatic devices now request a bounded set of assignments using
+`infra-allocation/2`. The default maximum is five; `allocation.max_assignments`
+may reduce this to 2–4, or 1 for the original single-role protocol. The five
+profiles remain Relay, Explorer, Sentinel, Reconciler and Continuity. `mixed`
+is a configuration containing selected `active_modes`, not an additional role.
+
+With one demand for each role, fully provisioned devices distribute five roles
+as 2/2/1 across three devices, 3/2 across two, and all five on one survivor.
+Returning devices trigger load redistribution. Each demand replica uses a
+different physical participant. Coverage is limited by locally advertised
+credentials, service scopes and capacity. Relay/Continuity failover requires
+shared relay custody and receiver deduplication; dynamic enrollment retains
+its existing single-executor restriction.
+
+The service produces and persists assignments on attach/check-in. Old-owner
+leases expire before a replacement begins. Firmware separately drains durable
+pending work, applies the complete role set, and acknowledges its generation
+and exact profile IDs. Reboot restores no lease authority. All roles share one
+TLS exchange and one job slot, deduplicated binding schedules, existing memory
+low-water checks and the combined cadence admission check. Mixed mode does not
+multiply sockets, jobs or journal queues. A single remaining board provides
+continuity of functions but no remaining hardware redundancy.
+
+Failover is bounded by the 90–120 second contact lease and the next healthy
+check-in, plus any required custody drain. Software simulation covers placement,
+all 31 nonempty role combinations, lease/reboot fences and handoff. Physical
+ESP32-S3 resource, network and power-loss qualification remains required.

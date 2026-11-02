@@ -26,14 +26,16 @@ class Node {
  unsigned failures=0,bindingIndex=0,fairness=0,inventoryIndex=0;bool poolStage=true,inventoryNeeded=true,externalJob=false,poolsEstablished=false,lastCapacity=false,receiptChecked=false;uint64_t inventoryRevision=0;
  char sessionId[128]{},boot[65]{},poolId[160]{},offerId[200]{},assignmentId[128]{},planId[128]{};
  struct Diagnostic{uint64_t at;uint32_t phase,pending;char reason[112];};static_assert(sizeof(Diagnostic)==128,"diagnostic ring slot");Diagnostic diagnostics[128]{};uint32_t diagnosticNext=0;
- bool relayReady=false,relayBlocked=false,relayYield=false,relayUpgradePending=false;unsigned relayIndex=0,relayFair=0;char relaySlot[65]{};uint64_t relayPollAt[RelayAttachmentsMax]{},relayHealthAt=0,relayRetryAt=0;char relayError[64]{};
+ bool relayReady=false,relayBlocked=false,relayYield=false,relayUpgradePending=false;unsigned relayIndex=0,relayFair=0;char relaySlot[65]{};uint64_t relayPollAt[RelayAttachmentsMax]{},relayHealthAt=0,relayRetryAt=0,sentinelRetryAt=0;char relayError[64]{};
  bool relayIdentityReady=false,relayVerificationPrepared=false;unsigned enrollmentIndex=0;uint64_t enrollmentPollAt=0;
  uint64_t relayFence=0,relayLeaseUntil=0,relayLeaseRetryAt=0;char relayCheckpointHash[65]{};
  bool sharedRelay()const{return config["relay"]["shared"].is<JsonObjectConst>();}
- bool relayMode()const{return (!strcmp(agentMode(configuration()),"relay")||!strcmp(agentMode(configuration()),"explorer")||!strcmp(agentMode(configuration()),"continuity"))&&(!automaticRole()||!strcmp(agentMode(configuration()),"relay")||sharedRelay()||roleBusy());}
- uint64_t roleLeaseUntil=0;bool roleGrantDirty=false;
+ bool relayMode()const{return (hasMode(configuration(),"relay")||hasMode(configuration(),"explorer")||hasMode(configuration(),"continuity"))&&(!automaticRole()||hasMode(configuration(),"relay")||sharedRelay()||roleBusy());}
+ uint64_t roleLeaseUntil=0,roleNotBefore=0;bool roleGrantDirty=false;
+ bool mixedAllocation()const{return (config["allocation"]["max_assignments"]|5)>1;}
+ bool roleConfiguration(JsonObjectConst,JsonObject)const;void roleOffer(JsonObject,const char*)const;
  bool automaticRole()const{return config["allocation"]["automatic"]==true;}
- bool roleReady(uint64_t budget=0)const{return !automaticRole()||(roleLeaseUntil>now()+budget&&journal.state["allocation"]["state"]=="applied"&&!journal.state["allocation"]["target"]["profile_id"].isNull()&&text(journal.state["allocation"]["target"]["profile_id"],128));}
+ bool roleReady(uint64_t budget=0)const{return !automaticRole()||(roleLeaseUntil>now()+budget&&now()>=roleNotBefore&&journal.state["allocation"]["state"]=="applied"&&journal.state["allocation"]["target"]["state"]=="assigned");}
  bool roleProfiles(JsonArray)const;void roleRequest(JsonObject);bool roleGrant(JsonObjectConst);int roleStep();
  bool roleBusy()const{return journal.state["pending"].size()||!journal.state["job"].isNull()||!journal.state["relay"]["pending"].isNull()||journal.state["relay"]["deliveries"].size()||journal.state["relay"]["enrollments"].size()||journal.state["relay"]["verification"].size()||text(journal.state["relay"]["sentinel"]["id"],128)||!journal.state["relay"]["sentinel"]["result"].isNull();}
  char* encoded=nullptr;bool bindingDisabled[8]{};
@@ -171,7 +173,7 @@ class Node {
    // Relay requests have separate saved custody. A successful relay request
    // must not close the participant circuit or clear its diagnostic.
    if(int r=relayStep())return r;
-   if(!strcmp(agentMode(configuration()),"reconciler")||!strcmp(agentMode(configuration()),"continuity"))
+   if(hasMode(configuration(),"reconciler")||hasMode(configuration(),"continuity"))
     for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(roleReady(cadence[i].timeout+2000)&&!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())&&bindingAllowed(configuration(),b)){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}}
    return 1;
   }

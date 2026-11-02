@@ -24,10 +24,11 @@ inline bool binding(JsonObjectConst b){
 // Missing mode is the original all-purpose deployment, for existing journals.
 inline const char* agentMode(JsonObjectConst c){return c["mode"]|"explorer";}
 inline bool validMode(const char* m){return !strcmp(m,"relay")||!strcmp(m,"explorer")||!strcmp(m,"sentinel")||!strcmp(m,"reconciler")||!strcmp(m,"continuity");}
-inline bool modeAllows(JsonObjectConst c,const char* capability){const char* m=agentMode(c);if(!strcmp(m,"relay"))return false;if(!strcmp(m,"explorer"))return true;if(!strcmp(m,"sentinel"))return !strcmp(capability,"service.health.observe")||!strcmp(capability,"source.poll");return !strcmp(capability,"scheduler.drive")||!strcmp(capability,"service.reconcile");}
+inline bool hasMode(JsonObjectConst c,const char* mode){if(strcmp(agentMode(c),"mixed"))return !strcmp(agentMode(c),mode);for(auto m:c["active_modes"].as<JsonArrayConst>())if(m==mode)return true;return false;}
+inline bool modeAllows(JsonObjectConst c,const char* capability){if(hasMode(c,"explorer"))return true;if((!strcmp(capability,"service.health.observe")||!strcmp(capability,"source.poll"))&&hasMode(c,"sentinel"))return true;return (!strcmp(capability,"scheduler.drive")||!strcmp(capability,"service.reconcile"))&&(hasMode(c,"reconciler")||hasMode(c,"continuity"));}
 inline bool bindingAllowed(JsonObjectConst c,JsonObjectConst b){if(!modeAllows(c,b["capability"]|""))return false;if(c["active_bindings"].isNull())return true;for(auto id:c["active_bindings"].as<JsonArrayConst>())if(id==b["binding_id"])return true;return false;}
 inline bool allocationPolicy(JsonObjectConst a,JsonObjectConst c){
- if(a.isNull())return true;if(!keys(a,{"automatic"},{"profiles"})||!a["automatic"].is<bool>())return false;
+ if(a.isNull())return true;if(!keys(a,{"automatic"},{"profiles","max_assignments"})||!a["automatic"].is<bool>()||(!a["max_assignments"].isNull()&&!integer(a["max_assignments"],1,5)))return false;
  if(a["profiles"].isNull())return true;if(!a["profiles"].is<JsonArrayConst>()||a["profiles"].size()>8||measureJson(a)>4096)return false;
  unsigned index=0;for(auto p:a["profiles"].as<JsonArrayConst>()){
   if(!keys(p,{"profile_id","mode","services","features","binding_ids"})||!text(p["profile_id"],128)||!text(p["mode"],16)||!validMode(p["mode"]))return false;
@@ -37,8 +38,10 @@ inline bool allocationPolicy(JsonObjectConst a,JsonObjectConst c){
  }return true;
 }
 inline bool configuration(JsonObjectConst c,JsonArrayConst endpoints,uint32_t contact){
- if(!keys(c,{"schema_version","revision","bindings","enabled_providers","retry","telemetry","update_policy"},{"mode","active_bindings"})||c["schema_version"]!=1||!integer(c["revision"],1,9007199254740991ULL)||measureJson(c)>8192||!c["bindings"].is<JsonArrayConst>()||c["bindings"].size()>8||!c["enabled_providers"].is<JsonArrayConst>()||c["enabled_providers"].size()>4)return false;
- if((!c["mode"].isNull()&&!text(c["mode"],16))||!validMode(agentMode(c)))return false;
+ if(!keys(c,{"schema_version","revision","bindings","enabled_providers","retry","telemetry","update_policy"},{"mode","active_bindings","active_modes"})||c["schema_version"]!=1||!integer(c["revision"],1,9007199254740991ULL)||measureJson(c)>8192||!c["bindings"].is<JsonArrayConst>()||c["bindings"].size()>8||!c["enabled_providers"].is<JsonArrayConst>()||c["enabled_providers"].size()>4)return false;
+ if(!c["mode"].isNull()&&!text(c["mode"],16))return false;
+ if(!strcmp(agentMode(c),"mixed")){if(!c["active_modes"].is<JsonArrayConst>()||!c["active_modes"].size()||c["active_modes"].size()>5)return false;unsigned n=0;for(auto m:c["active_modes"].as<JsonArrayConst>()){if(!text(m,16)||!validMode(m))return false;for(unsigned j=0;j<n;++j)if(c["active_modes"][j]==m)return false;++n;}}
+ else if(!validMode(agentMode(c))||!c["active_modes"].isNull())return false;
  if(!c["active_bindings"].isNull()){if(!c["active_bindings"].is<JsonArrayConst>()||c["active_bindings"].size()>8)return false;for(auto id:c["active_bindings"].as<JsonArrayConst>())if(!text(id,128)||find(c["bindings"],"binding_id",id).isNull())return false;}
  if(!keys(c["retry"],{"initial_ms","maximum_ms","full_jitter"})||c["retry"]["initial_ms"]!=1000||c["retry"]["maximum_ms"]!=300000||c["retry"]["full_jitter"]!=true||!keys(c["telemetry"],{"interval_ms","diagnostic_bytes"})||!integer(c["telemetry"]["interval_ms"],15000,86400000)||c["telemetry"]["diagnostic_bytes"]!=16384||!keys(c["update_policy"],{"mode"})||c["update_policy"]["mode"]!="serial-owner")return false;
  Cadence cadences[8]{};size_t n=0;

@@ -48,7 +48,7 @@ bool Node::acceptSetup(){
   if(measureJson(candidate)>3500||measureJson(request["policy"])>PolicyMax||request.overflowed())return false;
   config.set(request["policy"]);journal.state["credentials"]=candidate;journal.state.remove("relay");relayReady=relayBlocked=false;relayHealthAt=relayRetryAt=0;for(auto& at:relayPollAt)at=0;
  }
- if(!response["mode"].isNull()){if(!journal.state["configuration"].is<JsonObject>())journal.state["configuration"]=config["configuration"];config["allocation"]["automatic"]=response["mode"]=="automatic";journal.state.remove("allocation");roleLeaseUntil=0;journal.state["configuration"].remove("active_bindings");if(response["mode"]!="automatic"){journal.state["configuration"]["mode"]=response["mode"];config["configuration"]["mode"]=response["mode"];}relayFence=relayLeaseUntil=0;relayCheckpointHash[0]=0;relayBlocked=false;}
+ if(!response["mode"].isNull()){if(!journal.state["configuration"].is<JsonObject>())journal.state["configuration"]=config["configuration"];config["allocation"]["automatic"]=response["mode"]=="automatic";journal.state.remove("allocation");roleLeaseUntil=0;journal.state["configuration"].remove("active_bindings");journal.state["configuration"].remove("active_modes");if(response["mode"]!="automatic"){journal.state["configuration"]["mode"]=response["mode"];config["configuration"]["mode"]=response["mode"];}relayFence=relayLeaseUntil=0;relayCheckpointHash[0]=0;relayBlocked=false;}
  config["wifi"]["ssid"]=response["ssid"];journal.state["credentials"][config["wifi"]["credential_ref"]|""]=response["password"];
  journal.state["setup_policy"]=config;journal.state["setup_pending"]=true;
  return journal.valid()&&!config.overflowed();
