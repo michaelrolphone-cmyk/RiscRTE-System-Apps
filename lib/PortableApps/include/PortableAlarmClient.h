@@ -53,7 +53,10 @@ static inline bool portable_alarm_open(portable_alarm_client *c,const risc_runti
 #ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
     bool acquired=r->acquire(PORTABLE_ALARM_CAPABILITY,ALARM_SERVICE_API_V2,0,&c->grant);
     if(!portable_alarm_context(c))return false;
-    if(!acquired)return false;
+    if(!acquired){
+        if(c->grant.api||c->grant.slot||c->grant.generation||c->grant.struct_size!=sizeof(c->grant)){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();}
+        return false;
+    }
 #else
 #ifdef ALARM_SERVICE_TAGGED_V2
     if(!r->acquire(PORTABLE_ALARM_CAPABILITY,ALARM_SERVICE_API_V2,0,&c->grant))return false;
@@ -68,8 +71,9 @@ static inline bool portable_alarm_open(portable_alarm_client *c,const risc_runti
         c->malformed=true;
         bool released=r->release(&c->grant);
         if(!portable_alarm_context(c))return false;
-        if(!released){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
-        memset(c,0,sizeof(*c));c->grant.struct_size=sizeof(c->grant);c->malformed=true;
+        if(!released||c->grant.api||c->grant.slot||c->grant.generation||c->grant.struct_size!=sizeof(c->grant)){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
+        const risc_runtime_api_v1 *owner=c->native_owner;
+        memset(c,0,sizeof(*c));c->grant.struct_size=sizeof(c->grant);c->native_owner=owner;c->malformed=true;
 #endif
         return false;
     }
@@ -226,7 +230,7 @@ static inline bool portable_alarm_close(portable_alarm_client *c,const risc_runt
     if(c->grant.api){
         bool released=r->release(&c->grant);
         if(!portable_alarm_context(c))return false;
-        if(!released){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
+        if(!released||c->grant.api||c->grant.slot||c->grant.generation||c->grant.struct_size!=sizeof(c->grant)){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
     }
     memset(c,0,sizeof(*c));return true;
 #else

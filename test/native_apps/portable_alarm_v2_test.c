@@ -5,7 +5,7 @@
 static unsigned calls,acquires,releases,retains;
 static bool stopped;
 #ifdef TEST_ALARM_FACADE
-static bool null_success,operation_lost,status_lost,acquire_true_lost,release_true_lost;
+static bool dirty_refusal,dirty_release,null_success,operation_lost,status_lost,acquire_true_lost,release_true_lost;
 #define EXPECTED_ALARM_CAPABILITY "alarm.service.facade"
 #else
 #define EXPECTED_ALARM_CAPABILITY ALARM_SERVICE_CAPABILITY
@@ -35,6 +35,7 @@ static int32_t resume(void *p,const alarm_sleep_v1 *t){(void)t;return operation(
 static bool acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *grant){io();assert(!strcmp(name,EXPECTED_ALARM_CAPABILITY)&&version==2&&!instance);++acquires;
 #ifdef TEST_ALARM_FACADE
  if(acquire_true_lost)missing_runtime=true;
+ if(dirty_refusal){grant->slot=1;return false;}
 #endif
 #if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_ALARM_ACQUISITION_CUSTODY)
  if(activation_lost){missing_runtime=true;return false;}
@@ -53,6 +54,7 @@ static bool release(risc_runtime_capability_v1 *grant){io();++releases;
  grant->api=NULL;
 #ifdef TEST_ALARM_FACADE
  if(release_true_lost)missing_runtime=true;
+ if(dirty_release)grant->generation=1;
 #endif
  return true;}
 static const risc_runtime_api_v1 runtime={.acquire=acquire,.release=release};
@@ -68,6 +70,7 @@ int main(void){
 #ifdef TEST_ALARM_FACADE
  offered=NULL;null_success=true;unsigned old_releases=releases;
  assert(!portable_alarm_open(&c,&runtime)&&c.malformed&&!c.retained&&releases==old_releases+1&&!c.grant.api&&!c.grant.slot&&!c.grant.generation);
+ assert(portable_alarm_close(&c,&runtime)&&!stopped);
  null_success=false;assert(!portable_alarm_open(&c,&runtime)&&!c.malformed&&releases==old_releases+1);
 #endif
  /* Both exact old allocation sizes are rejected before any suffix read. */
@@ -138,6 +141,14 @@ int main(void){
   assert(!portable_alarm_pump(&c)&&!portable_alarm_status(&c)&&!portable_alarm_failure_stop(&c)&&!portable_alarm_close(&c,&wrapper));
   assert(calls==before);
  }
+ for(unsigned fault=0;fault<2;fault++){
+  missing_runtime=false;stopped=false;release_true_lost=false;operation_lost=false;status_lost=false;
+  dirty_refusal=fault==0;dirty_release=fault==1;before=calls;
+  if(!fault)assert(!portable_alarm_open(&c,&wrapper));
+  else{assert(portable_alarm_open(&c,&wrapper));assert(!portable_alarm_close(&c,&wrapper));}
+  assert(stopped&&c.retained&&calls==before+(fault?2:1));
+ }
+ dirty_refusal=false;dirty_release=false;
  missing_runtime=false;stopped=false;release_true_lost=false;operation_lost=false;acquire_true_lost=true;before=calls;
  assert(!portable_alarm_open(&c,&wrapper)&&stopped&&c.retained&&calls==before+1);
 #endif

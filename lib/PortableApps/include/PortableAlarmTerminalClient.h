@@ -58,6 +58,9 @@ static inline bool portable_alarm_open(portable_alarm_client *c,const risc_runti
     if(!portable_alarm_context(c))return false;
 #endif
     if(!acquired) {
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+        if(c->grant.api||c->grant.slot||c->grant.generation||c->grant.struct_size!=sizeof(c->grant)){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
+#endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
         if(!risc_runtime_get_api(1)){c->retained=true;portable_adapter_retain_silent();}
 #endif
@@ -70,8 +73,9 @@ static inline bool portable_alarm_open(portable_alarm_client *c,const risc_runti
         c->malformed=true;
         bool released=r->release(&c->grant);
         if(!portable_alarm_context(c))return false;
-        if(!released){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
-        memset(c,0,sizeof(*c));c->grant.struct_size=sizeof(c->grant);c->malformed=true;
+        if(!released||c->grant.api||c->grant.slot||c->grant.generation||c->grant.struct_size!=sizeof(c->grant)){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
+        const risc_runtime_api_v1 *owner=c->native_owner;
+        memset(c,0,sizeof(*c));c->grant.struct_size=sizeof(c->grant);c->native_owner=owner;c->malformed=true;
 #endif
         return false;
     }
@@ -230,7 +234,7 @@ static inline bool portable_alarm_close(portable_alarm_client *c,const risc_runt
     if(c->grant.api){
         bool released=r->release(&c->grant);
         if(!portable_alarm_context(c))return false;
-        if(!released){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
+        if(!released||c->grant.api||c->grant.slot||c->grant.generation||c->grant.struct_size!=sizeof(c->grant)){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
     }
     memset(c,0,sizeof(*c));return true;
 #else
