@@ -94,6 +94,54 @@ class Overlay(unittest.TestCase):
    self.assertEqual(out['scene/driver.elf'],elf)
    item['replace']['elf_sha256']='wrong'
    with self.assertRaises(ValueError):overlay(b,sd,p,b'\x7fELFhome',m,root)
+ def external_provider_fixture(self,root):
+  b,sd,p,m=self.fixture()
+  old={'type':'driver','id':'scene-selected','file_name':'driver.elf','version':'old',
+       'provides':[{'capability':'ui.scene','api':1}],'requires':[]}
+  row={'manifest':'scene/manifest.json','instance_id':0,'bindings':[],
+       'key_value':[{'access':'read','key':'time_zone','namespace':1}],
+       'image_source':{'volume_instance':9,
+                       'path':'providers/scene.elf','internal_fallback':True}}
+  boot=json.loads(b['boot.json']);boot['drivers']=[row];b['boot.json']=encode(boot)
+  b['scene/manifest.json']=encode(old);b['scene/driver.elf']=b'\x7fELFold-fallback'
+  sd['providers/scene.elf']=b'\x7fELFold-preferred'
+  p['inventory_sha256']=fingerprint(inventory(b,sd))
+  pkg=root/'selected';pkg.mkdir()
+  raw=encode({**old,'version':'new'});elf=b'\x7fELFqualified'
+  (pkg/'manifest.json').write_bytes(raw);(pkg/'driver.elf').write_bytes(elf)
+  item={'package':'selected','manifest_sha256':digest(raw),'elf_sha256':digest(elf),'row':copy.deepcopy(row),
+        'replace':{'manifest_sha256':digest(b['scene/manifest.json']),'elf_sha256':digest(b['scene/driver.elf']),
+                   'external_route':{'path':'providers/scene.elf','elf_sha256':digest(sd['providers/scene.elf'])}}}
+  p['providers']=[item]
+  return b,sd,p,m,elf,row
+ def test_external_provider_updates_preferred_and_fallback(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);b,sd,p,m,elf,row=self.external_provider_fixture(root)
+   out,new_sd,receipt=overlay(b,sd,p,b'\x7fELFhome',m,root)
+   self.assertEqual(out['scene/driver.elf'],elf)
+   self.assertEqual(new_sd['providers/scene.elf'],elf)
+   self.assertEqual(json.loads(out['boot.json'])['drivers'],[row])
+   self.assertEqual(new_sd['books/read.epub'],sd['books/read.epub'])
+   self.assertEqual(receipt['changed_sd'],['providers/scene.elf'])
+   self.assertEqual(sd['providers/scene.elf'],b'\x7fELFold-preferred')
+ def test_external_provider_refuses_unreviewed_routes(self):
+  for fault in ('omitted','hash','path','missing','fallback','authority','internal-only','unsafe'):
+   with self.subTest(fault=fault),tempfile.TemporaryDirectory() as tmp:
+    root=Path(tmp);b,sd,p,m,elf,row=self.external_provider_fixture(root)
+    item=p['providers'][0];replacement=item['replace']
+    if fault=='omitted':del replacement['external_route']
+    elif fault=='hash':replacement['external_route']['elf_sha256']='stale'
+    elif fault=='path':replacement['external_route']['path']='books/read.epub'
+    elif fault=='unsafe':replacement['external_route']['path']='../scene.elf'
+    elif fault=='authority':item['row']['image_source']['path']='other.elf'
+    elif fault=='missing':del sd['providers/scene.elf']
+    elif fault in ('fallback','internal-only'):
+     boot=json.loads(b['boot.json'])
+     if fault=='fallback':boot['drivers'][0]['image_source']['internal_fallback']=False
+     else:del boot['drivers'][0]['image_source']
+     b['boot.json']=encode(boot);item['row']=copy.deepcopy(boot['drivers'][0])
+    p['inventory_sha256']=fingerprint(inventory(b,sd))
+    with self.assertRaises(ValueError):overlay(b,sd,p,b'\x7fELFhome',m,root)
  def test_pack_exact_size_and_sd_roundtrip(self):
   with tempfile.TemporaryDirectory() as tmp:
    entries={'default.elf':b'complete'};sd={'book.epub':b'unchanged'}

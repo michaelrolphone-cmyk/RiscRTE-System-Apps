@@ -1,7 +1,7 @@
 name: Complete shared Home ELF
 on:
   pull_request:
-    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/assemble_shared_home_cohort.py', 'scripts/test_shared_home_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', 'lib/PortableApps/include/PortableAlarm*.h', 'scripts/test_home_alarm_facade_client.py', 'test/native_apps/portable_alarm_v2_test.c', 'scripts/test_home_points_custody.py', 'test/native_apps/home_points_custody_test.c', 'scripts/test_home_crash_bindings.py', 'scripts/test_home_product_admission.py', 'scripts/test_home_admission_binding.py', 'scripts/publish_home_shared.py', 'scripts/test_publish_home_shared.py', '.github/workflows/shared-home-complete.yml']
+    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/build_home_dependencies.py', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/assemble_shared_home_cohort.py', 'scripts/test_shared_home_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', 'lib/PortableApps/include/PortableAlarm*.h', 'scripts/test_home_alarm_facade_client.py', 'test/native_apps/portable_alarm_v2_test.c', 'scripts/test_home_points_custody.py', 'test/native_apps/home_points_custody_test.c', 'scripts/test_home_crash_bindings.py', 'scripts/test_home_product_admission.py', 'scripts/test_home_admission_binding.py', 'scripts/publish_home_shared.py', 'scripts/test_publish_home_shared.py', '.github/workflows/shared-home-complete.yml']
 permissions:
   contents: read
 jobs:
@@ -212,4 +212,91 @@ jobs:
         with:
           name: home-client-contracts-${{ github.event.pull_request.head.sha }}
           path: out/
+          if-no-files-found: error
+  dependencies:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: a64f7b5b24e75164b92dde64348d2b0929b00bac
+          path: Watch
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: bb0cadf3cec3445a64e11513b47b2676f3fdd92d
+          path: WatchSystem
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 4fdcad2495c33fe63f5f6faca9b11ced3c739a5b
+          path: WatchUtilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: c98e4222048244b1e729869ed47aa99130025fd3
+          path: Reader
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: 6b7d1abe9b2dcc236f6086d07c0f619244c907cb
+          path: Interfaces
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 452c57bd4f59f3c1d1463763e6ea5b0f90e7d012
+          fetch-depth: 0
+          path: AlarmUtilities
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Dependency packaging preflight
+        run: |
+          python3 System/scripts/test_shared_app_cohort.py
+          python3 System/scripts/test_shared_home_cohort.py
+          python3 System/scripts/test_shared_home_manifest.py
+          python3 System/scripts/test_home_admission_binding.py
+          python3 System/scripts/test_publish_home_shared.py
+      - name: Exact owning source and compiler
+        run: |
+          set -euo pipefail
+          mkdir -p out/source toolchain
+          for repo in System Watch WatchSystem WatchUtilities Runtime Reader Interfaces AlarmUtilities; do
+            git -C "$repo" archive HEAD | gzip -n > "out/source/$repo.tar.gz"
+            git -C "$repo" rev-parse HEAD > "out/source/$repo.head"
+          done
+          curl --fail --location --retry 2 --max-time 180 https://github.com/espressif/crosstool-NG/releases/download/esp-15.2.0_20251204/xtensa-esp-elf-15.2.0_20251204-x86_64-linux-gnu.tar.xz -o "$RUNNER_TEMP/toolchain.tar.xz"
+          echo "3d50f5cd5f173acfd524e07c1cd69bc99585731a415ca2e5bce879997fe602b8  $RUNNER_TEMP/toolchain.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/toolchain.tar.xz" -C toolchain
+          python3 -m pip install platformio==6.1.19 pyelftools==0.32
+          python3 -m pip install -r Watch/scripts/requirements.txt
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Build exact owning providers and repeat bytes
+        run: |
+          set -euo pipefail
+          python3 System/scripts/build_home_dependencies.py --runtime Runtime --watch Watch --utilities AlarmUtilities --legacy-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" --native-cc "$PWD/toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc" --output out/dependencies
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-dependencies-${{ github.event.pull_request.head.sha }}
+          path: out/
+          include-hidden-files: true
           if-no-files-found: error

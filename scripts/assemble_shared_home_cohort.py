@@ -103,7 +103,7 @@ def overlay(before, before_sd, plan, elf, common, packages):
    boot['app_capabilities'][boot['app_capabilities'].index(oldrow)]=copy.deepcopy(newrow)
  # Provider packages and exact binding rows come only from the reviewed plan.
  # Existing provider bytes/rows cannot be silently replaced.
- provider_paths=set()
+ provider_paths=set();provider_sd_paths=set()
  for item in plan.get('providers',[]):
   package=packages/safe(item['package'])
   mbytes=(package/'manifest.json').read_bytes();pbytes=(package/'driver.elf').read_bytes()
@@ -115,6 +115,7 @@ def overlay(before, before_sd, plan, elf, common, packages):
   path=safe(item['row']['manifest']);binary=str(PurePosixPath(path).parent/'driver.elf')
   replacement=item.get('replace')
   if replacement is None:
+   if item['row'].get('image_source'):raise ValueError('New external provider routes require a separate reviewed installation')
    if path in out or binary in out:raise ValueError('Provider would overwrite installed files')
    boot.setdefault('drivers',[]).append(copy.deepcopy(item['row']))
   else:
@@ -124,6 +125,22 @@ def overlay(before, before_sd, plan, elf, common, packages):
    existing=[r for r in boot.get('drivers',[]) if r.get('manifest')==path]
    if not existing or any(r!=item['row'] for r in existing):
     raise ValueError('Replacement provider authority differs')
+   source=item['row'].get('image_source')
+   external=replacement.get('external_route')
+   if source:
+    if not isinstance(source,dict) or source.get('internal_fallback') is not True:
+     raise ValueError('Replacement requires the installed internal fallback contract')
+    if not isinstance(external,dict) or set(external)!={'path','elf_sha256'}:
+     raise ValueError('Explicit external provider baseline required')
+    external_path=safe(external['path'])
+    if external_path!=source.get('path'):raise ValueError('External provider route differs')
+    if external_path not in sd or digest(sd[external_path])!=external['elf_sha256']:
+     raise ValueError('External provider baseline differs')
+    if external_path in provider_sd_paths or ('sd',external_path) in routes:
+     raise ValueError('External provider route collision')
+    sd[external_path]=pbytes;provider_sd_paths.add(external_path)
+   elif external is not None:
+    raise ValueError('External route supplied for internal-only provider')
    previous=json.loads(out[path])
    if {k:v for k,v in previous.items() if k!='version'}!={k:v for k,v in m.items() if k!='version'}:
     raise ValueError('Replacement provider changes selected profile or contract')
@@ -135,7 +152,7 @@ def overlay(before, before_sd, plan, elf, common, packages):
   if name not in names|provider_paths|{'boot.json'} and ('internal',name) not in routes and out[name]!=before[name]:
    raise ValueError('Unrelated internal bytes changed')
  for name in before_sd:
-  if ('sd',name) not in routes and sd[name]!=before_sd[name]:raise ValueError('Unrelated SD bytes changed')
+  if name not in provider_sd_paths and ('sd',name) not in routes and sd[name]!=before_sd[name]:raise ValueError('Unrelated SD bytes changed')
  updates=[]
  for item in plan.get('app_updates',[]):
   name=safe(item['manifest'])
