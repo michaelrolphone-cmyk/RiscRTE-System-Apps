@@ -1,0 +1,36 @@
+name: ESP32-C6 e-paper capability
+on:
+  push:
+    branches: ['native/esp32c6-epaper-capability']
+    paths: ['profiles/esp32c6-epaper/**', '.github/workflows/esp32c6-epaper.yml']
+  pull_request:
+    paths: ['profiles/esp32c6-epaper/**', '.github/workflows/esp32c6-epaper.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.4.2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Host regression checks
+        shell: bash
+        run: |
+          cd profiles/esp32c6-epaper
+          python3 -m unittest discover -s tests -v
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -I main main/frame.c tests/frame_test.c -o /tmp/frame-test
+          /tmp/frame-test
+      - name: Build the recovered C6 board target
+        shell: bash
+        run: |
+          . /opt/esp/idf/export.sh
+          cd profiles/esp32c6-epaper
+          idf.py set-target esp32c6
+          idf.py build
+          python3 tools/package.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vector-arcade-epaper-esp32c6-v1.0.0
+          path: profiles/esp32c6-epaper/dist/
+          if-no-files-found: error
