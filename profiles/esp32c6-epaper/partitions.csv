@@ -1,0 +1,5 @@
+# Name,Type,SubType,Offset,Size
+nvs,data,nvs,0x9000,0x20000
+phy_init,data,phy,0x29000,0x1000
+factory,app,factory,0x30000,0x1d0000
+runtime,data,nvs,0x200000,0x40000

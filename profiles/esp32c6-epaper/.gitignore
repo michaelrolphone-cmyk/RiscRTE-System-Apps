@@ -1,0 +1,6 @@
+/build/
+/dist/
+/sdkconfig
+/sdkconfig.old
+__pycache__/
+*.sqlite3
