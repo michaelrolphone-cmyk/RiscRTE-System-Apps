@@ -203,13 +203,9 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
 #ifdef PORTABLE_SHARED_HOME_CANVAS
  /* The installed provider owns the effective clock domain, including defaults.
   * Keep stored X4 metadata untouched; no app offset/device choice is inferred. */
- risc_civil_calendar_v1 effective;
- int effective_status=desk_civil_project(PORTABLE_TIMEZONE_VALID_EPOCH,0,&effective);
+ int effective_status=desk_civil_cached_rule(config.time_zone);
  if(desk_retained)return false;
- if(effective_status==PORTABLE_REALTIME_OK){
-  memcpy(config.time_zone,effective.zone,sizeof(config.time_zone));
-  zone=PORTABLE_TIMEZONE_LOADED;
- }else zone=PORTABLE_TIMEZONE_INVALID;
+ zone=effective_status==PORTABLE_REALTIME_OK?PORTABLE_TIMEZONE_LOADED:PORTABLE_TIMEZONE_INVALID;
 #endif
  desk_zone_known=(zone==PORTABLE_TIMEZONE_LOADED || zone==PORTABLE_TIMEZONE_MISSING) &&
      portable_timezone_resolve(config.time_zone,sizeof(config.time_zone),&desk_rule)==PORTABLE_TIMEZONE_OK;

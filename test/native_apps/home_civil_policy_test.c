@@ -11,11 +11,11 @@ static int desk_fence(void){desk_retained=true;f.phase=PORTABLE_REALTIME_GUARD_R
 static int desk_phase_guard(void*p){(void)p;return desk_retained?PORTABLE_REALTIME_GUARD_RETAINED:f.phase;}
 static bool desk_halted(int s){return s==PORTABLE_REALTIME_CONTEXT||s==PORTABLE_REALTIME_UNCERTAIN||s==PORTABLE_REALTIME_RETAINED;}
 static bool portable_app_sleep_retained(void){return desk_retained;}
-static risc_civil_clock_policy_v1 civil_api;
+static risc_civil_clock_retained_v1 civil_api;
 static bool civil_acquire(const char*n,uint32_t v,uint64_t i,risc_runtime_capability_v1*g){
  assert(!desk_retained&&desk_promoted&&v==1&&!i&&!strcmp(n,RISC_CIVIL_CLOCK_CAPABILITY));civil_acquires++;
  if(civil_absent)return false;
- civil_owned=true;civil_api.struct_size=civil_short?RISC_CIVIL_CLOCK_BASE_SIZE:sizeof(civil_api);
+ civil_owned=true;civil_api.base.base.struct_size=civil_short?RISC_CIVIL_CLOCK_BASE_SIZE:sizeof(civil_api);
  g->api=&civil_api;g->slot=3;g->generation=1;return true;
 }
 static bool civil_release(risc_runtime_capability_v1*g){
@@ -41,11 +41,16 @@ static int32_t project(void*p,int64_t epoch,uint32_t ns,risc_civil_calendar_v1*o
   .hour=value.hour,.minute=value.minute,.second=value.second,.weekday=value.weekday,.nanoseconds=ns,.zone="UTC"};
  return 0;
 }
+static int32_t inverse(void*p,const risc_civil_calendar_v1*c,risc_civil_inverse_v1*out){(void)p;(void)c;(void)out;assert(0);return -1;}
+static int32_t cached(void*p,char*out,uint32_t size){
+ (void)p;assert(civil_owned&&size==40);if(policy_status)return policy_status;
+ memcpy(out,"@2007:7,6;M4.1.0,M10.5.0;M3.2.0,M11.1.0",40);return 0;
+}
 static void policy_reset(void){
  reset();desk_promoted=true;desk_retained=civil_owned=civil_absent=civil_short=civil_release_fail=false;
  civil_acquires=civil_releases=interpret_calls=project_calls=0;policy_status=0;policy_offset=0;
  desk_rtc_check=(portable_realtime_reconcile_state){0};
- civil_api=(risc_civil_clock_policy_v1){1,sizeof(civil_api),NULL,NULL,1,RISC_CIVIL_CLOCK_POLICY_TAG,project,convert};
+ civil_api=(risc_civil_clock_retained_v1){{{1,sizeof(civil_api),NULL,NULL,1,RISC_CIVIL_CLOCK_POLICY_TAG,project,convert},1,RISC_CIVIL_CLOCK_SCHEDULE_TAG,inverse},1,RISC_CIVIL_CLOCK_RETAINED_TAG,cached};
 }
 static void raw_epoch(int64_t epoch){
  portable_timezone_civil value;assert(!portable_timezone_epoch_to_civil(epoch,&value));
@@ -85,6 +90,11 @@ int main(void){
  assert(desk_civil_reconcile(&c,&result)==PORTABLE_REALTIME_RETAINED&&desk_retained&&civil_owned&&f.rtc_releases==1);
  policy_reset();desk_promoted=false;risc_civil_calendar_v1 untouched={.year=77};
  assert(desk_civil_project(epoch,0,&untouched)==PORTABLE_REALTIME_DENIED&&untouched.year==77&&!civil_acquires&&!f.rtc_acquires);
+ policy_reset();char token[40]={0};
+ assert(!desk_civil_cached_rule(token)&&!strcmp(token,"@2007:7,6;M4.1.0,M10.5.0;M3.2.0,M11.1.0"));
+ portable_timezone_rule rule;assert(!portable_timezone_resolve(token,sizeof(token),&rule));
+ portable_timezone_civil local;assert(!portable_timezone_utc_to_local(&rule,INT64_C(954615600),&local,NULL));
+ assert(!civil_owned&&civil_acquires==civil_releases);
  puts("Shared Home foreground civil policy: installed RTC conversion, exact native cadence/seed, no TIMER binding, optional absence and terminal custody PASS");
  return 0;
 }

@@ -66,3 +66,27 @@ static int desk_civil_reconcile(portable_realtime_client*native,portable_realtim
  if(desk_civil_close(&client)!=PORTABLE_REALTIME_OK)return desk_civil_fence();
  return rc;
 }
+
+static int desk_civil_cached_rule(char out[40]){
+ desk_civil_client client;int rc=desk_civil_open(&client);
+ if(rc!=PORTABLE_REALTIME_OK)return rc;
+ const risc_civil_clock_retained_v1*retained=risc_civil_clock_get_retained(client.api,client.api->struct_size);
+ char token[40]={0};
+ if(!retained)rc=PORTABLE_REALTIME_UNAVAILABLE;
+ else rc=desk_civil_result(retained->cached_rule(client.api->context,token,sizeof(token)));
+ if(desk_retained)return PORTABLE_REALTIME_RETAINED;
+ if(!rc){
+  bool ended=false,encoding=true;
+  for(unsigned i=0;i<sizeof(token);i++){
+   unsigned char ch=(unsigned char)token[i];
+   if((ended&&ch)||(ch&& (ch<32||ch>126)))encoding=false;
+   if(!ch)ended=true;
+  }
+  portable_timezone_rule checked;
+  if(!encoding||!ended||!memchr(token,0,sizeof(token))||portable_timezone_resolve(token,sizeof(token),&checked)!=PORTABLE_TIMEZONE_OK)
+   rc=PORTABLE_REALTIME_MALFORMED;
+ }
+ if(desk_civil_close(&client)!=PORTABLE_REALTIME_OK)return PORTABLE_REALTIME_RETAINED;
+ if(!rc)memcpy(out,token,sizeof(token));
+ return rc;
+}

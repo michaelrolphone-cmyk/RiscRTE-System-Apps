@@ -37,9 +37,21 @@ static int32_t clear_record(void*p){(void)p;safe();assert(!held&&!input_hold&&!p
 static int32_t read_bytes(void*p,uint32_t t,uint32_t s,void*out,uint32_t cap,uint32_t*size,uint32_t*c){(void)p;(void)t;(void)s;(void)out;(void)cap;(void)size;safe();*c=RISC_BOOT_RESET;return RISC_RETAINED_WAKE_ABSENT;}
 static int32_t stage_bytes(void*p,uint32_t type,uint32_t schema,const void*bytes,uint32_t size){(void)p;safe();assert(!held&&!input_hold&&!panel_prepared&&!power_prepared&&type==PORTABLE_DESK_CLOCK_RECORD_TYPE&&schema==3&&size==408);memcpy(staged_bytes,bytes,size);staged=true;if(is("stage-retained")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}return is("stage-refused")?RISC_RETAINED_WAKE_INVALID:0;}
 static risc_retained_wake_api_v1_extended checkpoint={{1,sizeof(checkpoint),NULL,read_record,stage_record,clear_record},RISC_RETAINED_WAKE_EXTENDED_TAG,1,512,0,read_bytes,stage_bytes};
-static bool acquire(const char*name,uint32_t version,uint64_t instance,risc_runtime_capability_v1*g){safe();assert(version==1&&instance==0&&!held);if(!strcmp(name,"net.wifi")||!strcmp(name,"bluetooth.hci")){assert(!timer_only);radio_acquires++;return false;}if(is("absent")&&!strcmp(name,"power.sleep"))return false;g->api=is("null-table")?NULL:!strcmp(name,"power.sleep")?(void*)&power:!strcmp(name,"display.power")?(void*)&panel:(void*)&checkpoint;g->slot=1;g->generation=1;return true;}
+static bool radio_disconnect(void*p){(void)p;safe();assert(!timer_only&&!ticket_ready&&!held);if(is("light-radio-retained")){terminal=true;return false;}return true;}
+static wifi_link_t radio_status(void*p){(void)p;safe();return WIFI_LINK_DOWN;}
+static bool bluetooth_off(void*p,bool enabled){(void)p;safe();assert(!enabled&&!timer_only&&!ticket_ready&&!held);return true;}
+static bool bluetooth_status(void*p,uint8_t*out){(void)p;safe();*out=PORTABLE_BLUETOOTH_OFF;return true;}
+static const wifi_api_v1 wifi={.api_version=1,.struct_size=sizeof(wifi),.disconnect_checked=radio_disconnect,.status=radio_status};
+static const portable_bluetooth_control_v1 bluetooth={.api_version=1,.struct_size=sizeof(bluetooth),.set_enabled=bluetooth_off,.status=bluetooth_status};
+static bool acquire(const char*name,uint32_t version,uint64_t instance,risc_runtime_capability_v1*g){safe();assert(version==1&&instance==0&&!held);if(!strcmp(name,"net.wifi")||!strcmp(name,"bluetooth.hci")){assert(!timer_only);radio_acquires++;
+ bool has_wifi=is("light-wifi-only")||is("light-radio-retained")||is("light-radio-release-failed");
+ bool has_ble=is("light-ble-only");
+ if((!strcmp(name,"net.wifi")&&has_wifi)||(!strcmp(name,"bluetooth.hci")&&has_ble)){
+  g->api=!strcmp(name,"net.wifi")?(const void*)&wifi:(const void*)&bluetooth;g->slot=4;g->generation=1;return true;
+ }
+ return false;}if(is("absent")&&!strcmp(name,"power.sleep"))return false;g->api=is("null-table")?NULL:!strcmp(name,"power.sleep")?(void*)&power:!strcmp(name,"display.power")?(void*)&panel:(void*)&checkpoint;g->slot=1;g->generation=1;return true;}
 static unsigned releases;
-static bool release(risc_runtime_capability_v1*g){safe();assert(!held&&!input_hold);releases++;if(is("release-failed"))return false;memset(g,0,sizeof(*g));return true;}
+static bool release(risc_runtime_capability_v1*g){safe();assert(!held&&!input_hold);releases++;if(is("release-failed")||(is("light-radio-release-failed")&&g->slot==4))return false;memset(g,0,sizeof(*g));return true;}
 static bool health(risc_runtime_health_v1*out){safe();out->uptime_ms=now;return true;}
 static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.acquire=acquire,.release=release,.health=health};
 static int32_t alarm_status(void*p,alarm_status_v1*out){(void)p;safe();assert(!held);out->error=0;out->output_uncertain=0;return 0;}
@@ -59,11 +71,14 @@ int main(int argc,char**argv){
   if(is("wake-clear-missing"))assert(portable_home_sleep_modes()==PORTABLE_HOME_MODE_LIGHT);
   assert(portable_home_sleep_close()==(is("release-failed")?-2:1));
   assert(releases==(is("release-failed")?1u:3u));
- }else if(is("light")||is("light-refused")||is("light-retained")||is("ui-refused")||is("absent")){
+ }else if(is("alarm-no-resume")){
+  alarm_service_descriptor_v2 copy=alarm;copy.features=0;copy.resume_sleep=NULL;
+  assert(portable_home_light_sleep_with_ui(&runtime,NULL,NULL,&copy.base,NULL)==0&&!calls&&!entries);
+ }else if(!strncmp(scenario,"light",5)||is("ui-refused")||is("absent")){
   const portable_idle_sleep_ui ui={NULL,begin_ui,restore_ui};
   int result=portable_home_light_sleep_with_ui(&runtime,NULL,NULL,&alarm.base,&ui);
-  if(is("light-retained"))assert(result==-2&&terminal&&!resumes&&!ui_restores);
-  else{assert(!terminal);assert(result==(is("light")?1:0));assert(resumes==(is("light")?1u:0u));assert(portable_home_sleep_close()==1);}
+  if(is("light-retained")||is("light-radio-retained")||is("light-radio-release-failed"))assert(result==-2&&terminal&&!resumes&&!ui_restores);
+  else{bool slept=is("light")||is("light-wifi-only")||is("light-ble-only");assert(!terminal);assert(result==(slept?1:0));assert(resumes==(slept?1u:0u));assert(portable_home_sleep_close()==1);}
  }else{
   assert(portable_home_sleep_admit(&runtime)==1);
   portable_desk_config config={.face=0,.time_format=1};strcpy(config.time_zone,"UTC");
