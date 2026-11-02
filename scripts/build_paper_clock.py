@@ -141,8 +141,10 @@ def build():
  if a.shared_view_output:
   if not a.shared_idle_source or a.local_sleep_source.resolve()!=(ROOT/'lib/PortableApps/src/PortableHomeSleep.c').resolve():p.error('Shared overview requires owning generic sleep and idle sources')
   # Exact SDK/source closure is staged once; physical bindings remain providers.
-  for source in list((ROOT/'sdk/app').glob('RiscCanvas*.h'))+[ROOT/'sdk/app/RiscHomePresentationV1.h',ROOT/'sdk/app/RiscResidentContextsV1.h']:
+  for source in list((ROOT/'sdk/app').glob('RiscCanvas*.h'))+[ROOT/'sdk/app/RiscHomePresentationV1.h',ROOT/'sdk/app/RiscResidentContextsV1.h',ROOT/'sdk/app/RiscCivilClockV1.h']:
    shutil.copyfile(source,includes/source.name)
+  for name in ('RiscPowerSleepV1.h','RiscDisplayPowerV1.h','RiscPowerKeyV1.h'):
+   shutil.copyfile(a.sleep_sdk/name,includes/name)
   for source in (ROOT/'lib/PortableApps/include').glob('PortableHome*.h'):shutil.copyfile(source,includes/source.name)
   facade=a.tagged_alarm_utilities/'lib/Alarm/include/AlarmServiceFacadeV2.h'
   if not facade.is_file():p.error('Shared overview requires canonical alarm facade SDK')
