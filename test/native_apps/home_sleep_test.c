@@ -20,8 +20,8 @@ void portable_desk_clock_radios_off(void){safe();assert(!timer_only);}
 void portable_desk_clock_refused(void){safe();}
 int portable_desk_clock_run(const risc_runtime_api_v1*r,const portable_desk_sleep_ops*o){(void)r;(void)o;assert(0);return 0;}
 bool portable_home_canvas_sleep_available(void){return true;}
-int portable_home_canvas_prepare_sleep(void){safe();assert(ticket_ready&&!held);input_hold=true;if(is("input-retained")){terminal=true;return -2;}return is("input-refused")?0:1;}
-int portable_home_canvas_resume_sleep(void){safe();assert(!held&&!power_prepared&&!panel_prepared);input_hold=false;return is("input-restore")?-2:1;}
+int portable_home_canvas_prepare_sleep(void){safe();assert(ticket_ready&&!held);input_hold=true;if(is("input-context"))context_lost=true;if(is("input-retained")){terminal=true;return -2;}return is("input-refused")?0:1;}
+int portable_home_canvas_resume_sleep(void){safe();assert(!held&&!power_prepared&&!panel_prepared);input_hold=false;if(is("input-restore-context"))context_lost=true;return is("input-restore")?-2:1;}
 static bool prepare_panel(void*p){(void)p;safe();assert(!held&&!ticket_ready);panel_prepared=true;if(is("panel-context"))context_lost=true;return !is("panel-refused");}
 static bool prepare_power(void*p){(void)p;safe();assert(panel_prepared&&!held);power_prepared=true;if(is("power-context"))context_lost=true;return !is("power-refused");}
 static bool restore_power(void*p){(void)p;safe();power_prepared=false;return !is("power-restore");}
@@ -34,9 +34,9 @@ static risc_display_power_api_v1 panel={.api_version=1,.struct_size=sizeof(panel
 static risc_power_sleep_api_v1 power={.api_version=1,.struct_size=sizeof(power),.prepare_sleep=prepare_power,.resume=restore_power,.sleep_wake_pending=wake_pending,.deep_sleep_for=deep,.light_sleep_for=light};
 static int32_t read_record(void*p,uint32_t t,uint32_t s,risc_retained_wake_record_v1*out,uint32_t*c){(void)p;(void)t;(void)s;(void)out;safe();*c=RISC_BOOT_RESET;return RISC_RETAINED_WAKE_ABSENT;}
 static int32_t stage_record(void*p,const risc_retained_wake_record_v1*r){(void)p;(void)r;assert(0);return -1;}
-static int32_t clear_record(void*p){(void)p;safe();assert(!held&&!input_hold&&!power_prepared&&!panel_prepared);clears++;staged=false;return is("clear-retained")?RISC_RETAINED_WAKE_CONTEXT:0;}
+static int32_t clear_record(void*p){(void)p;safe();assert(!held&&!input_hold&&!power_prepared&&!panel_prepared);clears++;staged=false;if(is("clear-context"))context_lost=true;return is("clear-retained")?RISC_RETAINED_WAKE_CONTEXT:0;}
 static int32_t read_bytes(void*p,uint32_t t,uint32_t s,void*out,uint32_t cap,uint32_t*size,uint32_t*c){(void)p;(void)t;(void)s;(void)out;(void)cap;(void)size;safe();*c=RISC_BOOT_RESET;return RISC_RETAINED_WAKE_ABSENT;}
-static int32_t stage_bytes(void*p,uint32_t type,uint32_t schema,const void*bytes,uint32_t size){(void)p;safe();assert(!held&&!input_hold&&!panel_prepared&&!power_prepared&&type==PORTABLE_DESK_CLOCK_RECORD_TYPE&&schema==3&&size==408);memcpy(staged_bytes,bytes,size);staged=true;if(is("stage-retained")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}return is("stage-refused")?RISC_RETAINED_WAKE_INVALID:0;}
+static int32_t stage_bytes(void*p,uint32_t type,uint32_t schema,const void*bytes,uint32_t size){(void)p;safe();assert(!held&&!input_hold&&!panel_prepared&&!power_prepared&&type==PORTABLE_DESK_CLOCK_RECORD_TYPE&&schema==3&&size==408);memcpy(staged_bytes,bytes,size);staged=true;if(is("stage-context"))context_lost=true;if(is("stage-retained")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}return is("stage-refused")?RISC_RETAINED_WAKE_INVALID:0;}
 static risc_retained_wake_api_v1_extended checkpoint={{1,sizeof(checkpoint),NULL,read_record,stage_record,clear_record},RISC_RETAINED_WAKE_EXTENDED_TAG,1,512,0,read_bytes,stage_bytes};
 static bool radio_disconnect(void*p){(void)p;safe();assert(!timer_only&&!ticket_ready&&!held);if(is("light-radio-retained")){terminal=true;return false;}if(is("light-radio-context"))context_lost=true;return true;}
 static wifi_link_t radio_status(void*p){(void)p;safe();return WIFI_LINK_DOWN;}

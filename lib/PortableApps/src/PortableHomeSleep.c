@@ -34,7 +34,7 @@ static int home_sleep_fence(void){home_sleep_retained=true;home_modes=0;portable
 int portable_home_sleep_close(void){
  if(home_sleep_retained||portable_adapter_retained())return -2;
  for(unsigned i=3;i;i--)if(home_sleep_owned[i-1]){
-  if(!home_sleep_runtime->release(&home_sleep_grants[i-1]))return home_sleep_fence();
+  if(!home_sleep_runtime->release(&home_sleep_grants[i-1])||!home_context_safe(NULL)||home_sleep_grants[i-1].api||home_sleep_grants[i-1].slot||home_sleep_grants[i-1].generation)return home_sleep_fence();
   home_sleep_owned[i-1]=false;
  }
  home_sleep_runtime=NULL;home_power=NULL;home_display_power=NULL;home_wake=NULL;home_modes=0;return 1;
@@ -47,7 +47,9 @@ int portable_home_sleep_admit(const risc_runtime_api_v1 *runtime){
  const char*names[]={RISC_POWER_SLEEP_CAPABILITY,RISC_DISPLAY_POWER_CAPABILITY,RISC_RETAINED_WAKE_CAPABILITY};
  for(unsigned i=0;i<3;i++){
   home_sleep_grants[i]=(risc_runtime_capability_v1){.struct_size=sizeof(home_sleep_grants[i])};
-  if(!runtime->acquire(names[i],1,0,&home_sleep_grants[i])){
+  bool acquired=runtime->acquire(names[i],1,0,&home_sleep_grants[i]);
+  if(!home_context_safe(NULL))return home_sleep_fence();
+  if(!acquired){
    if(portable_adapter_retained()||home_sleep_grants[i].api||home_sleep_grants[i].slot||home_sleep_grants[i].generation)return home_sleep_fence();
    if(i==2)break; /* Light does not require a retained checkpoint. */
    return portable_home_sleep_close(); /* Explicit unavailable, not fake readiness. */
@@ -70,7 +72,9 @@ static int home_radios_off(const risc_runtime_api_v1*rt) {
  const char*names[]={"net.wifi","bluetooth.hci"};
  for(unsigned i=0;i<2;i++){
   risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
-  if(!rt->acquire(names[i],1,0,&grant)){
+  bool acquired=rt->acquire(names[i],1,0,&grant);
+  if(!home_context_safe(NULL))return home_sleep_fence();
+  if(!acquired){
    if(portable_adapter_retained()||grant.api||grant.slot||grant.generation)return home_sleep_fence();
    continue;
   }
@@ -87,7 +91,7 @@ static int home_radios_off(const risc_runtime_api_v1*rt) {
    if(ok){ok=b->status(b->context,&state)&&state==PORTABLE_BLUETOOTH_OFF;if(!home_context_safe(NULL))return home_sleep_fence();}
   }
   if(!ok||portable_adapter_retained())return home_sleep_fence();
-  if(!rt->release(&grant))return home_sleep_fence();
+  if(!rt->release(&grant)||!home_context_safe(NULL)||grant.api||grant.slot||grant.generation)return home_sleep_fence();
  }
  portable_desk_clock_radios_off();return 1;
 }
@@ -198,9 +202,9 @@ static int desk_cancelled(void*context){
 static int desk_resume(void*context){
  home_desk_sleep*s=context;if(s->retained)return -2;
  if(portable_home_power_restore(&s->physical)!=1)return desk_retain(s);
- if(s->input_touched){if(portable_home_canvas_resume_sleep()!=1)return desk_retain(s);s->input_touched=false;}
+ if(s->input_touched){if(portable_home_canvas_resume_sleep()!=1||!home_context_safe(NULL))return desk_retain(s);s->input_touched=false;}
  if(s->record_staged){
-  if(!s->wake||s->wake->clear(s->wake->context)!=RISC_RETAINED_WAKE_OK)return desk_retain(s);
+  if(!s->wake||s->wake->clear(s->wake->context)!=RISC_RETAINED_WAKE_OK||!home_context_safe(NULL))return desk_retain(s);
   s->record_staged=false;
  }
  return 1;
@@ -270,13 +274,13 @@ static int desk_prepare(void*context){
  home_desk_sleep*s=context;
  if(home_radios_off(s->rt)!=1)return desk_retain(s);
  int rc=portable_home_power_prepare(&s->physical);
- if(rc==-2)return desk_retain(s);
+ if(rc==-2||!home_context_safe(NULL))return desk_retain(s);
  if(rc!=1)return desk_refuse(s);
  rc=desk_alarm_prepare(s);
  if(rc!=1)return rc==-2?-2:desk_refuse(s);
  if(desk_cancelled(s))return s->retained?-2:desk_refuse(s);
  s->input_touched=true;rc=portable_home_canvas_prepare_sleep();
- if(rc==-2)return desk_retain(s);
+ if(rc==-2||!home_context_safe(NULL))return desk_retain(s);
  if(rc!=1)return desk_refuse(s);
  rc=portable_home_power_hold(&s->physical);
  if(rc==-2)return desk_retain(s);
@@ -307,12 +311,13 @@ static int desk_stage(void *context,const portable_desk_record *record) {
     if(rc!=RISC_RETAINED_WAKE_OK) {
         /* INVALID is a clean argument refusal. No other non-OK stage outcome
          * proves storage-safe custody, so do not even attempt clear/release. */
-        if(rc!=RISC_RETAINED_WAKE_INVALID)return desk_retain(s);
+        if(rc!=RISC_RETAINED_WAKE_INVALID||!home_context_safe(NULL))return desk_retain(s);
         return desk_refuse(s);
     }
 #else
     if(rc!=RISC_RETAINED_WAKE_OK)return desk_refuse(s);
 #endif
+    if(!home_context_safe(NULL))return desk_retain(s);
     memcpy(s->staged_value,bytes,sizeof(bytes));return 1;
 }
 static int desk_stage_enter(void *context,const portable_desk_record *record,
@@ -364,9 +369,9 @@ int portable_home_light_sleep_with_ui(const risc_runtime_api_v1*rt,const risc_di
  int prepared=desk_alarm_prepare(&s);
  if(prepared==-2)return -2;
  if(prepared!=1)goto restore;
- if(ui){portable_idle_ui_result rc=ui->begin(ui->context);if(rc==PORTABLE_IDLE_UI_REFUSED)goto restore;if(rc!=PORTABLE_IDLE_UI_READY)return desk_retain(&s);shown=true;}
+ if(ui){portable_idle_ui_result rc=ui->begin(ui->context);if((rc!=PORTABLE_IDLE_UI_READY&&rc!=PORTABLE_IDLE_UI_REFUSED)||!home_context_safe(NULL))return desk_retain(&s);if(rc==PORTABLE_IDLE_UI_REFUSED)goto restore;if(rc!=PORTABLE_IDLE_UI_READY)return desk_retain(&s);shown=true;}
  s.input_touched=true;prepared=portable_home_canvas_prepare_sleep();
- if(prepared==-2)return desk_retain(&s);
+ if(prepared==-2||!home_context_safe(NULL))return desk_retain(&s);
  if(prepared!=1)goto restore;
  if(desk_cancelled(&s)){if(s.retained)return -2;goto restore;}
  risc_runtime_health_v1 now={.struct_size=sizeof(now)};
@@ -387,7 +392,7 @@ int portable_home_light_sleep_with_ui(const risc_runtime_api_v1*rt,const risc_di
  }
 restore:
  if(desk_resume(&s)!=1)return -2;
- if(shown&&ui->restore(ui->context)!=PORTABLE_IDLE_UI_READY)return desk_retain(&s);
+ if(shown&&(ui->restore(ui->context)!=PORTABLE_IDLE_UI_READY||!home_context_safe(NULL)))return desk_retain(&s);
  return result==1?1:result<0?-1:0;
 }
 int portable_app_alarm_sleep(const risc_runtime_api_v1*rt,const risc_display_output_api_v1*display,
