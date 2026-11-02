@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-Watch
-          ref: 1770250ece443c079d240714ecb3454b4bdbd71b
+          ref: 2da6054be3b5f78215cda90e9bcf3f761d17d924
           path: Home
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -146,6 +146,10 @@ jobs:
           python System/scripts/test_derive_files_product_authority.py
           python System/scripts/derive_files_product_authority.py --inputs qualification/inputs --bootfs-tools Bootfs/scripts --output qualification/original-product-authority.json
           python System/scripts/prepare_files_selections.py --authority qualification/original-product-authority.json --linked qualification/target --parser qualification/prepared/manifest-test --output qualification/selections
+      - name: Install declared Home recipe dependencies
+        run: python3 -m pip install -r Home/scripts/requirements.txt
+      - name: Verify Home shared SDK closure
+        run: python3 Home/tests/test_shared_sdk_headers.py
       - name: Build exact Home packages twice
         shell: bash
         run: |

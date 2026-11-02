@@ -2,8 +2,8 @@
   "compiler_sha256": "f556eb8b42ff8c0bb748243afa391a216b3482b7d3724e5c2aa6870952b76b74",
   "sources": {
     "home": {
-      "base_commit": "ba88f5514b5bb8ed6e176c00b99e73aa055971a1",
-      "overlay": "Exact verified 9-file settings-effects handoff",
+      "base_commit": "2da6054be3b5f78215cda90e9bcf3f761d17d924",
+      "overlay": "Published owning Home settings-effects source with declared, hash-checked shared SDK header; no local Home overlay",
       "files": {
         "apps/clock/PortableSleepPolicy.h": "b0251ad4e4c25a4842ad19c1f998f9fb60a3ee2577f49784417d7db880d33995",
         "apps/clock/PortableTimeFormat.h": "cdca86c8be5ebd5f011ae04f2bc765aa2e5ba3b6c66f172d4f8da93f9f207cf0",
@@ -64,11 +64,11 @@
         "apps/clock/faces/points_collection_legacy.inc": "3109c14a632b0a11fa79dd82ac9378417eadf2ca80eccae8b8f73d3641e76779",
         "apps/clock/faces/points_state.h": "a0c2867af9950cd345539047c9a9cf38a240ca723559626bb4f65dedac499be2",
         "apps/clock/faces/points_text_assets.inc": "c40d45229439e7558f8b8ccd1a99ed53e3301d8a2caab00321c713a1110be836",
-        "apps/clock/faces/reference/Calendar + Time Watch Faces \u2014 8 \u00d7 240\u00d7240.html": "698c0101c2439e052d8a88a30f3c940aa31ac6cbb9eb5a82e61a737c4fb14944",
-        "apps/clock/faces/reference/NOVA Watch Faces \u2014 8 \u00d7 240\u00d7240.html": "0b8a5545443ee6f638fecc4d1c844e3b39be70dcf64fa350475c8734f93becdb",
-        "apps/clock/faces/reference/Points in Time \u2014 8 \u00d7 240\u00d7240.html": "dbea229fdfae4edf7711b14d7c02af0200d5f0b933195efe7e89f494a39ba83e",
-        "apps/clock/faces/reference/RiscRTE Watch Face Picker (240\u00d7240).html": "21ae4f32c226fa42ca55ba4c76d879af71249833ed6a03895974145496e88d2e",
-        "apps/clock/faces/reference/Watch Faces II \u2014 8 \u00d7 240\u00d7240.html": "acee670c95c80ff8967ee1e10fea2aa1942220395f3a2cdc3036d68d7e350477",
+        "apps/clock/faces/reference/Calendar + Time Watch Faces — 8 × 240×240.html": "698c0101c2439e052d8a88a30f3c940aa31ac6cbb9eb5a82e61a737c4fb14944",
+        "apps/clock/faces/reference/NOVA Watch Faces — 8 × 240×240.html": "0b8a5545443ee6f638fecc4d1c844e3b39be70dcf64fa350475c8734f93becdb",
+        "apps/clock/faces/reference/Points in Time — 8 × 240×240.html": "dbea229fdfae4edf7711b14d7c02af0200d5f0b933195efe7e89f494a39ba83e",
+        "apps/clock/faces/reference/RiscRTE Watch Face Picker (240×240).html": "21ae4f32c226fa42ca55ba4c76d879af71249833ed6a03895974145496e88d2e",
+        "apps/clock/faces/reference/Watch Faces II — 8 × 240×240.html": "acee670c95c80ff8967ee1e10fea2aa1942220395f3a2cdc3036d68d7e350477",
         "apps/clock/faces/render.inc": "24551f571e3d4d8dbe6bcddff3686793b70dcadc13975dab5a0a83482064f9de",
         "apps/clock/launcher_touch.h": "eab8ed1a4d75e45a92f8f285c9c26db7031168e3f9dd61e08547535a6979ed5f",
         "apps/clock/low-battery-manifest.json": "323b55d034ea0a094909ce99034831ff6de02b6c0ccf2a306581b661d3988b25",
@@ -126,7 +126,7 @@
         "apps/runtime_features/sdk/RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
         "apps/runtime_features/sdk/RiscRetainedWakeV1.h": "36066ff656dbdfbd6546b8ee92b62f7a74c3ba501bda34602e39811035fa7296",
         "apps/runtime_features/sdk/SOURCES.json": "77562002d959dac1ba90b862c3ed489e369826abaa0dc895388be881fa077a0d",
-        "dependencies.lock.json": "e6383023dce618f335c0106dc6313e088afe3475ade92c34700b8a9f9caa955d",
+        "dependencies.lock.json": "9e966d749f680e165d8f0f74503baf9dd58ca1cecd46dde3fea4af5ba53a5f98",
         "include/PortableMotionTap.h": "73fe7e58159860dab4ed1b2bf9a2a5e85b0a94c7bef39718a15e04a5d49cfc50",
         "include/PortablePowerStatus.h": "957925504f2032963d1f2411bc676f2f6b493b41db3f9317182c2cca1a3067e4",
         "include/PortableTapSettings.h": "f6ff75e400224f2285f131d2088bd32985f9d18feefac64aa408f8b63c764132",
@@ -143,7 +143,7 @@
         "scripts/build.py": "249987fdecec23f3d575eb375e5537955974d92227f778e52b52b55b636bba56",
         "scripts/build_inputs.py": "c84720dec45195ec40f182f40d6a43c76637068b2f2f3d8a2b5308d69a749a47",
         "scripts/compact_current_elf.py": "07936b7ccbc53809ef8d907b19d434b047e4b7e4a2a8501bd32bd9465f691d55",
-        "scripts/merged_sdk.py": "80c285403f3c239a9136ba825db86e576dca3e23ec154515b180aa3d0bce2cd0",
+        "scripts/merged_sdk.py": "06ce2a697b36c922bfe155dbdeb12f30d3096e4239a85f7b004f77a495bbe73d",
         "scripts/normalize_xtensa_relocations.py": "f71d9ca3b267166bc69d0e4853463774a8dde5384924132e1aca0e0c2f3a965f",
         "sdk/app/APP_CAPABILITIES.md": "a59d26f09377680ba82be1f6cf17c66e452c5a910bc4952f39b49d6cd234d257",
         "sdk/app/RiscFailureEvidenceV1.h": "f2b024c21780155bacf78bd67a279d8959365c1d25ff1ba421449dd5d3b35265",
@@ -183,7 +183,8 @@
         "sdk/driver/RiscTouchV1.h": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
         "sdk/driver/RiscWakeSetV1.h": "0b5a4914ac67d37b420e1ea19b591a71440f6e4c20149ca4324e1049517ba375",
         "sdk/driver/TWatchHardwareV1.h": "ca48ca21a944565ae185f7c4e8cc0e73bcc18871d79b966f7e7da916e7ab2c99",
-        "sdk/driver/TWatchPlatformV1.h": "88457c6cd36a8d2550c964ede1060b4006b72be5d290cff7cd108087bacc16dd"
+        "sdk/driver/TWatchPlatformV1.h": "88457c6cd36a8d2550c964ede1060b4006b72be5d290cff7cd108087bacc16dd",
+        "sdk/app/PortableResidentSettingsEffects.h": "617544d7260d73841fbf76b129371cf647cc40577f015ee73f72b47917e2dee5"
       }
     },
     "system": {
