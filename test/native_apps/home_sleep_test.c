@@ -52,9 +52,11 @@ static portable_idle_ui_result begin_ui(void*p){(void)p;safe();assert(ticket_rea
 static portable_idle_ui_result restore_ui(void*p){(void)p;safe();assert(!held&&!input_hold&&!power_prepared&&!panel_prepared);ui_restores++;return PORTABLE_IDLE_UI_READY;}
 int main(int argc,char**argv){
  assert(argc==2);scenario=argv[1];timer_only=strncmp(scenario,"light",5)&&strncmp(scenario,"ui",2)&&!is("absent");
- if(is("null-table")||is("release-failed")){
+ if(is("wake-clear-missing"))checkpoint.base.clear=NULL;
+ if(is("null-table")||is("release-failed")||is("wake-clear-missing")){
   assert(portable_home_sleep_admit(&runtime)==1);
   if(is("null-table"))assert(!portable_home_sleep_modes());
+  if(is("wake-clear-missing"))assert(portable_home_sleep_modes()==PORTABLE_HOME_MODE_LIGHT);
   assert(portable_home_sleep_close()==(is("release-failed")?-2:1));
   assert(releases==(is("release-failed")?1u:3u));
  }else if(is("light")||is("light-refused")||is("light-retained")||is("ui-refused")||is("absent")){

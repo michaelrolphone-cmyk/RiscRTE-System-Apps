@@ -58,6 +58,8 @@ static int shared_home_contexts_query(uint32_t reason) {
  state.wifi=quick.ui.wifi_available&&quick.ui.wifi_valid;
  state.bluetooth=quick.ui.bluetooth_available&&quick.ui.bluetooth_valid;
 #endif
+ const alarm_service_descriptor_v2*descriptor=alarm_service_descriptor(alarms.api);
+ if(!descriptor||!(descriptor->features&ALARM_DESCRIPTOR_RESUME_SLEEP))state.power_modes&=~(PORTABLE_HOME_MODE_LIGHT|PORTABLE_HOME_MODE_HYBRID);
  /* FACE addresses watch_face, not the independent desk_clock_face key.
   * This overview controller has no active canonical native-face owner. */
  return portable_home_readiness_query(&state,reason);

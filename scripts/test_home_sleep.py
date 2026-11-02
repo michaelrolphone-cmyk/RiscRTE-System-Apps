@@ -13,13 +13,13 @@ for name in ('RiscDisplayPowerV1.h','RiscPowerSleepV1.h','RiscTimedSleepV1.h','R
  shutil.copyfile(a.watch/'sdk/driver'/name,inc/name)
 shutil.copyfile(a.watch/'apps/runtime_features/sdk/RiscRetainedWakeV1.h',inc/'RiscRetainedWakeV1.h')
 shutil.copytree(root/'lib/PortableApps/time',out/'time',dirs_exist_ok=True)
-cases=('normal','cancelled','stage-refused','stage-retained','panel-refused','power-refused','alarm-retained','input-refused','input-retained','hold-refused','hold-retained','entry-retained','entry-zero','expired','rewound','record-changed','power-restore','panel-restore','input-restore','clear-retained','wake-retained','light','light-refused','light-retained','ui-refused','absent','null-table','release-failed')
+cases=('normal','cancelled','stage-refused','stage-retained','panel-refused','power-refused','alarm-retained','input-refused','input-retained','hold-refused','hold-retained','entry-retained','entry-zero','expired','rewound','record-changed','power-restore','panel-restore','input-restore','clear-retained','wake-retained','light','light-refused','light-retained','ui-refused','absent','null-table','release-failed','wake-clear-missing')
 runs=[]
 for mode in ('normal','sanitized'):
  flags=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if mode=='sanitized' else []
  binary=out/mode
  defines=('PORTABLE_DESK_POINTS_FACE','PORTABLE_DESK_POINTS_SNAPSHOT','PORTABLE_ALARM_CLIENT','ALARM_SERVICE_TAGGED_V2','PORTABLE_X4_IDLE_POLICY','PORTABLE_DESK_CLOCK_SPARSE_START','PORTABLE_DESK_LOCK_HOME','PORTABLE_SHARED_HOME_CANVAS','PORTABLE_NATIVE_CUSTODY_FENCE','PORTABLE_ALARM_TERMINAL_RETENTION')
- command=['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-ffunction-sections','-fdata-sections','-Wl,--gc-sections',*flags,*['-D'+d for d in defines],'-I'+str(inc),str(root/'test/native_apps/home_sleep_test.c'),'-o',str(binary)]
+ command=['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-ffunction-sections','-fdata-sections','-Wl,--gc-sections',*flags,*['-D'+d for d in defines],'-I'+str(inc),'-I'+str(root/'sdk/app'),str(root/'test/native_apps/home_sleep_test.c'),'-o',str(binary)]
  subprocess.run(command,check=True)
  for case in cases:
   result=subprocess.run([str(binary),case],capture_output=True,text=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
