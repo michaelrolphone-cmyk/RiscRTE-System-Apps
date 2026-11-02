@@ -143,7 +143,7 @@ def build():
   for source in list((ROOT/'sdk/app').glob('RiscCanvas*.h'))+[ROOT/'sdk/app/RiscHomePresentationV1.h',ROOT/'sdk/app/RiscResidentContextsV1.h']:
    shutil.copyfile(source,includes/source.name)
   for source in (ROOT/'lib/PortableApps/include').glob('PortableHome*.h'):shutil.copyfile(source,includes/source.name)
-  extra=['-DPORTABLE_SHARED_HOME_CANVAS','-DPORTABLE_SHARED_HOME_BOOT',
+  extra=['-DPORTABLE_ALARM_BUSY_DEFER','-DPORTABLE_SHARED_HOME_CANVAS','-DPORTABLE_SHARED_HOME_BOOT',
    '-include',str(includes/'PortableHomeBindings.h'),
    '-DPORTABLE_CRASH_REPORT_NAMESPACE=portable_home_crash_namespace()',
    '-DPORTABLE_INSTALLED_VOLUME_INSTANCE=portable_home_catalog_volume()']

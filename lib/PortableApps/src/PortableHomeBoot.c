@@ -1,13 +1,13 @@
 #include "PortableHomeBoot.h"
 #include <string.h>
-typedef struct {bool active,available,consumed;uint32_t type,schema,size,cause;unsigned view;uint8_t bytes[512];} home_boot;
+typedef struct {bool active,available,consumed;int32_t result;uint32_t type,schema,size,cause;unsigned view;uint8_t bytes[512];} home_boot;
 static home_boot boot;
 static int halt(const risc_runtime_api_v1*rt){
  if(rt->struct_size>=RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE&&rt->retain_invocation)(void)rt->retain_invocation();
  return -1;
 }
 int portable_home_boot_begin(const risc_runtime_api_v1*rt){
- boot=(home_boot){.active=true,.cause=RISC_BOOT_RESET};
+ boot=(home_boot){.active=true,.result=RISC_RETAINED_WAKE_ABSENT,.cause=RISC_BOOT_RESET};
  if(!rt||rt->api_version!=1||rt->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE||!rt->acquire||!rt->release)return -1;
  risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
  if(!rt->acquire(RISC_RETAINED_WAKE_CAPABILITY,1,0,&grant))return 0;
@@ -30,6 +30,7 @@ int portable_home_boot_begin(const risc_runtime_api_v1*rt){
   }
  }
  if(rc!=RISC_RETAINED_WAKE_OK&&rc!=RISC_RETAINED_WAKE_ABSENT&&rc!=RISC_RETAINED_WAKE_MISMATCH)return halt(rt);
+ boot.result=rc;
  if(boot.cause>RISC_BOOT_DEEP_OTHER)return halt(rt);
  if(!rt->release(&grant))return halt(rt);
  return 0;
@@ -40,7 +41,8 @@ int32_t portable_home_boot_read_bytes(const risc_retained_wake_api_v1_extended*x
  if(!boot.active)return x->read_bytes(x->base.context,type,schema,out,capacity,size,cause);
  if(!cause||!size||!out)return RISC_RETAINED_WAKE_INVALID;
  *cause=boot.cause;
- if(!boot.available||boot.consumed)return RISC_RETAINED_WAKE_ABSENT;
+ if(boot.consumed)return RISC_RETAINED_WAKE_ABSENT;
+ if(!boot.available)return boot.result;
  if(type!=boot.type||schema!=boot.schema)return RISC_RETAINED_WAKE_MISMATCH;
  if(capacity<boot.size)return RISC_RETAINED_WAKE_INVALID;
  memcpy(out,boot.bytes,boot.size);*size=boot.size;boot.consumed=true;return RISC_RETAINED_WAKE_OK;

@@ -24,13 +24,20 @@ static inline const risc_canvas_input_v1*risc_canvas_input_get_v1(const void*p,s
  * Existing ui.canvas v1 prefix is unchanged. */
 #define RISC_CANVAS_BINDING_TAG UINT32_C(0x43424931)
 typedef struct {
- risc_canvas_api_v1 base;
- uint32_t binding_tag,binding_version;
+ uint32_t struct_size,version,tag;
+ void *context;
  int32_t (*bind_inputs)(void*,uint64_t,const risc_touch_api_v1*,const risc_input_navigation_api_v1*);
  int32_t (*unbind_inputs)(void*,uint64_t);
 } risc_canvas_binding_v1;
-static inline const risc_canvas_binding_v1*risc_canvas_binding_get_v1(const risc_canvas_api_v1*p){
- if(!p||p->struct_size<sizeof(risc_canvas_binding_v1))return NULL;
- const risc_canvas_binding_v1*x=(const risc_canvas_binding_v1*)p;
- return x->binding_tag==RISC_CANVAS_BINDING_TAG&&x->binding_version==1&&x->bind_inputs&&x->unbind_inputs?x:NULL;
+/* Query an existing session through open's tagged extension mechanism. No
+ * new session, input activation, or caller pointer retention occurs. Old
+ * providers reject the unknown tag cleanly; base v1 table/size are unchanged. */
+typedef struct {
+ risc_canvas_open_v1 base;
+ uint32_t binding_tag;
+ const risc_canvas_binding_v1**binding_out;
+ uint64_t session;
+} risc_canvas_open_input_binding_v1;
+static inline const risc_canvas_binding_v1*risc_canvas_binding_get_v1(const risc_canvas_binding_v1*p){
+ return p&&p->struct_size>=sizeof(*p)&&p->tag==RISC_CANVAS_BINDING_TAG&&p->version==1&&p->bind_inputs&&p->unbind_inputs?p:NULL;
 }

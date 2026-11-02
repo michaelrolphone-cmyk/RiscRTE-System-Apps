@@ -15,7 +15,8 @@ def run(system,output):
     command+=[str(ROOT/'test/canvas_provider'/f'{name}_test.c'),'-o',str(binary)]
     if sanitized:command+=['-fsanitize=address,undefined']
     subprocess.run(command,check=True)
-    result=subprocess.run([str(binary)],check=True,capture_output=True,text=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
+    result=subprocess.run([str(binary)],check=False,capture_output=True,text=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
+    print(result.stdout);print(result.stderr);result.check_returncode()
     cases.append({'test':name,'sanitized':sanitized,'command':command,'stdout':result.stdout,'stderr':result.stderr,'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest()})
  sources=list((ROOT/'Services/canvas_host').glob('*'))+list((ROOT/'test/canvas_provider').glob('*'))+[ROOT/'sdk/app/RiscCanvasV1.h',ROOT/'sdk/app/RiscDisplayHistoryV1.h',ROOT/'sdk/app/RiscCanvasInputV1.h',ROOT/'Services/canvas_input/input.c',pathlib.Path(__file__)]
  sources+=[system/'lib/PortableApps/include'/name for name in ('PortableSafeViewport.h','RiscDisplayOutputV1.h','RiscTouchV1.h','RiscInputNavigationV1.h','RiscProviderV2.h','RiscRuntimeV1.h')]

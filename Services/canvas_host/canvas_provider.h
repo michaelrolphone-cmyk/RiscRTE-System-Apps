@@ -13,7 +13,8 @@ typedef struct {
  risc_input_navigation_frame_v1 previous_navigation;
  bool claimed,input_gap,gap_emitted,geometry_changed;
  bool captured[UINT8_MAX+1u];
- union {risc_canvas_api_v1 api;risc_canvas_binding_v1 binding;};
+ risc_canvas_api_v1 api;
+ risc_canvas_binding_v1 binding;
  bool companion_bound;
  risc_canvas_presentation_v1 presentation;
 } canvas_provider;
@@ -77,6 +78,15 @@ static int32_t canvas_provider_open(void*ctx,const risc_canvas_open_v1*request,u
  canvas_provider*p=ctx;canvas_frames*c=&p->frames;
  if(!canvas_frames_alive(c))return RISC_CANVAS_RETAINED;
  if(!request||request->struct_size<sizeof(*request)||!out)return RISC_CANVAS_INVALID;
+ if(request->struct_size>=sizeof(risc_canvas_open_input_binding_v1)){
+  const risc_canvas_open_input_binding_v1*q=(const risc_canvas_open_input_binding_v1*)request;
+  if(q->binding_tag==RISC_CANVAS_BINDING_TAG){
+   if(!q->binding_out||request->encoding||request->layout||request->logical_width||request->logical_height)return RISC_CANVAS_INVALID;
+   *q->binding_out=NULL;
+   int32_t rc=canvas_frames_fence(c,q->session);if(rc)return rc;
+   *q->binding_out=&p->binding;*out=q->session;return RISC_CANVAS_OK;
+  }
+ }
  const risc_canvas_open_presentation_v1*extended=NULL;
  if(request->struct_size>=sizeof(risc_canvas_open_presentation_v1)){
   extended=(const risc_canvas_open_presentation_v1*)request;
@@ -260,6 +270,6 @@ static int32_t canvas_provider_unbind_inputs(void*ctx,uint64_t session){
 static inline void canvas_provider_init(canvas_provider*p,const risc_display_output_api_v1*display,const risc_touch_api_v1*touch,uint32_t rotation){
  memset(p,0,sizeof(*p));p->frames.display=display;p->touch=touch;p->rotation=rotation;
  p->presentation=(risc_canvas_presentation_v1){sizeof(p->presentation),1,RISC_CANVAS_PRESENTATION_TAG,p,canvas_provider_present,canvas_provider_seed,0,canvas_provider_orientation,canvas_provider_copy_completed};
- p->api=(risc_canvas_api_v1){1,sizeof(p->binding),RISC_CANVAS_TAG,p,canvas_provider_open,canvas_provider_geometry,canvas_provider_begin,canvas_provider_submit,canvas_provider_cancel,canvas_provider_poll,canvas_provider_forget,canvas_provider_next,canvas_provider_contacts,canvas_provider_quiesce,canvas_provider_resume,canvas_provider_close};
- p->binding.binding_tag=RISC_CANVAS_BINDING_TAG;p->binding.binding_version=1;p->binding.bind_inputs=canvas_provider_bind_inputs;p->binding.unbind_inputs=canvas_provider_unbind_inputs;
+ p->api=(risc_canvas_api_v1){1,sizeof(p->api),RISC_CANVAS_TAG,p,canvas_provider_open,canvas_provider_geometry,canvas_provider_begin,canvas_provider_submit,canvas_provider_cancel,canvas_provider_poll,canvas_provider_forget,canvas_provider_next,canvas_provider_contacts,canvas_provider_quiesce,canvas_provider_resume,canvas_provider_close};
+ p->binding=(risc_canvas_binding_v1){sizeof(p->binding),1,RISC_CANVAS_BINDING_TAG,p,canvas_provider_bind_inputs,canvas_provider_unbind_inputs};
 }
