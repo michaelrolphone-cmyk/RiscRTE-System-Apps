@@ -37,5 +37,12 @@ static bool start(const risc_provider_dependency_v1*deps,size_t count){
 }
 static bool quiesce(void){return !provider.frames.retained&&!provider.frames.session&&!provider.frames.lease&&!provider.frames.receipts&&!provider.subscription&&!provider.claimed;}
 static void stop(void){if(!quiesce())return;started=false;provider.frames.display=NULL;provider.touch=NULL;provider.navigation=NULL;}
-static const risc_driver_v2 driver={2,sizeof(driver),"canvas-host",RISC_CANVAS_CAPABILITY,1,&provider.api,start,stop,quiesce};
+#if defined(RISC_CANVAS_RASTER_PROVIDER)
+#define CANVAS_PROVIDER_ID "canvas-raster"
+#define CANVAS_PROVIDER_CAPABILITY RISC_CANVAS_RASTER_CAPABILITY
+#else
+#define CANVAS_PROVIDER_ID "canvas-host"
+#define CANVAS_PROVIDER_CAPABILITY RISC_CANVAS_CAPABILITY
+#endif
+static const risc_driver_v2 driver={2,sizeof(driver),CANVAS_PROVIDER_ID,CANVAS_PROVIDER_CAPABILITY,1,&provider.api,start,stop,quiesce};
 __attribute__((visibility("default"))) const risc_driver_v2*t5_driver_get(uint32_t abi){return abi==2?&driver:NULL;}
