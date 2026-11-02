@@ -1,7 +1,7 @@
 name: Complete shared Home ELF
 on:
   pull_request:
-    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/build_home_dependencies.py', 'scripts/prepare_home_cohort_plan.py', 'scripts/compact_home_dependency_packages.py', 'scripts/stage_home_published_dependencies.py', 'docs/shared-home/**', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/assemble_shared_home_cohort.py', 'scripts/test_shared_home_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', 'lib/PortableApps/include/PortableAlarm*.h', 'scripts/test_home_alarm_facade_client.py', 'test/native_apps/portable_alarm_v2_test.c', 'scripts/test_home_points_custody.py', 'test/native_apps/home_points_custody_test.c', 'scripts/test_home_crash_bindings.py', 'scripts/test_home_product_admission.py', 'scripts/test_home_admission_binding.py', 'scripts/publish_home_shared.py', 'scripts/test_publish_home_shared.py', '.github/workflows/shared-home-complete.yml']
+    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/build_home_dependencies.py', 'scripts/stage_home_x4_bridge.py', 'scripts/test_stage_home_x4_bridge.py', 'scripts/shared_home_sdk.py', 'scripts/test_shared_home_sdk.py', 'scripts/prepare_home_cohort_plan.py', 'scripts/compact_home_dependency_packages.py', 'scripts/stage_home_published_dependencies.py', 'docs/shared-home/**', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/assemble_shared_home_cohort.py', 'scripts/test_shared_home_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', 'lib/PortableApps/include/PortableAlarm*.h', 'scripts/test_home_alarm_facade_client.py', 'test/native_apps/portable_alarm_v2_test.c', 'scripts/test_home_points_custody.py', 'test/native_apps/home_points_custody_test.c', 'scripts/test_home_crash_bindings.py', 'scripts/test_home_product_admission.py', 'scripts/test_home_admission_binding.py', 'scripts/publish_home_shared.py', 'scripts/test_publish_home_shared.py', '.github/workflows/shared-home-complete.yml']
 permissions:
   contents: read
 jobs:
@@ -65,6 +65,7 @@ jobs:
           python3 System/scripts/test_shared_app_cohort.py
           python3 System/scripts/test_shared_home_cohort.py
           python3 System/scripts/test_shared_home_manifest.py
+          python3 System/scripts/test_shared_home_sdk.py
           python3 System/scripts/test_home_admission_binding.py
           python3 System/scripts/test_publish_home_shared.py
           python3 -m py_compile System/scripts/build_home_dependencies.py System/scripts/prepare_home_cohort_plan.py System/scripts/stage_home_published_dependencies.py System/scripts/compact_home_dependency_packages.py
@@ -137,6 +138,7 @@ jobs:
         with:
           name: preserved-shared-app-cohort-${{ github.event.pull_request.head.sha }}
           path: |
+            cohort/inputs/
             cohort/composed/
             cohort/sources.json
             cohort/inventory.json
@@ -333,5 +335,30 @@ jobs:
         if: always()
         with:
           name: shared-home-published-dependencies-${{ github.event.pull_request.head.sha }}
+          path: out/
+          if-no-files-found: error
+  x4-bridge:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Retrieve exact owning qualified singleton providers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO/actions/artifacts/13144852409/zip > "$RUNNER_TEMP/x4-bridge.zip"
+          python3 scripts/test_stage_home_x4_bridge.py
+          python3 scripts/stage_home_x4_bridge.py --archive "$RUNNER_TEMP/x4-bridge.zip" --output out/x4
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-x4-bridge-${{ github.event.pull_request.head.sha }}
           path: out/
           if-no-files-found: error
