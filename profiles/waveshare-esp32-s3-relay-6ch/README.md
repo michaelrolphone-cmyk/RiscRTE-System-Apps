@@ -1,6 +1,6 @@
-# Waveshare ESP32-S3-Relay-6CH RiscRTE agent 1.0.2
+# Waveshare ESP32-S3-Relay-6CH RiscRTE agent 1.0.3
 
-For a paired v1.0.0 or v1.0.1 board, flash the application image at `0x50000` with erase-all disabled. Version 1.0.2 restores the shared relay subscription fingerprint for the interim pairing file, migrates the eight provider pins, and reserves 24 KiB of main-task stack for the TLS path. It retains the 4 KiB stack admission floor. Hardware assignment admission uses a fresh memory sample after TLS closes.
+For a paired v1.0.x board, flash the application image at `0x50000` with erase-all disabled. Version 1.0.2 restores the shared relay subscription fingerprint for the interim pairing file, migrates the eight provider pins, and reserves 24 KiB of main-task stack for the TLS path. It retains the 4 KiB stack admission floor. Hardware assignment admission uses a fresh memory sample after TLS closes.
 
 Dedicated static ESP-IDF 6.1 product for the ESP32-S3 relay board. It links the
 same infrastructure agent and enrollment portal used by the camera product,
@@ -20,6 +20,25 @@ assignments, under ordinary participant/session/execution grants.
 | `serial.rs485@1` | `exchange(baud,parity,stop_bits,tx_hex,rx_max,timeout_ms)` | UART1 TX17/RX18; automatic direction |
 | `sound.buzzer@1` | `tone(frequency_hz,duration_ms)` | GPIO21; 100..10000 Hz; at most 5 seconds |
 | `light.rgb@1` | `set(red,green,blue)` | GPIO38 WS2812; 8-bit RGB |
+
+The board also exposes `device.outputs.batch@1`, operation `apply`. Supply
+`{"steps":[...]}`. Each step can contain `on` and `off` arrays of relay
+channel numbers, `rgb` as three bytes, `tone_hz` (0 stops the buzzer), and
+`wait_ms` after applying the outputs. Omitted outputs retain their state.
+The runner switches requested channels off before switching other channels on.
+It validates every step before starting. A batch can contain 1–32 steps,
+up to 3,072 input bytes and up to 60,000 ms of total waits. Timing runs locally
+after one fenced grant. On success the final output states persist. Interrupted
+work is not replayed. A running batch cancels its touched outputs and leaves
+untouched channels alone. The result reports completed steps, elapsed time,
+per-step relay masks and application times, and final RGB and tone.
+
+For example, this batch switches two relays on and starts a tone, then stops the tone
+and switches only channel 1 off. Channel 4 stays on.
+
+```json
+{"steps":[{"on":[1,4],"rgb":[0,64,80],"tone_hz":660,"wait_ms":500},{"off":[1],"tone_hz":0}]}
+```
 
 RS-485 supports 1200..115200 baud, 8 data bits, none/even/odd parity and 1/2 stop
 bits. Each exchange transmits at most 256 bytes and receives at most 256 bytes

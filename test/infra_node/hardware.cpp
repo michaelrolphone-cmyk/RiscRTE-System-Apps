@@ -8,10 +8,10 @@ int main(int argc,char** argv){
  JsonDocument in;in["channel"]=1;in["on"]=true;assert(hardwareInput("relay.bank","set",in.as<JsonObjectConst>()));in["channel"]=7;assert(!hardwareInput("relay.bank","set",in.as<JsonObjectConst>()));in["channel"]=1;in["pin"]=45;assert(!hardwareInput("relay.bank","set",in.as<JsonObjectConst>()));
  in.clear();in["baud"]=9600;in["parity"]="none";in["stop_bits"]=1;in["tx_hex"]="0103";in["rx_max"]=32;in["timeout_ms"]=100;assert(hardwareInput("serial.rs485","exchange",in.as<JsonObjectConst>()));in["tx_hex"]="01z3";assert(!hardwareInput("serial.rs485","exchange",in.as<JsonObjectConst>()));in["tx_hex"]="0103";
  // The deployed embedded protocol admits at most four offers per request.
- // Both halves refresh the same eight pins, and physical offers ignore role
+ // All batches refresh the nine pins, and physical offers ignore role
  // staffing while the infrastructure offers remain lease gated.
  {Node inv;init(inv,cfg);inv.hardware={nullptr,hwReady,execute};inv.poolsEstablished=true;inv.memory.internal_free=200000;inv.memory.internal_largest=100000;inv.memory.dma_free=100000;inv.memory.dma_largest=100000;inv.memory.stack_headroom=16000;
- for(unsigned batch=0;batch<2;++batch){inv.inventoryBatch=batch;assert(inv.inventoryStep()==1);auto offers=inv.request["arguments"]["offers"];assert(offers.size()==4);for(auto offer:offers.as<JsonArrayConst>())assert(offer["offer"]["observed_health"]==(batch?"healthy":"capacity_blocked"));}inv.phase=Phase::Stopped;inv.dispose();}
+ for(unsigned batch=0;batch<3;++batch){inv.inventoryBatch=batch;assert(inv.inventoryStep()==1);auto offers=inv.request["arguments"]["offers"];assert(offers.size()==(batch==2?1:4));for(auto offer:offers.as<JsonArrayConst>())assert(offer["offer"]["observed_health"]==(batch?"healthy":"capacity_blocked"));}inv.phase=Phase::Stopped;inv.dispose();}
  // A real sync can return a work offer while TLS temporarily owns the heap.
  // The adapter refreshes memory between advance() calls, after the socket closes.
  for (bool recovered : {false, true}) {
@@ -30,6 +30,31 @@ int main(int argc,char** argv){
   if(recovered)worker.memory.internal_free=83632;
   assert(worker.advance()==1);
   assert(recovered?(worker.phase==Phase::Send&&worker.action==Action::Assignment&&worker.request["arguments"]["assignment_id"]=="bench-led"):worker.phase==Phase::Ready);
+  worker.phase=Phase::Stopped;worker.dispose();
+ }
+ // Frame validation supports arbitrary channel sets, partial updates, tone-off
+ // and waits. A conflicting later step rejects the entire command.
+ JsonDocument program;assert(!deserializeJson(program,R"({"steps":[{"on":[1,4],"off":[6],"rgb":[2,19,185],"tone_hz":734,"wait_ms":137},{"off":[1],"tone_hz":0},{"wait_ms":1234}]})"));
+ OutputFrame decoded[OutputFrameLimit];unsigned duration=0;
+ assert(decodeOutputBatch(program.as<JsonObjectConst>(),decoded,duration)&&duration==1371);
+ assert(decoded[0].on==9&&decoded[0].off==32&&decoded[0].rgb[2]==185&&decoded[0].tone==734);
+ assert(decoded[1].off==1&&!decoded[1].hasRgb&&decoded[1].tone==0);
+ assert(!decoded[2].on&&decoded[2].tone<0);
+ for (const char* invalid:{R"({"steps":[]})",R"({"steps":[{}]})",R"({"steps":[{"on":[7]}]})",
+      R"({"steps":[{"on":[1,1]}]})",R"({"steps":[{"off":[3],"on":[3]}]})",
+      R"({"steps":[{"tone_hz":1}]})",R"({"steps":[{"rgb":[1,2]}]})",
+      R"({"steps":[{"wait_ms":60000},{"wait_ms":1}]})"}) {
+  JsonDocument bad;assert(!deserializeJson(bad,invalid));assert(!hardwareInput("device.outputs.batch","apply",bad.as<JsonObjectConst>()));
+ }
+ {Node worker;init(worker,cfg);unsigned starts=0;
+  worker.hardware={&starts,hwReady,[](void* c,const char*,JsonObjectConst,JsonObject)->int{++*static_cast<unsigned*>(c);return 1;},
+   [](void*,JsonObject out)->int{out["steps_completed"]=3;return 0;},nullptr};
+  worker.rebootRecovery=false;worker.leaseUntil=ticks+8500;
+  auto j=worker.journal.state["job"].to<JsonObject>();j["phase"]="hardware_armed";j["boot_id"]=worker.boot;j["spec"]["capability"]["capability_id"]="device.outputs.batch";
+  j["spec"]["operation"]="apply";j["spec"]["inputs"]=program;j["grant"]["allowed_effects"]="nonrepeatable_or_unobservable";
+  assert(worker.hardwareStep()==1&&worker.action==Action::Renew&&starts==0);
+  worker.leaseUntil=ticks+120000;assert(worker.hardwareStep()==1&&starts==1&&j["phase"]=="hardware_wait");saved(worker);
+  assert(worker.hardwareStep()==1&&starts==1&&j["phase"]=="hardware_done"&&j["hardware_output"]["steps_completed"]==3);
   worker.phase=Phase::Stopped;worker.dispose();
  }
  Node n;init(n,cfg);n.hardware={nullptr,hwReady,execute};n.journal.state["credentials"]["participant"]="test-hardware-token";n.rebootRecovery=false;n.leaseUntil=ticks+120000;assert(n.workReady()&&!n.roleReady());

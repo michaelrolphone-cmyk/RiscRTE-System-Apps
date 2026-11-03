@@ -145,7 +145,7 @@ class Node {
   volatile char* secret=authorization;for(size_t i=0;i<sizeof(authorization);++i)secret[i]=0;secret=siteAuthorization;for(size_t i=0;i<sizeof(siteAuthorization);++i)secret[i]=0;
   if(r==-2)return retained();if(r<0)return backoff("transport_open_failed");if(r)return 1;status.requested++;reason(Phase::Receive,"request_in_flight");return 1;
  }
- int stopJob(const char* why){if(text(journal.state["job"]["binding_id"],128)){auto a=make(Action::BindingStop,"execution","binding_report");a["binding_id"]=journal.state["job"]["binding_id"];a["generation"]=journal.state["job"]["generation"];a["kind"]="stopped";a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}if(!text(journal.state["job"]["attempt_id"],128)){journal.state["job"]=nullptr;return persist(Phase::Ready);}auto a=make(Action::Stop,"execution","stop_report");attempt(a);a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}
+ int stopJob(const char* why){if(hardware.cancel&&!hardware.cancel(hardware.context))return 1;if(text(journal.state["job"]["binding_id"],128)){auto a=make(Action::BindingStop,"execution","binding_report");a["binding_id"]=journal.state["job"]["binding_id"];a["generation"]=journal.state["job"]["generation"];a["kind"]="stopped";a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}if(!text(journal.state["job"]["attempt_id"],128)){journal.state["job"]=nullptr;return persist(Phase::Ready);}auto a=make(Action::Stop,"execution","stop_report");attempt(a);a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}
  void networkFailed(){if(!networkFailures)networkFailedSince=now();if(networkFailures<UINT32_MAX)++networkFailures;}
  void networkSucceeded(){networkFailures=0;networkFailedSince=0;}
  void supervise(){
@@ -208,11 +208,17 @@ class Node {
   auto job=journal.state["job"];
   if(!job.isNull()&&job["phase"]=="running"&&now()>=leaseUntil)return stopJob("grant_expired");
   if(now()>=nextSync)return sync();
+  // A claimed physical job has a finite lease. Dispatch its ready transitions
+  // ahead of maintenance polling. A timed local batch yields while it runs.
+  const bool physicalJob=!job.isNull()&&hardwareCapability(job["spec"]["capability"]["capability_id"]|"");
+  if(physicalJob){
+   if(job["phase"]!="hardware_wait")return jobStep();
+   int r=jobStep();if(phase!=Phase::Ready||job["phase"]!="hardware_wait")return r;
+  }
   const bool ready=capacity();if(ready!=lastCapacity){lastCapacity=ready;inventoryNeeded=true;}if(!ready)copy(status.reason,sizeof(status.reason),"low_water_optional_admission_blocked");
   if(!relayYield){int r=relayStep();if(r)return r;}relayYield=false;
   for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();if(roleReady(cadence[i].timeout+2000)&&!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(job["phase"]=="running"&&job["spec"]["inputs"]["binding_id"]==bindingAt(i)["binding_id"]);}}
-  if(!job.isNull()&&(job["phase"]!="running"||now()+15000>=leaseUntil))return jobStep();
-  if(!job.isNull()&&hardwareCapability(job["spec"]["capability"]["capability_id"]|""))return jobStep();
+  if(!job.isNull()&&!physicalJob&&(job["phase"]!="running"||now()+15000>=leaseUntil))return jobStep();
   if(!job.isNull()&&job["phase"]=="running"){for(unsigned i=0;i<bindings().size();++i)if(bindingAt(i)["binding_id"]==job["spec"]["inputs"]["binding_id"]&&cadence[i].ready(now()))return jobStep();}
   if((inventoryNeeded||now()>=nextInventory)&&now()>=inventoryRetryAt)return inventoryStep();
   for(unsigned priority=0;priority<2;++priority)for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(!roleReady(cadence[i].timeout+2000)||bindingDisabled[i]||b["required"].as<bool>()!=(priority==0)||!cadence[i].ready(now())||(priority&&(!capacity()||now()+cadence[i].timeout+5000>=nextSync)))continue;bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}

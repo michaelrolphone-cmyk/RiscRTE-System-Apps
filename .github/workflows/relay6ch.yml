@@ -1,7 +1,7 @@
 name: Waveshare relay6ch firmware
 on:
   push:
-    branches: [work/waveshare-relay6ch, release/waveshare-relay6ch-v1.0.2]
+    branches: [work/waveshare-relay6ch, release/waveshare-relay6ch-v1.0.3]
   pull_request:
     paths: ['firmware/waveshare-relay6ch/**', 'Services/infra_node/**', 'profiles/waveshare-esp32-s3-relay-6ch/**', 'scripts/*relay6ch*', 'test/infra_node/hardware.cpp', '.github/workflows/relay6ch.yml']
 permissions:
@@ -81,8 +81,8 @@ jobs:
         run: |
           cd delivery
           sha256sum --check SHA256SUMS
-          if gh release view waveshare-relay6ch-v1.0.2 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          if gh release view waveshare-relay6ch-v1.0.3 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "This version has already been published."
             exit 0
           fi
-          gh release create waveshare-relay6ch-v1.0.2 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'Waveshare ESP32-S3-Relay-6CH v1.0.2' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS
+          gh release create waveshare-relay6ch-v1.0.3 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'Waveshare ESP32-S3-Relay-6CH v1.0.3' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS

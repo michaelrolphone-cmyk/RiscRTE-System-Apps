@@ -23,10 +23,14 @@ inline void upgradeSetup(JsonObject policy, JsonObjectConst factory, JsonObject 
   if ((matchesDigest(service["providers"],
         "7e16f5362d896f31437032d271d8967216a3d9163246f06a7440e6caa688f377") ||
        matchesDigest(service["providers"],
-        "076acb5693f48e4679cc709e8a9912038657e5d70d98ed48c814a479ad2f3666")) &&
+        "076acb5693f48e4679cc709e8a9912038657e5d70d98ed48c814a479ad2f3666") ||
+       matchesDigest(service["providers"],
+        "5609c7cfd0bbce9c7f1ca41bc00ad5675f6198387d0b2cdbcbeccd6c414a0d9b")) &&
       matchesDigest(service["contracts"],
-        "154cdb7b67123f1224594aa13dd909ecb5465ab248980a31b563437af3901d25"))
+        "154cdb7b67123f1224594aa13dd909ecb5465ab248980a31b563437af3901d25")) {
+    service["contracts"] = factory["service"]["contracts"];
     service["providers"] = factory["service"]["providers"];
+  }
   restoreSubscriptions(policy["relay"].as<JsonObject>());
   // Never edit an outstanding delivery or an independently updated subscription.
   restoreSubscriptions(relayState);

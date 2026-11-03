@@ -5,12 +5,103 @@
 #include <driver/rmt_tx.h>
 #include <driver/rmt_encoder.h>
 #include <esp_timer.h>
+#include <atomic>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 namespace RelayBoard {
 constexpr int pins[]={1,2,41,42,45,46};constexpr uart_port_t uart=UART_NUM_1;
 static bool active=false;static rmt_channel_handle_t pixels=nullptr;static rmt_encoder_handle_t encoder=nullptr;
-static uint8_t mask=0;
+static uint8_t mask=0, pixel[3]{};
+static unsigned toneHz=0;
+static bool setRelay(unsigned channel,bool on){
+ const uint8_t bit=1u<<(channel-1);
+ if(gpio_set_level(gpio_num_t(pins[channel-1]),on)!=ESP_OK)return false;
+ mask=(mask&~bit)|(on?bit:0);return true;
+}
+static bool setTone(unsigned hz){
+ if(hz){
+  if(!ledc_set_freq(LEDC_LOW_SPEED_MODE,LEDC_TIMER_0,hz)||
+     ledc_set_duty(LEDC_LOW_SPEED_MODE,LEDC_CHANNEL_0,512)!=ESP_OK||
+     ledc_update_duty(LEDC_LOW_SPEED_MODE,LEDC_CHANNEL_0)!=ESP_OK)return false;
+ }else if(ledc_stop(LEDC_LOW_SPEED_MODE,LEDC_CHANNEL_0,0)!=ESP_OK)return false;
+ toneHz=hz;return true;
+}
+static bool setPixel(const uint8_t rgb[3]){
+ rmt_symbol_word_t words[25]{};
+ for(unsigned i=0;i<24;++i){
+  bool bit=rgb[i/8]&(0x80>>(i%8));
+  words[i].level0=1;words[i].duration0=bit?8:4;words[i].level1=0;words[i].duration1=bit?4:8;
+ }
+ words[24].level0=0;words[24].duration0=500;words[24].level1=0;words[24].duration1=500;
+ rmt_transmit_config_t tx{};
+ if(rmt_transmit(pixels,encoder,words,sizeof(words),&tx)!=ESP_OK||rmt_tx_wait_all_done(pixels,20)!=ESP_OK)return false;
+ memcpy(pixel,rgb,3);return true;
+}
+
+enum class BatchState { Idle, Running, Cancelling, Complete, Failed };
+static std::atomic<BatchState> batchState{BatchState::Idle};
+static TaskHandle_t batchTask=nullptr;
+static Infra::OutputFrame frames[Infra::OutputFrameLimit];
+static unsigned frameCount=0,completed=0,elapsedMs=0;
+static uint8_t masks[Infra::OutputFrameLimit]{};
+static unsigned appliedAt[Infra::OutputFrameLimit]{};
+
+// The single physical job owns the GPIOs while this task runs. The agent task
+// continues its network work. Release/acquire publishes immutable inputs and results.
+static void runFrames(void*){
+ for(;;){
+  ulTaskNotifyTake(pdTRUE,portMAX_DELAY);
+  if(batchState.load()!=BatchState::Running&&batchState.load()!=BatchState::Cancelling)continue;
+  const int64_t start=esp_timer_get_time();uint8_t touched=0;bool usedTone=false,usedPixel=false,ok=true;
+  for(unsigned i=0;i<frameCount&&ok;++i){
+   if(batchState.load()!=BatchState::Running){ok=false;break;}
+   const auto& f=frames[i];
+   // Break before make when a frame changes multiple relay channels.
+   touched|=f.on|f.off;
+   for(unsigned ch=1;ch<=6&&ok;++ch)if(f.off&(1u<<(ch-1)))ok=setRelay(ch,false);
+   if(ok&&f.hasRgb){usedPixel=true;ok=setPixel(f.rgb);}
+   for(unsigned ch=1;ch<=6&&ok;++ch)if(f.on&(1u<<(ch-1)))ok=setRelay(ch,true);
+   if(ok&&f.tone>=0){usedTone=true;ok=setTone(f.tone);}
+   if(!ok)break;
+   masks[i]=mask;appliedAt[i]=(esp_timer_get_time()-start)/1000;++completed;
+   const int64_t until=esp_timer_get_time()+int64_t(f.waitMs)*1000;
+   for(;;){
+    if(batchState.load()!=BatchState::Running){ok=false;break;}
+    const int64_t left=until-esp_timer_get_time();if(left<=0)break;
+    ulTaskNotifyTake(pdTRUE,pdMS_TO_TICKS((left+999)/1000)+1);
+   }
+  }
+  elapsedMs=(esp_timer_get_time()-start)/1000;
+  BatchState expected=BatchState::Running;
+  if(ok&&batchState.compare_exchange_strong(expected,BatchState::Complete))continue;
+  // Abort only the outputs addressed by this batch. Never replay partial work.
+  for(unsigned ch=1;ch<=6;++ch)if(touched&(1u<<(ch-1)))setRelay(ch,false);
+  if(usedTone)setTone(0);
+  if(usedPixel){const uint8_t black[3]{};setPixel(black);}
+  batchState.store(BatchState::Failed);
+ }
+}
+bool cancel(void*){
+ auto state=batchState.load();
+ if(state==BatchState::Running){
+  if(batchState.compare_exchange_strong(state,BatchState::Cancelling))xTaskNotifyGive(batchTask);
+  return false;
+ }
+ if(state==BatchState::Cancelling)return false;
+ batchState.store(BatchState::Idle);return true;
+}
+int poll(void*,JsonObject out){
+ const auto state=batchState.load();
+ if(state==BatchState::Running||state==BatchState::Cancelling)return 1;
+ if(state!=BatchState::Complete&&state!=BatchState::Failed)return -1;
+ out["steps_completed"]=completed;out["elapsed_ms"]=elapsedMs;out["commanded_mask"]=mask;
+ out["tone_hz"]=toneHz;out["contact_feedback"]=false;
+ auto rgb=out["rgb"].to<JsonArray>();for(auto c:pixel)rgb.add(c);
+ auto stamps=out["applied_at_ms"].to<JsonArray>();auto states=out["relay_masks"].to<JsonArray>();
+ for(unsigned i=0;i<completed;++i){stamps.add(appliedAt[i]);states.add(masks[i]);}
+ batchState.store(BatchState::Idle);return state==BatchState::Complete?0:-1;
+}
+
 bool ready(void*){return active;}
 bool begin(){
  // Dedicated static product: these exact resources are exclusively owned for
@@ -26,21 +117,33 @@ bool begin(){
  rmt_tx_channel_config_t rc{};rc.gpio_num=GPIO_NUM_38;rc.clk_src=RMT_CLK_SRC_DEFAULT;rc.resolution_hz=10000000;rc.mem_block_symbols=64;rc.trans_queue_depth=1;
  rmt_copy_encoder_config_t ec{};
  if(rmt_new_tx_channel(&rc,&pixels)!=ESP_OK||rmt_new_copy_encoder(&ec,&encoder)!=ESP_OK||rmt_enable(pixels)!=ESP_OK)return false;
+ if(xTaskCreate(runFrames,"output-batch",4096,nullptr,4,&batchTask)!=pdPASS)return false;
  active=true;JsonDocument in,out;in["red"]=0;in["green"]=0;in["blue"]=0;return execute(nullptr,"light.rgb",in.as<JsonObjectConst>(),out.to<JsonObject>())==0;
 }
 int execute(void*,const char* c,JsonObjectConst in,JsonObject out){
- using namespace Infra;if(!active||!hardwareInput(c,!strcmp(c,"serial.rs485")?"exchange":!strcmp(c,"sound.buzzer")?"tone":"set",in))return -1;
- if(!strcmp(c,"relay.bank")){unsigned ch=in["channel"].as<unsigned>()-1;bool on=in["on"];if(gpio_set_level(gpio_num_t(pins[ch]),on)!=ESP_OK)return -1;mask=(mask&~(1u<<ch))|(unsigned(on)<<ch);out["channel"]=ch+1;out["on"]=on;out["commanded_mask"]=mask;out["contact_feedback"]=false;return 0;}
+ using namespace Infra;
+ const bool batch=!strcmp(c,"device.outputs.batch");
+ const char* op=batch?"apply":!strcmp(c,"serial.rs485")?"exchange":!strcmp(c,"sound.buzzer")?"tone":"set";
+ if(!active||batchState.load()!=BatchState::Idle||!hardwareInput(c,op,in))return -1;
+ if(batch){
+  unsigned totalMs=0;if(!decodeOutputBatch(in,frames,totalMs))return -1;
+  frameCount=in["steps"].size();completed=elapsedMs=0;
+  batchState.store(BatchState::Running);xTaskNotifyGive(batchTask);return 1;
+ }
+ if(!strcmp(c,"relay.bank")){
+  unsigned channel=in["channel"];bool on=in["on"];if(!setRelay(channel,on))return -1;
+  out["channel"]=channel;out["on"]=on;out["commanded_mask"]=mask;out["contact_feedback"]=false;return 0;
+ }
  if(!strcmp(c,"sound.buzzer")){
-  if(!ledc_set_freq(LEDC_LOW_SPEED_MODE,LEDC_TIMER_0,in["frequency_hz"])||ledc_set_duty(LEDC_LOW_SPEED_MODE,LEDC_CHANNEL_0,512)!=ESP_OK||ledc_update_duty(LEDC_LOW_SPEED_MODE,LEDC_CHANNEL_0)!=ESP_OK)return -1;
-  vTaskDelay(pdMS_TO_TICKS(in["duration_ms"].as<unsigned>()));if(ledc_stop(LEDC_LOW_SPEED_MODE,LEDC_CHANNEL_0,0)!=ESP_OK)return -1;out["duration_ms"]=in["duration_ms"];out["frequency_hz"]=in["frequency_hz"];return 0;
+  if(!setTone(in["frequency_hz"]))return -1;
+  vTaskDelay(pdMS_TO_TICKS(in["duration_ms"].as<unsigned>()));
+  if(!setTone(0))return -1;
+  out["duration_ms"]=in["duration_ms"];out["frequency_hz"]=in["frequency_hz"];return 0;
  }
  if(!strcmp(c,"light.rgb")){
-  uint8_t bytes[]={in["green"],in["red"],in["blue"]};rmt_symbol_word_t words[25]{};
-  for(unsigned i=0;i<24;++i){bool bit=bytes[i/8]&(0x80>>(i%8));words[i].level0=1;words[i].duration0=bit?8:4;words[i].level1=0;words[i].duration1=bit?4:8;}
-  words[24].level0=0;words[24].duration0=500;words[24].level1=0;words[24].duration1=500;
-  rmt_transmit_config_t tx{};if(rmt_transmit(pixels,encoder,words,sizeof(words),&tx)!=ESP_OK||rmt_tx_wait_all_done(pixels,20)!=ESP_OK){active=false;return -1;}
-  out["red"]=in["red"];out["green"]=in["green"];out["blue"]=in["blue"];return 0;
+  // This board transmits RGB in wire order.
+  uint8_t rgb[]={in["red"],in["green"],in["blue"]};if(!setPixel(rgb))return -1;
+  out["red"]=rgb[0];out["green"]=rgb[1];out["blue"]=rgb[2];return 0;
  }
  const auto parity=in["parity"]=="even"?UART_PARITY_EVEN:in["parity"]=="odd"?UART_PARITY_ODD:UART_PARITY_DISABLE;
  if(uart_set_baudrate(uart,in["baud"])!=ESP_OK||uart_set_parity(uart,parity)!=ESP_OK||uart_set_stop_bits(uart,in["stop_bits"]==2?UART_STOP_BITS_2:UART_STOP_BITS_1)!=ESP_OK||uart_flush_input(uart)!=ESP_OK)return -1;

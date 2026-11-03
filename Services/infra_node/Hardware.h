@@ -1,5 +1,5 @@
 #pragma once
-#include "Policy.h"
+#include "OutputBatch.h"
 namespace Infra {
 // Product-owned physical I/O. No pin numbers or arbitrary UART controllers
 // cross the remote interface. The stock camera product leaves this unbound.
@@ -7,10 +7,14 @@ struct Hardware {
  void* context=nullptr;
  bool (*ready)(void*)=nullptr;
  int (*execute)(void*,const char*,JsonObjectConst,JsonObject)=nullptr;
+ // Async outputs are started once. Polling never reissues an output.
+ int (*poll)(void*,JsonObject)=nullptr;
+ bool (*cancel)(void*)=nullptr;
 };
-inline bool hardwareCapability(const char* c){return !strcmp(c,"relay.bank")||!strcmp(c,"serial.rs485")||!strcmp(c,"sound.buzzer")||!strcmp(c,"light.rgb");}
-inline const char* hardwareEffect(const char* c){return !strcmp(c,"serial.rs485")?"nonrepeatable_or_unobservable":!strcmp(c,"sound.buzzer")?"observable_effect":"convergent_state";}
+inline bool hardwareCapability(const char* c){return !strcmp(c,"device.outputs.batch")||!strcmp(c,"relay.bank")||!strcmp(c,"serial.rs485")||!strcmp(c,"sound.buzzer")||!strcmp(c,"light.rgb");}
+inline const char* hardwareEffect(const char* c){return (!strcmp(c,"serial.rs485")||!strcmp(c,"device.outputs.batch"))?"nonrepeatable_or_unobservable":!strcmp(c,"sound.buzzer")?"observable_effect":"convergent_state";}
 inline bool hardwareInput(const char* c,const char* op,JsonObjectConst in){
+ if(!strcmp(c,"device.outputs.batch")){unsigned total=0;return !strcmp(op,"apply")&&decodeOutputBatch(in,nullptr,total);}
  if(!strcmp(c,"relay.bank"))return !strcmp(op,"set")&&keys(in,{"channel","on"})&&integer(in["channel"],1,6)&&in["on"].is<bool>();
  if(!strcmp(c,"light.rgb"))return !strcmp(op,"set")&&keys(in,{"red","green","blue"})&&integer(in["red"],0,255)&&integer(in["green"],0,255)&&integer(in["blue"],0,255);
  if(!strcmp(c,"sound.buzzer"))return !strcmp(op,"tone")&&keys(in,{"frequency_hz","duration_ms"})&&integer(in["frequency_hz"],100,10000)&&integer(in["duration_ms"],1,5000);
