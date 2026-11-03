@@ -76,6 +76,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python System/scripts/test_scene_sdk.py
           for mode in normal sanitized; do
             san=(); if [ "$mode" = sanitized ]; then san=(--sanitize); fi
             python System/scripts/test_scene_pointer.py --runtime X4Runtime --output "evidence/pointer-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/pointer-$mode.log"

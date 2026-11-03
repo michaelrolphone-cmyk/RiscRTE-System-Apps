@@ -24,11 +24,16 @@ def stage_sdk(runtime: Path, system: Path, output: Path) -> Path:
     # Test this invocation's sources, not files left by an earlier build: stale
     # headers otherwise silently hide a newly appended provider API suffix.
     for name in ('RiscRuntimeHostControlV1.h', 'RiscSceneV1.h', 'RiscSceneStateV1.h', 'RiscSceneLifecycleV1.h',
-                 'RiscSceneComponentsV1.h', 'RiscSceneKeypadV1.h', 'RiscSceneHoldV1.h', 'RiscScenePointerV1.h', 'RiscScenePageV1.h',
+                 'RiscSceneComponentsV1.h', 'RiscSceneKeypadV1.h', 'RiscSceneHoldV1.h', 'RiscScenePageV1.h',
                  'RiscSceneCheckpointV1.h', 'RiscSceneReadingV1.h', 'RiscSceneReadingLinksV1.h', 'RiscSceneTelemetryV1.h', 'RiscCanvasV1.h', 'RiscCanvasInputV1.h', 'RiscTouchPowerV1.h', 'RiscDisplayHistoryV1.h', 'RiscSceneCanvasV1.h',
                  'RiscCivilClockV1.h', 'RiscSceneResidentV1.h'):
         if name not in sources:
             canonical(system / ('lib/PortableApps/include' if name=='RiscRuntimeHostControlV1.h' else 'sdk/app') / name)
+    # Append-only extensions may be absent from historical provider fixtures.
+    # Do not require a new contract to compile the old provider's negative control.
+    pointer = system / 'sdk/app/RiscScenePointerV1.h'
+    if pointer.name not in sources and pointer.is_file():
+        canonical(pointer)
     canonical(system / 'lib/PortableApps/include/PortableSafeViewport.h')
     canonical(system / 'Services/scene_profile/SceneProfileV1.h')
     canonical(system / 'Services/text_input/SceneKeyboardV1.h')
