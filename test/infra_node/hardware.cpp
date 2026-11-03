@@ -12,6 +12,26 @@ int main(int argc,char** argv){
  // staffing while the infrastructure offers remain lease gated.
  {Node inv;init(inv,cfg);inv.hardware={nullptr,hwReady,execute};inv.poolsEstablished=true;inv.memory.internal_free=200000;inv.memory.internal_largest=100000;inv.memory.dma_free=100000;inv.memory.dma_largest=100000;inv.memory.stack_headroom=16000;
  for(unsigned batch=0;batch<2;++batch){inv.inventoryBatch=batch;assert(inv.inventoryStep()==1);auto offers=inv.request["arguments"]["offers"];assert(offers.size()==4);for(auto offer:offers.as<JsonArrayConst>())assert(offer["offer"]["observed_health"]==(batch?"healthy":"capacity_blocked"));}inv.phase=Phase::Stopped;inv.dispose();}
+ // A real sync can return a work offer while TLS temporarily owns the heap.
+ // The adapter refreshes memory between advance() calls, after the socket closes.
+ for (bool recovered : {false, true}) {
+  Node worker; init(worker,cfg); worker.hardware={nullptr,hwReady,execute};
+  worker.phase=Phase::Receive; worker.action=Action::Sync; worker.sessionGeneration=3;
+  worker.net.started=ticks; worker.net.timeoutMs=30000; worker.net.token=1;
+  const char* body=R"({"protocol_version":"1.0","status":"completed","code":"ok","data":{"generation":3,"controls":[],"work_offers":[{"assignment_id":"bench-led"}],"coverage":{"complete":true}}})";
+  strcpy(worker.net.body,body); worker.net.size=strlen(body); worker.net.limit=32768;
+  worker.net.api.advance=[](void*,uint64_t)->int32_t{return RISC_HTTP_EOF;};
+  worker.net.api.read=[](void*,uint64_t,void*,uint32_t,uint32_t* n)->int32_t{*n=0;return RISC_HTTP_EOF;};
+  worker.net.api.info=[](void*,uint64_t,risc_http_response_v2* info)->int32_t{info->status_code=200;return 0;};
+  worker.net.api.close=[](void*,uint64_t)->int32_t{return 0;};
+  worker.memory.internal_free=42924;worker.memory.internal_largest=26624;
+  worker.memory.dma_free=16384;worker.memory.dma_largest=8192;worker.memory.stack_headroom=11304;
+  assert(worker.advance()==1&&worker.phase==Phase::Receive&&worker.net.token==0);
+  if(recovered)worker.memory.internal_free=83632;
+  assert(worker.advance()==1);
+  assert(recovered?(worker.phase==Phase::Send&&worker.action==Action::Assignment&&worker.request["arguments"]["assignment_id"]=="bench-led"):worker.phase==Phase::Ready);
+  worker.phase=Phase::Stopped;worker.dispose();
+ }
  Node n;init(n,cfg);n.hardware={nullptr,hwReady,execute};n.journal.state["credentials"]["participant"]="test-hardware-token";n.rebootRecovery=false;n.leaseUntil=ticks+120000;assert(n.workReady()&&!n.roleReady());
  auto j=n.journal.state["job"].to<JsonObject>();j["phase"]="running";j["boot_id"]=n.boot;j["attempt_id"]="hardware-test";j["generation"]=1;j["spec"]["capability"]["capability_id"]="serial.rs485";j["spec"]["operation"]="exchange";j["spec"]["inputs"]=in;j["grant"]["allowed_effects"]="nonrepeatable_or_unobservable";j["grant"]["input_digest"]=std::string(64,'a');
  assert(n.jobStep()==1&&executed==0&&j["phase"]=="hardware_intent");saved(n);assert(n.jobStep()==1&&executed==0&&n.action==Action::HardwareIntent);saved(n);

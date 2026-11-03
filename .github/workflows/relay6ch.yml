@@ -1,7 +1,7 @@
 name: Waveshare relay6ch firmware
 on:
   push:
-    branches: [work/waveshare-relay6ch, release/waveshare-relay6ch-v1.0.1-r1]
+    branches: [work/waveshare-relay6ch, release/waveshare-relay6ch-v1.0.2]
   pull_request:
     paths: ['firmware/waveshare-relay6ch/**', 'Services/infra_node/**', 'profiles/waveshare-esp32-s3-relay-6ch/**', 'scripts/*relay6ch*', 'test/infra_node/hardware.cpp', '.github/workflows/relay6ch.yml']
 permissions:
@@ -54,8 +54,7 @@ jobs:
           . "$IDF_PATH/export.sh"
           export RISC_RUNTIME_ROOT="$PWD/00-runtime" RELAY6CH_OUTPUT="$PWD/delivery"
           python apps/scripts/generate_relay6ch.py
-          # The v1.0.1 source ZIP stores runtime entries first. Enforce the published
-          # pins even if checkout names or the generator change on a future build.
+          # Confirm the clean build uses the same provider pins as the tested image.
           git -C apps diff --exit-code -- firmware/waveshare-relay6ch/main/Factory.h profiles/waveshare-esp32-s3-relay-6ch
           idf.py -C apps/firmware/waveshare-relay6ch -B "$PWD/relay-build" -D "RISC_RUNTIME_ROOT=$RISC_RUNTIME_ROOT" reconfigure
           cmake --build relay-build -- -j1
@@ -82,13 +81,8 @@ jobs:
         run: |
           cd delivery
           sha256sum --check SHA256SUMS
-          if gh release view waveshare-relay6ch-v1.0.1-r1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          if gh release view waveshare-relay6ch-v1.0.2 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "This version has already been published."
             exit 0
           fi
-          gh release create waveshare-relay6ch-v1.0.1-r1 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'Waveshare ESP32-S3-Relay-6CH v1.0.1 verified provider pins' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS
-          if gh release view waveshare-relay6ch-v1.0.1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release edit waveshare-relay6ch-v1.0.1 --repo "$GITHUB_REPOSITORY" --prerelease \
-              --title 'Superseded Relay-6CH v1.0.1 candidate' \
-              --notes 'Use waveshare-relay6ch-v1.0.1-r1. That build matches the eight registered provider pins.'
-          fi
+          gh release create waveshare-relay6ch-v1.0.2 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'Waveshare ESP32-S3-Relay-6CH v1.0.2' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS

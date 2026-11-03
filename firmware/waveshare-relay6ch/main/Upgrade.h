@@ -20,8 +20,10 @@ inline void restoreSubscriptions(JsonObject relay) {
 
 inline void upgradeSetup(JsonObject policy, JsonObjectConst factory, JsonObject relayState) {
   auto service = policy["service"].as<JsonObject>();
-  if (matchesDigest(service["providers"],
-        "7e16f5362d896f31437032d271d8967216a3d9163246f06a7440e6caa688f377") &&
+  if ((matchesDigest(service["providers"],
+        "7e16f5362d896f31437032d271d8967216a3d9163246f06a7440e6caa688f377") ||
+       matchesDigest(service["providers"],
+        "076acb5693f48e4679cc709e8a9912038657e5d70d98ed48c814a479ad2f3666")) &&
       matchesDigest(service["contracts"],
         "154cdb7b67123f1224594aa13dd909ecb5465ab248980a31b563437af3901d25"))
     service["providers"] = factory["service"]["providers"];
