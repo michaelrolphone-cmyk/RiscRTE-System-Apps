@@ -3,13 +3,13 @@ on:
   push:
     branches: ['work/shared-touchpad-pointer-20261103']
   pull_request:
-    paths: ['scripts/assemble_touchpad_delivery.py', '.github/workflows/touchpad-delivery.yml']
+    paths: ['scripts/*touchpad*', 'docs/shared-touchpad/**', '.github/workflows/touchpad-delivery.yml']
 permissions:
   contents: read
 jobs:
-  baseline:
+  qualify:
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,15 +18,97 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: f0e1070c7df1ef1d05e291810461348707232f67
+          path: Utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 712ecc3f894dba99d9c9638941778a82f5856b97
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: X4Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: e361e73de14314bb4b8d2fb3a24eb81e2390b0ee
+          path: X4Product
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: c69d7914935fccdc04749f7bfa429c74219bf88a
+          path: WatchProduct
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06
+          ref: 97ca6157aa9c3bba7c7fee3858aa7d0ff896d13b
+          path: WaveProduct
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
           repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
           ref: ab9ff33975680c5bb8d9a2e7ed346d0300732a4e
           path: Bootfs
           persist-credentials: false
-      - name: Inspect immutable cumulative product authority
-        run: python3 System/scripts/assemble_touchpad_delivery.py --bootfs-tools Bootfs/scripts --output evidence/baseline --inspect-only
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retain exact source closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/source evidence/logs
+          for source in System Utilities Runtime X4Runtime X4Product WatchProduct WaveProduct Bootfs; do
+            git -C "$source" diff --exit-code HEAD --
+            git -C "$source" archive --format=tar HEAD | gzip -n > "evidence/source/$source.tar.gz"
+            git -C "$source" rev-parse HEAD > "evidence/source/$source.head"
+          done
+          sha256sum evidence/source/*.tar.gz > evidence/source/archives.sha256
+      - name: Actual app and scene lifecycle qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in normal sanitized; do
+            flags=(); if [ "$mode" = sanitized ]; then flags=(--sanitize); fi
+            python Utilities/scripts/test_ble_touchpad_session.py --runtime X4Runtime --system System --output "evidence/controller-$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/controller-$mode.log"
+            python Utilities/scripts/test_ble_touchpad_runtime.py --runtime X4Runtime --system-apps System --output "evidence/runtime-$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/runtime-$mode.log"
+          done
+      - name: Repeat canonical application and independent provider profiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash Utilities/scripts/install_badge_catalog_toolchain.sh "$RUNNER_TEMP/touchpad-toolchain" 2>&1 | tee evidence/logs/compiler.log
+          export NATIVE_APP_CC="$RUNNER_TEMP/touchpad-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc"
+          python Utilities/scripts/build_shared_scene_apps.py --runtime X4Runtime --system-apps System --app ble_touchpad --output evidence/application 2>&1 | tee evidence/logs/application-build.log
+          for profile in full watch-compact color-dynamic; do
+            python System/scripts/build_scene_services.py --runtime X4Runtime --host-profile "$profile" --output "evidence/providers/$profile" 2>&1 | tee "evidence/logs/provider-$profile.log"
+          done
+      - name: Preserve cumulative product bytes and pack original stores
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/assemble_touchpad_delivery.py --bootfs-tools Bootfs/scripts --output evidence/assembly --application evidence/application/packages/ble_touchpad --providers evidence/providers 2>&1 | tee evidence/logs/assembly.log
+      - name: Admit actual candidate graphs and ELFs against owning native profiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in normal sanitized; do
+            flags=(); if [ "$mode" = sanitized ]; then flags=(--sanitize); fi
+            python System/scripts/test_home_product_admission.py --runtime Runtime --x4-runtime X4Runtime --x4-product X4Product --watch-product WatchProduct --wave-product WaveProduct --assembly evidence/assembly --output "evidence/admission/$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/admission-$mode.log"
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: touchpad-baseline-${{ github.sha }}
+          name: touchpad-delivery-${{ github.sha }}
           path: evidence/
+          include-hidden-files: true
           if-no-files-found: error
+          retention-days: 30
