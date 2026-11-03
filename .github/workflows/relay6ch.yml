@@ -79,4 +79,4 @@ jobs:
         run: |
           cd delivery
           sha256sum --check SHA256SUMS
-          gh release create waveshare-relay6ch-v1.0.0 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'Waveshare ESP32-S3-Relay-6CH v1.0.0 candidate' --notes-file README.md *.bin *.json *.zip SHA256SUMS
+          gh release create waveshare-relay6ch-v1.0.0 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'Waveshare ESP32-S3-Relay-6CH v1.0.0 candidate' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS

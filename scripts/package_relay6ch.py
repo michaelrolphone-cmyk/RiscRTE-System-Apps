@@ -12,10 +12,11 @@ def main():
   (out/name).write_bytes(data);image[offset:offset+len(data)]=data;components.append({'asset':name,'offset':offset,'size_bytes':len(data),'sha256':sha(out/name)})
  (out/'riscrte-relay6ch-v1.0.0-initial.bin').write_bytes(image)
  shutil.copy2(ROOT/'profiles/waveshare-esp32-s3-relay-6ch/README.md',out/'README.md');shutil.copy2(ROOT/'profiles/waveshare-esp32-s3-relay-6ch/catalog.json',out/'catalog.json')
+ shutil.copy2(ROOT/'LICENSE',out/'SYSTEM-APPS-LICENSE');shutil.copy2(a.runtime/'LICENSE',out/'RUNTIME-LICENSE')
  manifest={'profile':'waveshare-esp32-s3-relay-6ch','version':'1.0.0','chip':'esp32s3','flash_bytes':len(image),'requires_psram':False,'flash_mode':'dio','flash_frequency_mhz':40,'initial_image':{'asset':'riscrte-relay6ch-v1.0.0-initial.bin','offset':0,'first_install_only':True,'replaces_saved_data':True,'sha256':sha(out/'riscrte-relay6ch-v1.0.0-initial.bin')},'components':components,'sources':{'apps':head(ROOT),'runtime':head(a.runtime)},'qualification':{'target_compiled':True,'hardware_tested':False}}
  (out/'flash-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
- (out/'SHA256SUMS').write_text(''.join(sha(f)+'  '+f.name+'\n' for f in sorted(out.iterdir()) if f.is_file() and f.name!='SHA256SUMS'))
  with zipfile.ZipFile(out/'riscrte-relay6ch-v1.0.0-install.zip','w',zipfile.ZIP_DEFLATED) as z:
   for f in sorted(out.iterdir()):
-   if f.is_file() and f.suffix!='.zip':z.write(f,f.name)
+   if f.is_file() and f.suffix!='.zip' and f.name!='SHA256SUMS':z.write(f,f.name)
+ (out/'SHA256SUMS').write_text(''.join(sha(f)+'  '+f.name+'\n' for f in sorted(out.iterdir()) if f.is_file() and f.name!='SHA256SUMS'))
 if __name__=='__main__':main()
