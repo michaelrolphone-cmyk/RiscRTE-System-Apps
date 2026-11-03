@@ -4,7 +4,7 @@ import argparse, hashlib, json, os, shlex, subprocess, tempfile
 from pathlib import Path
 from scene_sdk import stage_sdk
 ROOT = Path(__file__).resolve().parents[1]
-CASES=('invalid','release','confirm','navigation','motion','gap','timeout','long','update','pause','close','resync','local_fault','native_loss','dependency_loss','queue_fault','reentry','base_reentry','mixed','long_labels','configure','missing_up','sequence_gap','mixed_start','mixed_press','clock_loss','local_fault_native')
+CASES=('resume','confirm_resume','invalid','release','confirm','navigation','motion','gap','timeout','long','update','pause','close','resync','local_fault','native_loss','dependency_loss','queue_fault','reentry','base_reentry','mixed','long_labels','configure','missing_up','sequence_gap','mixed_start','mixed_press','clock_loss','local_fault_native')
 def digest(path): return hashlib.sha256(path.read_bytes()).hexdigest()
 def run(runtime, output, sanitize=False):
     include=stage_sdk(runtime,ROOT,output/'sdk')

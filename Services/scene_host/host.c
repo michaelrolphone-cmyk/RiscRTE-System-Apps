@@ -1004,9 +1004,12 @@ static int32_t scene_resume(void *c,uint64_t s,uint32_t flags){
         have_event=false;handoff_waiting=false;key_head=key_count=0;key_barrier=keyboard_waiting=false;
     }
     paused=false;
-    confirm_presented_identity=(scene_identity){0};dirty=true;
-    if(pointer_enabled){pointer_presented_identity=(pointer_identity){0};dirty=true;}
-    if(flags&RISC_SCENE_RESUME_REDRAW){dirty=true;if(flags&RISC_SCENE_RESUME_CLEAN)model->page_clean=true;}
+    /* Zero-flag checkpoint resume preserves the settled physical visual. */
+    if(flags&RISC_SCENE_RESUME_REDRAW){
+        confirm_presented_identity=(scene_identity){0};
+        if(pointer_enabled)pointer_presented_identity=(pointer_identity){0};
+        dirty=true;if(flags&RISC_SCENE_RESUME_CLEAN)model->page_clean=true;
+    }
     return RISC_SCENE_OK;
 }
 static int32_t close_owned(void){
