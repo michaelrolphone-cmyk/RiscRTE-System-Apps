@@ -29,7 +29,8 @@ def verify(root,commit):
   spec=AUTHORITY[lane];base=root/'assembly'/lane
   require(a['touchpad_sha256']==sha and a['packed'] and a['store_roundtrip'] and a['sd_roundtrip'],'Roundtrip evidence missing')
   original=tree(base/'before');after=tree(base/'after');oldstored=tree(base/'before-stored');stored=tree(base/'stored')
-  oldsd=tree(base/'before-sd') if (base/'before-sd').exists() else {};sd=tree(base/'after-sd')
+  # Artifact archives omit empty directories; exact inventories below still reject missing files.
+  oldsd=tree(base/'before-sd') if (base/'before-sd').exists() else {};sd=tree(base/'after-sd') if (base/'after-sd').exists() else {}
   require(a['original_app_row']==spec['app_row'],'Original app authority differs')
   expected=json.loads(original['boot.json']);require(spec['app_row'] in expected['app_capabilities'],'Original policy absent')
   expected['app_capabilities'][expected['app_capabilities'].index(spec['app_row'])]=a['app_row']

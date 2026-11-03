@@ -5,6 +5,12 @@ from pathlib import Path
 from publish_touchpad_shared import verify
 p=argparse.ArgumentParser();p.add_argument('--build',type=Path,required=True);p.add_argument('--source',required=True);a=p.parse_args();root=a.build.resolve()
 verify(root,a.source)
+empty=root/'assembly/watch/after-sd'
+assert empty.is_dir() and not list(empty.iterdir())
+empty.rmdir()
+try:verify(root,a.source)
+finally:empty.mkdir()
+print('Transport without empty SD directory accepted with exact empty inventory',flush=True)
 assembly=json.loads((root/'assembly/assembly.json').read_text())
 unchanged=next(n for n in sorted((root/'assembly/watch/after').rglob('*')) if n.is_file() and n.relative_to(root/'assembly/watch/after').as_posix() not in assembly['products']['watch']['changed_internal'])
 def reject(name,path,replace):
