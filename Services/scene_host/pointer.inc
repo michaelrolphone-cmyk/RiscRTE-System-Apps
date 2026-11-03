@@ -11,6 +11,7 @@ static void pointer_reset(bool deliver){
  pointer_rejecting=deliver&&(pointer_rejecting||pointer_active||pointer_cursor.contact_count);
  pointer_gesture_reset(&pointer_motion,true);pointer_active=false;
  if(deliver&&had){
+  neutral=false;
   pointer_packet=(risc_scene_pointer_event_v1){.struct_size=sizeof(pointer_packet),.kind=RISC_POINTER_RESET};
   pointer_packet.intent.struct_size=sizeof(pointer_packet.intent);
   pointer_packet.intent.event=(risc_scene_event_v1){.struct_size=sizeof(risc_scene_event_v1),.document_revision=document.revision};
