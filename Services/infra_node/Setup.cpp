@@ -26,6 +26,7 @@ bool Node::acceptSetup(){
  // identity or unresolved execution custody during a Wi-Fi correction.
  if(!response["pairing"].isNull()&&!existing){
   if(!keys(pairing,{"format","policy","credentials","bootstrap","enrollment_id","credential_sha256"},{"participant_id","installation_id"})||pairing["format"]!="riscrte-setup/1"||text(journal.state["participant_id"],128)||journal.state["pending"].size()||!journal.state["job"].isNull()||measureJson(pairing["policy"])>PolicyMax||(!text(pairing["participant_id"],128)&&(!text(pairing["bootstrap"],1024)||!text(pairing["enrollment_id"],128)))||!digest(pairing["credential_sha256"])||!pairing["credentials"].is<JsonObjectConst>()||measureJson(pairing["credentials"])>3500)return false;
+  if(upgradeSetup)upgradeSetup(response["pairing"]["policy"].as<JsonObject>(),config.as<JsonObjectConst>(),JsonObject());
   for(auto kv:pairing["credentials"].as<JsonObjectConst>())if(!text(kv.value(),1024))return false;
   // Published implementation/contract pins and low-water bounds stay tied to
   // this exact image; a provisioning file supplies endpoints and authority.
