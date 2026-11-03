@@ -21,8 +21,7 @@ static void pointer_reset(bool deliver){
 static bool pointer_boundary(void){
  if(!pointer_enabled)return false;
  pointer_reset(true);
- raw_head=raw_count=0;last_sequence=capture_sequence;pointer_sync();
- memcpy(dispatched_contacts,captured_contacts,sizeof(dispatched_contacts));dispatched_count=touch_state.contact_count;
+ if(!synchronize_touch()){(void)fail_retained();return true;}
  neutral=false;return pointer_pending;
 }
 static const hit *pointer_hit(void){

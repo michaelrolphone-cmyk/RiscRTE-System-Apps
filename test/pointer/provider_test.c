@@ -66,10 +66,10 @@ int main(int argc,char **argv){
   if(format==1){pointer_finish();return 0;}
   pointer_test_kind(9,&x,&y);assert(x>=0);edge(1,1,x,y);assert(pt()==RISC_SCENE_IDLE);edge(3,1,x,y);assert(pt()==RISC_SCENE_OK&&pe.kind==RISC_POINTER_INTENT&&pe.intent.event.action==99);pointer_finish();return 0;
  }
- if(!strcmp(mode,"queued_update")){
+ if(!strcmp(mode,"queued_update")||!strcmp(mode,"uncaptured_update")){
   event_at=0;event_count=4;ms+=80;
   for(unsigned i=0;i<4;i++)events[i]=(risc_touch_event_v1){++seq,ms-60+20*i,(uint8_t)(i%2?3:1),1,(uint16_t)x,(uint16_t)y};
-  assert(pt()==RISC_SCENE_OK&&pe.click==1);
+  if(!strcmp(mode,"queued_update"))assert(pt()==RISC_SCENE_OK&&pe.click==1);
   pd.revision++;pd.nodes[0].kind=RISC_COMPONENT_HOLD_KEY;pd.nodes[0].step=RISC_HOLD_CONFIRM;
   assert(!pa->update(NULL,session,&pd));ps();assert(pt()==RISC_SCENE_IDLE);pointer_finish();return 0;
  }

@@ -975,7 +975,7 @@ static int32_t detach_owned(bool preserve){
 }
 static int32_t scene_pause(void *c,uint64_t s){
     (void)c;int32_t r=check(s);if(r)return r;if(closing)return RISC_SCENE_BUSY;
-    if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return RISC_SCENE_BUSY;
+    if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return retained?RISC_SCENE_RETAINED:RISC_SCENE_BUSY;
     if(paused)return RISC_SCENE_OK;
     r=detach_owned(true);if(r)return r;
     paused=true;pausing=false;return RISC_SCENE_OK;
@@ -1072,7 +1072,7 @@ static int32_t open_document(void *c,const risc_components_document_v1 *d,const 
 }
 static int32_t update_document(void *c,uint64_t s,const risc_components_document_v1 *d){
     (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;
-    if(hold_boundary(RISC_HOLD_REASON_TOPOLOGY))return RISC_SCENE_BUSY;
+    if(hold_boundary(RISC_HOLD_REASON_TOPOLOGY))return retained?RISC_SCENE_RETAINED:RISC_SCENE_BUSY;
     if(!valid_document(d,model->components)||d->root!=document.root)return RISC_SCENE_INVALID;
     risc_scene_navigation_v1 next_path=path;
     if(model->components)for(unsigned i=0;i<next_path.depth;i++)if(node_index(d,next_path.focus[i])<0)next_path.focus[i]=0;
@@ -1146,7 +1146,7 @@ static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     if(hold_enabled&&!hold_dispatch)return RISC_SCENE_INVALID;
     if(closing||paused||pausing)return RISC_SCENE_BUSY;
     if(risc_runtime_exit_requested_v1(risc_runtime_get_api(1))){
-        if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return RISC_SCENE_BUSY;
+        if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return retained?RISC_SCENE_RETAINED:RISC_SCENE_BUSY;
         // Native requests cannot sit behind touch/keyboard/render queues.
         cancel_contacts();raw_count=key_count=0;have_event=false;
         *event=(risc_scene_event_v1){.struct_size=sizeof(*event),.kind=RISC_SCENE_SUSPEND_EVENT,
@@ -1177,7 +1177,7 @@ static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     return RISC_SCENE_IDLE;
 }
 static int32_t scene_navigate(void *c,uint64_t s,uint32_t op,uint32_t route){
-    (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;if(hold_boundary(RISC_HOLD_REASON_TOPOLOGY))return RISC_SCENE_BUSY;return navigate_impl(op,route);
+    (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;if(hold_boundary(RISC_HOLD_REASON_TOPOLOGY))return retained?RISC_SCENE_RETAINED:RISC_SCENE_BUSY;return navigate_impl(op,route);
 }
 static int32_t scene_snapshot(void *c,uint64_t s,risc_scene_navigation_v1 *p,uint32_t *flags){
     (void)c;int32_t r=check(s);if(r)return r;
@@ -1191,7 +1191,7 @@ static int32_t scene_snapshot(void *c,uint64_t s,risc_scene_navigation_v1 *p,uin
     }
     return RISC_SCENE_OK;
 }
-static int32_t scene_close(void *c,uint64_t s){(void)c;int32_t r=check(s);if(r)return r;if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return RISC_SCENE_BUSY;r=close_owned();if(!r){shared_owner=NULL;hold_enabled=false;pointer_enabled=false;pointer_pending=false;pointer_reset(false);}return r;}
+static int32_t scene_close(void *c,uint64_t s){(void)c;int32_t r=check(s);if(r)return r;if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return retained?RISC_SCENE_RETAINED:RISC_SCENE_BUSY;r=close_owned();if(!r){shared_owner=NULL;hold_enabled=false;pointer_enabled=false;pointer_pending=false;pointer_reset(false);}return r;}
 static int32_t scene_configure(void *c,uint64_t s,uint32_t features){
     (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;
     if(features&~(RISC_SCENE_FEATURE_SHARED_CONTROLS|RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY))return RISC_SCENE_INVALID;
@@ -1200,7 +1200,7 @@ static int32_t scene_configure(void *c,uint64_t s,uint32_t features){
         (features==lifecycle_features&&(features&RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY)))){
         lifecycle_features=features;return RISC_SCENE_OK;
     }
-    if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return RISC_SCENE_BUSY;
+    if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return retained?RISC_SCENE_RETAINED:RISC_SCENE_BUSY;
     if(!synchronize_touch())return fail_retained();
     if(navigation){bool ok=navigation->reset(navigation->context);if(!alive()||!ok)return fail_retained();}
     if(!lifecycle_enabled)activity_pending=false;
