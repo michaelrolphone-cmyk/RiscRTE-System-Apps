@@ -120,7 +120,9 @@ jobs:
             python System/scripts/test_home_product_admission.py --runtime Runtime --x4-runtime X4Runtime --x4-product X4Product --watch-product WatchProduct --wave-product WaveProduct --assembly evidence/assembly --output "evidence/admission/$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/admission-$mode.log"
           done
       - name: Verify publication boundary
+        shell: bash
         run: |
+          set -euo pipefail
           python System/scripts/publish_touchpad_shared.py --build evidence --expected-source "${{ github.event.pull_request.head.sha || github.sha }}"
           python System/scripts/test_touchpad_publication.py --build evidence --source "${{ github.event.pull_request.head.sha || github.sha }}" | tee evidence/logs/publication-boundary.log
       - uses: actions/upload-artifact@v4
