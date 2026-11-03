@@ -44,10 +44,10 @@ def run(runtime: Path, output: Path, host_profile: str = 'full') -> None:
         repeat=build(compiler,include,output/'scene-host-repeat',host,[ROOT/'Services/scene_host/host.c',*support_sources],HOST_PROFILE_FLAGS[host_profile],normalize_relocations=True)
         if rows[0]['sha256']!=repeat['sha256']:raise ValueError('Repeated scene/canvas ELF differs')
         rows[0]['repeat_sha256']=repeat['sha256']
-        closure=[*sorted((ROOT/'Services/canvas_host').glob('*.h')),ROOT/'Services/scene_host/scene_canvas.inc',ROOT/'Services/scene_host/hold.inc',ROOT/'Services/scene_host/hold_api.inc',ROOT/'sdk/app/RiscSceneHoldV1.h',ROOT/'scripts/scene_build.py',ROOT/'scripts/scene_sdk.py',Path(__file__)]
+        closure=[*sorted((ROOT/'Services/canvas_host').glob('*.h')),ROOT/'Services/scene_host/scene_canvas.inc',ROOT/'Services/scene_host/hold.inc',ROOT/'Services/scene_host/hold_api.inc',ROOT/'sdk/app/RiscSceneHoldV1.h',ROOT/'sdk/app/RiscScenePointerV1.h',ROOT/'Services/scene_host/pointer_gesture.h',ROOT/'Services/scene_host/pointer.inc',ROOT/'Services/scene_host/pointer_api.inc',ROOT/'scripts/scene_build.py',ROOT/'scripts/scene_sdk.py',Path(__file__)]
         rows[0]['composition_inputs_sha256']={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in closure}
         rows[0]['host_profile']=host_profile
-        rows[0]['optional_apis']={'telemetry':host_profile=='full','components':True,'page':True,'checkpoint':True,'reading':True,'reading_links':True,'canvas':True,'held_input':True}
+        rows[0]['optional_apis']={'telemetry':host_profile=='full','components':True,'page':True,'checkpoint':True,'reading':True,'reading_links':True,'canvas':True,'held_input':True,'pointer_surface':True}
         json_write(output/'scene-host/build.json',rows[0])
         license_dir=output/'scene-host/licenses';license_dir.mkdir()
         for name in ['LICENSE-Orbitron.txt','LICENSE-Rajdhani.txt','SOURCES.json','COMPONENT-SOURCES.json']:

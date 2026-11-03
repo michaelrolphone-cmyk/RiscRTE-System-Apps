@@ -14,11 +14,13 @@ static void hold_cancel(uint32_t reason){
     hold_queue(RISC_HOLD_CANCEL,reason,hold_now);
 }
 static bool hold_boundary(uint32_t reason){
+    if(pointer_boundary())return true;
     if(!hold_enabled)return false;
     hold_cancel(reason);
     return hold_pending;
 }
 static int32_t hold_local_fault(void){
+    if(pointer_enabled&&(pointer_active||pointer_pending)&&alive()){pointer_reset(true);hold_fault=true;return RISC_SCENE_BUSY;}
     if(!hold_enabled||!hold_active||hold_pending||!alive())return fail_retained();
     hold_cancel(RISC_HOLD_REASON_LOCAL_FAULT);
     hold_event.flags=RISC_HOLD_LOCAL_FAULT_PENDING;hold_fault=true;

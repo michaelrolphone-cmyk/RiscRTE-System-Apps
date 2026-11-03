@@ -1,5 +1,6 @@
 /* Shared semantic presenter. No application/domain code or product IDs. */
-#include "RiscSceneHoldV1.h"
+#include "RiscScenePointerV1.h"
+#include "pointer_gesture.h"
 #include "../canvas_host/canvas_provider.h"
 #include "RiscSceneKeypadV1.h"
 /* Explicit source profile: the default remains the complete presenter. */
@@ -29,7 +30,7 @@
 #include "glyphs.inc"
 
 #define MAX_HITS (RISC_COMPONENTS_MAX_NODES*4u+4u)
-enum { HIT_BACK=1,HIT_HOME,HIT_PREVIOUS,HIT_NEXT,HIT_ACTION,HIT_VALUE,HIT_LINK,HIT_SECONDARY,HIT_TOAST };
+enum { HIT_BACK=1,HIT_HOME,HIT_PREVIOUS,HIT_NEXT,HIT_ACTION,HIT_VALUE,HIT_LINK,HIT_SECONDARY,HIT_TOAST,HIT_POINTER };
 typedef struct { int x,y,w,h; uint32_t kind,node,target; int32_t value; } hit;
 typedef struct { hit items[MAX_HITS]; unsigned count; uint32_t revision,route,epoch; bool keyboard; } hit_map;
 static const risc_display_output_api_v1 *display;
@@ -121,6 +122,10 @@ static int route_index(const risc_components_document_v1 *d,uint32_t id){
     for(unsigned i=0;i<d->route_count;i++)if(d->routes[i].id==id)return (int)i;
     return -1;
 }
+static bool pointer_enabled,pointer_pending,pointer_active;
+static uint32_t pointer_visible_revision;
+static bool pointer_boundary(void);
+static void pointer_reset(bool);
 static bool hold_enabled,hold_active,hold_pending,hold_nav,hold_confirm,hold_fault,hold_fault_delivered,hold_dispatch,hold_busy,hold_enter;
 static uint64_t hold_generation,hold_started,hold_now,hold_last;
 static uint32_t hold_nav_buttons;
@@ -142,7 +147,7 @@ static bool valid_document(const risc_components_document_v1 *d,bool components)
     if(route_index(d,d->root)<0)return false;
     for(unsigned i=0;i<d->node_count;i++){
         const risc_scene_node_v1 *n=&d->nodes[i];
-        if(!n->id||route_index(d,n->route)<0||n->kind<RISC_SCENE_TEXT_NODE||n->kind>(components?(hold_enabled?RISC_COMPONENT_HOLD_KEY:RISC_COMPONENT_KEY):RISC_SCENE_KEYBOARD_NODE)||
+        if(!n->id||route_index(d,n->route)<0||n->kind<RISC_SCENE_TEXT_NODE||n->kind>(components?(pointer_enabled?RISC_COMPONENT_POINTER:hold_enabled?RISC_COMPONENT_HOLD_KEY:RISC_COMPONENT_KEY):RISC_SCENE_KEYBOARD_NODE)||
            n->flags&~(15u|(n->kind==RISC_SCENE_KEYBOARD_NODE?RISC_SCENE_KEYBOARD_EXTENDED:0u))||!terminated(n->label,sizeof(n->label))||!terminated(n->text,sizeof(n->text)))return false;
         for(unsigned j=0;j<i;j++)if(d->nodes[j].id==n->id)return false;
         if(n->kind==RISC_SCENE_KEYBOARD_NODE){
@@ -255,6 +260,7 @@ static void restore_page(void){
         if(document.nodes[list[i]].id==path.focus[path.depth-1])page=p;
 }
 static void invalidate_view(void){
+    if(pointer_enabled)pointer_reset(true);
     if(epoch==UINT32_MAX){(void)hold_local_fault();return;}
     hold_cancel(RISC_HOLD_REASON_TOPOLOGY);
     dirty=true;if(contact)neutral=false;cancel_contacts();contact=false;have_event=false;top_pending=false;handoff_waiting=false;key_head=key_count=0;key_barrier=false;
@@ -581,6 +587,7 @@ static int32_t capture_touch(void){
     }
     touch_state=snapshot;
     if(resync){
+        if(pointer_enabled)pointer_reset(true);
         hold_cancel(RISC_HOLD_REASON_AMBIGUOUS);
         dirty=true;cancel_contacts();contact=false;top_pending=false;neutral=false;
         raw_head=raw_count=key_count=0;if(have_event)handoff_waiting=false;have_event=false;
@@ -591,8 +598,10 @@ static int32_t capture_touch(void){
     }else if(!raw_count&&!contacts_count&&!contact&&!snapshot.contact_count&&!snapshot.buttons)neutral=true;
     return RISC_SCENE_OK;
 }
+#include "pointer.inc"
 static int32_t poll_touch(void){
-    int32_t r=capture_touch();if(r<0||hold_pending||hold_fault)return r;
+    int32_t r=capture_touch();if(r<0||hold_pending||hold_fault||pointer_pending)return r;
+    if(pointer_enabled&&pointer_sample())return retained?RISC_SCENE_RETAINED:RISC_SCENE_OK;
     finish_contacts();
     while(raw_count&&!have_event&&!key_count&&!keyboard_waiting&&!hold_pending){
         risc_touch_event_v1 event=raw_queue[raw_head];
@@ -932,6 +941,7 @@ static int32_t complete_frame(void){
     /* Completion retires display custody only. Logical hit maps, contacts,
      * navigation and document revisions are independent of presentation. */
     if(s.state==RISC_DISPLAY_PRESENT_SUPERSEDED)dirty=true;
+    else if(pointer_enabled&&frame_model.doc.revision==document.revision)pointer_visible_revision=document.revision;
     pending=false;present_token=0;
     return RISC_SCENE_OK;
 }
@@ -1136,6 +1146,7 @@ static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     input_unsynchronized=false;
     if(model->components&&model->toast_until){uint64_t now=clock_api->monotonic_ms(clock_api->context);if(!alive())return RISC_SCENE_RETAINED;if(now>=model->toast_until){model->toast_until=0;dirty=true;rebuild_hits();}}
     r=poll_touch();if(r<0||hold_fault)return r;
+    if(pointer_pending)return RISC_SCENE_BUSY;
     if(hold_pending){if(hold_event.phase==RISC_HOLD_PRESS){r=poll_navigation();if(r<0)return r;}return RISC_SCENE_OK;}
     r=poll_navigation();if(r<0||hold_pending||hold_fault)return r;
     if(retained)return RISC_SCENE_RETAINED;
@@ -1170,7 +1181,7 @@ static int32_t scene_snapshot(void *c,uint64_t s,risc_scene_navigation_v1 *p,uin
     }
     return RISC_SCENE_OK;
 }
-static int32_t scene_close(void *c,uint64_t s){(void)c;int32_t r=check(s);if(r)return r;if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return RISC_SCENE_BUSY;r=close_owned();if(!r){shared_owner=NULL;hold_enabled=false;}return r;}
+static int32_t scene_close(void *c,uint64_t s){(void)c;int32_t r=check(s);if(r)return r;if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return RISC_SCENE_BUSY;r=close_owned();if(!r){shared_owner=NULL;hold_enabled=false;pointer_enabled=false;pointer_pending=false;pointer_reset(false);}return r;}
 static int32_t scene_configure(void *c,uint64_t s,uint32_t features){
     (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;
     if(features&~(RISC_SCENE_FEATURE_SHARED_CONTROLS|RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY))return RISC_SCENE_INVALID;
@@ -1219,7 +1230,8 @@ static int32_t components_update(void *c,uint64_t s,const risc_components_docume
 }
 #include "scene_canvas.inc"
 #include "hold_api.inc"
-static const risc_scene_hold_api_v1 api={
+#include "pointer_api.inc"
+static const risc_scene_pointer_api_v1 api={.base={
 .base={.scene={{{{ { { {
     {{1,sizeof(api),NULL,scene_open,scene_update,scene_next,scene_navigate,scene_snapshot,scene_close},scene_configure},
     RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present},
@@ -1229,7 +1241,7 @@ static const risc_scene_hold_api_v1 api={
 #else
 ,0,0,NULL
 #endif
-},.canvas_tag=RISC_SCENE_CANVAS_TAG,.canvas_version=1,.canvas=&shared_canvas_api},.hold_tag=RISC_SCENE_HOLD_TAG,.hold_version=1,.open=hold_open,.update=hold_update,.next=hold_next};
+},.canvas_tag=RISC_SCENE_CANVAS_TAG,.canvas_version=1,.canvas=&shared_canvas_api},.hold_tag=RISC_SCENE_HOLD_TAG,.hold_version=1,.open=hold_open,.update=hold_update,.next=hold_next},.pointer_tag=RISC_SCENE_POINTER_TAG,.pointer_version=1,.open=pointer_open,.update=pointer_update,.next=pointer_next};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||count<4||count>5||!deps)return false;
     display=NULL;touch=NULL;navigation=NULL;profile=NULL;clock_api=NULL;
