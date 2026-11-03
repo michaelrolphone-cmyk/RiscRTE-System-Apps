@@ -571,7 +571,9 @@
                 },
                 "sha256": {
                   "type": "string",
-                  "pattern": "^[a-f0-9]{64}$"
+                  "minLength": 64,
+                  "maxLength": 64,
+                  "pattern": "^[a-f0-9]+$"
                 },
                 "artifact_id": {
                   "type": "string",
@@ -639,7 +641,7 @@
       "reference": {
         "capability_id": "camera.capture",
         "api_version": 2,
-        "contract_digest": "cfc9ce41806609609fd10c396393a13ce73be7c41d4af112825960f8bffa83f9"
+        "contract_digest": "aae76ceef32914b2e63ea2478479d41ea1c628c7bc13460a903267ef23e1c0e8"
       }
     }
   ],
@@ -873,7 +875,7 @@
           {
             "capability_id": "camera.capture",
             "api_version": 2,
-            "contract_digest": "cfc9ce41806609609fd10c396393a13ce73be7c41d4af112825960f8bffa83f9"
+            "contract_digest": "aae76ceef32914b2e63ea2478479d41ea1c628c7bc13460a903267ef23e1c0e8"
           }
         ],
         "requires": [],
@@ -911,7 +913,7 @@
         "capability_id": "camera.capture",
         "provider_id": "esp32s3-infra-camera-capture",
         "revision": 21,
-        "definition_digest": "4911d3b524d8e9219d9f9fe9722f6c5e32f026bb5823a9172d73a42fcdd09064",
+        "definition_digest": "88f1e1eae13611c0d24a82be47143afbe861e3f47b681b62116aa309d2f37271",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     }

@@ -71,11 +71,14 @@ int Node::capture(){
 int Node::frameResult(JsonObjectConst d){
  if(!frame.bytes||d["sha256"]!=frameHash||d["size_bytes"]!=frame.length)return stopJob("camera_artifact_mismatch");
  if(action==Action::CameraBegin){
-  if(!copy(frameArtifact,sizeof(frameArtifact),d["id"]|"")||strncmp(frameArtifact,"artifact_",9)||strlen(frameArtifact+9)!=64||strspn(frameArtifact+9,"0123456789abcdef")!=64)return stopJob("camera_artifact_id_invalid");
+  if(!copy(frameArtifact,sizeof(frameArtifact),d["id"]|"")||strncmp(frameArtifact,"artifact_",9)||strlen(frameArtifact+9)!=64)return stopJob("camera_artifact_id_invalid");
+  for(const char* ch=frameArtifact+9;*ch;++ch)if(!((*ch>='0'&&*ch<='9')||(*ch>='a'&&*ch<='f')))return stopJob("camera_artifact_id_invalid");
   if(d["state"]!="verified"){
    auto service=config["service"];
    const char* base=service["url"]|"";
-   const char* slash=!strncmp(base,"https://",8)?strchr(base+8,'/'):nullptr;
+   const char* slash=base;
+   if(strncmp(base,"https://",8))return stopJob("camera_upload_origin_invalid");
+   slash+=8;while(*slash&&*slash!='/')++slash;
    char url[2304];
    if(!slash||snprintf(url,sizeof(url),"%.*s/v1/artifacts/%s/bytes",int(slash-base),base,frameArtifact)>=int(sizeof(url)))return stopJob("camera_upload_origin_invalid");
    if(!frameApi()->upload(url,credential(service["credential_ref"]|""),credential(service["site_credential_ref"]|""),&frame))return stopJob("camera_artifact_transfer_failed");

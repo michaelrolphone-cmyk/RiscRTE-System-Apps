@@ -22,7 +22,7 @@ def generate(output,package_digest):
    operation_schema=c['operations'][operation]
    c['api_version']=2
    operation_schema['input_schema']={'oneOf':[obj({}),obj({'width':integer(1,65535),'height':integer(1,65535)})]}
-   operation_schema['output_schema']=obj({'media_type':{'const':'image/jpeg'},'width':integer(1,65535),'height':integer(1,65535),'bytes':integer(4,16777216),'sha256':{'type':'string','pattern':'^[a-f0-9]{64}$'},'artifact_id':string()})
+   operation_schema['output_schema']=obj({'media_type':{'const':'image/jpeg'},'width':integer(1,65535),'height':integer(1,65535),'bytes':integer(4,16777216),'sha256':{**string(64,64),'pattern':'^[a-f0-9]+$'},'artifact_id':string()})
   ref={'capability_id':cap,'api_version':c['api_version'],'contract_digest':digest(c)};contracts.append({'contract':c,'reference':ref})
   p={'provider_id':'esp32s3-infra-'+cap.replace('.','-'),'revision':21,'implementation_ref':{'kind':'risc-elf','profile':'esp32s3-infrastructure','package_digest':package_digest},'provides':[ref],'requires':[],'resource_bindings':[{'name':'tls','amount':1,'lifetime':'invocation'},{'name':'job','amount':1,'lifetime':'invocation'},{'name':'pending','amount':2,'lifetime':'invocation'}],'recovery_support':{'checkpoint_formats':['infra.source/1']},'cost_estimate':1,'cost_model':{'network_transactions':1,'maximum_ms':12000 if cap=='scheduler.drive' else 5000},'cost_evidence':'software_bounds_physical_qualification_pending'}
   if cap=='camera.capture':p['activation_policy']='independent_device_hardware/1'

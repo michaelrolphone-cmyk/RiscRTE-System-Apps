@@ -138,12 +138,15 @@ the cached identification, and an empty socket is probed again after ten
 minutes. Only a granted capture job returns image bytes. Each probe or capture releases
 its framebuffer and deinitializes the driver.
 
-Submit a job for operation `capture` with `inputs: {}`, schema-only acceptance
-and effect class `repeatable_compute`. Target the desired camera participant.
-A successful result contains `media_type: "image/jpeg"`, width 160, height 120,
-the original byte length, and ordered `base64_chunks`. Concatenate those strings
-and Base64-decode once to recover the JPEG. Capture and offer availability are
-independent of the currently assigned infrastructure roles.
+With v1.11.0, submit a `camera.capture@2` job for operation `capture` with
+`{}` for the detected sensor maximum or e.g. `{"width":317,"height":193}`
+for exact pixel dimensions. Both dimensions must be positive integers within
+the native frame. Scaling samples the full field of view into the requested
+rectangle, including when its aspect ratio differs. Target the camera
+participant and use schema-only acceptance and the repeatable_compute effect.
+The accepted candidate references a verified JPEG artifact. Use artifact
+download_grant and fetch its returned path with the same principal. Verify the
+SHA-256, byte count and dimensions against the candidate output.
 
 Use the paired repair bundle on enrolled v1.9.0 boards. It preserves the original
 identity, local policy, credentials, and pending work. The initial image is for
