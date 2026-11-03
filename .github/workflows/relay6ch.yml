@@ -1,7 +1,7 @@
 name: Waveshare relay6ch firmware
 on:
   push:
-    branches: [work/waveshare-relay6ch]
+    branches: [work/waveshare-relay6ch, release/waveshare-relay6ch-v1.0.1-r1]
   pull_request:
     paths: ['firmware/waveshare-relay6ch/**', 'Services/infra_node/**', 'profiles/waveshare-esp32-s3-relay-6ch/**', 'scripts/*relay6ch*', 'test/infra_node/hardware.cpp', '.github/workflows/relay6ch.yml']
 permissions:
@@ -22,15 +22,15 @@ jobs:
         with:
           repository: michaelrolphone-cmyk/RiscRTE
           ref: 2747b5907b1af06882e90a5a8d7ca355b34a7abf
-          path: runtime
+          path: 00-runtime
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
       - run: |
-          RISC_RUNTIME_ROOT="$PWD/runtime" bash apps/scripts/test_infrastructure.sh
-          RISC_RUNTIME_ROOT="$PWD/runtime" bash apps/scripts/test_relay6ch.sh
-          RISC_RUNTIME_ROOT="$PWD/runtime" ASAN_OPTIONS=detect_leaks=0 SANITIZE=1 bash apps/scripts/test_relay6ch.sh
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_infrastructure.sh
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_relay6ch.sh
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" ASAN_OPTIONS=detect_leaks=0 SANITIZE=1 bash apps/scripts/test_relay6ch.sh
   target:
     runs-on: ubuntu-24.04
     container: espressif/idf:v6.1@sha256:81893c71bb5e570088901f21def8684c25cd2a9020281bd01b843a7655edb18c
@@ -47,16 +47,19 @@ jobs:
         with:
           repository: michaelrolphone-cmyk/RiscRTE
           ref: 2747b5907b1af06882e90a5a8d7ca355b34a7abf
-          path: runtime
+          path: 00-runtime
           persist-credentials: false
       - name: Build board firmware with no PSRAM
         run: |
           . "$IDF_PATH/export.sh"
-          export RISC_RUNTIME_ROOT="$PWD/runtime" RELAY6CH_OUTPUT="$PWD/delivery"
+          export RISC_RUNTIME_ROOT="$PWD/00-runtime" RELAY6CH_OUTPUT="$PWD/delivery"
           python apps/scripts/generate_relay6ch.py
+          # The v1.0.1 source ZIP stores runtime entries first. Enforce the published
+          # pins even if checkout names or the generator change on a future build.
+          git -C apps diff --exit-code -- firmware/waveshare-relay6ch/main/Factory.h profiles/waveshare-esp32-s3-relay-6ch
           idf.py -C apps/firmware/waveshare-relay6ch -B "$PWD/relay-build" -D "RISC_RUNTIME_ROOT=$RISC_RUNTIME_ROOT" reconfigure
           cmake --build relay-build -- -j1
-          python apps/scripts/package_relay6ch.py --build relay-build --runtime runtime --output delivery
+          python apps/scripts/package_relay6ch.py --build relay-build --runtime 00-runtime --output delivery
       - uses: actions/upload-artifact@v4
         with:
           name: relay6ch-${{ github.event.pull_request.head.sha || github.sha }}
@@ -64,7 +67,7 @@ jobs:
           if-no-files-found: error
   publish:
     needs: [test, target]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/work/waveshare-relay6ch'
+    if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -79,4 +82,13 @@ jobs:
         run: |
           cd delivery
           sha256sum --check SHA256SUMS
-          gh release create waveshare-relay6ch-v1.0.0 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'Waveshare ESP32-S3-Relay-6CH v1.0.0 candidate' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS
+          if gh release view waveshare-relay6ch-v1.0.1-r1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "This version has already been published."
+            exit 0
+          fi
+          gh release create waveshare-relay6ch-v1.0.1-r1 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'Waveshare ESP32-S3-Relay-6CH v1.0.1 verified provider pins' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS
+          if gh release view waveshare-relay6ch-v1.0.1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit waveshare-relay6ch-v1.0.1 --repo "$GITHUB_REPOSITORY" --prerelease \
+              --title 'Superseded Relay-6CH v1.0.1 candidate' \
+              --notes 'Use waveshare-relay6ch-v1.0.1-r1. That build matches the eight registered provider pins.'
+          fi

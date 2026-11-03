@@ -14,6 +14,7 @@ enum class Phase:uint32_t {Cold,Recover,Connect,Nonce,Ready,Send,Receive,Save,Ba
 enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth,RelayIdentity,RelayEnrollmentReview,RelayEnrollmentComplete,RelayLoad,RelayReceipt,RelayVerify,RelayEnrollmentVerified,RelayLease,RelayCheckpoint,RelayChallenge,RelayChallengeStatus,HardwareIntent,HardwareOutcome};
 class Node {
  public:
+ void (*upgradeSetup)(JsonObject,JsonObjectConst,JsonObject)=nullptr;
  Hardware hardware{};
  bool hardwareReady()const{return hardware.ready&&hardware.execute&&hardware.ready(hardware.context);}
  bool workReady()const{return roleReady(32000)||hardwareReady();}
@@ -81,7 +82,9 @@ class Node {
   r=b.read(b.context,"node-policy.json",revision,encoded,16384,&bytes,&revision);if(r==RISC_APP_DATA_RETAINED)return retained();if(r==RISC_APP_DATA_BUSY||r==RISC_APP_DATA_STALE)return 1;
   if(r||!parse(config,encoded,bytes)||!policy(config))return block(Phase::StorageBlocked,"policy_invalid");
   r=journal.load();if(r==-2)return retained();if(r>0)return 1;if(r<0){char why[112];snprintf(why,sizeof(why),"%s rc=%d size=%u",journal.loadError,int(journal.loadBackendStatus),unsigned(journal.loadBytes));return block(Phase::StorageBlocked,why);}
-  if(!journal.state["setup_policy"].isNull()){config.set(journal.state["setup_policy"]);if(!policy(config))return block(Phase::StorageBlocked,"saved_setup_policy_invalid");}
+  if(!journal.state["setup_policy"].isNull()){
+   if(upgradeSetup)upgradeSetup(journal.state["setup_policy"].as<JsonObject>(),config.as<JsonObjectConst>(),journal.state["relay"].as<JsonObject>());
+   config.set(journal.state["setup_policy"]);if(!policy(config))return block(Phase::StorageBlocked,"saved_setup_policy_invalid");}
   if(!Infra::configuration(configuration(),config["endpoints"],config["service"]["contact_interval_ms"]))return block(Phase::StorageBlocked,"configuration_invalid");
   for(auto kv:journal.state["credentials"].as<JsonObjectConst>())if(!text(kv.value(),1024))return block(Phase::StorageBlocked,"credential_invalid");
   if(!journal.state["credentials"][config["wifi"]["credential_ref"]|""].is<const char*>()||!credential(config["service"]["credential_ref"])[0]){reason(Phase::SetupStart,"phone_setup_required");return 1;}

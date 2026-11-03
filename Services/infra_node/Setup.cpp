@@ -1,6 +1,18 @@
 #include "Node.h"
 #include "Digest.h"
 namespace Infra {
+// The relay policy validates which references each destination must declare.
+template<class Visit>
+static bool visitRelayCredentials(JsonObjectConst relay, Visit visit){
+ auto check=[&](const char* ref){return !*ref||visit(ref);};
+ for(const char* key:{"credential_ref","site_credential_ref","monitor_credential_ref"})
+  if(!check(relay[key]|""))return false;
+ for(auto sub:relay["subscriptions"].as<JsonArrayConst>()){
+  if(!check(sub["auth"]["credential_ref"]|"")||!check(sub["signing_credential_ref"]|"")||
+     !check(sub["previous_signing_credential_ref"]|""))return false;
+ }
+ return true;
+}
 bool Node::acceptSetup(){
  if(!parse(response,portal.input+portal.bodyAt,portal.bodySize)||!keys(response.as<JsonObjectConst>(),{"ssid","password","pairing"},{"mode"})||!text(response["ssid"],32)||!text(response["password"],63,true))return false;
  if(!response["mode"].isNull()&&(!text(response["mode"],16)||(!validMode(response["mode"])&&response["mode"]!="automatic")))return false;
@@ -14,6 +26,7 @@ bool Node::acceptSetup(){
  // identity or unresolved execution custody during a Wi-Fi correction.
  if(!response["pairing"].isNull()&&!existing){
   if(!keys(pairing,{"format","policy","credentials","bootstrap","enrollment_id","credential_sha256"},{"participant_id","installation_id"})||pairing["format"]!="riscrte-setup/1"||text(journal.state["participant_id"],128)||journal.state["pending"].size()||!journal.state["job"].isNull()||measureJson(pairing["policy"])>PolicyMax||(!text(pairing["participant_id"],128)&&(!text(pairing["bootstrap"],1024)||!text(pairing["enrollment_id"],128)))||!digest(pairing["credential_sha256"])||!pairing["credentials"].is<JsonObjectConst>()||measureJson(pairing["credentials"])>3500)return false;
+  if(upgradeSetup)upgradeSetup(response["pairing"]["policy"].as<JsonObject>(),config.as<JsonObjectConst>(),JsonObject());
   for(auto kv:pairing["credentials"].as<JsonObjectConst>())if(!text(kv.value(),1024))return false;
   // Published implementation/contract pins and low-water bounds stay tied to
   // this exact image; a provisioning file supplies endpoints and authority.
@@ -40,7 +53,9 @@ bool Node::acceptSetup(){
   dtls_sha256_data(reinterpret_cast<const uint8_t*>(pairing["credentials"][ref].as<const char*>()),strlen(pairing["credentials"][ref].as<const char*>()),a);if(pairing["credential_sha256"]!=a)return false;
   for(auto endpoint:request["endpoints"].as<JsonArrayConst>())for(const char* key:{"credential_ref","site_credential_ref","monitor_credential_ref"}){const char* ref=endpoint[key]|"";if(ref[0]&&!text(pairing["credentials"][ref],1024))return false;}
   const char* site=request["service"]["site_credential_ref"]|"";if(site[0]&&!text(pairing["credentials"][site],1024))return false;
-  auto relay=request["relay"].as<JsonObjectConst>();if(!relay.isNull()){for(const char* k:{"credential_ref","site_credential_ref","monitor_credential_ref"}){const char* ref=relay[k]|"";if(ref[0]&&!text(pairing["credentials"][ref],1024))return false;}for(auto s:relay["subscriptions"].as<JsonArrayConst>())if(!text(pairing["credentials"][s["auth"]["credential_ref"]|""],1024)||!text(pairing["credentials"][s["signing_credential_ref"]|""],1024))return false;}
+  if(!visitRelayCredentials(request["relay"],[&](const char* ref){
+   return text(pairing["credentials"][ref],1024);
+  }))return false;
   if(text(pairing["participant_id"],128)&&!text(pairing["installation_id"],64))return false;
   config.set(request);journal.state["credentials"]=pairing["credentials"];for(const char* k:{"bootstrap","enrollment_id","credential_sha256"})journal.state[k]=pairing[k];
   journal.state["configuration"]=config["configuration"];journal.state["configuration_revision"]=config["configuration"]["revision"];
@@ -51,8 +66,11 @@ bool Node::acceptSetup(){
  if(existing&&!pairing["policy"]["relay"].isNull()){
   auto relay=pairing["policy"]["relay"].as<JsonObjectConst>();if(!relayPolicy(relay)||(!journal.state["relay"]["pending"].isNull()||journal.state["relay"]["deliveries"].size()))return false;
   request.clear();request["policy"]=config;request["policy"]["relay"]=relay;request["credentials"]=journal.state["credentials"];
-  auto candidate=request["credentials"].as<JsonObject>();auto add=[&](const char* ref){if(!ref[0])return true;if(!text(pairing["credentials"][ref],1024))return false;candidate[ref]=pairing["credentials"][ref];return true;};
-  for(const char* k:{"credential_ref","site_credential_ref","monitor_credential_ref"})if(!add(relay[k]|""))return false;for(auto s:relay["subscriptions"].as<JsonArrayConst>())if(!add(s["auth"]["credential_ref"]|"")||!add(s["signing_credential_ref"]|""))return false;
+  auto candidate=request["credentials"].as<JsonObject>();
+  if(!visitRelayCredentials(relay,[&](const char* ref){
+   if(!text(pairing["credentials"][ref],1024))return false;
+   candidate[ref]=pairing["credentials"][ref];return true;
+  }))return false;
   if(measureJson(candidate)>3500||measureJson(request["policy"])>PolicyMax||request.overflowed())return false;
   config.set(request["policy"]);journal.state["credentials"]=candidate;journal.state.remove("relay");relayReady=relayBlocked=false;relayHealthAt=relayRetryAt=0;for(auto& at:relayPollAt)at=0;
  }

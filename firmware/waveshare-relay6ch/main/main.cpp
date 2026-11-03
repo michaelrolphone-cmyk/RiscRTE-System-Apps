@@ -1,5 +1,6 @@
 #include "Node.h"
 #include "Board.h"
+#include "Upgrade.h"
 #include "Factory.h"
 #include "NativeHttp.h"
 #include "NativeTcpListener.h"
@@ -91,6 +92,7 @@ extern "C" void app_main(){
  node->net.api=*RiscCpu::NativeHttp::apiV2();node->clock={1,sizeof(node->clock),nullptr,now,[](void*,uint32_t ms){vTaskDelay(pdMS_TO_TICKS(ms));}};
  node->entropy={1,sizeof(node->entropy),nullptr,[](void*,void* b,uint32_t n)->int32_t{if(!owner()||!b||!n||n>32)return RISC_ENTROPY_INVALID;if(!wifiStarted)return RISC_ENTROPY_UNAVAILABLE;esp_fill_random(b,n);return 0;}};
  node->station={1,sizeof(node->station),nullptr,stationConnect,[](void*)->int32_t{return connected()?0:1;},stationClose,stationAp};
+ node->upgradeSetup=RelayBoard::upgradeSetup;
  node->portal.api=portalApi();node->hardware={nullptr,RelayBoard::ready,RelayBoard::execute};
  if(!node->journal.initialize(&files.base))fail("journal allocation failed");
  if(esp_task_wdt_add(nullptr)!=ESP_OK)fail("watchdog registration failed");
