@@ -11,6 +11,7 @@ static int32_t sampleJpeg(uint8_t* dst, uint32_t capacity) {
 }
 static void optionalCamera(JsonDocument& cfg) {
  Node n;init(n,cfg);
+ n.config["service"]["camera"]["contract"]["api_version"]=1;
  const risc_still_camera_v1 mock{1,sizeof(mock),sampleJpeg};
  n.camera=&mock;
  assert(n.cameraInventory()==0&&!n.cameraReady&&samples==1);
@@ -49,5 +50,25 @@ static void optionalCamera(JsonDocument& cfg) {
  assert(strlen(chunks[10].as<const char*>())==684);
  attached=false;n.journal.state["pending"].to<JsonArray>();n.phase=Phase::Ready;
  assert(n.jobStep()==1&&n.action==Action::Stop&&!n.cameraReady);
+ n.config["service"]["camera"]["contract"]["api_version"]=2;
+ const InfraCameraApi extended{{1,sizeof(InfraCameraApi),sampleJpeg},
+  [](uint16_t w,uint16_t h,InfraCameraFrame* out){
+   assert(w==317&&h==193);
+   *out={static_cast<uint8_t*>(calloc(1,20000)),20000,w,h};return out->bytes!=nullptr;
+  },nullptr,[](InfraCameraFrame* f){free(f->bytes);*f={};}};
+ n.camera=&extended.legacy;n.cameraReady=true;
+ job["spec"]["inputs"]["width"]=317;
+ assert(!n.dimensions(job["spec"]["inputs"]));
+ job["spec"]["inputs"]["height"]=193;
+ assert(n.capture()==1&&n.action==Action::CameraBegin);
+ assert(n.request["arguments"]["size_bytes"]==20000);
+ const std::string artifact="artifact_"+std::string(64,'a');
+ JsonDocument record;record["id"]=artifact;record["state"]="verified";
+ record["sha256"]=n.frameHash;record["size_bytes"]=20000;
+ n.journal.state["pending"].to<JsonArray>();n.phase=Phase::Ready;
+ assert(n.frameResult(record.as<JsonObjectConst>())==1&&n.action==Action::Result);
+ auto candidate=n.request["arguments"]["candidate"];
+ assert(candidate["output"]["width"]==317&&candidate["output"]["height"]==193);
+ assert(candidate["artifacts"][0]["size_bytes"]==20000&&!n.frame.bytes);
  n.phase=Phase::Stopped;n.dispose();
 }

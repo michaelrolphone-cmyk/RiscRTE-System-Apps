@@ -136,7 +136,7 @@
                   "const": "camera.capture"
                 },
                 "api_version": {
-                  "const": 1
+                  "const": 2
                 },
                 "contract_digest": {
                   "type": "string",

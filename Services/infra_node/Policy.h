@@ -63,7 +63,7 @@ inline bool policy(JsonDocument& p){
  auto s=p["service"].as<JsonObjectConst>();if(!keys(s,{"url","credential_ref","site_credential_ref","time_server","contact_interval_ms","contracts","providers"},{"camera"})||!https(s["url"])||!text(s["credential_ref"],128)||!text(s["site_credential_ref"],128,true)||!text(s["time_server"],253)||!integer(s["contact_interval_ms"],15000,30000)||s["contracts"].size()!=4||s["providers"].size()!=4)return false;
  if(!s["camera"].isNull()){
   auto camera=s["camera"].as<JsonObjectConst>();auto c=camera["contract"];auto impl=camera["provider"];
-  if(!keys(camera,{"contract","provider"})||c["capability_id"]!="camera.capture"||c["api_version"]!=1||!digest(c["contract_digest"])||
+  if(!keys(camera,{"contract","provider"})||c["capability_id"]!="camera.capture"||(c["api_version"]!=1&&c["api_version"]!=2)||!digest(c["contract_digest"])||
      impl["capability_id"]!="camera.capture"||impl["provider_id"]!="esp32s3-infra-camera-capture"||
      !integer(impl["revision"],1,9007199254740991ULL)||!digest(impl["definition_digest"])||!digest(impl["package_digest"]))return false;
  }

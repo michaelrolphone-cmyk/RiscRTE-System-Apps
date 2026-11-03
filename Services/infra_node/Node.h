@@ -1,4 +1,5 @@
 #pragma once
+#include "CameraFrame.h"
 #include "Policy.h"
 #include <RiscStillCameraV1.h>
 #include "Journal.h"
@@ -11,7 +12,7 @@
 #include <RiscPlatformRecoveryV1.h>
 namespace Infra {
 enum class Phase:uint32_t {Cold,Recover,Connect,Nonce,Ready,Send,Receive,Save,Backoff,Drain,Stopped,AuthBlocked,CapacityBlocked,StorageBlocked,Retained,ProtocolBlocked,SetupStart,SetupPortal,SetupSave,SetupFinish,SetupLeave,SetupJoin,SetupRetry};
-enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth,RelayIdentity,RelayEnrollmentReview,RelayEnrollmentComplete,RelayLoad,RelayReceipt,RelayVerify,RelayEnrollmentVerified,RelayLease,RelayCheckpoint,RelayChallenge,RelayChallengeStatus,CameraInventory};
+enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth,RelayIdentity,RelayEnrollmentReview,RelayEnrollmentComplete,RelayLoad,RelayReceipt,RelayVerify,RelayEnrollmentVerified,RelayLease,RelayCheckpoint,RelayChallenge,RelayChallengeStatus,CameraInventory,CameraBegin,CameraFinalize};
 class Node {
  public:
  risc_platform_recovery_v1 recovery{};risc_recovery_snapshot_v1 recoveryHealth{};unsigned networkFailures=0;uint64_t networkFailedSince=0,phaseSince=0;Phase supervisedPhase=Phase::Cold;
@@ -29,7 +30,12 @@ class Node {
   if(!strcmp(cap,"camera.capture"))return config["service"]["camera"]["provider"];
   return find(config["service"]["providers"],"capability_id",cap);
  }
- int cameraInventory();int capture();
+ InfraCameraFrame frame{};
+ char frameHash[65]{}, frameArtifact[128]{};
+ const InfraCameraApi* frameApi()const{return camera&&camera->struct_size>=sizeof(InfraCameraApi)?reinterpret_cast<const InfraCameraApi*>(camera):nullptr;}
+ void releaseFrame(){if(frame.bytes)frameApi()->release(&frame);}
+ static bool dimensions(JsonObjectConst input){return keys(input,{})||(keys(input,{"width","height"})&&integer(input["width"],1,65535)&&integer(input["height"],1,65535));}
+ int cameraInventory();int capture();int frameResult(JsonObjectConst data);
  Journal journal;Transport net;Portal portal;uint64_t setupDeadline=0;bool setupFailed=false,setupRecovery=false;infra_station_v1 station{};risc_platform_clock_api_v1 clock{};risc_entropy_v1 entropy{};
  Allocator configMemory{196608},exchangeMemory{262144},responseMemory{393216};JsonDocument config{&configMemory},request{&exchangeMemory},response{&responseMemory};
  risc_infra_memory_v1 memory{};risc_infra_status_v1 status{};Cadence cadence[8]{};char cursors[8][513]{};
@@ -150,7 +156,7 @@ class Node {
   volatile char* secret=authorization;for(size_t i=0;i<sizeof(authorization);++i)secret[i]=0;secret=siteAuthorization;for(size_t i=0;i<sizeof(siteAuthorization);++i)secret[i]=0;
   if(r==-2)return retained();if(r<0)return backoff("transport_open_failed");if(r)return 1;status.requested++;reason(Phase::Receive,"request_in_flight");return 1;
  }
- int stopJob(const char* why){if(text(journal.state["job"]["binding_id"],128)){auto a=make(Action::BindingStop,"execution","binding_report");a["binding_id"]=journal.state["job"]["binding_id"];a["generation"]=journal.state["job"]["generation"];a["kind"]="stopped";a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}if(!text(journal.state["job"]["attempt_id"],128)){journal.state["job"]=nullptr;return persist(Phase::Ready);}auto a=make(Action::Stop,"execution","stop_report");attempt(a);a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}
+ int stopJob(const char* why){releaseFrame();if(text(journal.state["job"]["binding_id"],128)){auto a=make(Action::BindingStop,"execution","binding_report");a["binding_id"]=journal.state["job"]["binding_id"];a["generation"]=journal.state["job"]["generation"];a["kind"]="stopped";a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}if(!text(journal.state["job"]["attempt_id"],128)){journal.state["job"]=nullptr;return persist(Phase::Ready);}auto a=make(Action::Stop,"execution","stop_report");attempt(a);a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}
  void networkFailed(){if(!networkFailures)networkFailedSince=now();if(networkFailures<UINT32_MAX)++networkFailures;}
  void networkSucceeded(){networkFailures=0;networkFailedSince=0;}
  void supervise(){
@@ -221,7 +227,7 @@ class Node {
  int sync(){auto a=make(Action::Sync,"participant","sync");a["session_id"]=sessionId;a["generation"]=sessionGeneration;char c[24];snprintf(c,sizeof(c),"%llu",static_cast<unsigned long long>(cursor));a["cursor"]=c;a["items"].to<JsonArray>();a["requested_work"]=!inventoryNeeded&&capacity()&&canReceiveWork()&&journal.state["job"].isNull()?1:0;roleRequest(a);return send(false);}
  int setupStep();bool acceptSetup();
  bool bindingMatches(unsigned)const;bool localPlan(JsonObjectConst)const;int snapshotStep();int control(JsonObjectConst);int inventoryStep();int jobStep();int bindingStep(bool job);int received();int result(JsonObjectConst data);int probeResult();int applySync(JsonObjectConst data);int rotationStep();
- void dispose(){if(phase!=Phase::Stopped&&phase!=Phase::Cold)return;portal.dispose();net.dispose();journal.dispose();config.clear();request.clear();response.clear();if(encoded){volatile char* p=encoded;for(unsigned i=0;i<16385;++i)p[i]=0;std::free(encoded);encoded=nullptr;}}
+ void dispose(){if(phase!=Phase::Stopped&&phase!=Phase::Cold)return;releaseFrame();portal.dispose();net.dispose();journal.dispose();config.clear();request.clear();response.clear();if(encoded){volatile char* p=encoded;for(unsigned i=0;i<16385;++i)p[i]=0;std::free(encoded);encoded=nullptr;}}
 };
 }
 
