@@ -67,13 +67,13 @@
         "capability_id": "camera.capture",
         "provider_id": "esp32s3-infra-camera-capture",
         "revision": 21,
-        "definition_digest": "88f1e1eae13611c0d24a82be47143afbe861e3f47b681b62116aa309d2f37271",
+        "definition_digest": "8219044e07d09809800be0179fa392ecc18756eead69cb22fc3ce3b9bf0e1951",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       "contract": {
         "capability_id": "camera.capture",
         "api_version": 2,
-        "contract_digest": "aae76ceef32914b2e63ea2478479d41ea1c628c7bc13460a903267ef23e1c0e8"
+        "contract_digest": "29f2580d90f00b7b8d8d57caf3e9d7680f4d9db7af9aeb78ef37fba23a1b8220"
       }
     }
   },
