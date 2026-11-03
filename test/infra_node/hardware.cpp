@@ -57,6 +57,17 @@ int main(int argc,char** argv){
   assert(worker.hardwareStep()==1&&starts==1&&j["phase"]=="hardware_done"&&j["hardware_output"]["steps_completed"]==3);
   worker.phase=Phase::Stopped;worker.dispose();
  }
+ // A failed hardware result waits for a matching rejection, even across a reboot.
+ for(bool matches:{false,true}){
+  Node worker;init(worker,cfg);worker.journal.state["credentials"][cfg["service"]["credential_ref"]|"participant"]="test-participant";auto j=worker.journal.state["job"].to<JsonObject>();
+  j["phase"]="awaiting_acceptance";j["assignment_id"]="bench";j["attempt_id"]="attempt-b";j["candidate_id"]="result-b";j["hardware_output"]["status"]="unknown";
+  worker.journal.state["pending"].add<JsonObject>()["action"]=unsigned(Action::Result);
+  worker.make(Action::Review,"assignment","get");worker.phase=Phase::Send;
+  JsonDocument answer;answer["status"]="completed";answer["protocol_version"]="1.0";auto a=answer["data"].to<JsonObject>();
+  a["state"]="waiting";a["reason_code"]="review_rejected";a["id"]="bench";a["attempt_id"]="attempt-b";a["result_candidate_id"]=matches?"result-b":"different-result";
+  std::string payload;serializeJson(answer,payload);reply(worker,payload.c_str());assert(worker.journal.state["job"].isNull()==matches);
+  assert(worker.journal.state["pending"].size()==(matches?0:1));worker.phase=Phase::Stopped;worker.dispose();
+ }
  Node n;init(n,cfg);n.hardware={nullptr,hwReady,execute};n.journal.state["credentials"]["participant"]="test-hardware-token";n.rebootRecovery=false;n.leaseUntil=ticks+120000;assert(n.workReady()&&!n.roleReady());
  auto j=n.journal.state["job"].to<JsonObject>();j["phase"]="running";j["boot_id"]=n.boot;j["attempt_id"]="hardware-test";j["generation"]=1;j["spec"]["capability"]["capability_id"]="serial.rs485";j["spec"]["operation"]="exchange";j["spec"]["inputs"]=in;j["grant"]["allowed_effects"]="nonrepeatable_or_unobservable";j["grant"]["input_digest"]=std::string(64,'a');
  assert(n.jobStep()==1&&executed==0&&j["phase"]=="hardware_intent");saved(n);assert(n.jobStep()==1&&executed==0&&n.action==Action::HardwareIntent);saved(n);

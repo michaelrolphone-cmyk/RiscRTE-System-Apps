@@ -31,6 +31,9 @@ inline void upgradeSetup(JsonObject policy, JsonObjectConst factory, JsonObject 
     service["contracts"] = factory["service"]["contracts"];
     service["providers"] = factory["service"]["providers"];
   }
+  if (matchesDigest(service["providers"], "82ed5ff88955a866b4e06fb8f258bf7c9b371014f4190ee1bc4609ab430de0a9") &&
+      matchesDigest(service["contracts"], "2e3fe7875d33e2ba17dfd56bec022a04f3721e8f1af24eba04148bfa676328f9"))
+    service["providers"] = factory["service"]["providers"];
   restoreSubscriptions(policy["relay"].as<JsonObject>());
   // Never edit an outstanding delivery or an independently updated subscription.
   restoreSubscriptions(relayState);
