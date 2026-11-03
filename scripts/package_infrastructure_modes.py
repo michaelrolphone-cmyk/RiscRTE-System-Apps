@@ -10,7 +10,7 @@ import sys
 
 from install_infrastructure import verify
 
-VERSION = "v1.10.0"
+VERSION = "v1.10.1"
 PREFIX = f"riscrte-esp32s3-infrastructure-{VERSION}"
 
 
@@ -43,8 +43,8 @@ def main():
         "source": manifest["source"], "first_install_only": True
     }, indent=2) + "\n")
     (release / "RELEASE-NOTES.md").write_text(
-        "ESP32-S3 infrastructure v1.10.0 adds optional, on-demand 160×120 JPEG camera capture "
-        "to the five-mode GOOUUU ESP32-S3-CAM firmware. Use the preserving repair bundle for "
+        "ESP32-S3 infrastructure v1.10.1 discards its local identification frame and takes 160×120 JPEG snapshots only on request "
+        "on the five-mode GOOUUU ESP32-S3-CAM firmware. Use the preserving repair bundle for "
         "enrolled v1.9.0 devices. The full initial image replaces existing device data.\n")
     subprocess.run([sys.executable, str(args.runtime / "scripts/verify_infrastructure_initial_image.py"),
                     str(release)], check=True)

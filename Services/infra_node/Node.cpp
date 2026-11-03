@@ -16,9 +16,9 @@ int Node::rotationStep(){
 int Node::cameraInventory(){
  const auto pin=config["service"]["camera"]["provider"].as<JsonObjectConst>();
  if(pin.isNull()){cameraOfferAt=now()+600000;return 0;}
- if(now()>=cameraProbeAt){
+ if(!cameraReady && now()>=cameraProbeAt){
   cameraReady=camera->jpeg(nullptr,CameraMax)>0;
-  cameraProbeAt=now()+(cameraReady?60000:600000);
+  if(!cameraReady)cameraProbeAt=now()+600000;
  }
  if(!cameraReady){cameraOfferAt=cameraProbeAt;return 0;}
  auto a=make(Action::CameraInventory,"participant","inventory");

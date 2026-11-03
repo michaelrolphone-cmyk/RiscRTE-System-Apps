@@ -23,6 +23,15 @@ static void optionalCamera(JsonDocument& cfg) {
  assert(offers.size()==1&&offers[0]["offer"]["provider_id"]=="esp32s3-infra-camera-capture");
  assert(offers[0]["offer"]["observed_health"]=="healthy"&&offers[0]["offer"]["local_instance_id"]=="camera");
  assert(!n.relayAction());
+ // Renew a healthy offer through several intervals without taking another frame.
+ for(unsigned renewal=0;renewal<3;++renewal){
+  ticks=n.cameraOfferAt;
+  assert(n.cameraInventory()==1 && n.cameraReady && samples==2);
+  std::string metadata;serializeJson(n.request,metadata);
+  assert(metadata.find("base64_chunks")==std::string::npos);
+  assert(metadata.find("image/jpeg")==std::string::npos);
+  assert(n.journal.state["pending"].size()==0);
+ }
  n.config["allocation"]["automatic"]=true;
  n.memory.internal_free=n.memory.internal_largest=n.memory.dma_free=n.memory.dma_largest=300000;
  n.memory.psram_free=n.memory.psram_largest=2000000;n.memory.stack_headroom=16384;
