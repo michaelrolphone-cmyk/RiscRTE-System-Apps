@@ -58,7 +58,16 @@ int main(int argc,char **argv){
  if(!strcmp(mode,"toast")){
   pd.toast_token=1;pd.toast_action=99;snprintf(pd.toast,sizeof(pd.toast),"Notice");
  }
+ if(!strcmp(mode,"confirm_visible")){pd.nodes[0].kind=RISC_COMPONENT_HOLD_KEY;pd.nodes[0].step=RISC_HOLD_CONFIRM;}
  assert(!pa->open(NULL,&pd,NULL,&session));int x,y;pointer_test_hit(1,&x,&y);assert(x>=0);
+ if(!strcmp(mode,"confirm_visible")){
+  edge(1,1,x,y);assert(pt()==RISC_SCENE_IDLE);edge(3,1,x,y);assert(pt()==RISC_SCENE_IDLE);
+  edge(1,1,x,y);assert(pt()==RISC_SCENE_IDLE);ps();edge(3,1,x,y);assert(pt()==RISC_SCENE_IDLE);
+  edge(1,1,x,y);assert(pt()==RISC_SCENE_OK&&pe.intent.phase==RISC_HOLD_PRESS);edge(3,1,x,y);assert(pt()==RISC_SCENE_OK&&pe.intent.phase==RISC_HOLD_RELEASE);
+  pd.revision++;snprintf(pd.nodes[0].label,sizeof(pd.nodes[0].label),"New challenge");assert(!pa->update(NULL,session,&pd));
+  edge(1,1,x,y);assert(pt()==RISC_SCENE_IDLE);edge(3,1,x,y);assert(pt()==RISC_SCENE_IDLE);ps();
+  edge(1,1,x,y);assert(pt()==RISC_SCENE_OK&&pe.intent.phase==RISC_HOLD_PRESS);edge(3,1,x,y);assert(pt()==RISC_SCENE_OK&&pe.intent.phase==RISC_HOLD_RELEASE);pointer_finish();return 0;
+ }
  if(!strcmp(mode,"previsible")){edge(1,1,x,y);assert(pt()==RISC_SCENE_IDLE);edge(3,1,x,y);assert(pt()==RISC_SCENE_IDLE);ps();pointer_finish();return 0;}
  ps();
  if(!strcmp(mode,"toast")){

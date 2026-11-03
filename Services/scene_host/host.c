@@ -125,6 +125,8 @@ static int route_index(const risc_components_document_v1 *d,uint32_t id){
 static bool pointer_enabled,pointer_pending,pointer_active;
 typedef struct { uint32_t revision,route,epoch,node; int x,y,w,h; } pointer_identity;
 static pointer_identity pointer_frame_identity,pointer_presented_identity;
+typedef struct {uint32_t revision,route,epoch;} scene_identity;
+static scene_identity confirm_frame_identity,confirm_presented_identity;
 static bool pointer_boundary(void);
 static void pointer_reset(bool);
 static void pointer_sync(void);
@@ -262,6 +264,7 @@ static void restore_page(void){
         if(document.nodes[list[i]].id==path.focus[path.depth-1])page=p;
 }
 static void invalidate_view(void){
+    confirm_presented_identity=(scene_identity){0};
     if(pointer_enabled){pointer_reset(true);pointer_presented_identity=(pointer_identity){0};}
     if(epoch==UINT32_MAX){(void)hold_local_fault();return;}
     hold_cancel(RISC_HOLD_REASON_TOPOLOGY);
@@ -898,6 +901,7 @@ static int32_t paint(void){
         if(!ok)return RISC_SCENE_AGAIN;
         if(!valid_surface()||surface.pixel_format!=format)return fail_retained();
         frame_model=logical_model;
+        confirm_frame_identity=(scene_identity){document.revision,current_route(),epoch};
         if(pointer_enabled)pointer_frame_identity=pointer_current_identity();
         if(frame_model.page_view||frame_model.preview_view)memcpy(page_frozen,page_live,page_capacity);
         logical_model.page_clean=false;raster_row=0;rasterizing=true;dirty=false;
@@ -950,7 +954,7 @@ static int32_t complete_frame(void){
     /* Completion retires display custody only. Logical hit maps, contacts,
      * navigation and document revisions are independent of presentation. */
     if(s.state==RISC_DISPLAY_PRESENT_SUPERSEDED)dirty=true;
-    else if(pointer_enabled)pointer_presented_identity=pointer_frame_identity;
+    else {confirm_presented_identity=confirm_frame_identity;if(pointer_enabled)pointer_presented_identity=pointer_frame_identity;}
     pending=false;present_token=0;
     return RISC_SCENE_OK;
 }
@@ -1000,6 +1004,7 @@ static int32_t scene_resume(void *c,uint64_t s,uint32_t flags){
         have_event=false;handoff_waiting=false;key_head=key_count=0;key_barrier=keyboard_waiting=false;
     }
     paused=false;
+    confirm_presented_identity=(scene_identity){0};dirty=true;
     if(pointer_enabled){pointer_presented_identity=(pointer_identity){0};dirty=true;}
     if(flags&RISC_SCENE_RESUME_REDRAW){dirty=true;if(flags&RISC_SCENE_RESUME_CLEAN)model->page_clean=true;}
     return RISC_SCENE_OK;
@@ -1048,6 +1053,7 @@ static int32_t open_document(void *c,const risc_components_document_v1 *d,const 
     width=content_view.width;height=content_view.height;
     if(width<=2u*profile->padding+6u*profile->font_scale||height<=top_height()+bottom_height()+profile->row_height)return RISC_SCENE_UNAVAILABLE;
     model->scroll=0;model->wheel_node=-1;model->toast_until=0;
+    confirm_frame_identity=confirm_presented_identity=(scene_identity){0};
     document=*d;path=(risc_scene_navigation_v1){.api_version=1,.struct_size=sizeof(path),.depth=1,.routes={d->root}};
     if(p)path=*p;
     key_head=key_count=0;key_barrier=false;active=true;session=++serial;epoch=1;event_serial=0;closing=paused=pausing=false;dirty=true;pending=false;have_event=false;visible=(hit_map){0};focus_part=0;keyboard_waiting=false;

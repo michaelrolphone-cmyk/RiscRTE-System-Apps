@@ -22,3 +22,5 @@ Qualification is hosted source, controller and target-ELF validation. It is not
 physical hardware timing, Bluetooth interoperability, product deployment or
 completion of the full BLE Touchpad delivery. Product integration must preserve
 the exact full/color-dynamic/watch-compact provider selection and original data.
+
+Confirmation holds additionally require the exact document, route and logical epoch to have completed physical presentation. Contacts captured before that completion are discarded, including across a changed challenge or resumed session. Ordinary non-confirmation held controls keep their existing logical-input behavior.

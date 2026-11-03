@@ -36,6 +36,8 @@ static bool hold_begin(uint32_t id,uint64_t at,bool nav){
     const risc_scene_node_v1 *n=hold_node(id);
     if(!hold_enabled||!n)return false;
     if(hold_active||hold_pending||!view_current()||!neutral)return true;
+    scene_identity shown={document.revision,current_route(),epoch};
+    if(n->step==RISC_HOLD_CONFIRM&&memcmp(&shown,&confirm_presented_identity,sizeof(shown)))return true;
     if(nav?(contact||touch_state.contact_count||touch_state.buttons||dispatched_count):hold_nav_buttons)return true;
     if(hold_generation==UINT64_MAX||event_serial==UINT64_MAX){(void)fail_retained();return true;}
     ++hold_generation;hold_started=at;hold_nav=nav;hold_confirm=n->step==RISC_HOLD_CONFIRM;
