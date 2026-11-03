@@ -39,7 +39,7 @@
       {
         "capability_id": "serial.rs485",
         "api_version": 1,
-        "contract_digest": "7efae47e38d032730163771538971d2ceee8bf3958a5776f3e53de14979adffc"
+        "contract_digest": "4a3e1f675cbcacc9eb27fa6f9a599e69ecf6825c295f605e2508045b561b8977"
       },
       {
         "capability_id": "sound.buzzer",
@@ -57,57 +57,57 @@
         "capability_id": "scheduler.drive",
         "provider_id": "waveshare-relay6ch-scheduler-drive",
         "revision": 1,
-        "definition_digest": "f9818315606b42ed2d9e49edf9ed489f5871206c1c95255ae7ccb78f992d42f3",
-        "package_digest": "150e3f79adb34568b8b8a3bb236eaf85161e763967266d70cf9eeb37f2dee95c"
+        "definition_digest": "b6bdb1dea9bb3d631135271f25473a2dd5dc8db402465d905571c7c8b8999d73",
+        "package_digest": "4f8478707492f4b37f3b3a03815ef31bde59cda7b3e2268d5616283561fdb234"
       },
       {
         "capability_id": "service.reconcile",
         "provider_id": "waveshare-relay6ch-service-reconcile",
         "revision": 1,
-        "definition_digest": "573caae450191cb114c18cacbebb23b20307d2f0e153b005892a0b4ac8b0044e",
-        "package_digest": "150e3f79adb34568b8b8a3bb236eaf85161e763967266d70cf9eeb37f2dee95c"
+        "definition_digest": "28860916c9b59319bc7deb6af4fe0a9a852698af79f3489bb9930c4d51f40e37",
+        "package_digest": "4f8478707492f4b37f3b3a03815ef31bde59cda7b3e2268d5616283561fdb234"
       },
       {
         "capability_id": "service.health.observe",
         "provider_id": "waveshare-relay6ch-service-health-observe",
         "revision": 1,
-        "definition_digest": "a98a52e32ec6386bd347801aca4eca5a6ec935a2ac8ef43512009bfd712c9fa5",
-        "package_digest": "150e3f79adb34568b8b8a3bb236eaf85161e763967266d70cf9eeb37f2dee95c"
+        "definition_digest": "7bf01ba7b04692a9b38997414db396ccc3b057ee667b22b8b99a77a1361d3d81",
+        "package_digest": "4f8478707492f4b37f3b3a03815ef31bde59cda7b3e2268d5616283561fdb234"
       },
       {
         "capability_id": "source.poll",
         "provider_id": "waveshare-relay6ch-source-poll",
         "revision": 1,
-        "definition_digest": "034c8a513810446b5be06750f548db3ae4274445e13584b26e4f62f9eab41ad4",
-        "package_digest": "150e3f79adb34568b8b8a3bb236eaf85161e763967266d70cf9eeb37f2dee95c"
+        "definition_digest": "55124f56b23504a0875738c9ca8bcb3eb9d49afe8d6a99d5f2a057925b1a42b7",
+        "package_digest": "4f8478707492f4b37f3b3a03815ef31bde59cda7b3e2268d5616283561fdb234"
       },
       {
         "capability_id": "relay.bank",
         "provider_id": "waveshare-relay6ch-relay-bank",
         "revision": 1,
-        "definition_digest": "1d7fdae0da28cad6eb7ef41d410b8fe56fa5ca404b384163e5f74f98ca63ad85",
-        "package_digest": "150e3f79adb34568b8b8a3bb236eaf85161e763967266d70cf9eeb37f2dee95c"
+        "definition_digest": "864517ef94c1a4d8c81cd5a964d8c69bfbae7457a566eca357981011efddb511",
+        "package_digest": "4f8478707492f4b37f3b3a03815ef31bde59cda7b3e2268d5616283561fdb234"
       },
       {
         "capability_id": "serial.rs485",
         "provider_id": "waveshare-relay6ch-serial-rs485",
         "revision": 1,
-        "definition_digest": "c55000bef2ecbe55f34b3281e6a25339f485bbb2fc7971579cdd54ed68282a5b",
-        "package_digest": "150e3f79adb34568b8b8a3bb236eaf85161e763967266d70cf9eeb37f2dee95c"
+        "definition_digest": "0359640b19c2576c2851ee1e9b1e71b4f81ee18ab600806bdf7e2d87f4a43599",
+        "package_digest": "4f8478707492f4b37f3b3a03815ef31bde59cda7b3e2268d5616283561fdb234"
       },
       {
         "capability_id": "sound.buzzer",
         "provider_id": "waveshare-relay6ch-sound-buzzer",
         "revision": 1,
-        "definition_digest": "f1641a6f8a03733639d8209f346d0dd60450e25c35dae93b31f97547a36f7eeb",
-        "package_digest": "150e3f79adb34568b8b8a3bb236eaf85161e763967266d70cf9eeb37f2dee95c"
+        "definition_digest": "38ff6b24e85c8a644cd001ff58e6bbc8853a86ba1196b7ed43749834335c536e",
+        "package_digest": "4f8478707492f4b37f3b3a03815ef31bde59cda7b3e2268d5616283561fdb234"
       },
       {
         "capability_id": "light.rgb",
         "provider_id": "waveshare-relay6ch-light-rgb",
         "revision": 1,
-        "definition_digest": "80129aaf1e05cebfde32d5a681458a2cab3aa711948b4b4fd862de4e13fa34c8",
-        "package_digest": "150e3f79adb34568b8b8a3bb236eaf85161e763967266d70cf9eeb37f2dee95c"
+        "definition_digest": "dbd342015a79fae4383b5581ca424e6e0713f81fc9f289318db2394de6832ba5",
+        "package_digest": "4f8478707492f4b37f3b3a03815ef31bde59cda7b3e2268d5616283561fdb234"
       }
     ]
   },
