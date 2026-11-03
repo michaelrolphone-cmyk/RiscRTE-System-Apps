@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: cf920a9440eddf2f40fbab17f24fd283edd7416c
+          ref: 6a2a36b0a459044a057d7b5b99d23d1292e244b5
           path: Runtime
           persist-credentials: false
       - run: python3 scripts/test_driver_manager_presenter.py --runtime Runtime --output out/presenter
@@ -81,4 +81,36 @@ jobs:
         with:
           name: shared-driver-manager-baseline-${{ github.event.pull_request.head.sha }}
           path: out/driver-manager-inventory/
+          if-no-files-found: error
+
+  target:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 6a2a36b0a459044a057d7b5b99d23d1292e244b5
+          path: Runtime
+          persist-credentials: false
+      - name: Pinned compiler
+        run: |
+          curl --fail --location --retry 3 https://github.com/espressif/crosstool-NG/releases/download/esp-15.2.0_20251204/xtensa-esp-elf-15.2.0_20251204-x86_64-linux-gnu.tar.xz -o "$RUNNER_TEMP/xtensa.tar.xz"
+          echo "3d50f5cd5f173acfd524e07c1cd69bc99585731a415ca2e5bce879997fe602b8  $RUNNER_TEMP/xtensa.tar.xz" | sha256sum --check
+          mkdir -p toolchain
+          tar -xJf "$RUNNER_TEMP/xtensa.tar.xz" -C toolchain
+      - name: Identical shared native ELF and repeat
+        run: |
+          python3 scripts/build_driver_manager.py --runtime Runtime --compiler toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc --output out/target
+          python3 scripts/build_driver_manager.py --runtime Runtime --compiler toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc --output out/repeat
+          cmp out/target/driver_manager.elf out/repeat/driver_manager.elf
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-driver-manager-native-${{ github.event.pull_request.head.sha }}
+          path: out/
           if-no-files-found: error
