@@ -611,7 +611,8 @@ static int32_t poll_touch(void){
     while(raw_count&&!have_event&&!key_count&&!keyboard_waiting&&!hold_pending&&!pointer_pending){
         risc_touch_event_v1 event=raw_queue[raw_head];
         raw_head=(raw_head+1)%RAW_QUEUE_SIZE;--raw_count;
-        if(!pointer_enabled||!pointer_event(&event))process_touch_event(&event);if(retained)return RISC_SCENE_RETAINED;
+        if(!pointer_enabled||!pointer_event(&event))process_touch_event(&event);
+        if(retained)return RISC_SCENE_RETAINED;
         if(event.kind==RISC_TOUCH_EVENT_UP&&!dispatched_count&&!contact&&!handoff_waiting)neutral=true;
     }
     if(!raw_count&&!contacts_count&&!contact&&!touch_state.contact_count&&!touch_state.buttons)neutral=true;

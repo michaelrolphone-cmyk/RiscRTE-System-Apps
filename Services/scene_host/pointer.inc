@@ -56,8 +56,14 @@ static bool pointer_advance(risc_touch_snapshot_v1 *s,const risc_touch_event_v1 
  s->sequence=e->sequence;s->timestamp_ms=e->timestamp_ms;return true;
 }
 static bool pointer_trace_valid(void){
- risc_touch_snapshot_v1 end=pointer_cursor;
- for(unsigned i=0;i<raw_count;i++)if(!pointer_advance(&end,&raw_queue[(raw_head+i)%RAW_QUEUE_SIZE]))return false;
+ risc_touch_snapshot_v1 end=pointer_cursor;uint64_t group=0;bool lifted=false;
+ for(unsigned i=0;i<raw_count;i++){
+  const risc_touch_event_v1 *e=&raw_queue[(raw_head+i)%RAW_QUEUE_SIZE];
+  if(i==0||e->timestamp_ms!=group){group=e->timestamp_ms;lifted=false;}
+  if(e->kind==RISC_TOUCH_EVENT_DOWN&&lifted)return false;
+  if(e->kind==RISC_TOUCH_EVENT_UP)lifted=true;
+  if(!pointer_advance(&end,e))return false;
+ }
  if(end.sequence!=touch_state.sequence||end.contact_count!=touch_state.contact_count||end.buttons!=touch_state.buttons)return false;
  for(unsigned i=0;i<end.contact_count;i++){
   unsigned j=0;while(j<touch_state.contact_count&&touch_state.contacts[j].id!=end.contacts[i].id)++j;
