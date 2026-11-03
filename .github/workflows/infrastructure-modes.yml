@@ -59,7 +59,7 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE/apps"
           git config --global --add safe.directory "$GITHUB_WORKSPACE/runtime"
           . "$IDF_PATH/export.sh"
-          export RISC_RUNTIME_ROOT="$PWD/runtime" INFRA_OUTPUT="$PWD/package/esp32s3-infrastructure-v1.10.1"
+          export RISC_RUNTIME_ROOT="$PWD/runtime" INFRA_OUTPUT="$PWD/package/esp32s3-infrastructure-v1.10.2"
           mkdir -p package
           bash apps/scripts/build_infrastructure_bundle.sh
           python apps/scripts/package_infrastructure_modes.py --bundle "$INFRA_OUTPUT" --runtime runtime --output package/release

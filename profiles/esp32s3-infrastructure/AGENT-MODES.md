@@ -128,7 +128,7 @@ ESP32-S3 resource, network and power-loss qualification remains required.
 
 ## Optional camera on the GOOUUU ESP32-S3-CAM
 
-v1.10.1 probes the onboard camera socket after the participant establishes its
+v1.10.2 probes the onboard camera socket after the participant establishes its
 infrastructure inventory. A board that returns a complete JPEG publishes its own
 `camera.capture@1` offer. The original four infrastructure providers use their
 existing inventory exchange. The camera offer has a separate 120-second expiry.
