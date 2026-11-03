@@ -262,7 +262,15 @@ int Node::received(){
   journal.state["configuration_desired_id"]=d["id"];journal.state["configuration_expires_at"]=d["expires_at"];journal.state["configuration"]=d["desired"];journal.state["configuration_revision"]=d["desired"]["revision"];configureCadence();inventoryNeeded=true;auto a=make(Action::DesiredReport,"desired","observe");a["desired_id"]=d["id"];a["desired_revision"]=d["desired_revision"];a["provider_generation"]=sessionGeneration;a["participant_id"]=journal.state["participant_id"];a["actual"]["configuration_revision"]=configuration()["revision"];a["actual"]["binding_count"]=bindings().size();a["actual"]["mode"]=agentMode(configuration());a["actual"]["applied"]=true;a["actual"]["observed_at_ms"]=net.wall(now())*1000;return send(true);
  }
  case Action::DesiredReport:return finish(snapshotNeeded?Phase::Recover:Phase::Ready);
- case Action::Review:if(d["state"]=="completed"&&d["accepted_result"]==journal.state["job"]["candidate_id"]){auto p=journal.state["pending"][0];if(p["checkpoint"].is<JsonObject>())journal.state["checkpoints"][p["binding_id"]|""]=p["checkpoint"];journal.state["job"]=nullptr;durable=true;return finish();}waitUntil=now()+15000;phase=Phase::Ready;return 1;
+ case Action::Review:{
+  auto job=journal.state["job"];
+  const bool accepted=d["state"]=="completed"&&d["accepted_result"]==job["candidate_id"];
+  // The coordinator has rejected this exact quiescent hardware result. Release
+  // the local delivery record without treating it as success or retrying outputs.
+  const bool rejected=job["hardware_output"]["status"]=="unknown"&&d["id"]==job["assignment_id"]&&
+    d["attempt_id"]==job["attempt_id"]&&d["state"]=="waiting"&&d["reason_code"]=="review_rejected"&&
+    text(job["candidate_id"],128)&&d["result_candidate_id"]==job["candidate_id"];
+  if(accepted||rejected){auto p=journal.state["pending"][0];if(p["checkpoint"].is<JsonObject>())journal.state["checkpoints"][p["binding_id"]|""]=p["checkpoint"];journal.state["job"]=nullptr;durable=true;return finish();}waitUntil=now()+15000;phase=Phase::Ready;return 1;}
  default:return block(Phase::ProtocolBlocked,"unexpected_operation_response");
  }
 }

@@ -20,7 +20,7 @@ static bool setRelay(unsigned channel,bool on){
 }
 static bool setTone(unsigned hz){
  if(hz){
-  if(!ledc_set_freq(LEDC_LOW_SPEED_MODE,LEDC_TIMER_0,hz)||
+  if(ledc_set_freq(LEDC_LOW_SPEED_MODE,LEDC_TIMER_0,hz)!=ESP_OK||
      ledc_set_duty(LEDC_LOW_SPEED_MODE,LEDC_CHANNEL_0,512)!=ESP_OK||
      ledc_update_duty(LEDC_LOW_SPEED_MODE,LEDC_CHANNEL_0)!=ESP_OK)return false;
  }else if(ledc_stop(LEDC_LOW_SPEED_MODE,LEDC_CHANNEL_0,0)!=ESP_OK)return false;

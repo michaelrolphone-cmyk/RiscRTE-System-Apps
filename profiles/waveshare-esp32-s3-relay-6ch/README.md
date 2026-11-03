@@ -1,4 +1,4 @@
-# Waveshare ESP32-S3-Relay-6CH RiscRTE agent 1.0.3
+# Waveshare ESP32-S3-Relay-6CH RiscRTE agent 1.0.4
 
 For a paired v1.0.x board, flash the application image at `0x50000` with erase-all disabled. Version 1.0.2 restores the shared relay subscription fingerprint for the interim pairing file, migrates the eight provider pins, and reserves 24 KiB of main-task stack for the TLS path. It retains the 4 KiB stack admission floor. Hardware assignment admission uses a fresh memory sample after TLS closes.
 
@@ -20,6 +20,8 @@ assignments, under ordinary participant/session/execution grants.
 | `serial.rs485@1` | `exchange(baud,parity,stop_bits,tx_hex,rx_max,timeout_ms)` | UART1 TX17/RX18; automatic direction |
 | `sound.buzzer@1` | `tone(frequency_hz,duration_ms)` | GPIO21; 100..10000 Hz; at most 5 seconds |
 | `light.rgb@1` | `set(red,green,blue)` | GPIO38 WS2812; 8-bit RGB |
+
+Version 1.0.4 handles the ESP-IDF LEDC frequency setter’s ESP_OK result for both single and batched tones.
 
 The board also exposes `device.outputs.batch@1`, operation `apply`. Supply
 `{"steps":[...]}`. Each step can contain `on` and `off` arrays of relay
