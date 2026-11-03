@@ -152,6 +152,7 @@ static bool nc_work_screen(void){
 }
 static int nc_header_height(void){if(nc_keypad_route())return nc_size(44);if(document.flags&RISC_COMPONENTS_TELEMETRY)return nc_size(nc_toolbar()?50:52);if(!nc_paper()&&nc_work_screen())return 44;return nc_size(nc_toolbar()?(nc_paper()?56:78):document.subtitle[0]?(nc_paper()?60:84):(nc_paper()?44:68));}
 static int nc_row_height(const risc_scene_node_v1 *n){
+    if(n->kind==RISC_COMPONENT_POINTER){int h=(int)height-nc_header_height()-nc_footer()-nc_size(20);return h>nc_size(64)?h:nc_size(64);}
     switch(n->kind){
     case RISC_COMPONENT_HOLD_KEY:return nc_size(16+16*(int)(nc_hold_wrap(n->label,1,0,0,(int)width-nc_size(48),0,false)+nc_hold_wrap(n->text,3,0,0,(int)width-nc_size(48),0,false)));
     case RISC_COMPONENT_HEADER_ACTION:case RISC_COMPONENT_TAB_BAR:return 0;
@@ -258,6 +259,12 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
     if(y+h<0||y>(int)height)return;
     uint16_t fg=nc_fg(),dim=nc_color(RISC_TONE_MUTED),accent=nc_color(d->tone?d->tone:RISC_TONE_ACCENT);
     if(n->flags&RISC_SCENE_DISABLED){fg=dim;accent=dim;}
+    if(n->kind==RISC_COMPONENT_POINTER){
+        nc_box(x,y+4*s,w,h-8*s,8*s,s,accent,nc_bg());
+        nc_center(x,y+h/2-8*s,w,n->label,2,fg);
+        nc_center(x,y+h/2+12*s,w,n->text,3,dim);
+        nc_hit(x,y+4*s,w,h-8*s,HIT_POINTER,n,0,false);return;
+    }
     if(n->kind==RISC_COMPONENT_SECTION){nc_text(x,y+20*s,w,n->label,1,dim);return;}
     if(n->kind==RISC_COMPONENT_TEXT_PREVIEW){
         nc_box(x,y+8*s,w,h-16*s,12*s,nc_paper()?5:s,fg,nc_bg());
@@ -659,6 +666,10 @@ static bool component_valid(const risc_components_document_v1 *d){
     bool cancel=!(d->flags&3u);unsigned headers=0,modal_actions=0,modal_texts=0,tabs=0,tiles=0;
     for(unsigned i=0;i<d->node_count;i++){
         const risc_scene_node_v1 *n=&d->nodes[i];const risc_component_detail_v1 *a=&d->details[i];
+        if(n->kind==RISC_COMPONENT_POINTER){
+            if(!pointer_enabled||!n->action||n->target||n->minimum||n->maximum||n->step||n->value)return false;
+            for(unsigned j=0;j<i;j++)if(d->nodes[j].kind==RISC_COMPONENT_POINTER&&d->nodes[j].route==n->route)return false;
+        }
         if(d->flags&3u){if(n->kind==RISC_SCENE_ACTION)modal_actions++;else if(n->kind==RISC_SCENE_TEXT_NODE)modal_texts++;else return false;}
         if(n->kind==RISC_SCENE_TIME_OF_DAY||n->kind==RISC_SCENE_INTEGER||n->kind==RISC_SCENE_BOOLEAN||n->kind==RISC_SCENE_LINK)return false;
         if(a->symbol>RISC_SYMBOL_GEAR||a->marker>6||a->tone>RISC_TONE_MUTED||!terminated(a->badge,sizeof(a->badge))||!terminated(a->choices,sizeof(a->choices)))return false;

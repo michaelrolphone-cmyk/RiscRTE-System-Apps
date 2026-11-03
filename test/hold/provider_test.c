@@ -9,6 +9,8 @@ static const risc_scene_hold_api_v1 *ha;
 static risc_components_document_v1 hd;
 static risc_scene_hold_event_v1 he;
 static bool recurse_clock,recurse_base;
+static unsigned acquire_count;
+static bool counted_acquire(void*c,uint32_t f,risc_display_surface_v1*out){++acquire_count;return acquire(c,f,out);}
 static uint64_t guarded_now(void *c){
  if(recurse_clock){recurse_clock=false;
   if(recurse_base)assert(api->close(NULL,session)==RISC_SCENE_RETAINED);
@@ -29,16 +31,23 @@ int main(int argc,char **argv){
  driver=t5_driver_get(2);api=driver->capability;ha=risc_scene_hold_get_v1(api);assert(ha);
  assert(risc_scene_components_get_v1(api)&&risc_scene_canvas_get_v1(api));
  risc_platform_clock_api_v1 guarded_clock=clk;guarded_clock.monotonic_ms=guarded_now;
- risc_provider_dependency_v1 deps[]={{"display.output",1,&disp},{"input.touch.raw",1,&raw},{"input.navigation",1,&nav},{"platform.clock",1,&guarded_clock},{"ui.presentation-profile",1,&prof}};
+ risc_display_output_api_v1 measured=disp;measured.acquire=counted_acquire;
+ risc_provider_dependency_v1 deps[]={{"display.output",1,&measured},{"input.touch.raw",1,&raw},{"input.navigation",1,&nav},{"platform.clock",1,&guarded_clock},{"ui.presentation-profile",1,&prof}};
  assert(driver->start(deps,5));
  hd=(risc_components_document_v1){.api_version=1,.struct_size=sizeof(hd),.revision=1,.root=1,.route_count=1,.node_count=2,.screen_key=1};hd.routes[0]=(risc_scene_route_v1){.id=1,.title="HELD INPUT"};
  hd.nodes[0]=(risc_scene_node_v1){.id=1,.route=1,.kind=RISC_COMPONENT_HOLD_KEY,.action=10,.label="BUTTON1",.text="CTRL SHIFT A"};
  hd.nodes[1]=(risc_scene_node_v1){.id=2,.route=1,.kind=RISC_SCENE_ACTION,.action=11,.label="OTHER"};
- if(!strcmp(mode,"confirm")||!strcmp(mode,"timeout"))hd.nodes[0].step=RISC_HOLD_CONFIRM;
+ if(!strcmp(mode,"confirm")||!strcmp(mode,"timeout")||!strcmp(mode,"confirm_resume"))hd.nodes[0].step=RISC_HOLD_CONFIRM;
  if(!strcmp(mode,"long_labels")){strcpy(hd.nodes[0].label,"NUMBERS MATCH - CONFIRM EXPLICITLY");strcpy(hd.nodes[0].text,"CTRL SHIFT ALT SUPER A - FULL COPIED ASSIGNMENT WITHOUT APP GEOMETRY");}
  if(!strcmp(mode,"invalid")){hd.nodes[0].step=2;assert(ha->open(NULL,&hd,NULL,&session)==RISC_SCENE_INVALID);driver->stop();puts("invalid passed");return 0;}
  assert(risc_scene_components_get_v1(api)->open(NULL,&hd,NULL,&session)==RISC_SCENE_INVALID);
  risc_scene_navigation_v1 initial={.api_version=1,.struct_size=sizeof(initial),.depth=1,.routes={1},.focus={1}};assert(!ha->open(NULL,&hd,&initial,&session));hs();int x,y;
+ if(!strcmp(mode,"resume")||!strcmp(mode,"confirm_resume")){
+  const risc_scene_checkpoint_api_v1 *cp=risc_scene_checkpoint_get_v1(api);assert(cp);unsigned a=acquire_count,s=submits;
+  assert(!cp->pause(NULL,session));assert(!cp->resume(NULL,session,0));
+  for(unsigned i=0;i<3;i++){assert(ht()==RISC_SCENE_IDLE);risc_scene_navigation_v1 n={.struct_size=sizeof(n)};uint32_t flags=0;assert(!api->snapshot(NULL,session,&n,&flags));assert(!(flags&RISC_SCENE_PRESENTING)&&a==acquire_count&&s==submits);}
+  press(&x,&y);ms+=20;edge(RISC_TOUCH_EVENT_UP,x,y);assert(ht()==RISC_SCENE_OK&&he.phase==RISC_HOLD_RELEASE);end_clean();return 0;
+ }
  if(!strcmp(mode,"mixed_start")){hold_test_hit(2,&x,&y);assert(x>=0);edge(RISC_TOUCH_EVENT_DOWN,x,y);nav_buttons=nav_pressed=RISC_NAV_CONFIRM;assert(ht()==RISC_SCENE_IDLE);end_clean();return 0;}
  if(!strcmp(mode,"mixed_press")){hold_test_hit(1,&x,&y);edge(RISC_TOUCH_EVENT_DOWN,x,y);nav_buttons=nav_pressed=RISC_NAV_CONFIRM;assert(ht()==RISC_SCENE_OK&&he.phase==RISC_HOLD_CANCEL&&he.reason==RISC_HOLD_REASON_AMBIGUOUS);end_clean();return 0;}
  if(!strcmp(mode,"navigation")){

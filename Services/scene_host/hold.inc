@@ -14,11 +14,13 @@ static void hold_cancel(uint32_t reason){
     hold_queue(RISC_HOLD_CANCEL,reason,hold_now);
 }
 static bool hold_boundary(uint32_t reason){
+    if(pointer_boundary())return true;
     if(!hold_enabled)return false;
     hold_cancel(reason);
     return hold_pending;
 }
 static int32_t hold_local_fault(void){
+    if(pointer_enabled&&(pointer_active||pointer_pending)&&alive()){pointer_reset(true);hold_fault=true;return RISC_SCENE_BUSY;}
     if(!hold_enabled||!hold_active||hold_pending||!alive())return fail_retained();
     hold_cancel(RISC_HOLD_REASON_LOCAL_FAULT);
     hold_event.flags=RISC_HOLD_LOCAL_FAULT_PENDING;hold_fault=true;
@@ -34,6 +36,8 @@ static bool hold_begin(uint32_t id,uint64_t at,bool nav){
     const risc_scene_node_v1 *n=hold_node(id);
     if(!hold_enabled||!n)return false;
     if(hold_active||hold_pending||!view_current()||!neutral)return true;
+    scene_identity shown={document.revision,current_route(),epoch};
+    if(n->step==RISC_HOLD_CONFIRM&&memcmp(&shown,&confirm_presented_identity,sizeof(shown)))return true;
     if(nav?(contact||touch_state.contact_count||touch_state.buttons||dispatched_count):hold_nav_buttons)return true;
     if(hold_generation==UINT64_MAX||event_serial==UINT64_MAX){(void)fail_retained();return true;}
     ++hold_generation;hold_started=at;hold_nav=nav;hold_confirm=n->step==RISC_HOLD_CONFIRM;
