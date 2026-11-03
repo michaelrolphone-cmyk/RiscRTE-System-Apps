@@ -1,5 +1,6 @@
 #pragma once
 #include "Policy.h"
+#include "Hardware.h"
 #include "Journal.h"
 #include "Transport.h"
 #include "Station.h"
@@ -10,9 +11,13 @@
 #include <RiscPlatformRecoveryV1.h>
 namespace Infra {
 enum class Phase:uint32_t {Cold,Recover,Connect,Nonce,Ready,Send,Receive,Save,Backoff,Drain,Stopped,AuthBlocked,CapacityBlocked,StorageBlocked,Retained,ProtocolBlocked,SetupStart,SetupPortal,SetupSave,SetupFinish,SetupLeave,SetupJoin,SetupRetry};
-enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth,RelayIdentity,RelayEnrollmentReview,RelayEnrollmentComplete,RelayLoad,RelayReceipt,RelayVerify,RelayEnrollmentVerified,RelayLease,RelayCheckpoint,RelayChallenge,RelayChallengeStatus};
+enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth,RelayIdentity,RelayEnrollmentReview,RelayEnrollmentComplete,RelayLoad,RelayReceipt,RelayVerify,RelayEnrollmentVerified,RelayLease,RelayCheckpoint,RelayChallenge,RelayChallengeStatus,HardwareIntent,HardwareOutcome};
 class Node {
  public:
+ Hardware hardware{};
+ bool hardwareReady()const{return hardware.ready&&hardware.execute&&hardware.ready(hardware.context);}
+ bool workReady()const{return roleReady(32000)||hardwareReady();}
+ int hardwareStep();
  risc_platform_recovery_v1 recovery{};risc_recovery_snapshot_v1 recoveryHealth{};unsigned networkFailures=0;uint64_t networkFailedSince=0,phaseSince=0;Phase supervisedPhase=Phase::Cold;
  // Participant failures have their own circuit. They must not silence the
  // independently authenticated relay or overwrite unresolved request custody.
@@ -23,7 +28,7 @@ class Node {
  Phase phase=Phase::Cold,afterSave=Phase::Ready;Action action=Action::None;bool durable=false,loaded=false,rebootRecovery=true,drain=false,initialized=false;
  bool snapshotNeeded=true,snapshotComplete=false;unsigned snapshotStage=0;char snapshotAfter[129]{},controlHash[65]{};uint64_t controlSequence=0;
  uint64_t waitUntil=0,nextSync=0,nextInventory=0,inventoryRetryAt=0,leaseUntil=0,serial=0,saveSequence=0,sessionGeneration=0,cursor=0;
- unsigned failures=0,bindingIndex=0,fairness=0,inventoryIndex=0;bool poolStage=true,inventoryNeeded=true,externalJob=false,poolsEstablished=false,lastCapacity=false,receiptChecked=false;uint64_t inventoryRevision=0;
+ unsigned inventoryBatch=0;unsigned failures=0,bindingIndex=0,fairness=0,inventoryIndex=0;bool poolStage=true,inventoryNeeded=true,externalJob=false,poolsEstablished=false,lastCapacity=false,receiptChecked=false;uint64_t inventoryRevision=0;
  char sessionId[128]{},boot[65]{},poolId[160]{},offerId[200]{},assignmentId[128]{},planId[128]{};
  struct Diagnostic{uint64_t at;uint32_t phase,pending;char reason[112];};static_assert(sizeof(Diagnostic)==128,"diagnostic ring slot");Diagnostic diagnostics[128]{};uint32_t diagnosticNext=0;
  bool relayReady=false,relayBlocked=false,relayYield=false,relayUpgradePending=false;unsigned relayIndex=0,relayFair=0;char relaySlot[65]{};uint64_t relayPollAt[RelayAttachmentsMax]{},relayHealthAt=0,relayRetryAt=0,sentinelRetryAt=0;char relayError[64]{};
@@ -108,11 +113,11 @@ class Node {
   if(critical){auto pending=journal.state["pending"].as<JsonArray>();if(pending.size()>=PendingMax)return block(Phase::CapacityBlocked,"pending_full");auto p=pending.add<JsonObject>();p["action"]=static_cast<unsigned>(action);p["boot_id"]=boot;p["request"].set(request);if(measureJson(p)>RecordMax){pending.remove(pending.size()-1);return block(Phase::CapacityBlocked,"durable_record_exceeds_bound");}return persist(Phase::Send);}
   reason(Phase::Send,"request_ready");return 1;
  }
- bool durableAction(unsigned a)const{switch(static_cast<Action>(a)){case Action::Enroll:case Action::Claim:case Action::Prepare:case Action::Result:case Action::Stop:case Action::Observe:case Action::DesiredReport:case Action::RotationPrepare:case Action::RotationActivate:case Action::RotationConfirm:case Action::BindingResult:case Action::BindingStop:case Action::RejectPrepare:return true;default:return false;}}
+ bool durableAction(unsigned a)const{switch(static_cast<Action>(a)){case Action::Enroll:case Action::Claim:case Action::Prepare:case Action::Result:case Action::Stop:case Action::Observe:case Action::DesiredReport:case Action::RotationPrepare:case Action::RotationActivate:case Action::RotationConfirm:case Action::BindingResult:case Action::BindingStop:case Action::RejectPrepare:case Action::HardwareIntent:case Action::HardwareOutcome:return true;default:return false;}}
  int resume(){auto p=journal.state["pending"][0];if(!p["request"].is<JsonObject>()||!durableAction(p["action"].as<unsigned>()))return block(Phase::StorageBlocked,"pending_record_invalid");if(!receiptChecked&&p["action"]!=static_cast<unsigned>(Action::Enroll)){auto a=make(Action::ReceiptLookup,"inspect","operation_get");a["lookup_operation_id"]=p["request"]["operation_id"];return send(false);}receiptChecked=false;request.set(p["request"]);action=static_cast<Action>(p["action"].as<unsigned>());durable=true;reason(Phase::Send,"replay_same_operation_identity");return 1;}
  int finish(Phase next=Phase::Ready){if(durable){journal.state["pending"].as<JsonArray>().remove(0);durable=false;return persist(next);}phase=next;return 1;}
  int backoff(const char* why){if(!strcmp(why,"transport_open_failed")||!strcmp(why,"network_failure")||!strcmp(why,"outcome_unknown_same_identity")||!strcmp(why,"wifi_reconnect_backoff"))networkFailed();uint32_t random=0;auto e=entropy.fill(entropy.context,&random,sizeof(random));if(e==RISC_ENTROPY_RETAINED)return retained();/* Retry jitter is not a security nonce. Entropy failure must not stop recovery. */if(e!=0)random=uint32_t(now());waitUntil=now()+1000+retryDelay(failures++,random);reason(Phase::Backoff,why);return 1;}
- void transportReason(){char line[112];snprintf(line,sizeof(line),"%s action=%u phase=%u err=%d sent=%u recv=%u ms=%llu",net.outcome==RISC_HTTP_TIMEOUT?"http_timeout":"http_error",unsigned(action),net.info.phase,net.outcome,net.info.sent_bytes,net.info.received_bytes,static_cast<unsigned long long>(now()-net.started));reason(phase,line);}
+ void transportReason(){char line[112];snprintf(line,sizeof(line),"%s action=%u phase=%u err=%d sent=%u recv=%u ms=%llu",net.outcome==RISC_HTTP_TIMEOUT?"http_timeout":"http_error",unsigned(action),unsigned(net.info.phase),net.outcome,unsigned(net.info.sent_bytes),unsigned(net.info.received_bytes),static_cast<unsigned long long>(now()-net.started));reason(phase,line);}
  bool relayAction()const{return action>=Action::RelayConfig&&action<=Action::RelayChallengeStatus;}
  bool enrollmentQueue(JsonObjectConst);int enrollmentStep();int enrollmentReceived(JsonObjectConst);int enrollmentApply(JsonObject,bool approved=true);
  JsonObject relayPending(){auto r=journal.state["relay"];return relaySlot[0]?r["deliveries"][relaySlot].as<JsonObject>():r["pending"].as<JsonObject>();}
@@ -199,12 +204,13 @@ class Node {
   if(!relayYield){int r=relayStep();if(r)return r;}relayYield=false;
   for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();if(roleReady(cadence[i].timeout+2000)&&!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(job["phase"]=="running"&&job["spec"]["inputs"]["binding_id"]==bindingAt(i)["binding_id"]);}}
   if(!job.isNull()&&(job["phase"]!="running"||now()+15000>=leaseUntil))return jobStep();
+  if(!job.isNull()&&hardwareCapability(job["spec"]["capability"]["capability_id"]|""))return jobStep();
   if(!job.isNull()&&job["phase"]=="running"){for(unsigned i=0;i<bindings().size();++i)if(bindingAt(i)["binding_id"]==job["spec"]["inputs"]["binding_id"]&&cadence[i].ready(now()))return jobStep();}
   if((inventoryNeeded||now()>=nextInventory)&&now()>=inventoryRetryAt)return inventoryStep();
   for(unsigned priority=0;priority<2;++priority)for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(!roleReady(cadence[i].timeout+2000)||bindingDisabled[i]||b["required"].as<bool>()!=(priority==0)||!cadence[i].ready(now())||(priority&&(!capacity()||now()+cadence[i].timeout+5000>=nextSync)))continue;bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}
   return 1;
  }
- int sync(){auto a=make(Action::Sync,"participant","sync");a["session_id"]=sessionId;a["generation"]=sessionGeneration;char c[24];snprintf(c,sizeof(c),"%llu",static_cast<unsigned long long>(cursor));a["cursor"]=c;a["items"].to<JsonArray>();a["requested_work"]=!inventoryNeeded&&capacity()&&roleReady(32000)&&journal.state["job"].isNull()?1:0;roleRequest(a);return send(false);}
+ int sync(){auto a=make(Action::Sync,"participant","sync");a["session_id"]=sessionId;a["generation"]=sessionGeneration;char c[24];snprintf(c,sizeof(c),"%llu",static_cast<unsigned long long>(cursor));a["cursor"]=c;a["items"].to<JsonArray>();a["requested_work"]=!inventoryNeeded&&capacity()&&workReady()&&journal.state["job"].isNull()?1:0;roleRequest(a);return send(false);}
  int setupStep();bool acceptSetup();
  bool bindingMatches(unsigned)const;bool localPlan(JsonObjectConst)const;int snapshotStep();int control(JsonObjectConst);int inventoryStep();int jobStep();int bindingStep(bool job);int received();int result(JsonObjectConst data);int probeResult();int applySync(JsonObjectConst data);int rotationStep();
  void dispose(){if(phase!=Phase::Stopped&&phase!=Phase::Cold)return;portal.dispose();net.dispose();journal.dispose();config.clear();request.clear();response.clear();if(encoded){volatile char* p=encoded;for(unsigned i=0;i<16385;++i)p[i]=0;std::free(encoded);encoded=nullptr;}}

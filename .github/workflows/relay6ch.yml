@@ -1,0 +1,82 @@
+name: Waveshare relay6ch firmware
+on:
+  push:
+    branches: [work/waveshare-relay6ch]
+  pull_request:
+    paths: ['firmware/waveshare-relay6ch/**', 'Services/infra_node/**', 'profiles/waveshare-esp32-s3-relay-6ch/**', 'scripts/*relay6ch*', 'test/infra_node/hardware.cpp', '.github/workflows/relay6ch.yml']
+permissions:
+  contents: read
+concurrency:
+  group: relay6ch-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: apps
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 2747b5907b1af06882e90a5a8d7ca355b34a7abf
+          path: runtime
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: |
+          RISC_RUNTIME_ROOT="$PWD/runtime" bash apps/scripts/test_infrastructure.sh
+          RISC_RUNTIME_ROOT="$PWD/runtime" bash apps/scripts/test_relay6ch.sh
+          RISC_RUNTIME_ROOT="$PWD/runtime" ASAN_OPTIONS=detect_leaks=0 SANITIZE=1 bash apps/scripts/test_relay6ch.sh
+  target:
+    runs-on: ubuntu-24.04
+    container: espressif/idf:v6.1@sha256:81893c71bb5e570088901f21def8684c25cd2a9020281bd01b843a7655edb18c
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: apps
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 2747b5907b1af06882e90a5a8d7ca355b34a7abf
+          path: runtime
+          persist-credentials: false
+      - name: Build board firmware with no PSRAM
+        run: |
+          . "$IDF_PATH/export.sh"
+          export RISC_RUNTIME_ROOT="$PWD/runtime" RELAY6CH_OUTPUT="$PWD/delivery"
+          python apps/scripts/generate_relay6ch.py
+          idf.py -C apps/firmware/waveshare-relay6ch -B "$PWD/relay-build" -D "RISC_RUNTIME_ROOT=$RISC_RUNTIME_ROOT" reconfigure
+          cmake --build relay-build -- -j1
+          python apps/scripts/package_relay6ch.py --build relay-build --runtime runtime --output delivery
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relay6ch-${{ github.event.pull_request.head.sha || github.sha }}
+          path: delivery/
+          if-no-files-found: error
+  publish:
+    needs: [test, target]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/work/waveshare-relay6ch'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: relay6ch-${{ github.sha }}
+          path: delivery
+      - name: Publish exact tested candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd delivery
+          sha256sum --check SHA256SUMS
+          gh release create waveshare-relay6ch-v1.0.0 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'Waveshare ESP32-S3-Relay-6CH v1.0.0 candidate' --notes-file README.md *.bin *.json *.zip SHA256SUMS

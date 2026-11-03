@@ -1,5 +1,6 @@
 #include "Node.h"
 #include "Digest.h"
+#include "HardwareStep.h"
 #include "../../lib/RemoteFiles/vendor/tinydtls_sha2/sha2.h"
 namespace Infra {
 static const char* const poolNames[]={"tls","job","pending","bindings","internal","psram"};
@@ -16,8 +17,8 @@ int Node::inventoryStep(){
  inventoryNeeded=true;auto a=make(Action::Inventory,"participant","inventory");session(a);auto pools=a["pools"].to<JsonArray>();
  uint64_t amounts[]={1,capacity()?1ULL:0ULL,8,8,memory.internal_free,memory.psram_free};
  for(unsigned i=0;i<6;++i){auto p=pools.add<JsonObject>();char id[160],physical[160];snprintf(id,sizeof(id),"%s:%s",journal.state["participant_id"]|"",poolNames[i]);snprintf(physical,sizeof(physical),"%s:%s",journal.state["installation_id"]|"",poolNames[i]);p["pool_id"]=id;p["physical_identity"]=physical;p["resource_kind"]="stock";p["unit"]=poolUnits[i];p["allocatable_limit"]=amounts[i];p["external_usage"]=0;p["accounting_basis"]="external_only";p["inventory_revision"]=now();p["reservation_watermark"]=0;p["valid_until"]=net.wall(now())*1000+120000;}
- auto offers=a["offers"].to<JsonArray>();if(poolsEstablished)for(auto pin:config["service"]["providers"].as<JsonArrayConst>()){
-  auto item=offers.add<JsonObject>();item["provider_digest"]=pin["definition_digest"];item["package_digest"]=pin["package_digest"];auto o=item["offer"].to<JsonObject>();char id[200];snprintf(id,sizeof(id),"%s:%s@%u:infra",journal.state["participant_id"]|"",pin["provider_id"]|"",pin["revision"].as<unsigned>());o["offer_id"]=id;o["provider_id"]=pin["provider_id"];o["provider_revision"]=pin["revision"];o["local_instance_id"]="infra";o["offer_generation"]=sessionGeneration;o["installed_state"]="active";bool enabled=false;for(auto b:bindings())enabled|=bindingAllowed(configuration(),b)&&b["capability"]==pin["capability_id"];o["observed_health"]=capacity()&&roleReady(32000)&&enabled?"healthy":"capacity_blocked";o["probe_evidence"]["bootstrap"]="dependencies_storage_and_policy_verified";o["probe_evidence"]["mode"]=agentMode(configuration());o["probe_evidence"]["active_modes"]=configuration()["active_modes"];o["probe_evidence"]["hardware_qualification"]="pending";roleOffer(o,pin["capability_id"]|"");o["valid_until"]=net.wall(now())*1000+120000;for(const char* name:poolNames){char key[160];snprintf(key,sizeof(key),"%s:%s",journal.state["participant_id"]|"",name);o["pool_bindings"][name]=key;}
+ auto offers=a["offers"].to<JsonArray>();if(poolsEstablished)for(unsigned pi=inventoryBatch*4;pi<config["service"]["providers"].size()&&pi<(inventoryBatch+1)*4;++pi){auto pin=config["service"]["providers"][pi];
+  auto item=offers.add<JsonObject>();item["provider_digest"]=pin["definition_digest"];item["package_digest"]=pin["package_digest"];auto o=item["offer"].to<JsonObject>();char id[200];snprintf(id,sizeof(id),"%s:%s@%u:infra",journal.state["participant_id"]|"",pin["provider_id"]|"",pin["revision"].as<unsigned>());o["offer_id"]=id;o["provider_id"]=pin["provider_id"];o["provider_revision"]=pin["revision"];o["local_instance_id"]="infra";o["offer_generation"]=sessionGeneration;o["installed_state"]="active";bool physical=hardwareCapability(pin["capability_id"]|"");bool enabled=physical&&hardwareReady();for(auto b:bindings())enabled|=bindingAllowed(configuration(),b)&&b["capability"]==pin["capability_id"];o["observed_health"]=capacity()&&(physical||roleReady(32000))&&enabled?"healthy":"capacity_blocked";o["probe_evidence"]["bootstrap"]="dependencies_storage_and_policy_verified";o["probe_evidence"]["mode"]=agentMode(configuration());o["probe_evidence"]["active_modes"]=configuration()["active_modes"];o["probe_evidence"]["hardware_qualification"]="pending";roleOffer(o,pin["capability_id"]|"");o["valid_until"]=net.wall(now())*1000+120000;for(const char* name:poolNames){char key[160];snprintf(key,sizeof(key),"%s:%s",journal.state["participant_id"]|"",name);o["pool_bindings"][name]=key;}
  }
  return send(false);
 }
@@ -37,7 +38,7 @@ int Node::bindingStep(bool job){
 }
 int Node::jobStep(){
  auto j=journal.state["job"].as<JsonObject>();if(j.isNull())return 1;
- if(!roleReady(32000)&&j["phase"]!="awaiting_acceptance")return stopJob("role_handoff_or_lease_expired");
+ if(!hardwareCapability(j["spec"]["capability"]["capability_id"]|"")&&!roleReady(32000)&&j["phase"]!="awaiting_acceptance")return stopJob("role_handoff_or_lease_expired");
  if(j["phase"]=="offered"){
   auto s=j["spec"];auto a=make(Action::Plan,"resolve","plan");a["capability"]=s["capability"];a["requested_operation"]=s["operation"];a["inputs"]=s["inputs"];a["target_policy"]=s["target_policy"];a["resource_request"].set(s["resource_request"].isNull()?JsonObjectConst():s["resource_request"].as<JsonObjectConst>());if(a["resource_request"].isNull())a.remove("resource_request");a["budget"]=8;return send(false);
  }
@@ -45,6 +46,7 @@ int Node::jobStep(){
   if(j["boot_id"]!=boot||rebootRecovery)return stopJob("old_prepare_cannot_start");auto a=make(Action::Prepare,"execution","prepare_report");session(a);a["group_id"]=j["group_id"];a["confirmation"]="prepared";a["evidence"]["journal_sequence"]=journal.seq;return send(true);
  }
  if(j["phase"]=="awaiting_dependency_start")return now()>=leaseUntil?stopJob("dependency_prepare_expired"):1;
+ if(hardwareCapability(j["spec"]["capability"]["capability_id"]|"")&&(j["phase"]=="running"||j["phase"]=="hardware_intent"||j["phase"]=="hardware_armed"||j["phase"]=="hardware_done"||j["phase"]=="hardware_result"))return hardwareStep();
  if(j["phase"]=="running"){
   if(j["boot_id"]!=boot||rebootRecovery)return stopJob("old_grant_cannot_start");
   if(now()+15000>=leaseUntil){if(text(j["binding_id"],128)){auto a=make(Action::BindingRenew,"execution","binding_report");a["binding_id"]=j["binding_id"];a["generation"]=j["generation"];a["kind"]="renew";return send(false);}auto a=make(Action::Renew,"execution","renew");attempt(a);a["lease_ms"]=120000;return send(false);}
@@ -97,7 +99,7 @@ int Node::applySync(JsonObjectConst data){
  if(roleGrantDirty){roleGrantDirty=false;nextSync=0;return persist(Phase::Ready);}
  nextSync=data["coverage"]["complete"]==true?now()+config["service"]["contact_interval_ms"].as<unsigned>():now();status.last_sync_ms=now();
  for(auto c:data["controls"].as<JsonArrayConst>()){int r=control(c);if(r){nextSync=now();return r;}}
- if(!drain&&roleReady(32000)&&capacity()&&journal.state["job"].isNull()&&data["work_offers"].size()){
+ if(!drain&&workReady()&&capacity()&&journal.state["job"].isNull()&&data["work_offers"].size()){
   auto offer=data["work_offers"][0];if(!copy(assignmentId,sizeof(assignmentId),offer["assignment_id"]))return block(Phase::ProtocolBlocked,"assignment_identity_bound");auto a=make(Action::Assignment,"assignment","get");a["assignment_id"]=assignmentId;return send(false);
  }
  phase=Phase::Ready;return 1;
@@ -196,7 +198,7 @@ int Node::received(){
  case Action::Control:{char hash[65];canonicalDigest(d["data"],hash);if(d["seq"]!=controlSequence||strcmp(hash,controlHash))return block(Phase::ProtocolBlocked,"control_reference_digest_mismatch");int r=control(d);if(r)return r;phase=Phase::Ready;nextSync=0;return 1;}
  case Action::RejectPrepare:if(d["state"]!="aborted")return block(Phase::ProtocolBlocked,"rejection_not_acknowledged");return finish();
  case Action::Progress:case Action::Heartbeat:return finish();
- case Action::Inventory:if(d["profile"]!="esp32s3-infrastructure/1")return block(Phase::ProtocolBlocked,"inventory_profile_mismatch");inventoryRetryAt=0;if(!poolsEstablished){poolsEstablished=true;inventoryNeeded=true;}else{inventoryNeeded=false;nextInventory=now()+90000;}return finish();
+ case Action::Inventory:inventoryBatch=(inventoryBatch+1)%((config["service"]["providers"].size()+3)/4);if(d["profile"]!="esp32s3-infrastructure/1")return block(Phase::ProtocolBlocked,"inventory_profile_mismatch");inventoryRetryAt=0;if(!poolsEstablished){poolsEstablished=true;inventoryNeeded=true;}else{inventoryNeeded=false;nextInventory=now()+(config["service"]["providers"].size()>4?30000:90000);}return finish();
  case Action::Enroll:
   if(!text(d["id"],128))return block(Phase::ProtocolBlocked,"enrollment_identity_missing");journal.state["participant_id"]=d["id"];journal.state.remove("bootstrap");return finish();
  case Action::Open:
@@ -210,14 +212,19 @@ int Node::received(){
   auto p=config["service"]["providers"][inventoryIndex];if(d["definition_digest"]!=p["definition_digest"]||d["implementation_ref"]["package_digest"]!=p["package_digest"])return block(Phase::ProtocolBlocked,"provider_package_pin_mismatch");snprintf(offerId,sizeof(offerId),"%s:%s@%u:infra",journal.state["participant_id"]|"",p["provider_id"]|"",p["revision"].as<unsigned>());auto a=make(Action::OfferGet,"catalog","get");a["kind"]="offer";a["entity_id"]=offerId;return send(false);
  }
  case Action::OfferGet:{
-  inventoryRevision=missing?0:d["revision"].as<uint64_t>();auto p=config["service"]["providers"][inventoryIndex];auto a=make(Action::OfferPut,"catalog","offer_upsert");session(a);request["expected_revision"]=inventoryRevision;auto o=a["offer"].to<JsonObject>();o["offer_id"]=offerId;o["provider_id"]=p["provider_id"];o["provider_revision"]=p["revision"];o["local_instance_id"]="infra";o["offer_generation"]=sessionGeneration;o["installed_state"]="active";o["observed_health"]=capacity()&&modeAllows(configuration(),p["capability_id"]|"")?"healthy":"capacity_blocked";o["probe_evidence"]["bootstrap"]="dependencies_and_storage_verified";o["probe_evidence"]["mode"]=agentMode(configuration());o["probe_evidence"]["active_modes"]=configuration()["active_modes"];o["probe_evidence"]["hardware_qualification"]="pending";roleOffer(o,p["capability_id"]|"");o["valid_until"]=net.wall(now())*1000+90000;for(const char* name:poolNames){char key[160];snprintf(key,sizeof(key),"%s:%s",journal.state["participant_id"]|"",name);o["pool_bindings"][name]=key;}return send(false);
+  inventoryRevision=missing?0:d["revision"].as<uint64_t>();auto p=config["service"]["providers"][inventoryIndex];auto a=make(Action::OfferPut,"catalog","offer_upsert");session(a);request["expected_revision"]=inventoryRevision;auto o=a["offer"].to<JsonObject>();o["offer_id"]=offerId;o["provider_id"]=p["provider_id"];o["provider_revision"]=p["revision"];o["local_instance_id"]="infra";o["offer_generation"]=sessionGeneration;o["installed_state"]="active";o["observed_health"]=capacity()&&(hardwareCapability(p["capability_id"]|"")?hardwareReady():modeAllows(configuration(),p["capability_id"]|""))?"healthy":"capacity_blocked";o["probe_evidence"]["bootstrap"]="dependencies_and_storage_verified";o["probe_evidence"]["mode"]=agentMode(configuration());o["probe_evidence"]["active_modes"]=configuration()["active_modes"];o["probe_evidence"]["hardware_qualification"]="pending";roleOffer(o,p["capability_id"]|"");o["valid_until"]=net.wall(now())*1000+90000;for(const char* name:poolNames){char key[160];snprintf(key,sizeof(key),"%s:%s",journal.state["participant_id"]|"",name);o["pool_bindings"][name]=key;}return send(false);
  }
- case Action::OfferPut:if(++inventoryIndex==4){inventoryIndex=0;poolStage=true;inventoryNeeded=false;nextInventory=now()+45000;}return finish();
+ case Action::HardwareIntent:case Action::HardwareOutcome:{
+  auto j=journal.state["job"];if(!text(d["id"],128)||d["attempt_id"]!=j["attempt_id"]||d["request_hash"]!=j["grant"]["input_digest"])return block(Phase::ProtocolBlocked,"hardware_effect_receipt_mismatch");
+  j["phase"]=action==Action::HardwareIntent?"hardware_armed":"hardware_result";return finish(rebootRecovery?Phase::Recover:Phase::Ready);
+ }
+ case Action::OfferPut:if(++inventoryIndex==config["service"]["providers"].size()){inventoryIndex=0;poolStage=true;inventoryNeeded=false;nextInventory=now()+45000;}return finish();
  case Action::Assignment:{
-  if(!roleReady(32000)){phase=Phase::Ready;return 1;}
+  if(!workReady()){phase=Phase::Ready;return 1;}
   auto s=d["spec"].as<JsonObjectConst>();auto input=s["inputs"].as<JsonObjectConst>();auto pin=find(config["service"]["contracts"],"capability_id",s["capability"]["capability_id"]|"");
-  if(!keys(input,{"binding_id","binding_revision"})||measureJson(s)>1600||s["capability"]["contract_digest"]!=pin["contract_digest"]||s["capability"]["api_version"]!=1||!digest(d["spec_digest"])||!text(d["id"],128)||(s["mode"]!="job"&&s["mode"]!="desired_state")||s["artifact_refs"].size()||s["acceptance_policy"]["kind"]!="schema_only")return block(Phase::ProtocolBlocked,"assignment_not_admitted");
-  bool admitted=false;for(unsigned i=0;i<bindings().size();++i){auto b=bindingAt(i);if(b["binding_id"]==input["binding_id"]&&b["revision"]==input["binding_revision"]&&b["capability"]==s["capability"]["capability_id"]&&b["operation"]==s["operation"]&&b["effect_class"]==s["recovery_policy"]["effect_class"]&&!bindingDisabled[i])admitted=true;}
+  bool physical=hardwareCapability(s["capability"]["capability_id"]|"");
+  if((physical?!hardwareInput(s["capability"]["capability_id"],s["operation"]|"",input):!keys(input,{"binding_id","binding_revision"}))||measureJson(s)>1600||s["capability"]["contract_digest"]!=pin["contract_digest"]||s["capability"]["api_version"]!=1||!digest(d["spec_digest"])||!text(d["id"],128)||(s["mode"]!="job"&&s["mode"]!="desired_state")||s["artifact_refs"].size()||s["acceptance_policy"]["kind"]!="schema_only")return block(Phase::ProtocolBlocked,"assignment_not_admitted");
+  bool admitted=physical&&hardwareReady()&&s["mode"]=="job"&&s["recovery_policy"]["effect_class"]==hardwareEffect(s["capability"]["capability_id"]|"");for(unsigned i=0;i<bindings().size();++i){auto b=bindingAt(i);if(b["binding_id"]==input["binding_id"]&&b["revision"]==input["binding_revision"]&&b["capability"]==s["capability"]["capability_id"]&&b["operation"]==s["operation"]&&b["effect_class"]==s["recovery_policy"]["effect_class"]&&!bindingDisabled[i])admitted=true;}
   if(s["mode"]=="desired_state"&&s["operation"]!="maintain")admitted=false;
   if(!admitted||!capacity())return block(Phase::CapacityBlocked,"assignment_binding_or_capacity");auto j=journal.state["job"].to<JsonObject>();j["phase"]="offered";j["assignment_id"]=d["id"];j["assignment_revision"]=d["revision"];j["spec_digest"]=d["spec_digest"];j["spec"]=s;j["boot_id"]=boot;return persist(Phase::Ready);
  }
