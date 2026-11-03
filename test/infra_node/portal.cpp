@@ -72,6 +72,22 @@ int main(int argc,char** argv){assert(argc==3);std::ifstream file(argv[1]);polic
   else{assert(u.phase==Phase::SetupSave);char expected[65],actual[65];canonicalDigest(policy["service"]["providers"],expected);canonicalDigest(u.config["service"]["providers"],actual);assert(!strcmp(expected,actual));}
   stop(u);
  }
+ // Initial setup accepts a bearer-only webhook. Every declared secret must resolve.
+ for(bool missing:{true,false}){
+  initial(seed);Node u;initialize(u);step(u,2);form["pairing"]=savedPairing;
+  auto pair=form["pairing"].as<JsonObject>();
+  auto relay=pair["policy"]["relay"].to<JsonObject>();relay["schema_version"]=1;
+  relay["relay_id"]="test-relay";relay["url"]="https://bus.test/relay";relay["credential_ref"]="participant";relay["site_credential_ref"]="";
+  relay["allowed_origins"].add("https://receiver.test");relay["webhook_credential_refs"].add("callback");
+  auto sub=relay["subscriptions"].add<JsonObject>();sub["id"]="callback-1";sub["channel"]="relay.diagnostics";
+  sub["url"]="https://receiver.test/receipt";sub["enabled"]=true;sub["match"]["types"].add("relay.challenge");sub["match"]["filters"].to<JsonArray>();
+  sub["auth"]["header"]="Authorization";sub["auth"]["credential_ref"]="callback";
+  if(!missing)pair["credentials"]["callback"]="test-callback-token";
+  request(post(u,form));for(unsigned i=0;i<400&&u.phase!=Phase::SetupSave;++i)step(u);
+  if(missing)assert(u.phase==Phase::SetupPortal&&u.journal.writes==0&&output.find("400 Error")!=std::string::npos);
+  else assert(u.phase==Phase::SetupSave&&u.config["relay"]["subscriptions"].size()==1);
+  stop(u);
+ }
  // Both uncertain commit outcomes: only a proven complete snapshot earns Saved.
  for(bool applied:{false,true}){initial(seed);Node u;initialize(u);step(u,2);form["pairing"]=savedPairing;form["pairing"]["policy"]=policy;request(post(u,form));commit=applied;outcome=RISC_APP_DATA_COMMIT_UNKNOWN;for(unsigned i=0;i<400&&u.phase!=Phase::SetupFinish;++i)step(u);assert(u.phase==Phase::SetupFinish&&u.setupFailed==!applied);assert(strstr(u.portal.body,applied?"Settings saved.":"could not be committed"));stop(u);}
  puts("Portal: captive redirect, page/session, CSRF and framing, pin validation, save-before-disconnect, wrong Wi-Fi retry, durable reboot, DNS bounds, uncertain commits PASS");
