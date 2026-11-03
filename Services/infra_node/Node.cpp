@@ -1,5 +1,6 @@
 #include "Node.h"
 #include "Digest.h"
+#include "RelayWire.h"
 #include "../../lib/RemoteFiles/vendor/tinydtls_sha2/sha2.h"
 namespace Infra {
 static const char* const poolNames[]={"tls","job","pending","bindings","internal","psram"};
@@ -12,6 +13,48 @@ int Node::rotationStep(){
  const char* operation;Action act;if(r["phase"]=="staged"){operation="rotation_prepare";act=Action::RotationPrepare;}else if(r["phase"]=="prepared"){operation="rotation_activate";act=Action::RotationActivate;}else if(r["phase"]=="activated"){operation="rotation_confirm";act=Action::RotationConfirm;}else return block(Phase::AuthBlocked,"rotation_phase_invalid");
  auto a=make(act,"participant",operation);a["participant_id"]=journal.state["participant_id"];a["credential_sha256"]=r["credential_sha256"];if(act==Action::RotationPrepare){a["session_id"]=sessionId;a["generation"]=sessionGeneration;}return send(true);
 }
+int Node::cameraInventory(){
+ const auto pin=config["service"]["camera"]["provider"].as<JsonObjectConst>();
+ if(pin.isNull()){cameraOfferAt=now()+600000;return 0;}
+ if(now()>=cameraProbeAt){
+  cameraReady=camera->jpeg(nullptr,CameraMax)>0;
+  cameraProbeAt=now()+(cameraReady?60000:600000);
+ }
+ if(!cameraReady){cameraOfferAt=cameraProbeAt;return 0;}
+ auto a=make(Action::CameraInventory,"participant","inventory");
+ session(a);a["pools"].to<JsonArray>();
+ auto item=a["offers"].to<JsonArray>().add<JsonObject>();
+ item["provider_digest"]=pin["definition_digest"];item["package_digest"]=pin["package_digest"];
+ auto o=item["offer"].to<JsonObject>();char id[200];
+ snprintf(id,sizeof(id),"%s:%s@%u:camera",journal.state["participant_id"]|"",pin["provider_id"]|"",pin["revision"].as<unsigned>());
+ o["offer_id"]=id;o["provider_id"]=pin["provider_id"];o["provider_revision"]=pin["revision"];
+ o["local_instance_id"]="camera";o["offer_generation"]=sessionGeneration;
+ o["installed_state"]="active";o["observed_health"]="healthy";
+ o["probe_evidence"]["bootstrap"]="jpeg_frame_verified";o["valid_until"]=net.wall(now())*1000+120000;
+ for(const char* name:poolNames){char key[160];snprintf(key,sizeof(key),"%s:%s",journal.state["participant_id"]|"",name);o["pool_bindings"][name]=key;}
+ cameraOfferAt=now()+60000;return send(false);
+}
+int Node::capture(){
+ if(!cameraReady||!camera||!capacity())return stopJob("camera_unavailable");
+ auto* frame=static_cast<uint8_t*>(std::malloc(CameraMax));
+ if(!frame)return stopJob("camera_memory_unavailable");
+ const int32_t bytes=camera->jpeg(frame,CameraMax);
+ if(bytes<=0||bytes>int32_t(CameraMax)){
+  std::free(frame);cameraReady=false;cameraOfferAt=cameraProbeAt=now()+60000;
+  return stopJob("camera_capture_failed");
+ }
+ response.clear();response["media_type"]="image/jpeg";response["width"]=160;response["height"]=120;
+ response["bytes"]=bytes;auto chunks=response["base64_chunks"].to<JsonArray>();
+ // Non-final chunks are multiples of three bytes so encoded chunks concatenate.
+ char encodedChunk[1025];
+ for(int32_t offset=0;offset<bytes;offset+=768){
+  const size_t length=bytes-offset>768?768:bytes-offset;
+  relayBase64(frame+offset,length,encodedChunk);chunks.add(encodedChunk);
+ }
+ std::free(frame);
+ if(response.overflowed())return stopJob("camera_encoding_failed");
+ return result(response.as<JsonObjectConst>());
+}
 int Node::inventoryStep(){
  inventoryNeeded=true;auto a=make(Action::Inventory,"participant","inventory");session(a);auto pools=a["pools"].to<JsonArray>();
  uint64_t amounts[]={1,capacity()?1ULL:0ULL,8,8,memory.internal_free,memory.psram_free};
@@ -22,7 +65,7 @@ int Node::inventoryStep(){
  return send(false);
 }
 bool Node::bindingMatches(unsigned i)const{auto b=bindingAt(i);auto s=journal.state["job"]["spec"];return bindingAllowed(configuration(),b)&&b["binding_id"]==s["inputs"]["binding_id"]&&b["revision"]==s["inputs"]["binding_revision"]&&b["capability"]==s["capability"]["capability_id"]&&b["operation"]==s["operation"]&&b["effect_class"]==s["recovery_policy"]["effect_class"]&&!bindingDisabled[i];}
-bool Node::localPlan(JsonObjectConst p)const{auto pin=find(config["service"]["providers"],"capability_id",p["capability"]["capability_id"]|"");if(p["participant_id"]!=journal.state["participant_id"]||p["session_id"]!=sessionId||p["provider_digest"]!=pin["definition_digest"]||p["dependencies"].size()||p["resources"].size()>8)return false;
+bool Node::localPlan(JsonObjectConst p)const{auto pin=provider(p["capability"]["capability_id"]|"");if(pin.isNull()||p["participant_id"]!=journal.state["participant_id"]||p["session_id"]!=sessionId||p["provider_digest"]!=pin["definition_digest"]||p["dependencies"].size()||p["resources"].size()>8)return false;
  for(auto r:p["resources"].as<JsonArrayConst>()){const char* id=r["pool_id"]|"";bool found=false;uint64_t limits[]={1,1,8,8,memory.internal_free,memory.psram_free};for(unsigned i=0;i<6;++i){char name[160];snprintf(name,sizeof(name),"%s:%s",journal.state["participant_id"]|"",poolNames[i]);if(!strcmp(name,id)&&integer(r["amount"],0,limits[i]))found=true;}if(!found)return false;}return capacity();}
 int Node::bindingStep(bool job){
  if(!roleReady(cadence[bindingIndex].timeout+2000)){phase=Phase::Ready;return job?stopJob("role_assignment_not_active"):1;}
@@ -37,7 +80,7 @@ int Node::bindingStep(bool job){
 }
 int Node::jobStep(){
  auto j=journal.state["job"].as<JsonObject>();if(j.isNull())return 1;
- if(!roleReady(32000)&&j["phase"]!="awaiting_acceptance")return stopJob("role_handoff_or_lease_expired");
+ if(!cameraJob()&&!roleReady(32000)&&j["phase"]!="awaiting_acceptance")return stopJob("role_handoff_or_lease_expired");
  if(j["phase"]=="offered"){
   auto s=j["spec"];auto a=make(Action::Plan,"resolve","plan");a["capability"]=s["capability"];a["requested_operation"]=s["operation"];a["inputs"]=s["inputs"];a["target_policy"]=s["target_policy"];a["resource_request"].set(s["resource_request"].isNull()?JsonObjectConst():s["resource_request"].as<JsonObjectConst>());if(a["resource_request"].isNull())a.remove("resource_request");a["budget"]=8;return send(false);
  }
@@ -48,6 +91,7 @@ int Node::jobStep(){
  if(j["phase"]=="running"){
   if(j["boot_id"]!=boot||rebootRecovery)return stopJob("old_grant_cannot_start");
   if(now()+15000>=leaseUntil){if(text(j["binding_id"],128)){auto a=make(Action::BindingRenew,"execution","binding_report");a["binding_id"]=j["binding_id"];a["generation"]=j["generation"];a["kind"]="renew";return send(false);}auto a=make(Action::Renew,"execution","renew");attempt(a);a["lease_ms"]=120000;return send(false);}
+  if(cameraJob())return capture();
   const char* binding=j["spec"]["inputs"]["binding_id"]|"";for(unsigned i=0;i<bindings().size();++i)if(bindingAt(i)["binding_id"]==binding){bindingIndex=i;if(!bindingMatches(i))return stopJob("binding_revision_changed");if(cadence[i].ready(now()))return bindingStep(true);return 1;}return stopJob("binding_revoked");
  }
  if(j["phase"]=="awaiting_acceptance"){
@@ -68,13 +112,17 @@ int Node::control(JsonObjectConst c){
  }
  if(!strcmp(kind,"prepare")&&d["binding_ids"].size()){
   if(journal.state["job"]["group_id"]==d["group_id"]){cursor=c["seq"];return 0;}
-  if(!roleReady(32000)||!journal.state["job"].isNull()||d["binding_ids"].size()!=1||d["bindings"].size()!=1||!localPlan(d["bindings"][0])){cursor=c["seq"];auto a=make(Action::RejectPrepare,"execution","prepare_report");session(a);a["group_id"]=d["group_id"];a["confirmation"]="rejected";a["evidence"]["reason"]="dependency_capacity_or_pin_mismatch";return send(true);}
+  auto candidate=d["bindings"][0];
+  const bool photo=cameraSpec(candidate)&&cameraReady&&candidate["operation"]=="capture"&&
+   keys(candidate["inputs"].as<JsonObjectConst>(),{})&&candidate["capability"]["contract_digest"]==config["service"]["camera"]["contract"]["contract_digest"];
+  if((cameraSpec(candidate)?!photo:!roleReady(32000))||!journal.state["job"].isNull()||d["binding_ids"].size()!=1||d["bindings"].size()!=1||!localPlan(d["bindings"][0])){cursor=c["seq"];auto a=make(Action::RejectPrepare,"execution","prepare_report");session(a);a["group_id"]=d["group_id"];a["confirmation"]="rejected";a["evidence"]["reason"]="dependency_capacity_or_pin_mismatch";return send(true);}
   leaseUntil=grantDeadline(*this,d);auto plan=d["bindings"][0];auto j=journal.state["job"].to<JsonObject>();j["phase"]="prepared_dependency";j["boot_id"]=boot;j["binding_id"]=d["binding_ids"][0];j["attempt_id"]=d["attempt_id"];j["group_id"]=d["group_id"];j["generation"]=d["generation"];j["spec"]["capability"]=plan["capability"];j["spec"]["operation"]=plan["operation"];j["spec"]["mode"]="job";j["spec"]["inputs"]=plan["inputs"];for(auto b:bindings())if(b["binding_id"]==plan["inputs"]["binding_id"])j["spec"]["recovery_policy"]["effect_class"]=b["effect_class"];
-  bool valid=false;for(unsigned i=0;i<bindings().size();++i)valid|=bindingMatches(i);if(!valid)return stopJob("dependency_binding_not_admitted");cursor=c["seq"];return persist(Phase::Ready);
+  if(photo)j["spec"]["recovery_policy"]["effect_class"]="repeatable_compute";
+  bool valid=photo;for(unsigned i=0;i<bindings().size();++i)valid|=bindingMatches(i);if(!valid)return stopJob("dependency_binding_not_admitted");cursor=c["seq"];return persist(Phase::Ready);
  }
  if(!strcmp(kind,"dependency_start")){
   auto j=journal.state["job"];auto g=d["grant"];if(j["binding_id"]!=g["binding_id"]||j["boot_id"]!=boot||rebootRecovery){cursor=c["seq"];snapshotNeeded=true;snapshotStage=1;snapshotAfter[0]=0;return snapshotStep();}
-  auto pin=find(config["service"]["providers"],"capability_id",d["spec"]["capability"]["capability_id"]|"");char hash[65],specHash[65];canonicalDigest(d["spec"]["inputs"],hash);canonicalDigest(d["spec"],specHash);
+  auto pin=provider(d["spec"]["capability"]["capability_id"]|"");char hash[65],specHash[65];canonicalDigest(d["spec"]["inputs"],hash);canonicalDigest(d["spec"],specHash);
   if(g["provider_digest"]!=pin["definition_digest"]||g["input_digest"]!=hash||g["spec_digest"]!=specHash||g["session_id"]!=sessionId||g["generation"]!=j["generation"]||g["artifact_ids"].size()||!integer(g["lease_ms"],1000,120000))return stopJob("dependency_grant_mismatch");
   j["spec"]=d["spec"];j["grant"]=g;j["phase"]="running";leaseUntil=grantDeadline(*this,g);cursor=c["seq"];return persist(Phase::Ready);
  }
@@ -97,7 +145,7 @@ int Node::applySync(JsonObjectConst data){
  if(roleGrantDirty){roleGrantDirty=false;nextSync=0;return persist(Phase::Ready);}
  nextSync=data["coverage"]["complete"]==true?now()+config["service"]["contact_interval_ms"].as<unsigned>():now();status.last_sync_ms=now();
  for(auto c:data["controls"].as<JsonArrayConst>()){int r=control(c);if(r){nextSync=now();return r;}}
- if(!drain&&roleReady(32000)&&capacity()&&journal.state["job"].isNull()&&data["work_offers"].size()){
+ if(!drain&&(roleReady(32000)||(cameraReady&&data["work_offers"][0]["capability"]["capability_id"]=="camera.capture"))&&capacity()&&journal.state["job"].isNull()&&data["work_offers"].size()){
   auto offer=data["work_offers"][0];if(!copy(assignmentId,sizeof(assignmentId),offer["assignment_id"]))return block(Phase::ProtocolBlocked,"assignment_identity_bound");auto a=make(Action::Assignment,"assignment","get");a["assignment_id"]=assignmentId;return send(false);
  }
  phase=Phase::Ready;return 1;
@@ -143,6 +191,12 @@ int Node::rejectSavedRequest(){
 }
 int Node::received(){
  if(relayAction())return relayReceived();
+ if(action==Action::CameraInventory){
+  const bool accepted=!net.outcome&&net.info.status_code==200&&parse(response,net.body,net.size)&&
+   response["protocol_version"]=="1.0"&&response["status"]=="completed"&&
+   response["data"]["offers"].size()==1&&response["data"]["offers"][0]["offer_id"]==request["arguments"]["offers"][0]["offer"]["offer_id"];
+  reason(Phase::Ready,accepted?"camera_offer_refreshed":"camera_offer_retry");return 1;
+ }
  if(net.outcome){if(net.outcome==RISC_HTTP_TIMEOUT)status.timed_out++;if(net.info.sent_bytes)status.unknown++;if(action==Action::Probe)return probeResult();const auto result=backoff(net.info.sent_bytes?"outcome_unknown_same_identity":"network_failure");if(result==1)transportReason();return result;}
  if(action==Action::Probe){cadence[bindingIndex].lastCompleted=now();return probeResult();}
  if(net.info.status_code>=500||net.info.status_code==408||net.info.status_code==425||net.info.status_code==429)return serviceRetry("service_http_retry");
@@ -200,7 +254,7 @@ int Node::received(){
  case Action::Enroll:
   if(!text(d["id"],128))return block(Phase::ProtocolBlocked,"enrollment_identity_missing");journal.state["participant_id"]=d["id"];journal.state.remove("bootstrap");return finish();
  case Action::Open:
-  if(!copy(sessionId,sizeof(sessionId),d["id"])||!integer(d["generation"],1,9007199254740991ULL)||d["embedded_profile"]!="esp32s3-infrastructure/1")return block(Phase::ProtocolBlocked,"embedded_profile_not_negotiated");sessionGeneration=d["generation"];cursor=d["cursor"]|0ULL;nextSync=0;inventoryNeeded=true;poolStage=true;inventoryIndex=0;if(!roleGrant(d["role_assignment"]))return block(Phase::ProtocolBlocked,"role_assignment_invalid");if(roleGrantDirty){roleGrantDirty=false;return persist(Phase::Ready);}return finish();
+  if(!copy(sessionId,sizeof(sessionId),d["id"])||!integer(d["generation"],1,9007199254740991ULL)||d["embedded_profile"]!="esp32s3-infrastructure/1")return block(Phase::ProtocolBlocked,"embedded_profile_not_negotiated");sessionGeneration=d["generation"];cameraOfferAt=0;cursor=d["cursor"]|0ULL;nextSync=0;inventoryNeeded=true;poolStage=true;inventoryIndex=0;if(!roleGrant(d["role_assignment"]))return block(Phase::ProtocolBlocked,"role_assignment_invalid");if(roleGrantDirty){roleGrantDirty=false;return persist(Phase::Ready);}return finish();
  case Action::Sync:return applySync(d);
  case Action::PoolGet:{
   inventoryRevision=missing?0:d["revision"].as<uint64_t>();auto a=make(Action::PoolPut,"catalog","pool_observe");session(a);request["expected_revision"]=inventoryRevision;auto p=a["pool"].to<JsonObject>();p["pool_id"]=poolId;char physical[160];snprintf(physical,sizeof(physical),"%s:%s",journal.state["installation_id"]|"",poolNames[inventoryIndex]);p["physical_identity"]=physical;p["resource_kind"]="stock";p["unit"]=poolUnits[inventoryIndex];uint64_t capacities[]={1,capacity()?1ULL:0ULL,8,8,memory.internal_free,memory.psram_free};p["allocatable_limit"]=capacities[inventoryIndex];p["external_usage"]=0;p["accounting_basis"]="external_only";p["inventory_revision"]=now();p["reservation_watermark"]=d["reservation_watermark"]|0;p["valid_until"]=net.wall(now())*1000+90000;return send(false);
@@ -214,15 +268,18 @@ int Node::received(){
  }
  case Action::OfferPut:if(++inventoryIndex==4){inventoryIndex=0;poolStage=true;inventoryNeeded=false;nextInventory=now()+45000;}return finish();
  case Action::Assignment:{
-  if(!roleReady(32000)){phase=Phase::Ready;return 1;}
   auto s=d["spec"].as<JsonObjectConst>();auto input=s["inputs"].as<JsonObjectConst>();auto pin=find(config["service"]["contracts"],"capability_id",s["capability"]["capability_id"]|"");
-  if(!keys(input,{"binding_id","binding_revision"})||measureJson(s)>1600||s["capability"]["contract_digest"]!=pin["contract_digest"]||s["capability"]["api_version"]!=1||!digest(d["spec_digest"])||!text(d["id"],128)||(s["mode"]!="job"&&s["mode"]!="desired_state")||s["artifact_refs"].size()||s["acceptance_policy"]["kind"]!="schema_only")return block(Phase::ProtocolBlocked,"assignment_not_admitted");
-  bool admitted=false;for(unsigned i=0;i<bindings().size();++i){auto b=bindingAt(i);if(b["binding_id"]==input["binding_id"]&&b["revision"]==input["binding_revision"]&&b["capability"]==s["capability"]["capability_id"]&&b["operation"]==s["operation"]&&b["effect_class"]==s["recovery_policy"]["effect_class"]&&!bindingDisabled[i])admitted=true;}
+  const bool photo=cameraSpec(s);
+  if(photo)pin=config["service"]["camera"]["contract"].as<JsonObjectConst>();
+  if((photo?!cameraReady:!roleReady(32000))){phase=Phase::Ready;return 1;}
+  const bool inputValid=photo?keys(input,{}):keys(input,{"binding_id","binding_revision"});
+  if(!inputValid||pin.isNull()||measureJson(s)>1600||s["capability"]["contract_digest"]!=pin["contract_digest"]||s["capability"]["api_version"]!=1||!digest(d["spec_digest"])||!text(d["id"],128)||(s["mode"]!="job"&&s["mode"]!="desired_state")||s["artifact_refs"].size()||s["acceptance_policy"]["kind"]!="schema_only")return block(Phase::ProtocolBlocked,"assignment_not_admitted");
+  bool admitted=photo&&s["operation"]=="capture"&&s["mode"]=="job"&&s["recovery_policy"]["effect_class"]=="repeatable_compute";for(unsigned i=0;!photo&&i<bindings().size();++i){auto b=bindingAt(i);if(b["binding_id"]==input["binding_id"]&&b["revision"]==input["binding_revision"]&&b["capability"]==s["capability"]["capability_id"]&&b["operation"]==s["operation"]&&b["effect_class"]==s["recovery_policy"]["effect_class"]&&!bindingDisabled[i])admitted=true;}
   if(s["mode"]=="desired_state"&&s["operation"]!="maintain")admitted=false;
   if(!admitted||!capacity())return block(Phase::CapacityBlocked,"assignment_binding_or_capacity");auto j=journal.state["job"].to<JsonObject>();j["phase"]="offered";j["assignment_id"]=d["id"];j["assignment_revision"]=d["revision"];j["spec_digest"]=d["spec_digest"];j["spec"]=s;j["boot_id"]=boot;return persist(Phase::Ready);
  }
  case Action::Plan:{
-  auto j=journal.state["job"];auto p=find(config["service"]["providers"],"capability_id",j["spec"]["capability"]["capability_id"]|"");bool admitted=false;
+  auto j=journal.state["job"];auto p=provider(j["spec"]["capability"]["capability_id"]|"");bool admitted=false;
   for(auto c:d["candidates"].as<JsonArrayConst>())if(c["feasibility"]=="ready"&&localPlan(c))admitted=true;
   if(!admitted||!text(d["plan_id"],128))return stopJob("plan_not_locally_admitted");auto a=make(Action::Claim,"execution","claim");session(a);a["assignment_id"]=j["assignment_id"];a["plan_id"]=d["plan_id"];request["expected_revision"]=j["assignment_revision"];return send(true);
  }
@@ -230,7 +287,7 @@ int Node::received(){
   auto j=journal.state["job"];if(d["authority"]!="prepare_only"||!text(d["id"],128)||!text(d["group_id"],128)||d["assignment_id"]!=j["assignment_id"])return block(Phase::ProtocolBlocked,"claim_grant_mismatch");j["attempt_id"]=d["id"];j["group_id"]=d["group_id"];j["generation"]=d["generation"];j["phase"]="prepared";return finish(rebootRecovery?Phase::Recover:Phase::Ready);
  }
  case Action::Prepare:{
-  auto j=journal.state["job"];if(text(j["binding_id"],128)){if(d["state"]!="starting"&&d["state"]!="preparing")return stopJob("dependency_prepare_not_confirmed");j["phase"]="awaiting_dependency_start";nextSync=0;return finish(rebootRecovery?Phase::Recover:Phase::Ready);}auto g=d["grant"].as<JsonObjectConst>();auto p=find(config["service"]["providers"],"capability_id",j["spec"]["capability"]["capability_id"]|"");if(d["state"]!="starting"||g["attempt_id"]!=j["attempt_id"]||g["generation"]!=j["generation"]||g["spec_digest"]!=j["spec_digest"]||g["provider_digest"]!=p["definition_digest"]||!digest(g["input_digest"])||g["allowed_effects"]!=j["spec"]["recovery_policy"]["effect_class"]||!integer(g["lease_ms"],1000,120000))return block(Phase::ProtocolBlocked,"start_grant_mismatch");char inputHash[65];canonicalDigest(j["spec"]["inputs"],inputHash);if(g["input_digest"]!=inputHash)return block(Phase::ProtocolBlocked,"grant_input_digest_mismatch");j["grant"]=g;j["phase"]="running";leaseUntil=grantDeadline(*this,g);return finish(rebootRecovery?Phase::Recover:Phase::Ready);
+  auto j=journal.state["job"];if(text(j["binding_id"],128)){if(d["state"]!="starting"&&d["state"]!="preparing")return stopJob("dependency_prepare_not_confirmed");j["phase"]="awaiting_dependency_start";nextSync=0;return finish(rebootRecovery?Phase::Recover:Phase::Ready);}auto g=d["grant"].as<JsonObjectConst>();auto p=provider(j["spec"]["capability"]["capability_id"]|"");if(d["state"]!="starting"||g["attempt_id"]!=j["attempt_id"]||g["generation"]!=j["generation"]||g["spec_digest"]!=j["spec_digest"]||g["provider_digest"]!=p["definition_digest"]||!digest(g["input_digest"])||g["allowed_effects"]!=j["spec"]["recovery_policy"]["effect_class"]||!integer(g["lease_ms"],1000,120000))return block(Phase::ProtocolBlocked,"start_grant_mismatch");char inputHash[65];canonicalDigest(j["spec"]["inputs"],inputHash);if(g["input_digest"]!=inputHash)return block(Phase::ProtocolBlocked,"grant_input_digest_mismatch");j["grant"]=g;j["phase"]="running";leaseUntil=grantDeadline(*this,g);return finish(rebootRecovery?Phase::Recover:Phase::Ready);
  }
  case Action::BindingRenew:if(d["id"]!=journal.state["job"]["binding_id"]||d["ownership"]!="current")return stopJob("dependency_renewal_mismatch");leaseUntil=grantDeadline(*this,d["grant"]);return finish();
  case Action::BindingStop:case Action::BindingResult:{if(d["recorded"]!=true||d["quiescent"]!=true||d["binding_id"]!=journal.state["job"]["binding_id"])return block(Phase::ProtocolBlocked,"dependency_receipt_mismatch");auto p=journal.state["pending"][0];if(p["checkpoint"].is<JsonObject>())journal.state["checkpoints"][p["binding_id"]|""]=p["checkpoint"];journal.state["job"]=nullptr;return finish(rebootRecovery?Phase::Recover:Phase::Ready);}

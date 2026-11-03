@@ -1,5 +1,6 @@
 #pragma once
 #include "Policy.h"
+#include <RiscStillCameraV1.h>
 #include "Journal.h"
 #include "Transport.h"
 #include "Station.h"
@@ -10,13 +11,25 @@
 #include <RiscPlatformRecoveryV1.h>
 namespace Infra {
 enum class Phase:uint32_t {Cold,Recover,Connect,Nonce,Ready,Send,Receive,Save,Backoff,Drain,Stopped,AuthBlocked,CapacityBlocked,StorageBlocked,Retained,ProtocolBlocked,SetupStart,SetupPortal,SetupSave,SetupFinish,SetupLeave,SetupJoin,SetupRetry};
-enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth,RelayIdentity,RelayEnrollmentReview,RelayEnrollmentComplete,RelayLoad,RelayReceipt,RelayVerify,RelayEnrollmentVerified,RelayLease,RelayCheckpoint,RelayChallenge,RelayChallengeStatus};
+enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth,RelayIdentity,RelayEnrollmentReview,RelayEnrollmentComplete,RelayLoad,RelayReceipt,RelayVerify,RelayEnrollmentVerified,RelayLease,RelayCheckpoint,RelayChallenge,RelayChallengeStatus,CameraInventory};
 class Node {
  public:
  risc_platform_recovery_v1 recovery{};risc_recovery_snapshot_v1 recoveryHealth{};unsigned networkFailures=0;uint64_t networkFailedSince=0,phaseSince=0;Phase supervisedPhase=Phase::Cold;
  // Participant failures have their own circuit. They must not silence the
  // independently authenticated relay or overwrite unresolved request custody.
  bool serviceBlocked=false;unsigned serviceFailures=0;uint64_t serviceRetryAt=0;char serviceError[64]{};
+ const risc_still_camera_v1* camera=nullptr;
+ bool cameraReady=false;
+ uint64_t cameraProbeAt=0,cameraOfferAt=0;
+ static constexpr uint32_t CameraMax=8192;
+ bool cameraSpec(JsonVariantConst spec)const{return spec["capability"]["capability_id"]=="camera.capture";}
+ bool cameraJob()const{return cameraSpec(journal.state["job"]["spec"]);}
+ bool canReceiveWork()const{return roleReady(32000)||cameraReady;}
+ JsonObjectConst provider(const char* cap)const{
+  if(!strcmp(cap,"camera.capture"))return config["service"]["camera"]["provider"];
+  return find(config["service"]["providers"],"capability_id",cap);
+ }
+ int cameraInventory();int capture();
  Journal journal;Transport net;Portal portal;uint64_t setupDeadline=0;bool setupFailed=false,setupRecovery=false;infra_station_v1 station{};risc_platform_clock_api_v1 clock{};risc_entropy_v1 entropy{};
  Allocator configMemory{196608},exchangeMemory{262144},responseMemory{393216};JsonDocument config{&configMemory},request{&exchangeMemory},response{&responseMemory};
  risc_infra_memory_v1 memory{};risc_infra_status_v1 status{};Cadence cadence[8]{};char cursors[8][513]{};
@@ -105,7 +118,7 @@ class Node {
  int send(bool critical){
   if(request.overflowed()||measureJson(request)>16384)return block(Phase::CapacityBlocked,"request_exceeds_bound");
   durable=critical;
-  if(critical){auto pending=journal.state["pending"].as<JsonArray>();if(pending.size()>=PendingMax)return block(Phase::CapacityBlocked,"pending_full");auto p=pending.add<JsonObject>();p["action"]=static_cast<unsigned>(action);p["boot_id"]=boot;p["request"].set(request);if(measureJson(p)>RecordMax){pending.remove(pending.size()-1);return block(Phase::CapacityBlocked,"durable_record_exceeds_bound");}return persist(Phase::Send);}
+  if(critical){auto pending=journal.state["pending"].as<JsonArray>();if(pending.size()>=PendingMax)return block(Phase::CapacityBlocked,"pending_full");auto p=pending.add<JsonObject>();p["action"]=static_cast<unsigned>(action);p["boot_id"]=boot;p["request"].set(request);if(measureJson(p)>pendingRecordLimit(p)||journal.state.overflowed()||measureJson(journal.state)>StateMax-33){pending.remove(pending.size()-1);return block(Phase::CapacityBlocked,"durable_record_exceeds_bound");}return persist(Phase::Send);}
   reason(Phase::Send,"request_ready");return 1;
  }
  bool durableAction(unsigned a)const{switch(static_cast<Action>(a)){case Action::Enroll:case Action::Claim:case Action::Prepare:case Action::Result:case Action::Stop:case Action::Observe:case Action::DesiredReport:case Action::RotationPrepare:case Action::RotationActivate:case Action::RotationConfirm:case Action::BindingResult:case Action::BindingStop:case Action::RejectPrepare:return true;default:return false;}}
@@ -198,13 +211,14 @@ class Node {
   const bool ready=capacity();if(ready!=lastCapacity){lastCapacity=ready;inventoryNeeded=true;}if(!ready)copy(status.reason,sizeof(status.reason),"low_water_optional_admission_blocked");
   if(!relayYield){int r=relayStep();if(r)return r;}relayYield=false;
   for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();if(roleReady(cadence[i].timeout+2000)&&!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(job["phase"]=="running"&&job["spec"]["inputs"]["binding_id"]==bindingAt(i)["binding_id"]);}}
-  if(!job.isNull()&&(job["phase"]!="running"||now()+15000>=leaseUntil))return jobStep();
+  if(!job.isNull()&&(cameraJob()||job["phase"]!="running"||now()+15000>=leaseUntil))return jobStep();
   if(!job.isNull()&&job["phase"]=="running"){for(unsigned i=0;i<bindings().size();++i)if(bindingAt(i)["binding_id"]==job["spec"]["inputs"]["binding_id"]&&cadence[i].ready(now()))return jobStep();}
   if((inventoryNeeded||now()>=nextInventory)&&now()>=inventoryRetryAt)return inventoryStep();
+  if(ready&&poolsEstablished&&!inventoryNeeded&&job.isNull()&&camera&&now()>=cameraOfferAt){int r=cameraInventory();if(r)return r;}
   for(unsigned priority=0;priority<2;++priority)for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(!roleReady(cadence[i].timeout+2000)||bindingDisabled[i]||b["required"].as<bool>()!=(priority==0)||!cadence[i].ready(now())||(priority&&(!capacity()||now()+cadence[i].timeout+5000>=nextSync)))continue;bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}
   return 1;
  }
- int sync(){auto a=make(Action::Sync,"participant","sync");a["session_id"]=sessionId;a["generation"]=sessionGeneration;char c[24];snprintf(c,sizeof(c),"%llu",static_cast<unsigned long long>(cursor));a["cursor"]=c;a["items"].to<JsonArray>();a["requested_work"]=!inventoryNeeded&&capacity()&&roleReady(32000)&&journal.state["job"].isNull()?1:0;roleRequest(a);return send(false);}
+ int sync(){auto a=make(Action::Sync,"participant","sync");a["session_id"]=sessionId;a["generation"]=sessionGeneration;char c[24];snprintf(c,sizeof(c),"%llu",static_cast<unsigned long long>(cursor));a["cursor"]=c;a["items"].to<JsonArray>();a["requested_work"]=!inventoryNeeded&&capacity()&&canReceiveWork()&&journal.state["job"].isNull()?1:0;roleRequest(a);return send(false);}
  int setupStep();bool acceptSetup();
  bool bindingMatches(unsigned)const;bool localPlan(JsonObjectConst)const;int snapshotStep();int control(JsonObjectConst);int inventoryStep();int jobStep();int bindingStep(bool job);int received();int result(JsonObjectConst data);int probeResult();int applySync(JsonObjectConst data);int rotationStep();
  void dispose(){if(phase!=Phase::Stopped&&phase!=Phase::Cold)return;portal.dispose();net.dispose();journal.dispose();config.clear();request.clear();response.clear();if(encoded){volatile char* p=encoded;for(unsigned i=0;i<16385;++i)p[i]=0;std::free(encoded);encoded=nullptr;}}
