@@ -1,0 +1,1387 @@
+{
+  "full_matrix_sha256": "c3a1cc9c472c3f11c1efdcd0663f80407a92a4e7a2b248286c91939941b559bd",
+  "full_matrix_workspace_file": "APP-CAPABILITY-CONTRACT-COVERAGE.json",
+  "inventory_evidence_url": "https://chatgpt.com/api/library/files/libfile_470ebdcac6588191bf5fc66ef94b4b9f/download",
+  "contracts": [
+    {
+      "capability": "alarm.service",
+      "api": 1,
+      "declaration_count": 62,
+      "modes": {
+        "requires": 62
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "contexts",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "lora_messages",
+        "ota_update",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "alarm.service",
+      "api": 2,
+      "declaration_count": 40,
+      "modes": {
+        "requires": 40
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "contexts",
+        "countdown",
+        "file_browser",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "usb_sd_transfer",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "app.catalog",
+      "api": 1,
+      "declaration_count": 24,
+      "modes": {
+        "requires": 21,
+        "optional": 3
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "audio_spectrum",
+        "contexts",
+        "file_browser",
+        "lora_messages",
+        "settings",
+        "springboard",
+        "timecard",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "audio.input",
+      "api": 1,
+      "declaration_count": 3,
+      "modes": {
+        "requires": 3
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "audio_spectrum"
+      ]
+    },
+    {
+      "capability": "audio.output",
+      "api": 1,
+      "declaration_count": 3,
+      "modes": {
+        "requires": 3
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "frequency_generator"
+      ]
+    },
+    {
+      "capability": "bluetooth.hci",
+      "api": 1,
+      "declaration_count": 64,
+      "modes": {
+        "requires": 63,
+        "optional": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "lora_messages",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "bluetooth.hid",
+      "api": 1,
+      "declaration_count": 10,
+      "modes": {
+        "requires": 10
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "ble_buttons",
+        "ble_touchpad"
+      ]
+    },
+    {
+      "capability": "bluetooth.sensors",
+      "api": 1,
+      "declaration_count": 5,
+      "modes": {
+        "requires": 5
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "ble_scanner"
+      ]
+    },
+    {
+      "capability": "bluetooth.serial",
+      "api": 1,
+      "declaration_count": 4,
+      "modes": {
+        "requires": 4
+      },
+      "products": [
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "obd-dashboard",
+        "obd-test"
+      ]
+    },
+    {
+      "capability": "bluetooth.session-setup",
+      "api": 1,
+      "declaration_count": 4,
+      "modes": {
+        "requires": 4
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "file_browser"
+      ]
+    },
+    {
+      "capability": "board.battery",
+      "api": 1,
+      "declaration_count": 103,
+      "modes": {
+        "requires": 98,
+        "optional": 5
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "contexts",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "gameboy",
+        "lora_messages",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "watch-bringup",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "contexts.service",
+      "api": 1,
+      "declaration_count": 68,
+      "modes": {
+        "requires": 67,
+        "optional": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "contexts",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "lora_messages",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "crypto.entropy",
+      "api": 1,
+      "declaration_count": 4,
+      "modes": {
+        "requires": 4
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "file_browser"
+      ]
+    },
+    {
+      "capability": "display.output",
+      "api": 1,
+      "declaration_count": 112,
+      "modes": {
+        "requires": 112
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "gameboy",
+        "hollow_trail",
+        "lora_messages",
+        "model_viewer",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "usb_sd_transfer",
+        "watch-bringup",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "display.power",
+      "api": 1,
+      "declaration_count": 69,
+      "modes": {
+        "requires": 68,
+        "optional": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "lora_messages",
+        "ota_update",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "file.open",
+      "api": 1,
+      "declaration_count": 12,
+      "modes": {
+        "requires": 12
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "daily-digest",
+        "ebook-reader",
+        "file_browser",
+        "gameboy",
+        "model_viewer"
+      ]
+    },
+    {
+      "capability": "file.open.source",
+      "api": 1,
+      "declaration_count": 6,
+      "modes": {
+        "requires": 6
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "file_browser",
+        "model_viewer"
+      ]
+    },
+    {
+      "capability": "haptic.effect",
+      "api": 1,
+      "declaration_count": 3,
+      "modes": {
+        "optional": 3
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "watch-bringup"
+      ]
+    },
+    {
+      "capability": "input.navigation",
+      "api": 1,
+      "declaration_count": 43,
+      "modes": {
+        "requires": 43
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "file_browser",
+        "gameboy",
+        "hollow_trail",
+        "model_viewer",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "usb_sd_transfer",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "input.power-key",
+      "api": 1,
+      "declaration_count": 69,
+      "modes": {
+        "requires": 68,
+        "optional": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "lora_messages",
+        "ota_update",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "input.touch.raw",
+      "api": 1,
+      "declaration_count": 112,
+      "modes": {
+        "requires": 112
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "gameboy",
+        "hollow_trail",
+        "lora_messages",
+        "model_viewer",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "usb_sd_transfer",
+        "watch-bringup",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "memory.heap",
+      "api": 1,
+      "declaration_count": 2,
+      "modes": {
+        "requires": 2
+      },
+      "products": [
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "ebook-reader"
+      ]
+    },
+    {
+      "capability": "motion.accel",
+      "api": 1,
+      "declaration_count": 64,
+      "modes": {
+        "requires": 59,
+        "optional": 5
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "lora_messages",
+        "ota_update",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "watch-bringup",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "net.http-client",
+      "api": 1,
+      "declaration_count": 2,
+      "modes": {
+        "requires": 2
+      },
+      "products": [
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "daily-digest"
+      ]
+    },
+    {
+      "capability": "net.time-sample",
+      "api": 1,
+      "declaration_count": 1,
+      "modes": {
+        "requires": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C"
+      ],
+      "application_ids": [
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "net.wifi",
+      "api": 1,
+      "declaration_count": 68,
+      "modes": {
+        "requires": 67,
+        "optional": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "daily-digest",
+        "file_browser",
+        "frequency_generator",
+        "lora_messages",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "network.tcp.listener",
+      "api": 1,
+      "declaration_count": 4,
+      "modes": {
+        "requires": 4
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "file_browser"
+      ]
+    },
+    {
+      "capability": "power.sleep",
+      "api": 1,
+      "declaration_count": 69,
+      "modes": {
+        "requires": 68,
+        "optional": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "lora_messages",
+        "ota_update",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "radio.iq",
+      "api": 1,
+      "declaration_count": 5,
+      "modes": {
+        "requires": 5
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "waterfall"
+      ]
+    },
+    {
+      "capability": "radio.lora",
+      "api": 2,
+      "declaration_count": 3,
+      "modes": {
+        "optional": 3
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "lora_messages"
+      ]
+    },
+    {
+      "capability": "random.bytes",
+      "api": 1,
+      "declaration_count": 2,
+      "modes": {
+        "requires": 2
+      },
+      "products": [
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "ebook-reader"
+      ]
+    },
+    {
+      "capability": "rtc.clock",
+      "api": 2,
+      "declaration_count": 68,
+      "modes": {
+        "requires": 64,
+        "optional": 4
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "contexts",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "lora_messages",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "watch-bringup",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "runtime.provider-promotion",
+      "api": 1,
+      "declaration_count": 4,
+      "modes": {
+        "requires": 4
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "paper_clock",
+        "twatch-clock"
+      ]
+    },
+    {
+      "capability": "runtime.realtime",
+      "api": 1,
+      "declaration_count": 36,
+      "modes": {
+        "requires": 36
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "contexts",
+        "countdown",
+        "daily-digest",
+        "file_browser",
+        "gameboy",
+        "ota_update",
+        "points_in_time",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "runtime.realtime-control",
+      "api": 1,
+      "declaration_count": 7,
+      "modes": {
+        "requires": 7
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "paper_clock",
+        "settings",
+        "twatch-clock",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "runtime.retained-wake",
+      "api": 1,
+      "declaration_count": 4,
+      "modes": {
+        "requires": 3,
+        "optional": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "paper_clock",
+        "twatch-clock"
+      ]
+    },
+    {
+      "capability": "software.installed-apps",
+      "api": 1,
+      "declaration_count": 5,
+      "modes": {
+        "requires": 5
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "app_store",
+        "paper_clock",
+        "springboard",
+        "twatch-clock"
+      ]
+    },
+    {
+      "capability": "software.update.apps",
+      "api": 1,
+      "declaration_count": 4,
+      "modes": {
+        "requires": 4
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "app_store"
+      ]
+    },
+    {
+      "capability": "software.update.firmware",
+      "api": 1,
+      "declaration_count": 4,
+      "modes": {
+        "requires": 4
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "ota_update"
+      ]
+    },
+    {
+      "capability": "sound.haptic",
+      "api": 1,
+      "declaration_count": 1,
+      "modes": {
+        "optional": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C"
+      ],
+      "application_ids": [
+        "watch-bringup"
+      ]
+    },
+    {
+      "capability": "storage.app-data",
+      "api": 1,
+      "declaration_count": 29,
+      "modes": {
+        "requires": 28,
+        "optional": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "audio_spectrum",
+        "lists",
+        "model_viewer",
+        "paper_clock",
+        "points_in_time",
+        "timecard",
+        "twatch-clock",
+        "waterfall"
+      ]
+    },
+    {
+      "capability": "storage.app-data.export",
+      "api": 1,
+      "declaration_count": 3,
+      "modes": {
+        "requires": 3
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "file_browser"
+      ]
+    },
+    {
+      "capability": "storage.files",
+      "api": 1,
+      "declaration_count": 3,
+      "modes": {
+        "optional": 3
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "twatch-clock"
+      ]
+    },
+    {
+      "capability": "storage.installed-files",
+      "api": 1,
+      "declaration_count": 4,
+      "modes": {
+        "requires": 4
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "file_browser"
+      ]
+    },
+    {
+      "capability": "storage.key-value",
+      "api": 1,
+      "declaration_count": 105,
+      "modes": {
+        "requires": 104,
+        "optional": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "contexts",
+        "countdown",
+        "daily-digest",
+        "file_browser",
+        "frequency_generator",
+        "gameboy",
+        "lora_messages",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "storage.key-value",
+      "api": 2,
+      "declaration_count": 8,
+      "modes": {
+        "requires": 8
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "audio_spectrum",
+        "waterfall"
+      ]
+    },
+    {
+      "capability": "storage.key-value.atomic",
+      "api": 1,
+      "declaration_count": 45,
+      "modes": {
+        "requires": 45
+      },
+      "products": [
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "contexts",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "storage.key-value.availability",
+      "api": 1,
+      "declaration_count": 4,
+      "modes": {
+        "requires": 4
+      },
+      "products": [
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "paper_clock",
+        "settings",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "storage.preferences",
+      "api": 1,
+      "declaration_count": 4,
+      "modes": {
+        "requires": 4
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06"
+      ],
+      "application_ids": [
+        "springboard",
+        "twatch-clock"
+      ]
+    },
+    {
+      "capability": "storage.shared-data",
+      "api": 1,
+      "declaration_count": 37,
+      "modes": {
+        "requires": 37
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_scanner",
+        "calculator",
+        "contexts",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "lora_messages",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "stopwatch",
+        "timecard",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "storage.volume",
+      "api": 1,
+      "declaration_count": 24,
+      "modes": {
+        "optional": 8,
+        "requires": 16
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "app_store",
+        "daily-digest",
+        "ebook-reader",
+        "file_browser",
+        "gameboy",
+        "model_viewer",
+        "obd-dashboard",
+        "obd-test",
+        "paper_clock",
+        "springboard",
+        "twatch-clock"
+      ]
+    },
+    {
+      "capability": "telemetry.broadcast",
+      "api": 1,
+      "declaration_count": 87,
+      "modes": {
+        "requires": 86,
+        "optional": 1
+      },
+      "products": [
+        "Badge AMOLED1.75C",
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "lora_messages",
+        "ota_update",
+        "paper_clock",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "twatch-clock",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "time.civil",
+      "api": 1,
+      "declaration_count": 10,
+      "modes": {
+        "requires": 10
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "contexts",
+        "lists"
+      ]
+    },
+    {
+      "capability": "ui.scene",
+      "api": 1,
+      "declaration_count": 18,
+      "modes": {
+        "requires": 18
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "contexts",
+        "daily-digest",
+        "ebook-reader",
+        "lists",
+        "obd-dashboard",
+        "obd-test"
+      ]
+    },
+    {
+      "capability": "ui.text-input",
+      "api": 1,
+      "declaration_count": 43,
+      "modes": {
+        "requires": 43
+      },
+      "products": [
+        "RiscRTE-T-Watch-S3",
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "audio_spectrum",
+        "ble_scanner",
+        "contexts",
+        "file_browser",
+        "lists",
+        "lora_messages",
+        "points_in_time",
+        "timecard",
+        "waterfall",
+        "wifi_settings"
+      ]
+    },
+    {
+      "capability": "usb.device.msc",
+      "api": 1,
+      "declaration_count": 3,
+      "modes": {
+        "requires": 3
+      },
+      "products": [
+        "RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "usb_sd_transfer"
+      ]
+    },
+    {
+      "capability": "x4.power",
+      "api": 1,
+      "declaration_count": 1,
+      "modes": {
+        "requires": 1
+      },
+      "products": [
+        "RiscRTE-XTEINK-X4-PRO"
+      ],
+      "application_ids": [
+        "paper_clock"
+      ]
+    }
+  ],
+  "limit": "Actual packaged declarations, not proof every optional service is exercised or every legacy undeclared call is known."
+}
