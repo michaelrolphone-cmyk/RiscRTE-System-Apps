@@ -77,7 +77,7 @@ Paths without a repository prefix refer to System Apps. Runtime and service path
 | ID | Software status and actual evidence | External portion |
 | --- | --- | --- |
 | S3-01 | passed — target profile build and installer geometry/layout validation (NATIVE, INSTALL) | pending_external_environment — inspect actual module, flash and PSRAM |
-| S3-02 | passed — selected cohort has no camera dependency/grant (ELF, package boot manifests) | pending_external_environment — camera-free physical boot |
+| S3-02 | passed — module-absent host test retains all four infrastructure offers. v1.10.0 ships a camera backend that returns unavailable for an empty socket | pending_external_environment — camera-free physical boot |
 | S3-03 | passed — headless outbound station/provider design; no listener/AP in selected cohort | pending_external_environment — physical network surface capture |
 | S3-04 | passed — memory admission, conservative low-water/overload rejection (MEMORY, NODE, HTTP) | pending_external_environment — missing PSRAM/physical allocation faults |
 | S3-05 | passed — provider-bound namespace/admission rejection and ELF imports (STORAGE, ELF) | — |
