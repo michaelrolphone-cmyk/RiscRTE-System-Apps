@@ -37,7 +37,7 @@ bool Node::acceptSetup(){
   // envelope only when all four shared contracts match this image. Retain
   // endpoint/credential authority; replace implementation and memory pins with
   // this immutable static product's cohort. No existing identity is changed.
-  if(config["service"]["contracts"].size()==8&&pairing["policy"]["service"]["contracts"].size()==4){
+  if(config["service"]["contracts"].size()>=8&&pairing["policy"]["service"]["contracts"].size()==4){
    for(unsigned i=0;i<4;++i){char a[65],b[65];canonicalDigest(config["service"]["contracts"][i],a);canonicalDigest(pairing["policy"]["service"]["contracts"][i],b);if(strcmp(a,b))return false;}
    auto policyIn=response["pairing"]["policy"];policyIn["service"]["contracts"]=config["service"]["contracts"];policyIn["service"]["providers"]=config["service"]["providers"];policyIn["low_water"]=config["low_water"];policyIn["memory_profile"]=config["memory_profile"];
   }

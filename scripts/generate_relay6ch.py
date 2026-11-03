@@ -9,7 +9,7 @@ def generate():
  # a self-referential firmware digest while pinning all executable inputs.
  runtime=pathlib.Path(os.environ.get('RISC_RUNTIME_ROOT',ROOT/'../relay-runtime')).resolve()
  outdir=pathlib.Path(os.environ.get('RELAY6CH_OUTPUT',ROOT/'../relay-delivery'));outdir.mkdir(parents=True,exist_ok=True)
- package=outdir/'riscrte-relay6ch-v1.0.2-source.zip'
+ package=outdir/'riscrte-relay6ch-v1.0.3-source.zip'
  with zipfile.ZipFile(package,'w',zipfile.ZIP_STORED) as z:
   sources=list((ROOT/'Services/infra_node').glob('*'))+list((ROOT/'firmware/waveshare-relay6ch').rglob('*'))+[ROOT/'scripts/generate_relay6ch.py']
   sources += list((ROOT/'lib/EnrollmentCrypto').glob('*'))+list((ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2').glob('*'))
@@ -25,20 +25,25 @@ def generate():
  p['service']['contracts']=[];p['service']['providers']=[]
  contracts=base['contracts'];providers=[]
  for entry in base['providers']:
-  definition=entry['provider'];cap=entry['reference']['capability_id'];definition['provider_id']='waveshare-relay6ch-'+cap.replace('.','-');definition['revision']=3
+  definition=entry['provider'];cap=entry['reference']['capability_id'];definition['provider_id']='waveshare-relay6ch-'+cap.replace('.','-');definition['revision']=4
   definition['implementation_ref']={'kind':'risc-native-static','profile':'waveshare-esp32-s3-relay-6ch','package_digest':package_digest}
-  pin={'capability_id':cap,'provider_id':definition['provider_id'],'revision':3,'definition_digest':digest(definition),'package_digest':package_digest}
+  pin={'capability_id':cap,'provider_id':definition['provider_id'],'revision':4,'definition_digest':digest(definition),'package_digest':package_digest}
   providers.append({'provider':definition,'reference':pin});p['service']['providers'].append(pin)
  p['service']['contracts']=[c['reference'] for c in contracts]
  p['memory_profile']='internal-only';p['low_water']={'internal_free':49152,'internal_largest':16384,'dma_free':8192,'dma_largest':4096,'psram_free':0,'psram_largest':0,'stack_headroom':4096}
  p['wifi']['ssid']='';p['configuration']['bindings']=[];p['configuration']['enabled_providers']=[];p['endpoints']=[];p['allocation']={'automatic':True,'max_assignments':5}
  integer=lambda a,b:{'type':'integer','minimum':a,'maximum':b}
  entries=[('relay.bank','set',{'channel':integer(1,6),'on':{'type':'boolean'}},'convergent_state'),('serial.rs485','exchange',{'baud':integer(1200,115200),'parity':{'enum':['none','even','odd']},'stop_bits':integer(1,2),'tx_hex':{'type':'string','minLength':2,'maxLength':512,'pattern':'^[0-9a-f]*$'},'rx_max':integer(0,256),'timeout_ms':integer(10,2000)},'nonrepeatable_or_unobservable'),('sound.buzzer','tone',{'frequency_hz':integer(100,10000),'duration_ms':integer(1,5000)},'observable_effect'),('light.rgb','set',{'red':integer(0,255),'green':integer(0,255),'blue':integer(0,255)},'convergent_state')]
+ # A frame changes any subset of outputs. Omitting a field preserves its state.
+ channels={'type':'array','minItems':1,'maxItems':6,'items':integer(1,6)}
+ frame_fields={'on':channels,'off':channels,'rgb':{'type':'array','minItems':3,'maxItems':3,'items':integer(0,255)},'tone_hz':{'anyOf':[{'const':0},integer(100,10000)]},'wait_ms':integer(0,60000)}
+ frame={'type':'object','properties':frame_fields,'additionalProperties':False,'anyOf':[{'required':[key]} for key in frame_fields]}
+ entries.append(('device.outputs.batch','apply',{'steps':{'type':'array','minItems':1,'maxItems':32,'items':frame}},'nonrepeatable_or_unobservable'))
  for cap,op,fields,effect in entries:
   contract={'capability_id':cap,'api_version':1,'operations':{op:{'input_schema':{'type':'object','properties':fields,'required':list(fields),'additionalProperties':False},'output_schema':{'type':'object','properties':{'status':{'enum':['succeeded','unknown']}},'required':['status'],'additionalProperties':True},'evidence_schema':{'type':'object'},'effect_semantics':effect,'execution_modes':['job']}}}
   ref={'capability_id':cap,'api_version':1,'contract_digest':digest(contract)}
-  provider={'provider_id':'waveshare-relay6ch-'+cap.replace('.','-'),'revision':3,'activation_policy':'independent_device_hardware/1','implementation_ref':{'kind':'risc-native-static','profile':'waveshare-esp32-s3-relay-6ch','package_digest':package_digest},'provides':[ref],'requires':[],'resource_bindings':[{'name':'job','amount':1,'lifetime':'invocation'},{'name':'pending','amount':2,'lifetime':'invocation'}],'recovery_support':{'checkpoint_formats':[]},'cost_estimate':1,'cost_model':{'maximum_ms':8000},'cost_evidence':'software_bounds_physical_qualification_pending'}
-  pin={'capability_id':cap,'provider_id':provider['provider_id'],'revision':3,'definition_digest':digest(provider),'package_digest':package_digest}
+  provider={'provider_id':'waveshare-relay6ch-'+cap.replace('.','-'),'revision':4,'activation_policy':'independent_device_hardware/1','implementation_ref':{'kind':'risc-native-static','profile':'waveshare-esp32-s3-relay-6ch','package_digest':package_digest},'provides':[ref],'requires':[],'resource_bindings':[{'name':'job','amount':1,'lifetime':'invocation'},{'name':'pending','amount':2,'lifetime':'invocation'}],'recovery_support':{'checkpoint_formats':[]},'cost_estimate':1,'cost_model':{'maximum_ms':68000 if cap=='device.outputs.batch' else 8000},'cost_evidence':'software_bounds_physical_qualification_pending'}
+  pin={'capability_id':cap,'provider_id':provider['provider_id'],'revision':4,'definition_digest':digest(provider),'package_digest':package_digest}
   p['service']['contracts'].append(ref);p['service']['providers'].append(pin);contracts.append({'contract':contract,'reference':ref});providers.append({'provider':provider,'reference':pin})
  # Empty Wi-Fi deliberately enters the shipped setup portal. Keep the regular
  # validator's SSID bound using a sentinel; no secret or endpoint authority.
