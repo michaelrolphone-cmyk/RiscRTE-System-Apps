@@ -1,6 +1,6 @@
-# Waveshare ESP32-S3-Relay-6CH RiscRTE agent 1.0.1
+# Waveshare ESP32-S3-Relay-6CH RiscRTE agent 1.0.2
 
-For a paired v1.0.0 board, flash the application image at `0x50000` with erase-all disabled. Version 1.0.1 restores the shared relay subscription fingerprint for the interim pairing file, migrates the eight provider pins, and reserves 24 KiB of main-task stack for the TLS path. It retains the 4 KiB stack admission floor.
+For a paired v1.0.0 or v1.0.1 board, flash the application image at `0x50000` with erase-all disabled. Version 1.0.2 restores the shared relay subscription fingerprint for the interim pairing file, migrates the eight provider pins, and reserves 24 KiB of main-task stack for the TLS path. It retains the 4 KiB stack admission floor. Hardware assignment admission uses a fresh memory sample after TLS closes.
 
 Dedicated static ESP-IDF 6.1 product for the ESP32-S3 relay board. It links the
 same infrastructure agent and enrollment portal used by the camera product,

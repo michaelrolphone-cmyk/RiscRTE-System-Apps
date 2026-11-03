@@ -16,6 +16,7 @@ class Transport {
  }
  int advance(uint64_t now){
   if(retained)return -2;if(!token)return -1;
+  if(done)return close();
   if(now-started>=timeoutMs+1000){outcome=RISC_HTTP_TIMEOUT;done=true;return close();}
   auto r=api.advance(api.context,token);if(r==RISC_HTTP_RETAINED){retained=true;return -2;}
   uint32_t got=0;char chunk[512];auto read=api.read(api.context,token,chunk,sizeof(chunk),&got);

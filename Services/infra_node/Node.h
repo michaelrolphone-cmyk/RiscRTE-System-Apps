@@ -167,7 +167,12 @@ class Node {
   if(phase>=Phase::SetupStart)return setupStep();
   if(phase==Phase::Save){int r;if(journal.writeToken)r=journal.collect();else if(journal.reload){r=journal.load();}else r=journal.save();if(r==-2)return retained();if(r<0)return block(Phase::StorageBlocked,"state_commit_failed");if(r)return 1;if(journal.seq!=saveSequence||journal.loadedCrc!=journal.desiredCrc){roleLeaseUntil=0;nextSync=0;reason(boot[0]?Phase::Recover:Phase::Nonce,"commit_unknown_reloaded");return 1;}phase=afterSave;return 1;}
   if(phase==Phase::Send)return transmit();
-  if(phase==Phase::Receive){auto r=net.advance(now());if(r==-2)return retained();if(r)return 1;return received();}
+  if(phase==Phase::Receive){
+   // The host samples capacity once per scheduler turn. Closing TLS can return
+   // tens of kilobytes. Admit the reply on the next sample, after teardown.
+   if(net.done&&!net.token)return received();
+   const int r=net.advance(now());return r==-2?retained():1;
+  }
   if(phase==Phase::Backoff){if(now()<waitUntil)return 1;phase=Phase::Connect;return 1;}
   if(phase==Phase::Connect){if(drain){phase=Phase::Drain;return 1;}auto r=station.connect(station.context,config["wifi"]["ssid"],credential(config["wifi"]["credential_ref"]));if(r==-2)return retained();if(r<0){r=station.close(station.context);if(r==-2)return retained();if(r)return 1;return backoff("wifi_reconnect_backoff");}if(r)return 1;phase=boot[0]?Phase::Recover:Phase::Nonce;return 1;}
   if(phase==Phase::Nonce){uint8_t nonce[32];auto r=entropy.fill(entropy.context,nonce,sizeof(nonce));if(r==RISC_ENTROPY_RETAINED)return retained();if(r==RISC_ENTROPY_UNAVAILABLE||r==RISC_ENTROPY_BUSY)return 1;if(r)return block(Phase::ProtocolBlocked,"entropy_failed");for(unsigned i=0;i<32;++i)snprintf(boot+i*2,3,"%02x",nonce[i]);copy(status.boot_id,sizeof(status.boot_id),boot);phase=Phase::Recover;return 1;}
