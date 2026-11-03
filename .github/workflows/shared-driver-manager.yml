@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: 712ecc3f894dba99d9c9638941778a82f5856b97
+          ref: cf920a9440eddf2f40fbab17f24fd283edd7416c
           path: Runtime
           persist-credentials: false
       - run: python3 scripts/test_driver_manager_presenter.py --runtime Runtime --output out/presenter

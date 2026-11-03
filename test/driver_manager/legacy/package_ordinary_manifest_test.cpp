@@ -33,6 +33,13 @@ static std::string replace(std::string source, const std::string& old,
   return source;
 }
 int main() {
+  // Runtime's shared guard accepts larger catalogs; this imported manifest
+  // policy must retain the original independent 4096-byte ordinary bound.
+  {
+    std::string bytes=manifest();assert(bytes.size()<4096);
+    bytes.append(4096-bytes.size(),' ');OrdinaryPackagePlan plan{};
+    assert(accepted(bytes,plan));bytes.push_back(' ');reject(bytes);
+  }
   const char* kinds[] = {"application", "driver", "service", "provider"};
   for (unsigned i = 0; i < 4; ++i) {
     OrdinaryPackagePlan plan{};
