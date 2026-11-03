@@ -2,7 +2,7 @@ static int32_t pointer_open(void *c,const risc_components_document_v1 *d,const r
  if(!alive())return RISC_SCENE_RETAINED;
  if(active||hold_busy||hold_fault)return RISC_SCENE_BUSY;
  pointer_enabled=true;pointer_pending=false;pointer_reset(false);
- pointer_frame_identity=pointer_presented_identity=(pointer_identity){0};pointer_last=0;pointer_gap=false;
+ pointer_frame_identity=pointer_presented_identity=(pointer_identity){0};pointer_last=0;pointer_gap=pointer_clock_seen=false;
  int32_t r=hold_open(c,d,p,out);
  if(r!=RISC_SCENE_OK&&!active&&!retained)pointer_enabled=false;
  return r;

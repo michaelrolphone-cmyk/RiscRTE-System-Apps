@@ -2,7 +2,7 @@
  * stay in the provider; ordered edges are validated before any domain intent. */
 static pointer_gesture pointer_motion;
 static risc_touch_snapshot_v1 pointer_cursor;
-static bool pointer_rejecting,pointer_gap;
+static bool pointer_rejecting,pointer_gap,pointer_clock_seen;
 static uint64_t pointer_last;
 static risc_scene_pointer_event_v1 pointer_packet;
 static void pointer_sync(void){pointer_cursor=touch_state;}
@@ -19,7 +19,10 @@ static void pointer_reset(bool deliver){
 }
 static bool pointer_boundary(void){
  if(!pointer_enabled)return false;
- pointer_reset(true);return pointer_pending;
+ pointer_reset(true);
+ raw_head=raw_count=0;last_sequence=capture_sequence;pointer_sync();
+ memcpy(dispatched_contacts,captured_contacts,sizeof(dispatched_contacts));dispatched_count=touch_state.contact_count;
+ neutral=false;return pointer_pending;
 }
 static const hit *pointer_hit(void){
  if(!pointer_enabled||!model->components)return NULL;
@@ -74,7 +77,7 @@ static bool pointer_trace_valid(void){
 static bool pointer_prepare(void){
  uint64_t now=clock_api->monotonic_ms(clock_api->context);
  if(!alive())return false;
- pointer_gap=pointer_last&&(now<pointer_last||now-pointer_last>100);pointer_last=now;
+ pointer_gap=pointer_clock_seen&&(now<pointer_last||now-pointer_last>100);pointer_last=now;pointer_clock_seen=true;
  if(pointer_gap)pointer_reset(true);
  if(!pointer_trace_valid()){
   pointer_reset(true);hold_cancel(RISC_HOLD_REASON_AMBIGUOUS);
@@ -94,7 +97,7 @@ static bool pointer_event(const risc_touch_event_v1 *e){
  bool release_moved=false;
  if(e->kind==RISC_TOUCH_EVENT_UP)for(unsigned i=0;i<pointer_cursor.contact_count;i++)if(pointer_cursor.contacts[i].id==e->id){
   int ox=0,oy=0,nx=0,ny=0;
-  if(!touch_point(pointer_cursor.contacts[i].x,pointer_cursor.contacts[i].y,&ox,&oy)||!touch_point(e->x,e->y,&nx,&ny)||ox!=nx||oy!=ny)release_moved=true;
+  if(!touch_point(pointer_cursor.contacts[i].x,pointer_cursor.contacts[i].y,&ox,&oy)||!touch_point(e->x,e->y,&nx,&ny)||((ox!=nx||oy!=ny)&&(pointer_motion.dragging||pointer_abs(nx-pointer_motion.sx[i])>POINTER_TAP_SLOP*(width>=480?2:1)||pointer_abs(ny-pointer_motion.sy[i])>POINTER_TAP_SLOP*(width>=480?2:1))))release_moved=true;
  }
  if(!pointer_advance(&pointer_cursor,e)){pointer_reset(true);return true;}
  /* Held controls must see and cancel competing contacts themselves. */
@@ -125,7 +128,10 @@ static bool pointer_event(const risc_touch_event_v1 *e){
  pointer_gesture_output out=pointer_gesture_sample_bounds(&pointer_motion,&sample,(uint32_t)e->timestamp_ms,h->x,h->y,h->x+h->w,h->y+h->h);
  if(!sample.contact_count){pointer_active=false;neutral=true;}
  if(out.dx||out.dy||out.wheel_x||out.wheel_y||out.click||out.button_changed){
-  if(event_serial==UINT64_MAX){pointer_reset(true);hold_fault=true;return true;}
+  if(event_serial==UINT64_MAX){pointer_active=true;pointer_reset(true);hold_fault=true;return true;}
+  if(pointer_pending&&pointer_packet.kind==RISC_POINTER_REPORT&&!pointer_packet.click&&!out.click&&pointer_packet.buttons==out.buttons){
+   pointer_packet.dx+=out.dx;pointer_packet.dy+=out.dy;pointer_packet.wheel_x+=out.wheel_x;pointer_packet.wheel_y+=out.wheel_y;return true;
+  }
   pointer_packet=(risc_scene_pointer_event_v1){.struct_size=sizeof(pointer_packet),.kind=RISC_POINTER_REPORT,
    .dx=out.dx,.dy=out.dy,.wheel_x=out.wheel_x,.wheel_y=out.wheel_y,.buttons=out.buttons,.click=out.click};
   pointer_packet.intent.struct_size=sizeof(pointer_packet.intent);
@@ -134,4 +140,8 @@ static bool pointer_event(const risc_touch_event_v1 *e){
   pointer_pending=true;
  }
  return true;
+}
+
+static bool pointer_can_coalesce(void){
+ return pointer_pending&&pointer_packet.kind==RISC_POINTER_REPORT&&!pointer_packet.click&&raw_count&&raw_queue[raw_head].kind==RISC_TOUCH_EVENT_MOVE&&!(pointer_motion.drag_candidate&&!pointer_motion.dragging);
 }

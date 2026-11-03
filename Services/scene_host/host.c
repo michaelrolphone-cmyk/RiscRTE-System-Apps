@@ -608,7 +608,7 @@ static int32_t poll_touch(void){
     if(pointer_enabled&&!pointer_prepare())return RISC_SCENE_RETAINED;
     if(pointer_pending||hold_pending)return RISC_SCENE_OK;
     finish_contacts();
-    while(raw_count&&!have_event&&!key_count&&!keyboard_waiting&&!hold_pending&&!pointer_pending){
+    while(raw_count&&!have_event&&!key_count&&!keyboard_waiting&&!hold_pending&&(!pointer_pending||pointer_can_coalesce())){
         risc_touch_event_v1 event=raw_queue[raw_head];
         raw_head=(raw_head+1)%RAW_QUEUE_SIZE;--raw_count;
         if(!pointer_enabled||!pointer_event(&event))process_touch_event(&event);
