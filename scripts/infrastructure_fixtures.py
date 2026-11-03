@@ -20,11 +20,13 @@ def generate(output,package_digest):
   c={'capability_id':cap,'api_version':1,'operations':{operation:{'input_schema':input,'output_schema':out,'evidence_schema':evidence,'effect_semantics':'target_deduplicated' if maintenance else 'repeatable_compute','execution_modes':['desired_state','job'] if maintenance else ['job']}}}
   if cap=='camera.capture':
    operation_schema=c['operations'][operation]
-   operation_schema['input_schema']=obj({})
-   operation_schema['output_schema']=obj({'media_type':{'const':'image/jpeg'},'width':{'const':160},'height':{'const':120},'bytes':integer(4,8192),'base64_chunks':{**arr(string(1024),11),'minItems':1}})
-  ref={'capability_id':cap,'api_version':1,'contract_digest':digest(c)};contracts.append({'contract':c,'reference':ref})
-  p={'provider_id':'esp32s3-infra-'+cap.replace('.','-'),'revision':20,'implementation_ref':{'kind':'risc-elf','profile':'esp32s3-infrastructure','package_digest':package_digest},'provides':[ref],'requires':[],'resource_bindings':[{'name':'tls','amount':1,'lifetime':'invocation'},{'name':'job','amount':1,'lifetime':'invocation'},{'name':'pending','amount':2,'lifetime':'invocation'}],'recovery_support':{'checkpoint_formats':['infra.source/1']},'cost_estimate':1,'cost_model':{'network_transactions':1,'maximum_ms':12000 if cap=='scheduler.drive' else 5000},'cost_evidence':'software_bounds_physical_qualification_pending'}
-  providers.append({'provider':p,'reference':{'capability_id':cap,'provider_id':p['provider_id'],'revision':20,'definition_digest':digest(p),'package_digest':package_digest}})
+   c['api_version']=2
+   operation_schema['input_schema']={'oneOf':[obj({}),obj({'width':integer(1,65535),'height':integer(1,65535)})]}
+   operation_schema['output_schema']=obj({'media_type':{'const':'image/jpeg'},'width':integer(1,65535),'height':integer(1,65535),'bytes':integer(4,16777216),'sha256':{**string(64,64),'pattern':'^[a-f0-9]*$'},'artifact_id':string()})
+  ref={'capability_id':cap,'api_version':c['api_version'],'contract_digest':digest(c)};contracts.append({'contract':c,'reference':ref})
+  p={'provider_id':'esp32s3-infra-'+cap.replace('.','-'),'revision':21,'implementation_ref':{'kind':'risc-elf','profile':'esp32s3-infrastructure','package_digest':package_digest},'provides':[ref],'requires':[],'resource_bindings':[{'name':'tls','amount':1,'lifetime':'invocation'},{'name':'job','amount':1,'lifetime':'invocation'},{'name':'pending','amount':2,'lifetime':'invocation'}],'recovery_support':{'checkpoint_formats':['infra.source/1']},'cost_estimate':1,'cost_model':{'network_transactions':1,'maximum_ms':12000 if cap=='scheduler.drive' else 5000},'cost_evidence':'software_bounds_physical_qualification_pending'}
+  if cap=='camera.capture':p['activation_policy']='independent_device_hardware/1'
+  providers.append({'provider':p,'reference':{'capability_id':cap,'provider_id':p['provider_id'],'revision':21,'definition_digest':digest(p),'package_digest':package_digest}})
  bindings=[];endpoints=[]
  for index,(cap,op) in enumerate(caps):
   bid=['scheduler-main','capabilities-main','service-health','source-main'][index];maintenance=index<2
@@ -54,7 +56,7 @@ def generate(output,package_digest):
  provider_ref=obj({'capability_id':{'enum':[c for c,_ in caps]},'provider_id':string(),'revision':integer(1),'definition_digest':digest_schema,'package_digest':digest_schema})
  ep=obj({'endpoint_policy_id':string(),'url':{'type':'string','pattern':'^https://','maxLength':2048},'method':{'enum':['GET','POST']},'capability':{'enum':[c for c,_ in caps]},'credential_ref':string(128,0),'site_credential_ref':string(128,0),'authorization_scope':arr(string()),'maintenance_qualified':{'type':'boolean'}})
  ps=obj({'schema_version':{'const':1},'wifi':obj({'ssid':string(32),'credential_ref':string()}),'service':obj({'url':{'type':'string','pattern':'^https://','maxLength':2048},'credential_ref':string(),'site_credential_ref':string(128,0),'time_server':string(253),'contact_interval_ms':integer(15000,30000),'contracts':arr(contract_ref,4),'providers':arr(provider_ref,4)}),'endpoints':arr(ep),'configuration':cs,'low_water':obj({k:integer(1,16777216) for k in policy['low_water']}),'provenance':obj({'spec_revision':digest_schema,'fixture':string()})})
- camera_contract=obj({**contract_ref['properties'],'capability_id':{'const':'camera.capture'}})
+ camera_contract=obj({**contract_ref['properties'],'api_version':{'const':2},'capability_id':{'const':'camera.capture'}})
  camera_provider=obj({**provider_ref['properties'],'capability_id':{'const':'camera.capture'}})
  ps['properties']['service']['properties']['camera']=obj({'contract':camera_contract,'provider':camera_provider})
  relay_filter=obj({'path':string(),'op':{'enum':['eq','prefix']},'value':string(256,0)})

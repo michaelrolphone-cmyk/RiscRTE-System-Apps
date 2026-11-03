@@ -36,29 +36,29 @@
       {
         "capability_id": "scheduler.drive",
         "provider_id": "esp32s3-infra-scheduler-drive",
-        "revision": 20,
-        "definition_digest": "9c9990270970e96631feb02ca0fde81e9f85b01144e861eef4ca8c349f93cd5c",
+        "revision": 21,
+        "definition_digest": "1610de46e6dabd1bce25f5a087373511f1cfe875d4e55da59a86b6ffd226efa5",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       {
         "capability_id": "service.reconcile",
         "provider_id": "esp32s3-infra-service-reconcile",
-        "revision": 20,
-        "definition_digest": "0547c2f8db922e96d89cd5074332e23d551c8232b0baba7f88bf9e1838e6a9ef",
+        "revision": 21,
+        "definition_digest": "ac9d79aca9473c82d25e71a543b78e206e9ac2c626e886841d5de40409354924",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       {
         "capability_id": "service.health.observe",
         "provider_id": "esp32s3-infra-service-health-observe",
-        "revision": 20,
-        "definition_digest": "7c5c98a0c7a8899275ceccdc441d61c0d6158d76aaf4d96645e6f8b32d30448a",
+        "revision": 21,
+        "definition_digest": "061355c05b720b232066f41719ccd056e00223d7341942c86496d67c09f4c63b",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       {
         "capability_id": "source.poll",
         "provider_id": "esp32s3-infra-source-poll",
-        "revision": 20,
-        "definition_digest": "111ce497d80400cc2b8fa4b6bc69ca31f2281d24f518410851af1a3cf91fc10a",
+        "revision": 21,
+        "definition_digest": "b46060912d7f877152d4a8bcb9dc422119260efe1584be899d1c894f60c25573",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     ],
@@ -66,14 +66,14 @@
       "provider": {
         "capability_id": "camera.capture",
         "provider_id": "esp32s3-infra-camera-capture",
-        "revision": 20,
-        "definition_digest": "bc351d0c7b5d0aec2ca21524cd1abc24d65efd9cd4d3842c6bcb2d0e7cd99c0b",
+        "revision": 21,
+        "definition_digest": "8219044e07d09809800be0179fa392ecc18756eead69cb22fc3ce3b9bf0e1951",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       "contract": {
         "capability_id": "camera.capture",
-        "api_version": 1,
-        "contract_digest": "d74507ab682dbde2915c3375a8add6fee06946628740894f4905d7716221ff57"
+        "api_version": 2,
+        "contract_digest": "29f2580d90f00b7b8d8d57caf3e9d7680f4d9db7af9aeb78ef37fba23a1b8220"
       }
     }
   },
