@@ -123,9 +123,11 @@ static int route_index(const risc_components_document_v1 *d,uint32_t id){
     return -1;
 }
 static bool pointer_enabled,pointer_pending,pointer_active;
-static uint32_t pointer_visible_revision;
+typedef struct { uint32_t revision,route,epoch,node; int x,y,w,h; } pointer_identity;
+static pointer_identity pointer_frame_identity,pointer_presented_identity;
 static bool pointer_boundary(void);
 static void pointer_reset(bool);
+static void pointer_sync(void);
 static bool hold_enabled,hold_active,hold_pending,hold_nav,hold_confirm,hold_fault,hold_fault_delivered,hold_dispatch,hold_busy,hold_enter;
 static uint64_t hold_generation,hold_started,hold_now,hold_last;
 static uint32_t hold_nav_buttons;
@@ -260,7 +262,7 @@ static void restore_page(void){
         if(document.nodes[list[i]].id==path.focus[path.depth-1])page=p;
 }
 static void invalidate_view(void){
-    if(pointer_enabled)pointer_reset(true);
+    if(pointer_enabled){pointer_reset(true);pointer_presented_identity=(pointer_identity){0};}
     if(epoch==UINT32_MAX){(void)hold_local_fault();return;}
     hold_cancel(RISC_HOLD_REASON_TOPOLOGY);
     dirty=true;if(contact)neutral=false;cancel_contacts();contact=false;have_event=false;top_pending=false;handoff_waiting=false;key_head=key_count=0;key_barrier=false;
@@ -338,6 +340,7 @@ static void activate(const hit *h){
     if(h->kind==HIT_HOME){emit(RISC_SCENE_SUSPEND_EVENT,0,0,0);return;}
     if(h->kind==HIT_PREVIOUS){turn_page(-1);return;}
     if(h->kind==HIT_NEXT){turn_page(1);return;}
+    if(h->kind==HIT_POINTER)return; /* Never degrade a pointer to a click action. */
     if(model->components&&component_activate(h))return;
     int i=node_index(&document,h->node);if(i<0)return;
     const risc_scene_node_v1 *n=&document.nodes[i];
@@ -373,7 +376,7 @@ static bool synchronize_touch(void){
     for(unsigned i=0;i<s.contact_count;i++)captured_contacts[s.contacts[i].id]=true;
     memcpy(dispatched_contacts,captured_contacts,sizeof(dispatched_contacts));dispatched_count=s.contact_count;
     cancel_contacts();contact=false;top_pending=false;
-    neutral=!s.contact_count&&!s.buttons;return true;
+    neutral=!s.contact_count&&!s.buttons;if(pointer_enabled)pointer_sync();return true;
 }
 static bool touch_point(uint16_t raw_x,uint16_t raw_y,int *x,int *y){
     uint32_t w=touch_state.width,h=touch_state.height,rx=raw_x,ry=raw_y;
@@ -595,18 +598,20 @@ static int32_t capture_touch(void){
         memset(captured_contacts,0,sizeof(captured_contacts));
         for(unsigned i=0;i<snapshot.contact_count;i++)captured_contacts[snapshot.contacts[i].id]=true;
         memcpy(dispatched_contacts,captured_contacts,sizeof(dispatched_contacts));dispatched_count=snapshot.contact_count;
+        if(pointer_enabled)pointer_sync();
     }else if(!raw_count&&!contacts_count&&!contact&&!snapshot.contact_count&&!snapshot.buttons)neutral=true;
     return RISC_SCENE_OK;
 }
 #include "pointer.inc"
 static int32_t poll_touch(void){
     int32_t r=capture_touch();if(r<0||hold_pending||hold_fault||pointer_pending)return r;
-    if(pointer_enabled&&pointer_sample())return retained?RISC_SCENE_RETAINED:RISC_SCENE_OK;
+    if(pointer_enabled&&!pointer_prepare())return RISC_SCENE_RETAINED;
+    if(pointer_pending||hold_pending)return RISC_SCENE_OK;
     finish_contacts();
-    while(raw_count&&!have_event&&!key_count&&!keyboard_waiting&&!hold_pending){
+    while(raw_count&&!have_event&&!key_count&&!keyboard_waiting&&!hold_pending&&!pointer_pending){
         risc_touch_event_v1 event=raw_queue[raw_head];
         raw_head=(raw_head+1)%RAW_QUEUE_SIZE;--raw_count;
-        process_touch_event(&event);if(retained)return RISC_SCENE_RETAINED;
+        if(!pointer_enabled||!pointer_event(&event))process_touch_event(&event);if(retained)return RISC_SCENE_RETAINED;
         if(event.kind==RISC_TOUCH_EVENT_UP&&!dispatched_count&&!contact&&!handoff_waiting)neutral=true;
     }
     if(!raw_count&&!contacts_count&&!contact&&!touch_state.contact_count&&!touch_state.buttons)neutral=true;
@@ -650,6 +655,7 @@ static int32_t poll_navigation(void){
     risc_input_navigation_frame_v1 f={0};bool ok=navigation->poll(navigation->context,&f);
     if(!alive()||!ok)return fail_retained();
     hold_nav_buttons=f.buttons;
+    if(pointer_enabled&&(pointer_active||pointer_pending)&&(f.pressed||f.released||f.buttons))pointer_reset(true);
     if(lifecycle_enabled){
         if(f.pressed||f.released||f.buttons!=navigation_buttons)activity_pending=true;
         navigation_buttons=f.buttons;
@@ -890,7 +896,9 @@ static int32_t paint(void){
         if(!alive())return RISC_SCENE_RETAINED;
         if(!ok)return RISC_SCENE_AGAIN;
         if(!valid_surface()||surface.pixel_format!=format)return fail_retained();
-        frame_model=logical_model;if(frame_model.page_view||frame_model.preview_view)memcpy(page_frozen,page_live,page_capacity);
+        frame_model=logical_model;
+        if(pointer_enabled)pointer_frame_identity=pointer_current_identity();
+        if(frame_model.page_view||frame_model.preview_view)memcpy(page_frozen,page_live,page_capacity);
         logical_model.page_clean=false;raster_row=0;rasterizing=true;dirty=false;
     }
     /* Input capture has its own cadence, including while the immutable frame
@@ -941,7 +949,7 @@ static int32_t complete_frame(void){
     /* Completion retires display custody only. Logical hit maps, contacts,
      * navigation and document revisions are independent of presentation. */
     if(s.state==RISC_DISPLAY_PRESENT_SUPERSEDED)dirty=true;
-    else if(pointer_enabled&&frame_model.doc.revision==document.revision)pointer_visible_revision=document.revision;
+    else if(pointer_enabled)pointer_presented_identity=pointer_frame_identity;
     pending=false;present_token=0;
     return RISC_SCENE_OK;
 }
@@ -991,6 +999,7 @@ static int32_t scene_resume(void *c,uint64_t s,uint32_t flags){
         have_event=false;handoff_waiting=false;key_head=key_count=0;key_barrier=keyboard_waiting=false;
     }
     paused=false;
+    if(pointer_enabled){pointer_presented_identity=(pointer_identity){0};dirty=true;}
     if(flags&RISC_SCENE_RESUME_REDRAW){dirty=true;if(flags&RISC_SCENE_RESUME_CLEAN)model->page_clean=true;}
     return RISC_SCENE_OK;
 }
@@ -1146,7 +1155,7 @@ static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     input_unsynchronized=false;
     if(model->components&&model->toast_until){uint64_t now=clock_api->monotonic_ms(clock_api->context);if(!alive())return RISC_SCENE_RETAINED;if(now>=model->toast_until){model->toast_until=0;dirty=true;rebuild_hits();}}
     r=poll_touch();if(r<0||hold_fault)return r;
-    if(pointer_pending)return RISC_SCENE_BUSY;
+    if(pointer_pending){r=poll_navigation();if(r<0)return r;return RISC_SCENE_BUSY;}
     if(hold_pending){if(hold_event.phase==RISC_HOLD_PRESS){r=poll_navigation();if(r<0)return r;}return RISC_SCENE_OK;}
     r=poll_navigation();if(r<0||hold_pending||hold_fault)return r;
     if(retained)return RISC_SCENE_RETAINED;

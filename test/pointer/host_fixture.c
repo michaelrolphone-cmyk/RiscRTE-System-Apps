@@ -5,3 +5,5 @@ void pointer_test_hit(uint32_t id,int *x,int *y){
  *x=*y=-1;
 }
 int pointer_test_fault(void){return hold_local_fault();}
+
+void pointer_test_focus(uint32_t id){path.focus[path.depth-1]=id;}
