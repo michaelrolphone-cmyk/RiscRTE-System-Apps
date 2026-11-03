@@ -97,8 +97,12 @@ static bool pointer_event(const risc_touch_event_v1 *e){
  bool before=pointer_cursor.contact_count!=0;
  bool release_moved=false;
  if(e->kind==RISC_TOUCH_EVENT_UP)for(unsigned i=0;i<pointer_cursor.contact_count;i++)if(pointer_cursor.contacts[i].id==e->id){
-  int ox=0,oy=0,nx=0,ny=0;
-  if(!touch_point(pointer_cursor.contacts[i].x,pointer_cursor.contacts[i].y,&ox,&oy)||!touch_point(e->x,e->y,&nx,&ny)||((ox!=nx||oy!=ny)&&(pointer_motion.dragging||pointer_abs(nx-pointer_motion.sx[i])>POINTER_TAP_SLOP*(width>=480?2:1)||pointer_abs(ny-pointer_motion.sy[i])>POINTER_TAP_SLOP*(width>=480?2:1))))release_moved=true;
+  int ox=0,oy=0,nx=0,ny=0;unsigned origin=0;
+  while(origin<pointer_motion.seen&&pointer_motion.ids[origin]!=e->id)++origin;
+  int slop=POINTER_TAP_SLOP*(width>=480?2:1);
+  if(!touch_point(pointer_cursor.contacts[i].x,pointer_cursor.contacts[i].y,&ox,&oy)||!touch_point(e->x,e->y,&nx,&ny)||
+     !pointer_contains(pointer_hit(),nx,ny)||origin==pointer_motion.seen||
+     ((ox!=nx||oy!=ny)&&(pointer_motion.dragging||pointer_abs(nx-pointer_motion.sx[origin])>slop||pointer_abs(ny-pointer_motion.sy[origin])>slop)))release_moved=true;
  }
  if(!pointer_advance(&pointer_cursor,e)){pointer_reset(true);return true;}
  /* Held controls must see and cancel competing contacts themselves. */

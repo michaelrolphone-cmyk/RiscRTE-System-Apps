@@ -6,6 +6,7 @@ extern void pointer_test_hit(uint32_t,int*,int*);
 extern int pointer_test_fault(void);
 extern void pointer_test_focus(uint32_t);
 extern void pointer_test_exhaust(void);
+extern void pointer_test_edge(int*,int*);
 extern void pointer_test_kind(uint32_t,int*,int*);
 static risc_touch_contact_v1 positions[2];
 static const risc_scene_pointer_api_v1 *pa;
@@ -61,6 +62,7 @@ int main(int argc,char **argv){
  if(!strcmp(mode,"previsible")){edge(1,1,x,y);assert(pt()==RISC_SCENE_IDLE);edge(3,1,x,y);assert(pt()==RISC_SCENE_IDLE);ps();pointer_finish();return 0;}
  ps();
  if(!strcmp(mode,"toast")){
+  pd.revision++;pd.toast_token++;assert(!pa->update(NULL,session,&pd));ps();
   if(format==1){pointer_finish();return 0;}
   pointer_test_kind(9,&x,&y);assert(x>=0);edge(1,1,x,y);assert(pt()==RISC_SCENE_IDLE);edge(3,1,x,y);assert(pt()==RISC_SCENE_OK&&pe.kind==RISC_POINTER_INTENT&&pe.intent.event.action==99);pointer_finish();return 0;
  }
@@ -101,8 +103,13 @@ int main(int argc,char **argv){
   edge(1,1,x,y);assert(pt()==RISC_SCENE_IDLE);edge(3,1,x,y);assert(pt()==RISC_SCENE_IDLE);
   allow_complete=true;ps();edge(1,1,x,y);assert(pt()==RISC_SCENE_IDLE);edge(3,1,x,y);assert(pt()==RISC_SCENE_OK&&pe.click==1);pointer_finish();return 0;
  }
+ if(!strcmp(mode,"release_edge"))pointer_test_edge(&x,&y);
  edge(1,1,x,y);assert(pt()==RISC_SCENE_IDLE);
  if(!strcmp(mode,"tap")){edge(3,1,x,y);assert(pt()==RISC_SCENE_OK&&pe.kind==RISC_POINTER_REPORT&&pe.click==1);}
+ else if(!strcmp(mode,"right_reverse")){
+  edge(1,2,x+20,y);assert(pt()==RISC_SCENE_IDLE);edge(3,1,x,y);assert(pt()==RISC_SCENE_IDLE);edge(3,2,x+21,y);assert(pt()==RISC_SCENE_OK&&pe.click==2);
+ }
+ else if(!strcmp(mode,"release_edge")){edge(3,1,x+1,y);assert(pt()==RISC_SCENE_OK&&pe.kind==RISC_POINTER_RESET);}
  else if(!strcmp(mode,"release_jitter")){edge(3,1,x+1,y);assert(pt()==RISC_SCENE_OK&&pe.click==1);}
  else if(!strcmp(mode,"release_slop")){edge(3,1,x+24,y);assert(pt()==RISC_SCENE_OK&&pe.kind==RISC_POINTER_RESET);}
  else if(!strcmp(mode,"release_outside")){edge(3,1,0,0);assert(pt()==RISC_SCENE_OK&&pe.kind==RISC_POINTER_RESET);}

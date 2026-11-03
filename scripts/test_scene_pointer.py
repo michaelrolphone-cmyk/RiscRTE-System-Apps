@@ -4,7 +4,7 @@ import argparse,json,os,subprocess
 from pathlib import Path
 from scene_sdk import stage_sdk
 ROOT=Path(__file__).resolve().parents[1]
-CASES=('invalid','previsible','tap','move','right','scroll','drag','drag_idle','held_mix','route_visible','batch_tap','idle_gap','move_home','gap','resync','update','close','pause','outside','local_fault','native_loss','toast','queued_update','batch_two','release_jitter','release_slop','release_outside','exhaust','simultaneous_nav','throughput','replace_group')
+CASES=('invalid','previsible','tap','move','right','scroll','drag','drag_idle','held_mix','route_visible','batch_tap','idle_gap','move_home','gap','resync','update','close','pause','outside','local_fault','native_loss','toast','queued_update','batch_two','release_jitter','release_slop','release_outside','exhaust','simultaneous_nav','throughput','replace_group','right_reverse','release_edge')
 def run(runtime,out,sanitize):
  out.mkdir(parents=True,exist_ok=True)
  inc=stage_sdk(runtime,ROOT,out/'sdk')
