@@ -10,14 +10,14 @@ def generate():
  runtime=pathlib.Path(os.environ.get('RISC_RUNTIME_ROOT',ROOT/'../relay-runtime')).resolve()
  outdir=pathlib.Path(os.environ.get('RELAY6CH_OUTPUT',ROOT/'../relay-delivery'));outdir.mkdir(parents=True,exist_ok=True)
  package=outdir/'riscrte-relay6ch-v1.0.0-source.zip'
- with zipfile.ZipFile(package,'w',zipfile.ZIP_DEFLATED) as z:
+ with zipfile.ZipFile(package,'w',zipfile.ZIP_STORED) as z:
   sources=list((ROOT/'Services/infra_node').glob('*'))+list((ROOT/'firmware/waveshare-relay6ch').rglob('*'))+[ROOT/'scripts/generate_relay6ch.py']
   sources += list((ROOT/'lib/EnrollmentCrypto').glob('*'))+list((ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2').glob('*'))
   sources += list((runtime/'sdk').rglob('*.h'))+list((runtime/'src/ports/esp32s3').glob('*.h'))+[runtime/'src/bootstrap/TcpListenerBackend.h',runtime/'src/diagnostics/StageLog.h',runtime/'scripts/native_idf_crt_bundle.py']
   for f in sorted(set(sources)):
    if not f.is_file() or f.name=='Factory.h':continue
    name=('runtime/'+f.relative_to(runtime).as_posix()) if f.is_relative_to(runtime) else ('apps/'+f.relative_to(ROOT).as_posix())
-   info=zipfile.ZipInfo(name,date_time=(2026,1,1,0,0,0));info.compress_type=zipfile.ZIP_DEFLATED;info.external_attr=0o100644<<16;z.writestr(info,f.read_bytes())
+   info=zipfile.ZipInfo(name,date_time=(2026,1,1,0,0,0));info.compress_type=zipfile.ZIP_STORED;info.external_attr=0o100644<<16;z.writestr(info,f.read_bytes())
  package_digest=hashlib.sha256(package.read_bytes()).hexdigest()
  base=json.loads((ROOT/'profiles/esp32s3-infrastructure/fixtures/catalog.json').read_text())
  p['service']['contracts']=[];p['service']['providers']=[]
@@ -35,7 +35,7 @@ def generate():
  for cap,op,fields,effect in entries:
   contract={'capability_id':cap,'api_version':1,'operations':{op:{'input_schema':{'type':'object','properties':fields,'required':list(fields),'additionalProperties':False},'output_schema':{'type':'object','properties':{'status':{'enum':['succeeded','unknown']}},'required':['status'],'additionalProperties':True},'evidence_schema':{'type':'object'},'effect_semantics':effect,'execution_modes':['job']}}}
   ref={'capability_id':cap,'api_version':1,'contract_digest':digest(contract)}
-  provider={'provider_id':'waveshare-relay6ch-'+cap.replace('.','-'),'revision':1,'implementation_ref':{'kind':'risc-native-static','profile':'waveshare-esp32-s3-relay-6ch','package_digest':package_digest},'provides':[ref],'requires':[],'resource_bindings':[{'name':'job','amount':1,'lifetime':'invocation'},{'name':'pending','amount':2,'lifetime':'invocation'}],'recovery_support':{'checkpoint_formats':[]},'cost_estimate':1,'cost_model':{'maximum_ms':8000},'cost_evidence':'software_bounds_physical_qualification_pending'}
+  provider={'provider_id':'waveshare-relay6ch-'+cap.replace('.','-'),'revision':1,'activation_policy':'independent_device_hardware/1','implementation_ref':{'kind':'risc-native-static','profile':'waveshare-esp32-s3-relay-6ch','package_digest':package_digest},'provides':[ref],'requires':[],'resource_bindings':[{'name':'job','amount':1,'lifetime':'invocation'},{'name':'pending','amount':2,'lifetime':'invocation'}],'recovery_support':{'checkpoint_formats':[]},'cost_estimate':1,'cost_model':{'maximum_ms':8000},'cost_evidence':'software_bounds_physical_qualification_pending'}
   pin={'capability_id':cap,'provider_id':provider['provider_id'],'revision':1,'definition_digest':digest(provider),'package_digest':package_digest}
   p['service']['contracts'].append(ref);p['service']['providers'].append(pin);contracts.append({'contract':contract,'reference':ref});providers.append({'provider':provider,'reference':pin})
  # Empty Wi-Fi deliberately enters the shipped setup portal. Keep the regular
