@@ -34,11 +34,12 @@ def active_bank(flash):
 def update_plan(bundle,flash,recovery_bank=None):
  assert len(flash)==FLASH;assert flash[0x8000:0x8000+3072]==(bundle/'partitions.bin').read_bytes(),'Partition layout mismatch'
  loader=(bundle/'bootloader.bin').read_bytes()
- # The deployed v1.4.2 and v1.9.0 bootloaders use this same paired layout.
+ # The deployed v1.4.2, v1.9.0 and v1.10.0 bootloaders use this same paired layout.
  # Updates keep their exact bytes in place; unknown bootloaders fail preflight.
  compatible_bootloaders={
   '6ef091e6fa1c102ff4449b47677d52fb13ea4078b1888b48bb0a0ed8c24bc3fb',
   'e8ffa5aeaa94262829dcf24032fe491dddafe82427556bbfe8b11d44cab35c49',
+  '1cf61ef3119ff56d366353be1078ce6b8a6c3ddfd562f6e82dd71406de5c70a0',
  }
  assert flash[:len(loader)]==loader or digest(flash[:22640]) in compatible_bootloaders,'Bootloader differs; explicit compatibility/migration required'
  if recovery_bank is None:sequence,active,ota_slot=active_bank(flash);target=1-active
