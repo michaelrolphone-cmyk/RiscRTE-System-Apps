@@ -125,6 +125,71 @@
             "additionalProperties": false
           },
           "maxItems": 4
+        },
+        "camera": {
+          "type": "object",
+          "properties": {
+            "contract": {
+              "type": "object",
+              "properties": {
+                "capability_id": {
+                  "const": "camera.capture"
+                },
+                "api_version": {
+                  "const": 1
+                },
+                "contract_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "capability_id",
+                "api_version",
+                "contract_digest"
+              ],
+              "additionalProperties": false
+            },
+            "provider": {
+              "type": "object",
+              "properties": {
+                "capability_id": {
+                  "const": "camera.capture"
+                },
+                "provider_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "definition_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "package_digest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "capability_id",
+                "provider_id",
+                "revision",
+                "definition_digest",
+                "package_digest"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "contract",
+            "provider"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

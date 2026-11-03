@@ -99,7 +99,7 @@ inline bool Node::roleGrant(JsonObjectConst g){
 inline int Node::roleStep(){
  if(!automaticRole())return 0;
  auto a=journal.state["allocation"].as<JsonObject>();
- if(!roleReady()&&!journal.state["job"].isNull()&&journal.state["job"]["phase"]!="awaiting_acceptance")return stopJob("role_handoff_or_lease_expired");
+ if(!roleReady()&&!cameraJob()&&!journal.state["job"].isNull()&&journal.state["job"]["phase"]!="awaiting_acceptance")return stopJob("role_handoff_or_lease_expired");
  if(a["state"]!="draining"||roleBusy()||roleLeaseUntil<=now()||now()<roleNotBefore)return 0;
  JsonDocument next;if(!roleConfiguration(a["target"],next.to<JsonObject>())){roleLeaseUntil=0;return 0;}
  journal.state["configuration"]=next;a["state"]=a["target"]["state"]=="assigned"?"applied":"idle";
