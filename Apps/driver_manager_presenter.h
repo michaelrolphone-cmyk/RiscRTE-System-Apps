@@ -12,7 +12,7 @@ enum { DM_BACK=1, DM_REFRESH, DM_CANCEL, DM_CONFIRM, DM_INSTALL,
 enum { DM_VALID=1u, DM_INSTALLABLE=2u, DM_INSTALLED=4u, DM_UPDATE=8u,
        DM_REMOVABLE=16u, DM_RETRYABLE=32u, DM_DISCARDABLE=64u };
 typedef struct {
- char id[64],version[32],installed_version[32],detail[128];
+ char id[64],version[32],installed_version[32],label[96],detail[160];
  uint32_t flags;
 } dm_row;
 typedef struct {
@@ -59,6 +59,18 @@ static inline void dm_node(risc_components_document_v1 *d,unsigned action,unsign
  snprintf(n->text,sizeof(n->text),"%.71s",text?text:"");
  d->details[i].symbol=symbol;
 }
+static inline void dm_text_sections(risc_components_document_v1*d,const char*title,const char*text){
+ size_t remaining=strlen(text);
+ if(!remaining){dm_node(d,0,RISC_SCENE_TEXT_NODE,title,"",0,0);return;}
+ while(remaining){
+  size_t n=remaining<71?remaining:71;
+  while(n<remaining&&n&&((unsigned char)text[n]&0xc0u)==0x80u)--n;
+  if(!n)return;
+  char part[72];memcpy(part,text,n);part[n]=0;
+  dm_node(d,0,RISC_SCENE_TEXT_NODE,title,part,0,0);title="";
+  text+=n;remaining-=n;
+ }
+}
 static inline void dm_document(const dm_view *v,uint32_t revision,risc_components_document_v1 *d){
  memset(d,0,sizeof(*d));d->api_version=1;d->struct_size=sizeof(*d);
  d->revision=revision;d->root=1;d->route_count=1;d->routes[0].id=1;
@@ -70,7 +82,7 @@ static inline void dm_document(const dm_view *v,uint32_t revision,risc_component
  if(v->confirming&&r){
   d->flags=RISC_COMPONENTS_CONFIRM;d->cancel_action=DM_CANCEL;
   d->routes[0].back_action=DM_CANCEL;
-  dm_node(d,0,RISC_SCENE_TEXT_NODE,dm_operation_name(v->confirming,r),r->id,0,RISC_SYMBOL_GEAR);
+  dm_node(d,0,RISC_SCENE_TEXT_NODE,dm_operation_name(v->confirming,r),r->id[0]?r->id:r->label,0,RISC_SYMBOL_GEAR);
   dm_node(d,0,RISC_SCENE_TEXT_NODE,"Selected version",r->version,0,0);
   dm_node(d,0,RISC_SCENE_TEXT_NODE,"Existing data",
    v->confirming==DM_DISCARD?"Only the explicitly selected retained stage may be discarded.":"Provider preserves saved data; no driver activation is requested.",0,0);
@@ -90,7 +102,7 @@ static inline void dm_document(const dm_view *v,uint32_t revision,risc_component
   dm_node(d,0,RISC_COMPONENT_SECTION,"Selected driver",r->id,0,RISC_SYMBOL_GEAR);
   dm_node(d,0,RISC_COMPONENT_STAT_ROW,"Candidate version",r->version,0,0);
   dm_node(d,0,RISC_COMPONENT_STAT_ROW,"Installed version",r->installed_version[0]?r->installed_version:"Not installed",0,0);
-  dm_node(d,0,RISC_SCENE_TEXT_NODE,"Package state",r->detail,0,0);
+  dm_text_sections(d,"Package state",r->detail);
   if(v->source==DM_RECOVERY){
    dm_node(d,DM_RETRY,RISC_SCENE_ACTION,"Retry recovery","Reverify retained files offline",
     dm_operation_allowed(v,DM_RETRY)?0:RISC_SCENE_DISABLED,RISC_SYMBOL_REFRESH);
@@ -121,7 +133,7 @@ static inline void dm_document(const dm_view *v,uint32_t revision,risc_component
   unsigned count=v->count<DM_ROWS_MAX?v->count:DM_ROWS_MAX;
   for(unsigned i=0;i<count;i++){
    const dm_row *item=&v->rows[i];
-   dm_node(d,DM_SELECT+i,RISC_COMPONENT_ROW,item->id,item->detail,0,
+   dm_node(d,DM_SELECT+i,RISC_COMPONENT_ROW,item->id[0]?item->id:item->label,item->detail,0,
     item->flags&DM_UPDATE?RISC_SYMBOL_REFRESH:item->flags&DM_INSTALLED?RISC_SYMBOL_CHECK:RISC_SYMBOL_GEAR);
    snprintf(d->details[d->node_count-1].badge,sizeof(d->details[0].badge),"%.15s",item->version);
   }

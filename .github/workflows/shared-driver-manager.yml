@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: 6a2a36b0a459044a057d7b5b99d23d1292e244b5
+          ref: 4292d19a8d36fb17bee29dbbb5d914e9f75d68fc
           path: Runtime
           persist-credentials: false
       - run: python3 scripts/test_driver_manager_presenter.py --runtime Runtime --output out/presenter
@@ -94,7 +94,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: 6a2a36b0a459044a057d7b5b99d23d1292e244b5
+          ref: 4292d19a8d36fb17bee29dbbb5d914e9f75d68fc
           path: Runtime
           persist-credentials: false
       - name: Pinned compiler

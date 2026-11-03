@@ -11,7 +11,8 @@ static dm_controller model;
 static driver_manager_row_v1 copied_rows[DM_ROWS_MAX];
 static risc_components_document_v1 document;
 static portable_network_session network;
-static bool network_started,network_service;
+static bool network_started,network_service,network_draining;
+static const char*network_status;
 __attribute__((visibility("default")))
 const risc_resident_app_descriptor_v1_t risc_resident_app_descriptor_v1={
  1,sizeof(risc_resident_app_descriptor_v1_t),RISC_RESIDENT_ROLE_FOREGROUND,0};
@@ -46,7 +47,8 @@ static bool sync_model(const driver_manager_v1*p){
  memset(copied_rows,0,sizeof(copied_rows));
  for(unsigned i=0;i<s.count;i++){
   ok=p->row_get(p->context,s.generation,i,&copied_rows[i]);if(!live())return false;
-  if(!ok||!driver_manager_row_valid(&copied_rows[i]))return false; /* retry atomic snapshot */
+  if(!ok)return false; /* retry atomic snapshot */
+  if(!driver_manager_row_valid(&copied_rows[i])){retain();return false;}
  }
  driver_manager_snapshot_v1 after={0};ok=p->snapshot(p->context,&after);if(!live())return false;
  if(!ok||!driver_manager_snapshot_valid(&after)){retain();return false;}
@@ -78,6 +80,7 @@ static bool now_ms(uint32_t*out){
  bool ok=rt->health(&h);if(live()&&ok){*out=h.uptime_ms;return true;}return false;
 }
 static bool network_close(void){
+ if(network_started||network_service)network_draining=true;
  if(network_service){
   int rc=portable_network_session_service_end(&network);
   if(!live()||rc==PORTABLE_NETWORK_SERVICE_RETAINED){retain();return false;}
@@ -90,18 +93,21 @@ static bool network_close(void){
   if(rc==PORTABLE_NETWORK_CLOSE_PENDING)return false;
   network_started=false;
  }
- return true;
+ network_draining=false;return true;
 }
 static bool network_ready(const driver_manager_v1*p,const risc_realtime_api_v1*time,uint32_t now){
+ if(network_draining){network_status="Finishing network cleanup; no new request started.";return false;}
+ network_status="Connecting with saved Wi-Fi profile; cancel keeps files.";
  if(!network_started){
   int rc=portable_network_session_start(&network,now);
   if(!live()||rc==PORTABLE_NETWORK_RETAINED){retain();return false;}
   network_started=true;
-  if(rc<0)return false;
+  if(rc<0){network_status="Saved-profile network unavailable; cancel keeps files.";return false;}
  }
  int rc=portable_network_session_step(&network,now);
  if(!live()||rc==PORTABLE_NETWORK_RETAINED){retain();return false;}
- if(rc!=PORTABLE_NETWORK_READY)return false;
+ if(rc!=PORTABLE_NETWORK_READY){if(rc<0)network_status="Saved-profile network unavailable; cancel keeps files.";return false;}
+ network_status="Valid UTC unavailable; cancel keeps files.";
  if(!time||time->api_version!=1||time->struct_size<sizeof(*time)||!time->read)return false;
  risc_realtime_snapshot_v1 utc={.struct_size=sizeof(utc)};
  rc=time->read(time->context,&utc);if(!live())return false;
@@ -117,7 +123,7 @@ static bool network_ready(const driver_manager_v1*p,const risc_realtime_api_v1*t
  return result_valid(p->network_ready(p->context,(uint64_t)utc.epoch_seconds));
 }
 __attribute__((visibility("default"))) int app_module_init(void){
- rt=risc_runtime_get_api(1);retained=false;network_started=network_service=false;
+ rt=risc_runtime_get_api(1);retained=false;network_started=network_service=network_draining=false;network_status=NULL;
  return !rt||rt->api_version!=1||rt->struct_size<RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE||
  !rt->acquire||!rt->release||!rt->retain_invocation||!rt->yield_ms||!rt->health?-1:0;
 }
@@ -156,6 +162,7 @@ reopen:
  risc_scene_navigation_v1 nav={.api_version=1,.struct_size=sizeof(nav),.depth=1,.routes={1}};
  int rc=components->open(scene->context,&document,&nav,&session);if(!live())return;
  if(rc!=RISC_SCENE_OK||!session){if(session||rc==RISC_SCENE_AGAIN||rc==RISC_SCENE_RETAINED){retain();return;}goto cleanup;}
+ sequence=0; /* Each new scene session restarts its event sequence. */
  rc=components->lifecycle.configure(scene->context,session,resident.enabled?RISC_SCENE_FEATURE_SHARED_CONTROLS:0);if(!live())return;
  if(rc!=RISC_SCENE_OK){retain();return;}gate=true;dirty=false;
  for(;;){
@@ -166,7 +173,9 @@ reopen:
   risc_scene_navigation_v1 state={.api_version=1,.struct_size=sizeof(state)};uint32_t flags=0;
   rc=scene->snapshot(scene->context,session,&state,&flags);if(!live())return;
   if(rc!=RISC_SCENE_OK){retain();return;}
+  if(flags&RISC_SCENE_ACTIVITY)resident.activity=true;
   bool settled=!(flags&(RISC_SCENE_PRESENTING|RISC_SCENE_CLOSING|RISC_SCENE_INPUT_BUSY));
+  bool fresh_model=!provider;
   if(provider){
    if(cancel){rc=provider->cancel(provider->context);if(!result_valid(rc))return;
     if(rc==DRIVER_MANAGER_OK&&sync_model(provider)&&dm_controller_clean(&model))cancel=false;
@@ -174,25 +183,39 @@ reopen:
     uint32_t now=0;
     if(now_ms(&now)&&!network_ready(provider,time,now)){
      if(!live())return;
-     snprintf(model.view.status,sizeof(model.view.status),"Network or valid UTC unavailable; cancel keeps existing files.");
+     /* Preserve precise pending/error feedback after the provider snapshot. */
     }
-   }else if(model.view.busy){
+   }else if(model.view.busy&&!network_draining){
     rc=provider->step(provider->context,volume);if(!result_valid(rc))return;
    }
    driver_manager_snapshot_v1 before=model.snapshot;
-   if(sync_model(provider)&&memcmp(&before,&model.snapshot,sizeof(before)))dirty=true;
+   char previous_status[160];memcpy(previous_status,model.view.status,sizeof(previous_status));
+   fresh_model=sync_model(provider);
+   if(fresh_model&&memcmp(&before,&model.snapshot,sizeof(before)))dirty=true;
+   if(model.snapshot.result==DRIVER_MANAGER_NEEDS_NETWORK&&network_status)
+    snprintf(model.view.status,sizeof(model.view.status),"%s",network_status);
+   if(memcmp(previous_status,model.view.status,sizeof(previous_status)))dirty=true;
    if(!live())return;
-   if(dm_controller_clean(&model)&&!network_close()){if(!live())return;}
+   if((network_draining||dm_controller_clean(&model))&&!network_close()){if(!live())return;}
   }
   if(leaving&&(!provider||(!cancel&&dm_controller_clean(&model)))&&network_close())break;
   if(!live())return;
+  bool controls_requested=false;
   risc_scene_event_v1 event={.struct_size=sizeof(event)};
   rc=scene->next(scene->context,session,&event);if(!live())return;
   if(rc!=RISC_SCENE_OK&&rc!=RISC_SCENE_IDLE){retain();return;}
   if(rc==RISC_SCENE_IDLE&&settled)gate=false;
   if(rc==RISC_SCENE_OK&&event.struct_size==sizeof(event)&&event.sequence>sequence){
    sequence=event.sequence;
-   if(settled&&!gate&&!leaving&&dm_event_allowed(&document,&event)){
+   if(event.kind==RISC_SCENE_SUSPEND_EVENT&&event.document_revision==revision){
+    leaving=true;cancel=true;gate=true;
+   }
+   controls_requested=fresh_model&&resident.enabled&&settled&&!gate&&!leaving&&!model.view.busy&&
+    event.kind==RISC_SCENE_CONTROLS_EVENT&&event.document_revision==revision&&
+    !event.node&&!event.action&&!event.value;
+   if(settled&&!gate&&!leaving&&dm_event_allowed(&document,&event)&&
+    ((fresh_model&&!dirty&&dm_controller_clean(&model)&&!cancel&&!network_started&&!network_service&&!network_draining)||
+     event.action==DM_BACK||event.action==DM_CANCEL)){
     gate=true;dirty=true;unsigned action=event.action;
     if(action==DM_CANCEL){
      if(model.view.busy)cancel=true;
@@ -226,9 +249,9 @@ reopen:
    rc=components->update(scene->context,session,&document);if(!live())return;
    if(rc!=RISC_SCENE_OK){retain();return;}dirty=false;
   }
-  if(settled&&!model.view.busy&&!network_started&&!network_service&&!leaving){
+  if(fresh_model&&settled&&!model.view.busy&&!network_started&&!network_service&&!network_draining&&!leaving){
    rc=risc_scene_resident_poll_v1(&resident,flags);if(!live()||rc==RISC_RESIDENT_RETAINED){retain();return;}
-   if((rc==RISC_RESIDENT_OK&&resident.policy)||(event.kind==RISC_SCENE_CONTROLS_EVENT&&event.document_revision==revision&&rc==RISC_RESIDENT_OK)){
+   if((rc==RISC_RESIDENT_OK&&resident.policy)||(controls_requested&&rc==RISC_RESIDENT_OK)){
     if(!close_scene(scene,session))return;
     session=0;
     rc=risc_scene_resident_dispatch_v1(&resident,resident.policy?RISC_RESIDENT_CHECKPOINT_POLICY:RISC_RESIDENT_CHECKPOINT_CONTROLS);

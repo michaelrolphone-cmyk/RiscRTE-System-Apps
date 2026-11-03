@@ -40,5 +40,15 @@ int main(void){
  event=(risc_scene_event_v1){.struct_size=sizeof(event),.kind=RISC_SCENE_ACTION_EVENT,.document_revision=7,.node=action(DM_CONFIRM)->id,.action=DM_CONFIRM};assert(!dm_event_allowed(&document,&event));
  view.confirming=0;view.busy=true;build();assert(enabled(DM_CANCEL));assert(!dm_operation_allowed(&view,DM_RETRY));
  view.busy=false;view.count=1000;view.selected=999;build();assert(!dm_operation_allowed(&view,DM_INSTALL));assert(document.node_count<=RISC_COMPONENTS_MAX_NODES);
+ view.source=DM_RECOVERY;view.count=1;view.selected=0;view.rows[0].id[0]=0;
+ strcpy(view.rows[0].label,"Interrupted download");memset(view.rows[0].detail,'x',159);view.rows[0].detail[159]=0;
+ build();unsigned detail_bytes=0;bool detail_started=false;
+ for(unsigned i=0;i<document.node_count;i++){
+  if(!strcmp(document.nodes[i].label,"Package state"))detail_started=true;
+  else if(document.nodes[i].label[0])detail_started=false;
+  if(detail_started)detail_bytes+=(unsigned)strlen(document.nodes[i].text);
+ }
+ assert(detail_bytes==159);
+ view.selected=-1;build();assert(!strcmp(action(DM_SELECT)->label,"Interrupted download"));
  puts("Driver Manager semantic presentation: capability/row/source/confirmation/stale-input matrix PASS");return 0;
 }

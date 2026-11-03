@@ -12,6 +12,7 @@ int main(void){
  s.custody=DRIVER_MANAGER_CUSTODY_PENDING;assert(!driver_manager_select(&s,0,&r,&k));s.custody=0;
  s.result=DRIVER_MANAGER_WORKING;assert(!driver_manager_select(&s,0,&r,&k));s.result=0;
  s.result=DRIVER_MANAGER_RETAINED;assert(!driver_manager_select(&s,0,&r,&k));s.result=0;
+ s.result=DRIVER_MANAGER_NEEDS_NETWORK;assert(!driver_manager_select(&s,0,&r,&k));assert(!driver_manager_selection_matches(&s,&k,&r));s.result=0;
  s.result=123;assert(!driver_manager_snapshot_valid(&s));s.result=0;
  s.available_sources=0;assert(!driver_manager_select(&s,0,&r,&k));s.available_sources=7;
  assert(!driver_manager_select(&s,1,&r,&k));

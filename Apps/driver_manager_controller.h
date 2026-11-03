@@ -29,7 +29,7 @@ static inline bool dm_controller_copy(dm_controller*c,const driver_manager_snaps
   c->rows[i]=rows[i];dm_row*r=&c->view.rows[i];memset(r,0,sizeof(*r));
   memcpy(r->id,rows[i].id,sizeof(r->id));memcpy(r->version,rows[i].version,sizeof(r->version));
   memcpy(r->installed_version,rows[i].installed_version,sizeof(r->installed_version));
-  snprintf(r->detail,sizeof(r->detail),"%.127s",rows[i].detail);
+  memcpy(r->label,rows[i].label,sizeof(r->label));memcpy(r->detail,rows[i].detail,sizeof(r->detail));
   uint32_t f=rows[i].flags;
   r->flags=((f&DRIVER_MANAGER_VALID)?DM_VALID:0)|
    ((f&(DRIVER_MANAGER_CAN_INSTALL|DRIVER_MANAGER_CAN_UPDATE))?DM_INSTALLABLE:0)|
