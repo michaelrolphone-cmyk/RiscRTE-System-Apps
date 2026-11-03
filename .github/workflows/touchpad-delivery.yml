@@ -72,12 +72,27 @@ jobs:
             git -C "$source" rev-parse HEAD > "evidence/source/$source.head"
           done
           sha256sum evidence/source/*.tar.gz > evidence/source/archives.sha256
+      - name: Held input and unchanged prefix regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in normal sanitized; do
+            san=(); if [ "$mode" = sanitized ]; then san=(--sanitize); fi
+            python System/scripts/test_scene_pointer.py --runtime X4Runtime --output "evidence/pointer-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/pointer-$mode.log"
+            python System/scripts/test_scene_hold.py --runtime X4Runtime --output "evidence/hold-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/hold-$mode.log"
+            mkdir -p "evidence/original-$mode"
+            python -c 'import sys; from pathlib import Path; sys.path.insert(0,"System/scripts"); import test_scene_host; n=test_scene_host.run(Path("X4Runtime").resolve(),Path(sys.argv[1]).resolve(),sys.argv[2]=="sanitized"); Path(sys.argv[1],"result.txt").write_text(str(n)+" passed\n"); print(n,"passed")' "evidence/original-$mode" "$mode" 2>&1 | tee "evidence/logs/original-$mode.log"
+            python System/scripts/test_scene_canvas.py --runtime X4Runtime --output "evidence/canvas-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/canvas-$mode.log"
+            python System/scripts/test_scene_keypad.py --runtime X4Runtime --output "evidence/keypad-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/keypad-$mode.log"
+          done
       - name: Actual app and scene lifecycle qualification
         shell: bash
         run: |
           set -euo pipefail
           for mode in normal sanitized; do
             flags=(); if [ "$mode" = sanitized ]; then flags=(--sanitize); fi
+            python Utilities/scripts/test_ble_buttons_session.py --runtime X4Runtime --system System --output "evidence/focused-$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/focused-$mode.log"
+            python Utilities/scripts/test_scanner_background.py --runtime X4Runtime --system System --utilities Utilities --output "evidence/background-$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/background-$mode.log"
             python Utilities/scripts/test_ble_touchpad_session.py --runtime X4Runtime --system System --output "evidence/controller-$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/controller-$mode.log"
             python Utilities/scripts/test_ble_touchpad_runtime.py --runtime X4Runtime --system-apps System --output "evidence/runtime-$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/runtime-$mode.log"
           done
@@ -104,6 +119,10 @@ jobs:
             flags=(); if [ "$mode" = sanitized ]; then flags=(--sanitize); fi
             python System/scripts/test_home_product_admission.py --runtime Runtime --x4-runtime X4Runtime --x4-product X4Product --watch-product WatchProduct --wave-product WaveProduct --assembly evidence/assembly --output "evidence/admission/$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/admission-$mode.log"
           done
+      - name: Verify publication boundary
+        run: |
+          python System/scripts/publish_touchpad_shared.py --build evidence --expected-source "${{ github.event.pull_request.head.sha || github.sha }}"
+          python System/scripts/test_touchpad_publication.py --build evidence --source "${{ github.event.pull_request.head.sha || github.sha }}" | tee evidence/logs/publication-boundary.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -112,3 +131,32 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
+  publish:
+    needs: qualify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/work/shared-touchpad-pointer-20261103' && github.repository == 'michaelrolphone-cmyk/RiscRTE-System-Apps'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: touchpad-delivery-${{ github.sha }}
+          path: evidence
+      - name: Publish and verify exact qualified bytes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python System/scripts/publish_touchpad_shared.py --build evidence --publish --expected-source "${{ github.sha }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: touchpad-publication-${{ github.sha }}
+          path: |
+            evidence/publication-plan.json
+            evidence/publication.json
+          if-no-files-found: error
