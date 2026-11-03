@@ -1,0 +1,2 @@
+# NativeHardware uses the ESP-IDF legacy I2C driver. Keep SCCB on the same API.
+CONFIG_SCCB_HARDWARE_I2C_DRIVER_LEGACY=y
