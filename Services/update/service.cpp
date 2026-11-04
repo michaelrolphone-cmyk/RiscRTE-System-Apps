@@ -228,7 +228,15 @@ bool start(const risc_provider_dependency_v1 *deps,size_t count) {
  view={};view.struct_size=sizeof(view);started=true;return true;
 }
 void stop(){(void)quiesce();}
-const software_update_v1 api={1,sizeof(api),nullptr,refresh,step,status,get,begin,cancel,activate,restart};
+bool readiness(void*,software_update_readiness_v1 *out) {
+ if(!started||!out||out->struct_size<sizeof(*out))return false;
+ software_update_readiness_v1 result={};result.struct_size=sizeof(result);
+ result.configured=WatchUpdate::CatalogUrl[0]!=0;
+ result.network_required=result.configured;
+ std::strcpy(result.reason,result.configured?"Update feed requires network access":"No update feed configured");
+ *out=result;return true;
+}
+const software_update_metadata_api_v1 api={{1,sizeof(api),nullptr,refresh,step,status,get,begin,cancel,activate,restart},SOFTWARE_UPDATE_METADATA_TAG,SOFTWARE_UPDATE_METADATA_API_V1,readiness};
 const risc_driver_v2 driver={2,sizeof(driver),UPDATE_FIRMWARE?"software-update-firmware":"software-update-apps",UPDATE_FIRMWARE?SOFTWARE_UPDATE_FIRMWARE_CAPABILITY:SOFTWARE_UPDATE_APPS_CAPABILITY,1,&api,start,stop,quiesce};
 }
 extern "C" __attribute__((visibility("default"))) const risc_driver_v2 *t5_driver_get(uint32_t abi){return abi==2?&driver:nullptr;}

@@ -1,0 +1,968 @@
+{
+  "release": "touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708",
+  "assets": [
+    {
+      "name": "watch-sd-apps.zip",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/watch-sd-apps.zip",
+      "size": 22,
+      "sha256": "8739c76e681f900923b900c9df0ef75cf421d39cabb54650c4b9ad19b6a76d85"
+    },
+    {
+      "name": "watch-store.bin",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/watch-store.bin",
+      "size": 5570560,
+      "sha256": "9b5945ff7fe44c0576369c706290a923a32cafb3a566440a5127e9d1f9fef783"
+    },
+    {
+      "name": "wave-sd-apps.zip",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/wave-sd-apps.zip",
+      "size": 1706335,
+      "sha256": "38500e7b9d0fc2d1ba3906b59e5939550f45f4772a8913ef2929bce156019657"
+    },
+    {
+      "name": "wave-store.bin",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/wave-store.bin",
+      "size": 5570560,
+      "sha256": "07bba91238a7fd2fe3e83cc7717f9f700f34ae5fdd2c4aa656c187f39faefa4e"
+    },
+    {
+      "name": "x4-sd-apps.zip",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/x4-sd-apps.zip",
+      "size": 5446581,
+      "sha256": "036cffe449b267693b9a69baa452bcedc79dadfb5cbb268424b7b68a3694de4b"
+    },
+    {
+      "name": "x4-store.bin",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/x4-store.bin",
+      "size": 5308416,
+      "sha256": "1f3b7ff8a3b18d402982bd90dc8d760a7f01132e2daf8fc54752c6ae348fac71"
+    }
+  ],
+  "authority": {
+    "watch": {
+      "applications": [
+        {
+          "row": {
+            "grants": [
+              {
+                "api": 1,
+                "capability": "display.output",
+                "instance_id": 5
+              },
+              {
+                "api": 1,
+                "capability": "input.touch.raw",
+                "instance_id": 6
+              },
+              {
+                "api": 2,
+                "capability": "rtc.clock",
+                "instance_id": 8
+              },
+              {
+                "api": 1,
+                "capability": "board.battery",
+                "instance_id": 4
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value",
+                "instance_id": 6
+              },
+              {
+                "api": 1,
+                "capability": "net.wifi",
+                "instance_id": 15
+              },
+              {
+                "api": 1,
+                "capability": "software.update.firmware",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "alarm.service",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value",
+                "instance_id": 1
+              },
+              {
+                "api": 1,
+                "capability": "bluetooth.hci",
+                "instance_id": 16
+              },
+              {
+                "api": 1,
+                "capability": "motion.accel",
+                "instance_id": 7
+              },
+              {
+                "api": 1,
+                "capability": "telemetry.broadcast",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "contexts.service",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "storage.shared-data",
+                "file": "context-fingerprints.cfp",
+                "instance_id": 2
+              },
+              {
+                "api": 1,
+                "capability": "storage.shared-data",
+                "file": "context-fingerprints.cfp",
+                "instance_id": 3
+              },
+              {
+                "api": 1,
+                "capability": "storage.shared-data",
+                "file": "context-rules.ctx",
+                "instance_id": 4
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value",
+                "instance_id": 3
+              },
+              {
+                "api": 1,
+                "capability": "input.power-key",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "power.sleep",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "display.power",
+                "instance_id": 0
+              }
+            ],
+            "manifest": "ota_update.json"
+          },
+          "manifest": {
+            "architecture": "xtensa-esp32s3",
+            "display_name": "Firmware Update",
+            "entry": "app_main",
+            "file_name": "ota_update.elf",
+            "icon": "solid:f019",
+            "id": "ota_update",
+            "requires": [
+              {
+                "api": 1,
+                "capability": "display.output"
+              },
+              {
+                "api": 1,
+                "capability": "input.touch.raw"
+              },
+              {
+                "api": 2,
+                "capability": "rtc.clock"
+              },
+              {
+                "api": 1,
+                "capability": "board.battery"
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value"
+              },
+              {
+                "api": 1,
+                "capability": "net.wifi"
+              },
+              {
+                "api": 1,
+                "capability": "software.update.firmware"
+              },
+              {
+                "api": 1,
+                "capability": "alarm.service"
+              },
+              {
+                "api": 1,
+                "capability": "bluetooth.hci"
+              },
+              {
+                "api": 1,
+                "capability": "motion.accel"
+              },
+              {
+                "api": 1,
+                "capability": "telemetry.broadcast"
+              },
+              {
+                "api": 1,
+                "capability": "contexts.service"
+              },
+              {
+                "api": 1,
+                "capability": "storage.shared-data"
+              },
+              {
+                "api": 1,
+                "capability": "input.power-key"
+              },
+              {
+                "api": 1,
+                "capability": "power.sleep"
+              },
+              {
+                "api": 1,
+                "capability": "display.power"
+              }
+            ],
+            "type": "application",
+            "version": "1.1.8"
+          }
+        }
+      ],
+      "providers": [
+        {
+          "row": {
+            "instance_id": 8,
+            "manifest": "rtc/manifest.json"
+          },
+          "manifest": {
+            "architecture": "xtensa-esp32s3",
+            "driver_abi": 2,
+            "file_name": "driver.elf",
+            "hardware_compatibility": [
+              {
+                "compatible": "nxp,pcf8563",
+                "config_type": "peripheral.i2c",
+                "config_version": 1,
+                "revisions": [
+                  "unspecified"
+                ]
+              }
+            ],
+            "id": "twatch-rtc",
+            "physical_verification": "pending",
+            "provides": [
+              {
+                "api": 2,
+                "capability": "rtc.clock"
+              }
+            ],
+            "requires": [
+              {
+                "api": 1,
+                "capability": "hardware.device"
+              },
+              {
+                "api": 1,
+                "capability": "i2c.bus"
+              },
+              {
+                "api": 1,
+                "capability": "gpio.bank"
+              }
+            ],
+            "status": "software-only-runtime-backfill-required",
+            "type": "driver",
+            "version": "0.3.0"
+          }
+        },
+        {
+          "row": {
+            "manifest": "update-fw/manifest.json"
+          },
+          "manifest": {
+            "type": "driver",
+            "id": "software-update-firmware",
+            "version": "0.1.5",
+            "driver_abi": 2,
+            "architecture": "xtensa-esp32s3",
+            "file_name": "driver.elf",
+            "requires": [
+              {
+                "capability": "platform.http-client",
+                "api": 1
+              },
+              {
+                "capability": "platform.bank-store",
+                "api": 1
+              },
+              {
+                "capability": "platform.clock",
+                "api": 1
+              }
+            ],
+            "provides": [
+              {
+                "capability": "software.update.firmware",
+                "api": 1
+              }
+            ],
+            "status": "development-only; no deployment or release publication"
+          }
+        },
+        {
+          "row": {
+            "manifest": "civil-clock/manifest.json"
+          },
+          "manifest": {
+            "architecture": "xtensa-esp32s3",
+            "driver_abi": 2,
+            "file_name": "driver.elf",
+            "id": "civil-clock-watch",
+            "provides": [
+              {
+                "api": 1,
+                "capability": "time.civil"
+              }
+            ],
+            "requires": [
+              {
+                "api": 2,
+                "capability": "rtc.clock"
+              }
+            ],
+            "type": "driver",
+            "version": "0.2.0"
+          }
+        }
+      ],
+      "store_size": 5570560,
+      "provider_policy": {
+        "product": "twatch-s3",
+        "feed": "watch-default"
+      }
+    },
+    "wave": {
+      "applications": [
+        {
+          "row": {
+            "grants": [
+              {
+                "api": 1,
+                "capability": "display.output",
+                "instance_id": 5
+              },
+              {
+                "api": 1,
+                "capability": "input.touch.raw",
+                "instance_id": 6
+              },
+              {
+                "api": 2,
+                "capability": "rtc.clock",
+                "instance_id": 8
+              },
+              {
+                "api": 1,
+                "capability": "board.battery",
+                "instance_id": 4
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value",
+                "instance_id": 6
+              },
+              {
+                "api": 1,
+                "capability": "net.wifi",
+                "instance_id": 15
+              },
+              {
+                "api": 1,
+                "capability": "software.update.firmware",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "alarm.service",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value",
+                "instance_id": 1
+              },
+              {
+                "api": 1,
+                "capability": "bluetooth.hci",
+                "instance_id": 16
+              },
+              {
+                "api": 1,
+                "capability": "motion.accel",
+                "instance_id": 7
+              },
+              {
+                "api": 1,
+                "capability": "telemetry.broadcast",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "contexts.service",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "storage.shared-data",
+                "file": "context-fingerprints.cfp",
+                "instance_id": 2
+              },
+              {
+                "api": 1,
+                "capability": "storage.shared-data",
+                "file": "context-fingerprints.cfp",
+                "instance_id": 3
+              },
+              {
+                "api": 1,
+                "capability": "storage.shared-data",
+                "file": "context-rules.ctx",
+                "instance_id": 4
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value",
+                "instance_id": 3
+              },
+              {
+                "api": 1,
+                "capability": "input.power-key",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "power.sleep",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "display.power",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value.atomic",
+                "instance_id": 1
+              }
+            ],
+            "image_source": {
+              "path": "Apps/ota_update/ota_update.elf",
+              "volume_instance": 12
+            },
+            "manifest": "ota_update.json"
+          },
+          "manifest": {
+            "architecture": "xtensa-esp32s3",
+            "display_name": "Firmware Update",
+            "entry": "app_main",
+            "file_name": "ota_update.elf",
+            "icon": "solid:f019",
+            "id": "ota_update",
+            "requires": [
+              {
+                "api": 1,
+                "capability": "display.output"
+              },
+              {
+                "api": 1,
+                "capability": "input.touch.raw"
+              },
+              {
+                "api": 2,
+                "capability": "rtc.clock"
+              },
+              {
+                "api": 1,
+                "capability": "board.battery"
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value"
+              },
+              {
+                "api": 1,
+                "capability": "net.wifi"
+              },
+              {
+                "api": 1,
+                "capability": "software.update.firmware"
+              },
+              {
+                "api": 1,
+                "capability": "alarm.service"
+              },
+              {
+                "api": 1,
+                "capability": "bluetooth.hci"
+              },
+              {
+                "api": 1,
+                "capability": "motion.accel"
+              },
+              {
+                "api": 1,
+                "capability": "telemetry.broadcast"
+              },
+              {
+                "api": 1,
+                "capability": "contexts.service"
+              },
+              {
+                "api": 1,
+                "capability": "storage.shared-data"
+              },
+              {
+                "api": 1,
+                "capability": "input.power-key"
+              },
+              {
+                "api": 1,
+                "capability": "power.sleep"
+              },
+              {
+                "api": 1,
+                "capability": "display.power"
+              },
+              {
+                "capability": "storage.key-value.atomic",
+                "api": 1
+              }
+            ],
+            "type": "application",
+            "version": "1.1.9"
+          }
+        }
+      ],
+      "providers": [
+        {
+          "row": {
+            "instance_id": 8,
+            "manifest": "rtc/manifest.json"
+          },
+          "manifest": {
+            "architecture": "xtensa-esp32s3",
+            "driver_abi": 2,
+            "file_name": "driver.elf",
+            "hardware_compatibility": [
+              {
+                "compatible": "nxp,pcf85063a",
+                "config_type": "peripheral.i2c",
+                "config_version": 1,
+                "revisions": [
+                  "unspecified"
+                ]
+              }
+            ],
+            "id": "waveshare-rtc",
+            "physical_verification": "pending",
+            "provides": [
+              {
+                "api": 2,
+                "capability": "rtc.clock"
+              }
+            ],
+            "requires": [
+              {
+                "api": 1,
+                "capability": "hardware.device"
+              },
+              {
+                "api": 1,
+                "capability": "i2c.bus"
+              },
+              {
+                "api": 1,
+                "capability": "gpio.bank"
+              }
+            ],
+            "status": "development",
+            "type": "driver",
+            "version": "0.2.0"
+          }
+        },
+        {
+          "row": {
+            "manifest": "civil-clock/manifest.json"
+          },
+          "manifest": {
+            "architecture": "xtensa-esp32s3",
+            "driver_abi": 2,
+            "file_name": "driver.elf",
+            "id": "civil-clock-watch",
+            "provides": [
+              {
+                "api": 1,
+                "capability": "time.civil"
+              }
+            ],
+            "requires": [
+              {
+                "api": 2,
+                "capability": "rtc.clock"
+              }
+            ],
+            "type": "driver",
+            "version": "0.2.0"
+          }
+        },
+        {
+          "row": {
+            "manifest": "update_fw/manifest.json"
+          },
+          "manifest": {
+            "type": "driver",
+            "id": "software-update-firmware",
+            "version": "0.1.4",
+            "driver_abi": 2,
+            "architecture": "xtensa-esp32s3",
+            "file_name": "driver.elf",
+            "requires": [
+              {
+                "capability": "platform.http-client",
+                "api": 1
+              },
+              {
+                "capability": "platform.bank-store",
+                "api": 1
+              },
+              {
+                "capability": "platform.clock",
+                "api": 1
+              }
+            ],
+            "provides": [
+              {
+                "capability": "software.update.firmware",
+                "api": 1
+              }
+            ],
+            "status": "development-only; no deployment or release publication"
+          }
+        }
+      ],
+      "store_size": 5570560,
+      "provider_policy": {
+        "selection": "external-provider-only",
+        "header_sha256": "44067223849290f2c2d5a70e7c318c50028f4b4e664e8495452ba965dac59f19"
+      }
+    },
+    "x4": {
+      "applications": [
+        {
+          "row": {
+            "grants": [
+              {
+                "api": 1,
+                "capability": "display.output",
+                "instance_id": 3
+              },
+              {
+                "api": 1,
+                "capability": "input.touch.raw",
+                "instance_id": 4
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value",
+                "instance_id": 6
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value",
+                "instance_id": 1
+              },
+              {
+                "api": 1,
+                "capability": "net.wifi",
+                "instance_id": 15
+              },
+              {
+                "api": 1,
+                "capability": "software.update.firmware",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "board.battery",
+                "instance_id": 7
+              },
+              {
+                "api": 1,
+                "capability": "input.navigation",
+                "instance_id": 6
+              },
+              {
+                "api": 2,
+                "capability": "alarm.service",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "runtime.realtime",
+                "instance_id": 0
+              },
+              {
+                "api": 1,
+                "capability": "telemetry.broadcast",
+                "instance_id": 0
+              }
+            ],
+            "manifest": "ota_update.json"
+          },
+          "manifest": {
+            "type": "application",
+            "id": "ota_update",
+            "version": "1.2.15",
+            "architecture": "xtensa-esp32s3",
+            "file_name": "ota_update.elf",
+            "entry": "app_main",
+            "requires": [
+              {
+                "capability": "display.output",
+                "api": 1
+              },
+              {
+                "capability": "input.touch.raw",
+                "api": 1
+              },
+              {
+                "capability": "storage.key-value",
+                "api": 1
+              },
+              {
+                "capability": "net.wifi",
+                "api": 1
+              },
+              {
+                "capability": "software.update.firmware",
+                "api": 1
+              },
+              {
+                "capability": "input.navigation",
+                "api": 1
+              },
+              {
+                "capability": "alarm.service",
+                "api": 2
+              },
+              {
+                "capability": "runtime.realtime",
+                "api": 1
+              },
+              {
+                "capability": "board.battery",
+                "api": 1
+              },
+              {
+                "capability": "telemetry.broadcast",
+                "api": 1
+              }
+            ]
+          }
+        }
+      ],
+      "providers": [
+        {
+          "row": {
+            "image_source": {
+              "internal_fallback": true,
+              "path": "Drivers/x4pro-rtc/image-47a372b44c897f0d95ff6d96e83b0bd34dcc8b910084fe61cfa99be609889d58.elf",
+              "volume_instance": 9
+            },
+            "instance_id": 8,
+            "manifest": "rtc/manifest.json"
+          },
+          "manifest": {
+            "type": "driver",
+            "id": "x4pro-rtc",
+            "version": "0.1.1",
+            "driver_abi": 2,
+            "architecture": "xtensa-esp32s3",
+            "file_name": "driver.elf",
+            "requires": [
+              {
+                "capability": "hardware.device",
+                "api": 1
+              },
+              {
+                "capability": "i2c.bus",
+                "api": 1
+              }
+            ],
+            "provides": [
+              {
+                "capability": "rtc.clock",
+                "api": 2
+              }
+            ],
+            "hardware_compatibility": [
+              {
+                "compatible": "riscrte,pcf8563-compatible-rtc",
+                "revisions": [
+                  "unspecified"
+                ],
+                "config_type": "peripheral.i2c",
+                "config_version": 1
+              }
+            ],
+            "physical_verification": "pending"
+          }
+        },
+        {
+          "row": {
+            "image_source": {
+              "internal_fallback": true,
+              "path": "Drivers/software-update-firmware/image-8650b6bae3db171bae42f45adf4bbda4beeeeb42b349404fc8d4628351c4bc03.elf",
+              "volume_instance": 9
+            },
+            "manifest": "upd-fw/manifest.json"
+          },
+          "manifest": {
+            "type": "driver",
+            "id": "software-update-firmware",
+            "version": "0.1.6",
+            "driver_abi": 2,
+            "architecture": "xtensa-esp32s3",
+            "file_name": "driver.elf",
+            "requires": [
+              {
+                "capability": "platform.http-client",
+                "api": 1
+              },
+              {
+                "capability": "platform.bank-store",
+                "api": 1
+              },
+              {
+                "capability": "platform.clock",
+                "api": 1
+              }
+            ],
+            "provides": [
+              {
+                "capability": "software.update.firmware",
+                "api": 1
+              }
+            ],
+            "status": "development-only; no deployment or release publication"
+          }
+        },
+        {
+          "row": {
+            "image_source": {
+              "internal_fallback": true,
+              "path": "Drivers/civil-clock-x4/image-d19f4281f20032f750b8df1676e2bc905ddfed67db6f914f06ffde554ca9362d.elf",
+              "volume_instance": 9
+            },
+            "key_value": [
+              {
+                "access": "read",
+                "key": "time_zone",
+                "namespace": 1
+              }
+            ],
+            "manifest": "civil-clock-x4/manifest.json"
+          },
+          "manifest": {
+            "architecture": "xtensa-esp32s3",
+            "driver_abi": 2,
+            "file_name": "driver.elf",
+            "id": "civil-clock-x4",
+            "provides": [
+              {
+                "api": 1,
+                "capability": "time.civil"
+              }
+            ],
+            "requires": [
+              {
+                "api": 1,
+                "capability": "platform.realtime"
+              },
+              {
+                "api": 1,
+                "capability": "storage.key-value.bound"
+              }
+            ],
+            "type": "driver",
+            "version": "0.2.0"
+          }
+        }
+      ],
+      "store_size": 5308416,
+      "provider_policy": {
+        "product": "xteink-x4-pro",
+        "repository": "michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO",
+        "catalog_url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO/release-index/release-index.json",
+        "feed_configured": true,
+        "runtime_only": false
+      }
+    }
+  },
+  "native_assets": [
+    {
+      "name": "native-watch-descriptor.json",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/native-watch-descriptor.json",
+      "size": 692,
+      "sha256": "c81ecf336d43603864decd8dbe4f92b78c9bb8a5802919f040f6e499c766a574"
+    },
+    {
+      "name": "native-watch-firmware.bin",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/native-watch-firmware.bin",
+      "size": 1634624,
+      "sha256": "d55b65af993adb40018ed5d8f990f8cedb26382ba612e5bd7f13c74395d66313"
+    },
+    {
+      "name": "native-watch-qualification.json",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/native-watch-qualification.json",
+      "size": 203741,
+      "sha256": "509a8373d91507c219b88eae4d057957a0fd4e92d2eff3d19d618488e1023876"
+    },
+    {
+      "name": "native-wave-descriptor.json",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/native-wave-descriptor.json",
+      "size": 711,
+      "sha256": "ffd8637e37bf361402efe8e8aea9690226d030490cd033cab6c8199a468d31db"
+    },
+    {
+      "name": "native-wave-firmware.bin",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/native-wave-firmware.bin",
+      "size": 1819248,
+      "sha256": "cb3985c2e40e93d0b9c49e82055bd578fdf716677aedf9b0afef52b6df4f2f66"
+    },
+    {
+      "name": "native-wave-qualification.json",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/native-wave-qualification.json",
+      "size": 208320,
+      "sha256": "67bbc10301e8b4d2ada9fa59cf4339c236903e109d5fef5eb7d4ccb0eabef70c"
+    },
+    {
+      "name": "native-x4-descriptor.json",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/native-x4-descriptor.json",
+      "size": 694,
+      "sha256": "3746698738056a2ca1d4a15c79c0ee20ff80936331e5cbbe80f5067373f23911"
+    },
+    {
+      "name": "native-x4-firmware.bin",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/native-x4-firmware.bin",
+      "size": 1816128,
+      "sha256": "ae5206ac566f9651d693c9834b17a39173ff961f2f9e580e828931125cf6f101"
+    },
+    {
+      "name": "native-x4-qualification.json",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/touchpad-shared-77c427a75e5651f03119c059fcdfd36d23df8708/native-x4-qualification.json",
+      "size": 12495,
+      "sha256": "628097ddff6866fce3f7e48123e1337990030e6368801a0e303c1d067eb536f8"
+    }
+  ]
+}
