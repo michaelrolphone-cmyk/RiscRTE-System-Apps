@@ -1,4 +1,8 @@
 #include "bootstrap/Runtime.h"
+#if __has_include("RuntimeFileFixture.h")
+#include "RuntimeFileFixture.h"
+#define POLICY_EXPLICIT_FILES 1
+#endif
 #include <cassert>
 #include <cstdio>
 #include <fstream>
@@ -58,9 +62,16 @@ extern "C" bool policy_runtime_reset_safe(){return runtime&&runtime->residentRes
 int main(int argc,char**argv){
  assert(argc==3);setup(argv[1]);policy_fixture_setup(argv[2]);
  runtime=new RiscBoot::Runtime({owner,policy_fixture_health,policy_fixture_delay,policy_fixture_log,nullptr,&backend,policy_fixture_safe});
+#ifdef POLICY_EXPLICIT_FILES
+ auto* files=new RiscTest::FileSources({std::string(argv[1])});assert(files->bind(*runtime));
+#endif
  if(!runtime->prepare(argv[1])){std::fprintf(stderr,"System integration admission: %s\n",runtime->error());return 1;}
  const bool ran=runtime->run();
  if(!ran&&!runtime->retained()){std::fprintf(stderr,"System integration execution: %s\n",runtime->error());return 2;}
  policy_fixture_verify(runtime->retained());
- if(runtime->retained())retainedRuntime=runtime;else delete runtime;
+ if(runtime->retained())retainedRuntime=runtime;else {delete runtime;
+#ifdef POLICY_EXPLICIT_FILES
+ delete files;
+#endif
+ }
 }

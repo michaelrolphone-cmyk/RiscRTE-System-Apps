@@ -22,3 +22,11 @@ void policy_test_host_busy(bool busy) {
  (void)busy;
 #endif
 }
+
+unsigned policy_test_timer(unsigned deep) {
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+ return deep?quick.deep_ms:quick.idle_ms;
+#else
+ (void)deep;return 0;
+#endif
+}

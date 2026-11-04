@@ -11,6 +11,10 @@ extern void policy_fixture_event(unsigned,unsigned);
 extern void policy_fixture_step(unsigned);
 extern void policy_fixture_busy(bool);
 extern void policy_fixture_capture(bool);
+extern unsigned policy_test_timer(unsigned);
+extern void policy_fixture_set_timer_hook(unsigned (*)(unsigned));
+extern void policy_fixture_save_timers(void);
+extern unsigned policy_fixture_timer(unsigned);
 extern void policy_fixture_set_busy_hook(void (*)(bool));
 extern unsigned policy_test_state(void);
 extern int policy_test_checkpoint(unsigned);
@@ -36,6 +40,7 @@ void app_main(void) {
  assert(paper_frame_drain());
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
  policy_fixture_set_busy_hook(policy_test_host_busy);
+ policy_fixture_set_timer_hook(policy_test_timer);
  int status=portable_resident_run_foreground("client.elf");policy_fixture_event(1,(unsigned)(status+1));
  if(status>=0 && portable_resident_take_sleep()) {
   policy_fixture_event(5,1);
@@ -43,6 +48,16 @@ void app_main(void) {
  }
 #else
  const char *mode=policy_fixture_mode();const unsigned model=71;
+ if(!strcmp(mode,"settings-reload")) {
+  assert(policy_fixture_timer(0)==5000&&policy_fixture_timer(1)==300000);
+  policy_fixture_save_timers();
+  assert(policy_fixture_timer(0)==5000&&policy_fixture_timer(1)==300000);
+  assert(policy_test_checkpoint(RISC_RESIDENT_CHECKPOINT_POLL)==RISC_RESIDENT_OK);
+  assert((policy_test_state()&2u)!=0);
+  assert(policy_test_checkpoint(RISC_RESIDENT_CHECKPOINT_POLICY)==RISC_RESIDENT_OK);
+  assert(policy_fixture_timer(0)==12000&&policy_fixture_timer(1)==120000);
+  policy_fixture_event(3,model);return;
+ }
  if(!strcmp(mode,"animation")) {
   assert(policy_test_checkpoint(RISC_RESIDENT_CHECKPOINT_POLL)==RISC_RESIDENT_OK);
   assert((policy_test_state()&2u)!=0);
