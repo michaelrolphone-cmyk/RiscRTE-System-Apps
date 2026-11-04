@@ -1,5 +1,6 @@
 #pragma once
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #define SOFTWARE_UPDATE_API_V1 1u
 #define SOFTWARE_UPDATE_FIRMWARE_CAPABILITY "software.update.firmware"
@@ -31,6 +32,15 @@ typedef struct {
  int32_t error;
  bool resources_open;
 } software_update_status_v1;
+/* Optional read-only policy metadata. This does not establish network access,
+ * authorize an update, or alter the provider's resource/liveness contract. */
+#define SOFTWARE_UPDATE_METADATA_TAG 0x53554d31u
+#define SOFTWARE_UPDATE_METADATA_API_V1 1u
+typedef struct {
+ uint32_t struct_size;
+ bool configured, network_required;
+ char reason[80];
+} software_update_readiness_v1;
 typedef struct {
  uint32_t api_version,struct_size;
  void *context;
@@ -46,3 +56,19 @@ typedef struct {
  bool (*activate)(void*);
  bool (*restart)(void*);
 } software_update_v1;
+/* Optional extended provider allocation; software_update_v1 is unchanged. */
+typedef struct {
+ software_update_v1 base;
+ uint32_t tag, version;
+ bool (*readiness)(void*,software_update_readiness_v1*);
+} software_update_metadata_api_v1;
+#define SOFTWARE_UPDATE_V1_PREFIX_SIZE sizeof(software_update_v1)
+static inline const software_update_metadata_api_v1 *software_update_metadata_get_v1(const software_update_v1 *api) {
+ const software_update_metadata_api_v1 *m;
+ if(!api || api->api_version!=SOFTWARE_UPDATE_API_V1 ||
+    api->struct_size<sizeof(software_update_metadata_api_v1))return NULL;
+ m=(const software_update_metadata_api_v1*)api;
+ if(m->tag!=SOFTWARE_UPDATE_METADATA_TAG || m->version!=SOFTWARE_UPDATE_METADATA_API_V1 ||
+    !m->readiness)return NULL;
+ return m;
+}
