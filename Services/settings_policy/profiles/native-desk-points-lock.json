@@ -1,0 +1,14 @@
+{
+  "features": 14335,
+  "sleep_modes": 3,
+  "sleep_default": 0,
+  "face_default": 6,
+  "desk_lock": true,
+  "visual_alerts": true,
+  "clock_mode": 1,
+  "storage_mode": 2,
+  "writable": 2039,
+  "idle_default_ms": 60000,
+  "deep_default_ms": 300000,
+  "rtc_instance": 0
+}

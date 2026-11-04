@@ -55,7 +55,7 @@ for index, (cap, version) in enumerate(caps, 1):
                     str(fixture), '-o', str(out/('provider-'+str(index)+'.elf'))], check=True)
 subprocess.run(['cc', '-std=c11', *base, '-DPORTABLE_ALARM_CLIENT', '-DALARM_SERVICE_TAGGED_V2', '-DPORTABLE_X4_IDLE_POLICY',
                 '-c', str(fixture), '-o', str(out/'fixture.o')], check=True)
-rincs = ['-I'+str(a.runtime/path) for path in ('src', 'sdk/app', 'sdk/driver', 'sdk/hardware', 'lib/ArduinoJson/src', 'test/drivers/stubs')]
+rincs = ['-I'+str(a.runtime/path) for path in ('src', 'sdk/app', 'sdk/driver', 'sdk/hardware', 'lib/ArduinoJson/src', 'test/drivers/stubs', 'test')]
 rsources = [a.runtime/path for path in ('src/bootstrap/Json.cpp', 'src/bootstrap/Board.cpp', 'src/bootstrap/Runtime.cpp',
             'src/runtime/streams/AppStreamSessions.cpp', 'src/runtime/streams/ProviderQueueHost.cpp',
             'src/runtime/drivers/ProviderGraphV2.cpp', 'src/runtime/drivers/ProviderModuleV2.cpp')]
@@ -63,7 +63,7 @@ binary = out/'resident-policy-test'
 subprocess.run(['c++', '-std=c++17', '-g', '-Wall', '-Wextra', '-Werror', '-Wno-missing-field-initializers', *san,
                 *rincs, '-rdynamic', *(['-no-pie'] if a.sanitize else []), *map(str, rsources),
                 str(ROOT/'test/native_apps/resident_policy_runtime.cpp'), str(out/'fixture.o'), '-ldl', '-o', str(binary)], check=True)
-modes = a.modes or ['poll','busy','policy-busy','capture-pending','animation','idle','activity','capture','low-battery','dirty-edit','refused','retained','explicit-sleep']
+modes = a.modes or ['settings-reload','poll','busy','policy-busy','capture-pending','animation','idle','activity','capture','low-battery','dirty-edit','refused','retained','explicit-sleep']
 for mode in modes:
     subprocess.run([str(binary), str(out), mode], check=True, timeout=30,
                    env=dict(os.environ, ASAN_OPTIONS='detect_leaks=0'))

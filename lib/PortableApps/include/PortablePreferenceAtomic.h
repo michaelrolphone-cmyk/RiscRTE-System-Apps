@@ -6,8 +6,10 @@
 #include <stdbool.h>
 #include <string.h>
 #include "RiscKeyValueAtomicV1.h"
-#ifdef PORTABLE_PREFERENCE_STORE
+#if defined(PORTABLE_PREFERENCE_STORE) || defined(PORTABLE_PREFERENCE_ANY_STORE)
 #include "RiscPreferenceStoreV1.h"
+#endif
+#ifdef PORTABLE_PREFERENCE_STORE
 #define PORTABLE_PREFERENCE_CAPABILITY RISC_PREFERENCE_STORE_CAPABILITY
 #else
 #define PORTABLE_PREFERENCE_CAPABILITY RISC_KEY_VALUE_ATOMIC_CAPABILITY
@@ -35,7 +37,9 @@ static inline bool portable_preference_atomic_state_valid(const risc_key_value_a
  return s->struct_size>=sizeof(*s)&&s->namespace_id==PORTABLE_PREFERENCE_NAMESPACE&&s->revision&&
   s->max_mutations>=1&&s->max_value_bytes>=64&&s->max_group_bytes>=512&&
   s->max_intent_bytes>=PORTABLE_PREFERENCE_INTENT_BYTES&&
-#ifdef PORTABLE_PREFERENCE_STORE
+#ifdef PORTABLE_PREFERENCE_ANY_STORE
+  ((s->flags&RISC_PREFERENCE_STORE_COPIED_INPUT)!=0 || (s->flags&3u)==3u);
+#elif defined(PORTABLE_PREFERENCE_STORE)
   (s->flags&RISC_PREFERENCE_STORE_COPIED_INPUT)!=0;
 #else
   (s->flags&3u)==(RISC_KEY_VALUE_ATOMIC_NATIVE_DURABLE|RISC_KEY_VALUE_ATOMIC_COPIED_ASYNC);

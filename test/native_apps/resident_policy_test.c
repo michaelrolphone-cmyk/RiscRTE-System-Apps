@@ -194,6 +194,10 @@ void policy_fixture_setup(const char*name){
  assert(portable_sleep_timer_save(&preferences,false,5000));
  assert(pqa_preference_save(&preferences,PQA_BRIGHTNESS_KEY,80,0));
 }
+static unsigned (*timer_hook)(unsigned);
+void policy_fixture_set_timer_hook(unsigned (*hook)(unsigned)){timer_hook=hook;}
+unsigned policy_fixture_timer(unsigned deep){assert(timer_hook);return timer_hook(deep);}
+void policy_fixture_save_timers(void){assert(portable_sleep_timer_save(&preferences,false,12000));assert(portable_sleep_timer_save(&preferences,true,120000));}
 void policy_fixture_verify(bool retained){
  assert(retained==is("retained"));
  if(retained){assert(terminal&&!after_terminal&&!unmaps[1]&&!unmaps[2]&&light_calls==1&&host_result==0);}
