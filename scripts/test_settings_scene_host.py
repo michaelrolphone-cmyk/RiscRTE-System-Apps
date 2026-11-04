@@ -12,7 +12,7 @@ with tempfile.TemporaryDirectory(prefix='settings-scene-host-') as tmp:
  for folder in [ROOT/'sdk/app',ROOT/'sdk/driver',a.runtime_sdk]:
   for h in folder.glob('*.h'):shutil.copyfile(h,inc/h.name)
  for h in [ROOT/'Services/scene_profile/SceneProfileV1.h',ROOT/'Services/text_input/SceneKeyboardV1.h']:shutil.copyfile(h,inc/h.name)
- exe=a.output/'settings-scene-host-test';flags=['-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-ffunction-sections','-fdata-sections','-DPORTABLE_PREFERENCE_ANY_STORE','-I'+str(inc)]
+ exe=a.output/'settings-scene-host-test';flags=['-std=c11','-DPORTABLE_DESK_POINTS_FACE','-O1','-g','-Wall','-Wextra','-Werror','-ffunction-sections','-fdata-sections','-DPORTABLE_PREFERENCE_ANY_STORE','-I'+str(inc)]
  if a.sanitize:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer']
  sources=[ROOT/'Services/scene_host/host.c',ROOT/'test/native_apps/settings_scene_host_test.c',*[ROOT/f'lib/PortableApps/src/{n}.c' for n in ['PortableSettingsModel','PortableSettingsScene','PortableTimeZone','PortableTimeZoneCatalog','PortableTimeZonePreference','PortableSetTime']]]
  tracked=sorted(set(sources)|set((ROOT/'Services/scene_host').rglob('*.inc'))|{ROOT/'test/scene/host_test.c'})

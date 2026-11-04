@@ -14,7 +14,7 @@ def run(runtime):
         exe = Path(directory) / 'test'
         sources = ['PortableSettingsScene.c', 'PortableSettingsModel.c', 'PortableSetTime.c',
                    'PortableTimeZone.c', 'PortableTimeZoneCatalog.c', 'PortableTimeZonePreference.c']
-        command = [os.environ.get('CC', 'cc'), '-std=c11', '-O1', '-g', '-Wall', '-Wextra', '-Werror',
+        command = [os.environ.get('CC', 'cc'), '-std=c11','-DPORTABLE_DESK_POINTS_FACE', '-O1', '-g', '-Wall', '-Wextra', '-Werror',
                    '-ffunction-sections', '-fdata-sections', '-fsanitize=undefined', '-fno-sanitize-recover=all']
         command += ['-I' + str(path) for path in includes]
         command += [str(ROOT / 'lib/PortableApps/src' / name) for name in sources]

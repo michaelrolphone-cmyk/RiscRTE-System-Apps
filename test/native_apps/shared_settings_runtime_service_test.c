@@ -81,6 +81,10 @@ static void storage_contracts(void){
   preference_size=0;token_live=false;revision=1;atomic_flags=mode==2?4:3;
   portable_settings_policy_v1 p={.api_version=1,.struct_size=sizeof(p),.model=psm_default_policy(),.storage_mode=mode};
   p.model.features=p.model.writable=PSM_FEATURE(PSM_FORMAT);
+  /* The canonical app and policy provider include the stable Points face6.
+   * Runtime policy validation must use that same union, not a six-face build. */
+  p.model.face_default=6;assert(psr_policy_valid(&p));
+  p.model.face_default=7;assert(!psr_policy_valid(&p));p.model.face_default=6;
   assert(psr_open(&backend,&runtime,&p,phase_guard,retain,NULL));PortableSettingsModel model;assert(psr_init_model(&backend,&model));
   assert(psm_open(&model,PSM_FORMAT)&&psm_set_number(&model,1)&&psm_save(&model));
   assert(!preference_size&&!token_live);assert(psm_presented(&model,model.save_revision));psm_tick(&model);

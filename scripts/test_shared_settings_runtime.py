@@ -13,9 +13,9 @@ with tempfile.TemporaryDirectory() as tmp:
  for profile in (root/'Services/settings_policy/profiles').glob('*.json'):
   generated=pathlib.Path(tmp)/profile.stem
   subprocess.run(['python3',str(root/'scripts/generate_shared_settings_policy.py'),str(profile),str(generated)],check=True)
-  subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror',*inc,'-I'+str(generated),'-DALARM_SERVICE_TAGGED_V2','-DALARM_SERVICE_CLOCK_EDIT_V2','-DPORTABLE_PREFERENCE_ANY_STORE','-DPORTABLE_DESK_POINTS_FACE','-c',str(root/'Services/settings_policy/service.c'),'-o',str(generated/'policy.o')],check=True)
+  subprocess.run(['cc','-std=c11','-DPORTABLE_DESK_POINTS_FACE','-Wall','-Wextra','-Werror',*inc,'-I'+str(generated),'-DALARM_SERVICE_TAGGED_V2','-DALARM_SERVICE_CLOCK_EDIT_V2','-DPORTABLE_PREFERENCE_ANY_STORE','-DPORTABLE_DESK_POINTS_FACE','-c',str(root/'Services/settings_policy/service.c'),'-o',str(generated/'policy.o')],check=True)
  for san in (False,True):
-  flags=['-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-Wno-misleading-indentation','-ffunction-sections','-fdata-sections']+(['-fsanitize=address,undefined','-fno-sanitize-recover=all','-no-pie'] if san else [])
+  flags=['-std=c11','-DPORTABLE_DESK_POINTS_FACE','-O1','-g','-Wall','-Wextra','-Werror','-Wno-misleading-indentation','-ffunction-sections','-fdata-sections']+(['-fsanitize=address,undefined','-fno-sanitize-recover=all','-no-pie'] if san else [])
   service=pathlib.Path(tmp)/'service.o'
   subprocess.run(['cc',*flags,*inc,*['-D'+s for s in ['ALARM_NATIVE_UTC','ALARM_NATIVE_SCHEDULES_ONLY','ALARM_SERVICE_TAGGED_V2','ALARM_VISUAL_ONLY','ALARM_DND_CONTROL','ALARM_SERVICE_CLOCK_EDIT_V2']],'-c',str(a.utilities/'Services/alarm_service/service.c'),'-o',str(service)],check=True)
   binary=pathlib.Path(tmp)/'test'

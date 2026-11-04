@@ -381,5 +381,17 @@
     "Round provider native typography and >=44px complete controls, currently conservative328px safe-square compact layout",
     "Physical touch, rotation, visible bounds and lifecycle acceptance",
     "Synchronous clock transaction latency qualification"
-  ]
+  ],
+  "canonical_policy_regression": {
+    "points_face_id": 6,
+    "invalid_face_id": 7,
+    "runtime_storage_modes": [
+      0,
+      1,
+      2
+    ],
+    "tests_compile_points_face": true,
+    "model_full_face_union_was_already_enabled": true,
+    "semantic_document_hash_unchanged": 935873563
+  }
 }

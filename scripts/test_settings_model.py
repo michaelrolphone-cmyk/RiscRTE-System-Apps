@@ -14,6 +14,6 @@ with tempfile.TemporaryDirectory(prefix='settings-model-') as temporary:
  shutil.copytree(ROOT/'lib/PortableApps/time',Path(temporary)/'time')
  for header in a.runtime_sdk.glob('*.h'):shutil.copyfile(header,include/header.name)
  sources=['test/native_apps/settings_model_test.c',*[f'lib/PortableApps/src/{n}.c' for n in ['PortableSettingsModel','PortableTimeZone','PortableTimeZoneCatalog','PortableTimeZonePreference','PortableSetTime']]]
- command=[os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-ffunction-sections','-fdata-sections','-I'+str(include),*[str(ROOT/s) for s in sources],'-Wl,--gc-sections','-o',str(out)]
+ command=[os.environ.get('CC','cc'),'-std=c11','-DPORTABLE_DESK_POINTS_FACE','-O1','-g','-Wall','-Wextra','-Werror','-ffunction-sections','-fdata-sections','-I'+str(include),*[str(ROOT/s) for s in sources],'-Wl,--gc-sections','-o',str(out)]
  if a.sanitize:command[1:1]=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer']
  subprocess.run(command,check=True);subprocess.run([str(out)],check=True)
