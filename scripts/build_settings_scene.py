@@ -55,7 +55,8 @@ def main():
               'optional':[{'capability':name,'api':version} for name,version in [
                   ('storage.key-value',1),('storage.key-value.atomic',1),
                   ('storage.preferences',1),('storage.key-value.availability',1),
-                  ('runtime.realtime',1),('rtc.clock',2),('alarm.service',2)]]}
+                  ('runtime.realtime',1),('runtime.realtime-control',1),
+                  ('rtc.clock',2),('alarm.service',2)]]}
     definitions=['-DALARM_SERVICE_TAGGED_V2','-DALARM_SERVICE_CLOCK_EDIT_V2','-DPORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL',
                  '-DPORTABLE_DESK_POINTS_FACE',
                  '-DPORTABLE_PREFERENCE_ANY_STORE','-Wno-misleading-indentation']

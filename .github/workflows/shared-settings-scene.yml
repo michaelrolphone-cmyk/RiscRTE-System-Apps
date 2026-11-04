@@ -25,7 +25,7 @@ on:
       - 'test/native_apps/stubs/**'
       - 'test/scene/**'
   push:
-    branches: [main]
+    branches: [main, work/shared-settings-scene-20261104]
     paths:
       - '.github/workflows/shared-settings-scene.yml'
       - 'Apps/settings_scene.c'
@@ -173,6 +173,68 @@ jobs:
           path: dist/shared-settings/
           if-no-files-found: warn
           retention-days: 14
+
+  publish-exact-source:
+    needs: [semantic-and-native-host, canonical-target-repeat]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/work/shared-settings-scene-20261104'
+    permissions:
+      contents: write
+      actions: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-settings-target-${{ github.sha }}
+          path: dist/target
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-settings-host-${{ github.sha }}
+          path: dist/host
+      - name: Collect exact application and policy assets
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,shutil
+          from pathlib import Path
+          source=Path('dist/target');out=Path('dist/release');out.mkdir(parents=True)
+          app=source/'canonical-target/first'
+          for name in ['settings.elf','settings.json']:
+            shutil.copyfile(app/name,out/name)
+          shutil.copyfile(app/'build.json',out/'settings-build.json')
+          for policy in sorted((source/'policies').iterdir()):
+            prefix='settings-policy-'+policy.name
+            for name,suffix in [('settings_policy.elf','.elf'),('manifest.json','-manifest.json'),('build.json','-build.json')]:
+              shutil.copyfile(policy/'first'/name,out/(prefix+suffix))
+          files={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(out.iterdir())}
+          (out/'release-manifest.json').write_text(json.dumps({
+            'application':'settings','version':'2.0.0','source_commit':os.environ['SOURCE_SHA'],
+            'files':files,'software_tests':'passed','physical_testing':'not performed',
+            'product_integration':'Explicit policy selection, grant/admission and physical qualification remain required.',
+            'round_presentation':'Existing provider conservative safe-square typography; native round control adaptation remains separate.'
+          },indent=2)+'\n')
+          PY
+          git archive --format=zip -o dist/release/source.zip HEAD
+          tar -czf dist/release/settings-qualification.tar.gz dist/target dist/host
+      - name: Publish immutable exact-source prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          tag="settings-shared-$SOURCE_SHA"
+          if gh release view "$tag" --json tagName >/dev/null 2>&1; then
+            mkdir -p dist/existing
+            gh release download "$tag" --pattern 'release-manifest.json' --dir dist/existing
+            cmp dist/existing/release-manifest.json dist/release/release-manifest.json
+          else
+            gh release create "$tag" dist/release/* \
+              --target "$SOURCE_SHA" --prerelease --title 'Shared Settings 2.0.0' \
+              --notes 'One shared Settings ELF and separately selected semantic policy providers. Models, custody, clock/storage faults, published Runtime resident policy, seven native scene-host lanes and repeat target builds passed. Product composition and physical acceptance are not claimed.'
+          fi
 
   canonical-target-repeat:
     runs-on: ubuntu-24.04
