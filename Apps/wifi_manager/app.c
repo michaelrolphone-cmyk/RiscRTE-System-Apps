@@ -200,7 +200,7 @@ static void radio_step(wifi_manager *a){
             a->dirty=true;}
     }else if(p.phase==RISC_RADIO_CONNECTED){
         if(!a->link_up){a->link_up=true;a->connected_known=true;a->connected=a->selected;a->connected_at=a->now;a->history_count=0;a->history_pos=0;
-            if(a->save_on_connect){a->save_on_connect=false;if(a->selected_slot!=UINT32_MAX&&!a->db_fault)a->db_job=DB_SAVE;else toast(a,"Connected; network could not be saved");}route(a,MAIN);}
+            if(a->save_on_connect){a->save_on_connect=false;if(a->atomic_ready&&a->atomic_edit.operation==PORTABLE_WIFI_ATOMIC_SAVE)a->db_job=DB_SAVE;else toast(a,"Connected; network could not be saved");}route(a,MAIN);}
         a->connected_rssi=p.rssi;
         if((uint32_t)(a->now-a->last_sample)>=1000){a->last_sample=a->now;int r=(int)p.rssi+95;if(r<0)r=0;if(r>50)r=50;a->history[a->history_pos]=(uint16_t)(r*200);a->history_pos=(a->history_pos+1)%60;if(a->history_count<60)a->history_count++;}
     }
