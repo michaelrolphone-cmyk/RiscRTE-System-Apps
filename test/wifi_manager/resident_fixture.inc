@@ -30,7 +30,9 @@ static bool rt_resident_fixture(risc_resident_client_v1 *out){
     return true;
 }
 static void resident_fixture_run(void){
-    assert(wm.resident.enabled&&resident_polls);
+    assert(wm.resident.enabled);
+    /* Wait for the real presenter safe point, not a fixed startup frame count. */
+    for(unsigned n=0;!resident_polls;n++){assert(n<1000);pump(1);}
     unsigned before=resident_polls;
     invoke(SCAN,0);pump(100);assert(radio_id&&wm.operation&&resident_polls==before);
     stop_delay=8;wm.shared_reason=RISC_RESIDENT_CHECKPOINT_CONTROLS;pump(100);
