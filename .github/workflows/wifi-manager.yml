@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: fb6d0323b7ab6fa57af8fd5551ce45fdf52c743d
+          ref: 286d7da65d5151dfa3840989ce8917dfa23e6856
           path: Runtime
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -111,7 +111,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: fb6d0323b7ab6fa57af8fd5551ce45fdf52c743d
+          ref: 286d7da65d5151dfa3840989ce8917dfa23e6856
           path: Runtime
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -184,13 +184,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
-          ref: 762e5a458d56e9582b839c2fbe30109911f36f92
+          ref: 75becdb44a914e749cd64385c3897832c78c3476
           path: X4
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: fb6d0323b7ab6fa57af8fd5551ce45fdf52c743d
+          ref: 286d7da65d5151dfa3840989ce8917dfa23e6856
           path: Runtime
           persist-credentials: false
       - uses: actions/setup-python@v5

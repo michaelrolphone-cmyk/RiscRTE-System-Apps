@@ -125,9 +125,23 @@ The first failed page allocation still permits the second allocation attempt,
 then both results are freed. Tests record requested payload/peak block count,
 not libc charge, native display memory, or product headroom.
 
-The added mode is a test candidate until its owning CI passes. Its output
-labels checkpoint size as host ABI explicitly. Do not substitute that size for
-the target's 29,856 bytes.
+System `81368f3d5e336b974c6146b8c9a5101c4c24545d` passed
+[scene job 127213310611](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/42018011651/job/127213310611):
+280 sequence cases across normal/ASan/UBSan, full/compact, admitted geometry
+and both continuity modes. All checked closes ended with zero live blocks;
+maximum live block counts were 1, 3 and 5. The fixture host ABI checkpoint
+measured 29,864 bytes, so its full page-pair peaks were 58,664 / 132,772 /
+221,864 bytes for Watch / Wave / X4 geometries. These are host requested
+payloads, not native charged bytes. The target checkpoint remains 29,856.
+
+The same source's
+[Wi-Fi job 127213311122](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/42018011609/job/127213311122)
+passed 43/43 scenarios normally and with sanitizers, including actual shared
+text alarm restoration/cancellation. All three target profile witnesses in
+[job 127213311089](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/42018011609/job/127213311089)
+matched their production ELF bytes, with 96-byte modal_open and 48-byte
+modal_restore static frames. That job's later product gate failed; neither
+these passing fixtures nor stack witnesses establish product admission.
 
 ## Required native budget proof
 
