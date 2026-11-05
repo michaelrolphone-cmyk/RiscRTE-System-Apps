@@ -2,7 +2,7 @@
 """Read exact public cumulative Home+Contexts stores; never select an older base."""
 import argparse,hashlib,json,sys,urllib.request,zipfile
 from pathlib import Path
-from shared_wifi_storage_authority import census
+from shared_wifi_storage_authority import census,volume_census
 ROOT=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser();p.add_argument('--bootfs-tools',type=Path,required=True)
 p.add_argument('--system',type=Path,required=True)
@@ -40,10 +40,13 @@ for lane in ('watch','wave','x4'):
    providers.append({'row':row,'manifest':manifest})
  if len(matches)!=1:raise ValueError('Expected one wifi_settings selection in '+lane)
  authority=census(canonical)
+ volume=volume_census(canonical)
+ (a.output/lane/'storage-volume.json').write_text(json.dumps(volume,indent=2)+'\n')
+ print('STORAGE VOLUME '+lane+' '+json.dumps(volume),flush=True)
  (a.output/lane/'storage-authority.json').write_text(json.dumps(authority,indent=2)+'\n')
  for namespace,rows in authority['namespaces'].items():
   print('STORAGE AUTHORITY '+lane+' '+namespace+' '+json.dumps(rows),flush=True)
- records[lane]={'store_bytes':len(raw),'apps':matches,'providers':providers,'boot':boot,
+ records[lane]={'storage_volume':volume,'store_bytes':len(raw),'apps':matches,'providers':providers,'boot':boot,
  'files':{n:hashlib.sha256(b).hexdigest() for n,b in canonical.items()},
  'sd_files':{n:hashlib.sha256(b).hexdigest() for n,b in sd.items()}}
  print('WI-FI INVENTORY '+lane+' '+json.dumps({'apps':matches,'providers':providers,'resident_shell':boot.get('resident_shell')}),flush=True)

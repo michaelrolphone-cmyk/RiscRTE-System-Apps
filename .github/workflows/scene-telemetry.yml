@@ -54,11 +54,14 @@ jobs:
           sha256sum build/scene/scene-host/driver.elf > evidence/candidate-sha256.txt
           git rev-parse HEAD > evidence/published-source.txt
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: scene-telemetry-${{ github.sha }}
           path: |
             build/scene/scene-host/driver.elf
             build/scene/scene-host/manifest.json
+            build/scene/scene-host/stack-usage.json
+            build/scene/scene-host/stack-usage.su
             build/scene/scene-host/build.json
             build/scene/scene-host/licenses/
             evidence/

@@ -24,3 +24,34 @@ def census(entries):
             'scope':'declared authority only; no device data or native writer registration inspected',
             'migration_approved':False,'native_writer_census_complete':False,
             'unresolved_instance_zero':bool(result.get('0'))}
+
+def volume_census(entries):
+    """Exact decoded declarations, not proof of live media or native registration."""
+    boot=json.loads(entries['boot.json']);providers=[];mentions=[];facts=[]
+    def walk(value,path,source):
+        if isinstance(value,dict):
+            if value.get('capability')=='storage.volume':
+                mentions.append({'source':source,'path':path,'declaration':value})
+            for key,item in value.items():
+                if key in ('volume_instance','volume_instance_id') or key.startswith('native_settings'):
+                    facts.append({'source':source,'path':path+[key],'value':item})
+                walk(item,path+[key],source)
+        elif isinstance(value,list):
+            for index,item in enumerate(value):walk(item,path+[index],source)
+    walk(boot,[],'boot.json')
+    for row in boot.get('drivers',[]):
+        path=safe(row['manifest']);raw=entries[path];manifest=json.loads(raw)
+        declared=[p for p in manifest.get('provides',[]) if p.get('capability')=='storage.volume']
+        if declared:
+            providers.append({'id':manifest['id'],'manifest':path,'manifest_sha256':sha(raw),
+                'instance_id_present':'instance_id' in row,'instance_id':row.get('instance_id'),
+                'row':row,'provides':declared})
+        walk(manifest,[],path)
+    return {'schema':1,'boot_sha256':sha(entries['boot.json']),
+        'selected_volume_providers':providers,'volume_declarations':mentions,
+        'bootstrap_declarations':facts,'installation':boot.get('installation'),
+        'platform':boot.get('platform'),'platforms':boot.get('platforms'),
+        'selected_volume_provider_absent':not providers,
+        'volume_declarations_absent':not mentions,
+        'native_bootstrap_registration_verified':False,
+        'scope':'Exact selected boot/manifests only; absence here does not establish firmware support, live media or a valid native bootstrap volume'}

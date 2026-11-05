@@ -35,7 +35,10 @@ static void alarm_test_run(const char*mode){
   risc_text_entry_state_v1 value={.struct_size=sizeof(value)};
   assert(!text_api->poll(text_api->context,editor,&value)&&value.state==RISC_TEXT_ENTRY_EDITING);
   assert(!strcmp(value.text,"preserved-secret"));wipe(&value,sizeof(value));
-  nav_pressed=RISC_NAV_BACK;pump(300);assert(!wm.editor_session);
+  /* Focus restore schedules repaint; input is deliberately gated until the
+   * restored keyboard is current. Do not inject a stale pre-paint Back. */
+  capture(NULL,NULL);nav_pressed=RISC_NAV_BACK;
+  for(unsigned n=0;wm.editor_session;n++){assert(n<3000&&native_alive&&!wm.retained);pump(1);}
  }
  if(radio)assert(radio_id==radio&&!cancels);
  assert(alarm_driver->quiesce());exit_app();alarm_driver->stop();
