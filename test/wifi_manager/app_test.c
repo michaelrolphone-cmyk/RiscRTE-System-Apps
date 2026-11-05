@@ -123,6 +123,8 @@ static void profile_behavior(void){
            w,h,format,prof.display_rotation);
 }
 
+#include "storage_test.inc"
+
 int main(int argc,char **argv){
     assert(argc>=2);const char *mode=argv[1],*dir=argc>2?argv[2]:NULL;
     w=800;h=480;format=1;prof=(risc_scene_profile_v1){1,sizeof(prof),1,3,88,20,0,0xffff,0,270,0,0};
@@ -151,6 +153,7 @@ int main(int argc,char **argv){
     resident_fixture=!strcmp(mode,"resident-owned");
     assert(wifi_manager_test_init());pump(20);
     if(resident_fixture){resident_fixture_run();return 0;}
+    if(!strncmp(mode,"storage-",8)&&strcmp(mode,"storage-loss")&&strcmp(mode,"storage-failure")){storage_test_run(mode);return 0;}
     if(!strcmp(mode,"profile")){profile_behavior();return 0;}
     if(old_scene){assert(wm.upgrade);exit_app();puts("old scene: update message PASS");return 0;}
     if(io_fail){assert(wm.db_fault&&!wm.enabled);exit_app();puts("storage failure: no data overwritten PASS");return 0;}

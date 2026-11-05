@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build one optional presenter and independently selected class-profile ELFs."""
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -31,6 +32,11 @@ PROFILE_FLAGS = {
 
 
 def run(runtime: Path, output: Path, host_profile: str = 'full') -> None:
+    source_pins={name:subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip()
+                 for name,path in [('runtime',runtime),('system',ROOT)]}
+    # Build outputs and separately checked-out dependencies are not tracked source.
+    working_tree_dirty=any(subprocess.check_output(['git','-C',str(path),'status','--porcelain','--untracked-files=no'],text=True).strip()
+                           for path in (runtime,ROOT))
     if output.exists():
         raise FileExistsError(f'Use a new output directory: {output}')
     output.mkdir(parents=True)
@@ -40,7 +46,7 @@ def run(runtime: Path, output: Path, host_profile: str = 'full') -> None:
         host=host_manifest(host_profile)
         rows=[build(compiler,include,output/'scene-host',host,[ROOT/'Services/scene_host/host.c'],HOST_PROFILE_FLAGS[host_profile])]
         rows[0]['host_profile']=host_profile
-        rows[0]['optional_apis']={'telemetry':host_profile=='full','components':True,'page':True,'checkpoint':True,'reading':True,'reading_links':True}
+        rows[0]['optional_apis']={'telemetry':host_profile=='full','components':True,'page':True,'checkpoint':True,'reading':True,'reading_links':True,'connectivity':True}
         json_write(output/'scene-host/build.json',rows[0])
         license_dir=output/'scene-host/licenses';license_dir.mkdir()
         for name in ['LICENSE-Orbitron.txt','LICENSE-Rajdhani.txt','SOURCES.json','COMPONENT-SOURCES.json']:
@@ -52,6 +58,10 @@ def run(runtime: Path, output: Path, host_profile: str = 'full') -> None:
             flags=[*flags,f'-DSCENE_PROFILE_ID="{identity}"']
             row=build(compiler,include,output/name,profile,[ROOT/'Services/scene_profile/profile.c'],flags)
             row['profile']=name;rows.append(row)
+        for row,package in zip(rows,[output/'scene-host',*(output/name for name in PROFILE_FLAGS)]):
+            row.update(source_pins=source_pins,source_commit=source_pins['system'],working_tree_dirty=working_tree_dirty,
+                       manifest_sha256=hashlib.sha256((package/'manifest.json').read_bytes()).hexdigest())
+            json_write(package/'build.json',row)
         validator=Path(temporary)/'validate-elf'
         subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',
                         '-I'+str(ROOT/'test/native_apps/stubs'),'-I'+str(ROOT/'lib/elf_loader/include'),

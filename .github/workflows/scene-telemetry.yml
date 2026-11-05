@@ -43,13 +43,15 @@ jobs:
           python scripts/test_scene_telemetry.py --runtime Runtime 2>&1 | tee evidence/telemetry.log
           python scripts/test_scene_components.py --runtime Runtime 2>&1 | tee evidence/components.log
           python scripts/test_scene_host.py --runtime Runtime 2>&1 | tee evidence/lifecycles.log
-      - name: Compile ESP32-S3 scene and verify qualified source component
+      - name: Compile ESP32-S3 scene and verify reproducible candidate
         run: |
           set -euo pipefail
           python -m pip install platformio==6.1.19
           pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
           python scripts/build_scene_services.py --runtime Runtime --output build/scene 2>&1 | tee evidence/target.log
-          echo 'f29a103b348f8abca20abd3e61dbcec7b2e7093132348c016f689f98918d2c01  build/scene/scene-host/driver.elf' | sha256sum --check
+          python scripts/build_scene_services.py --runtime Runtime --output build/scene-repeat 2>&1 | tee evidence/target-repeat.log
+          cmp build/scene/scene-host/driver.elf build/scene-repeat/scene-host/driver.elf
+          sha256sum build/scene/scene-host/driver.elf > evidence/candidate-sha256.txt
           git rev-parse HEAD > evidence/published-source.txt
       - uses: actions/upload-artifact@v4
         with:

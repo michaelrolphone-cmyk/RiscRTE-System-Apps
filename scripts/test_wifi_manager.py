@@ -4,7 +4,7 @@ import argparse, json, os, subprocess
 from pathlib import Path
 from build_wifi_manager import sdk
 ROOT=Path(__file__).resolve().parents[1]
-MODES=('resident-owned','behavior','busy-storage','storage-failure','old-scene','missing-keyboard','unsupported','cancel','loss','failure','forget','hidden-network','keyboard-cancel','storage-loss','bad-progress')
+MODES=('storage-generation-inflight','storage-cancel-before-submit','storage-policy-stale','storage-save','storage-cancel','storage-commit-race','storage-stale-join','storage-generation','storage-malformed','storage-policy','storage-exit-draft','resident-owned','behavior','busy-storage','storage-failure','old-scene','missing-keyboard','unsupported','cancel','loss','failure','forget','hidden-network','keyboard-cancel','storage-loss','bad-progress')
 def run(runtime, output, sanitize=False):
     manifest=json.loads((ROOT/'Apps/wifi_manager/manifest.json').read_text())
     assert manifest['id']=='wifi_settings' and manifest['file_name']=='wifi_settings.elf', 'Preserve the deployed Wi-Fi settings identity'

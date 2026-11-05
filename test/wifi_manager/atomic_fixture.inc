@@ -2,12 +2,14 @@
  * This is not proof of NativeReplicaCore durability or device storage. */
 typedef struct {
     uint64_t revision,serial,token,submitted_revision;
-    unsigned ns,count,collect_ticks;
-    bool cancelled;
+    unsigned ns,count,collect_ticks,collect_delay,submissions,collections,cancellations;
+    uint64_t availability_generation;
+    uint32_t availability;
+    bool cancelled,commit_wins,malformed_receipt;
     portable_wifi_atomic_cell copied[8];
 } fixture_namespace;
-static fixture_namespace fixture_profile={.revision=1,.ns=6};
-static fixture_namespace fixture_policy={.revision=1,.ns=1};
+static fixture_namespace fixture_profile={.revision=1,.ns=6,.collect_delay=1,.availability_generation=1};
+static fixture_namespace fixture_policy={.revision=1,.ns=1,.collect_delay=1,.availability_generation=1};
 static int32_t fixture_atomic_state(void *context,risc_key_value_atomic_state_v1 *out){
     fixture_namespace *s=context;
     if(io_fail)return RISC_ATOMIC_IO;
@@ -45,13 +47,13 @@ static int32_t fixture_atomic_submit(void *context,uint64_t revision,
         memcpy(s->copied[i].value,mutations[i].value,mutations[i].size);
     }
     s->count=count;s->submitted_revision=revision;s->collect_ticks=0;
-    s->cancelled=false;s->token=++s->serial;*token=s->token;return RISC_ATOMIC_OK;
+    s->cancelled=false;++s->submissions;s->token=++s->serial;*token=s->token;return RISC_ATOMIC_OK;
 }
 static int32_t fixture_atomic_collect(void *context,uint64_t token,
         risc_key_value_atomic_receipt_v1 *out){
     fixture_namespace *s=context;assert(s->token==token&&token);
-    if(!s->collect_ticks++)return RISC_ATOMIC_PENDING;
-    int rc=s->cancelled?RISC_ATOMIC_CANCELLED:
+    if(s->collect_ticks++<s->collect_delay)return RISC_ATOMIC_PENDING;
+    int rc=s->cancelled&&!s->commit_wins?RISC_ATOMIC_CANCELLED:
         s->submitted_revision!=s->revision?RISC_ATOMIC_STALE:
         io_fail?RISC_ATOMIC_IO:RISC_ATOMIC_OK;
     if(rc==RISC_ATOMIC_OK){
@@ -60,18 +62,18 @@ static int32_t fixture_atomic_collect(void *context,uint64_t token,
         ++s->revision;
     }
     *out=(risc_key_value_atomic_receipt_v1){.struct_size=sizeof(*out),.status=rc,
-        .revision=s->revision,.operation_id=rc==RISC_ATOMIC_OK?s->token:0};
-    wipe(s->copied,sizeof(s->copied));s->count=0;s->token=0;return RISC_ATOMIC_OK;
+        .revision=s->revision,.operation_id=rc==RISC_ATOMIC_OK&&!s->malformed_receipt?s->token:0};
+    ++s->collections;wipe(s->copied,sizeof(s->copied));s->count=0;s->token=0;return RISC_ATOMIC_OK;
 }
 static int32_t fixture_atomic_cancel(void *context,uint64_t token){
     fixture_namespace *s=context;assert(s->token==token&&token);
-    s->cancelled=true;return RISC_ATOMIC_PENDING;
+    s->cancelled=true;++s->cancellations;return RISC_ATOMIC_PENDING;
 }
 static int32_t fixture_availability(void *context,risc_key_value_availability_state_v1 *out){
     fixture_namespace *s=context;
     *out=(risc_key_value_availability_state_v1){.struct_size=sizeof(*out),
-        .namespace_id=s->ns,.availability=io_fail?RISC_KEY_VALUE_UNAVAILABLE:RISC_KEY_VALUE_AVAILABLE,
-        .generation=1};
+        .namespace_id=s->ns,.availability=io_fail?RISC_KEY_VALUE_UNAVAILABLE:s->availability?s->availability:RISC_KEY_VALUE_AVAILABLE,
+        .generation=s->availability_generation};
     return RISC_KEY_VALUE_AVAILABILITY_OK;
 }
 static const risc_key_value_atomic_v1 fixture_profile_atomic={1,sizeof(fixture_profile_atomic),

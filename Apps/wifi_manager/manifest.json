@@ -8,7 +8,7 @@
   "runtime_lifecycle": "foreground",
   "display_name": "Wi-Fi",
   "description": "NOVA-7 Wi-Fi Manager with shared scenes and password entry",
-  "icon": "wifi",
+  "icon": "solid:f1eb",
   "supported_file_types": [],
   "requires": [
     {
