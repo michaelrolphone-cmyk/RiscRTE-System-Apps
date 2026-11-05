@@ -108,6 +108,37 @@ int main(int argc,char **argv){
  assert(e.kind==RISC_SCENE_VALUE_EVENT&&e.document_revision==doc.revision&&
         e.node==1&&e.action==40&&e.value==RISC_SCENE_KEY_CANCEL);
  doc.revision++;strcpy(doc.nodes[0].text,"continued draft");assert(!api->update(NULL,parent,&doc));
- settle();finish();
+ settle();
+ /* A non-keyboard parent with no nodes still needs a current route mapping.
+  * Exercise both ordinary failed-open rollback and a completed modal without
+  * an update between restoration and the physical Back edge. */
+ if(!strcmp(mode,"success")){
+   assert(!api->close(NULL,parent));
+   doc=(risc_scene_document_v1){.api_version=1,.struct_size=sizeof(doc),
+       .revision=17,.root=1,.route_count=1,.routes={{.id=1,.back_action=91,.title="EMPTY"}}};
+   expected_intent=RISC_DISPLAY_PRESENT_DEFAULT;
+   assert(!api->open(NULL,&doc,NULL,&session));parent=session;
+   assert(!life->configure(NULL,parent,continuity?RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY:0));settle();
+   for(unsigned restored=0;restored<2;restored++){
+     assert(!cp->pause(NULL,parent));modal_test_capture();child=0;
+     if(!restored){
+       unsigned physical_w=w;w=159;
+       assert(modal->open(NULL,&d,&child)==RISC_SCENE_UNAVAILABLE);w=physical_w;
+     }else{
+       expected_intent=RISC_DISPLAY_PRESENT_LOW_LATENCY;
+       assert(!modal->open(NULL,&d,&child));session=child;settle();
+       assert(!modal->close(NULL,child));session=parent;
+     }
+     modal_test_restored();
+     e=(risc_scene_event_v1){.struct_size=sizeof(e)};
+     assert(api->next(NULL,parent,&e)==RISC_SCENE_BUSY);
+     expected_intent=RISC_DISPLAY_PRESENT_DEFAULT;
+     assert(!cp->resume(NULL,parent,RISC_SCENE_RESUME_REDRAW|RISC_SCENE_RESUME_FOCUS_CHANGED));settle();
+     nav_pressed=RISC_NAV_BACK;e=(risc_scene_event_v1){.struct_size=sizeof(e)};
+     assert(api->next(NULL,parent,&e)==RISC_SCENE_OK);
+     assert(e.kind==RISC_SCENE_ACTION_EVENT&&!e.node&&e.action==91&&e.document_revision==17);
+   }
+ }
+ finish();
  printf("Modal parent editor/custody %ux%u format=%u continuity=%u PASS\n",w,h,format,continuity);return 0;
 }
