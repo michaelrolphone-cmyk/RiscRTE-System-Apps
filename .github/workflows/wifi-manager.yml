@@ -32,18 +32,22 @@ jobs:
       - name: Exercise actual app, scene and shared keyboard
         run: |
           set -euo pipefail
-          mkdir evidence
-          python scripts/test_alarm_foreground.py --runtime Runtime --output build/alarm-tests 2>&1 | tee evidence/alarm.log
-          python scripts/test_alarm_foreground.py --runtime Runtime --output build/alarm-asan --sanitize 2>&1 | tee evidence/alarm-sanitized.log
-          python scripts/test_wifi_manager.py --runtime Runtime --output build/wifi-tests 2>&1 | tee evidence/wifi.log
-          python scripts/test_wifi_manager.py --runtime Runtime --output build/wifi-asan --sanitize 2>&1 | tee evidence/wifi-sanitized.log
-          python scripts/test_scene_components.py --runtime Runtime 2>&1 | tee evidence/components.log
-          python scripts/test_scene_telemetry.py --runtime Runtime 2>&1 | tee evidence/telemetry.log
-          python scripts/test_scene_host.py --runtime Runtime 2>&1 | tee evidence/lifecycles.log
-          python scripts/test_text_input_host.py --runtime Runtime --output build/text-tests --decoupled-attention 2>&1 | tee evidence/text-input.log
+          mkdir -p evidence
+          status=0
+          python scripts/test_alarm_foreground.py --runtime Runtime --output build/alarm-tests 2>&1 | tee evidence/alarm.log || status=1
+          python scripts/test_alarm_foreground.py --runtime Runtime --output build/alarm-asan --sanitize 2>&1 | tee evidence/alarm-sanitized.log || status=1
+          python scripts/test_wifi_manager.py --runtime Runtime --output build/wifi-tests 2>&1 | tee evidence/wifi.log || status=1
+          python scripts/test_wifi_manager.py --runtime Runtime --output build/wifi-asan --sanitize 2>&1 | tee evidence/wifi-sanitized.log || status=1
+          python scripts/test_scene_components.py --runtime Runtime 2>&1 | tee evidence/components.log || status=1
+          python scripts/test_scene_telemetry.py --runtime Runtime 2>&1 | tee evidence/telemetry.log || status=1
+          python scripts/test_scene_host.py --runtime Runtime 2>&1 | tee evidence/lifecycles.log || status=1
+          python scripts/test_text_input_host.py --runtime Runtime --output build/text-tests --decoupled-attention 2>&1 | tee evidence/text-input.log || status=1
+          exit "$status"
       - name: Compile ESP32-S3 app and both shared services
+        if: ${{ !cancelled() }}
         run: |
           set -euo pipefail
+          mkdir -p evidence
           python -m pip install platformio==6.1.19
           pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
           python scripts/build_wifi_manager.py --runtime Runtime --output build/wifi-manager 2>&1 | tee evidence/app-build.log
