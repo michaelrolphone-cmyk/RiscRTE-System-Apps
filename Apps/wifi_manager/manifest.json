@@ -30,6 +30,10 @@
     {
       "capability": "storage.key-value.availability",
       "api": 1
+    },
+    {
+      "capability": "telemetry.broadcast",
+      "api": 1
     }
   ]
 }

@@ -4,11 +4,12 @@ import argparse, json, os, subprocess
 from pathlib import Path
 from build_wifi_manager import sdk
 ROOT=Path(__file__).resolve().parents[1]
-MODES=('storage-generation-inflight','storage-cancel-before-submit','storage-policy-stale','storage-save','storage-cancel','storage-commit-race','storage-stale-join','storage-generation','storage-malformed','storage-policy','storage-exit-draft','resident-owned','behavior','busy-storage','storage-failure','old-scene','missing-keyboard','unsupported','cancel','loss','failure','forget','hidden-network','keyboard-cancel','storage-loss','bad-progress')
+MODES=('broadcast-owned','storage-generation-inflight','storage-cancel-before-submit','storage-policy-stale','storage-save','storage-cancel','storage-commit-race','storage-stale-join','storage-generation','storage-malformed','storage-policy','storage-exit-draft','resident-owned','behavior','busy-storage','storage-failure','old-scene','missing-keyboard','unsupported','cancel','loss','failure','forget','hidden-network','keyboard-cancel','storage-loss','bad-progress')
 def run(runtime, output, sanitize=False):
     manifest=json.loads((ROOT/'Apps/wifi_manager/manifest.json').read_text())
     assert manifest['id']=='wifi_settings' and manifest['file_name']=='wifi_settings.elf', 'Preserve the deployed Wi-Fi settings identity'
     assert manifest['runtime_lifecycle']=='foreground'
+    assert {'capability':'telemetry.broadcast','api':1} in manifest['requires']
     # The app must stay semantic: no private renderer, keyboard or input driver.
     text='\n'.join(p.read_text() for p in (ROOT/'Apps/wifi_manager').glob('*') if p.suffix in ('.c','.inc','.h'))
     for forbidden in ('RiscDisplayV1.h','PortableKeyboard','input.touch.raw','display.output','risc_display_v1','draw_pixel','nc_draw','kp_render'):
@@ -20,6 +21,9 @@ def run(runtime, output, sanitize=False):
     flags=['-std=c11','-g','-O1','-Wall','-Wextra','-Werror','-Wno-misleading-indentation','-I'+str(inc)]
     if sanitize:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
     cc=os.environ.get('CC','cc');obj=output/'text.o'
+    broadcast=output/'foreground-broadcast-test'
+    subprocess.run([cc,*flags,str(ROOT/'test/wifi_manager/foreground_broadcast_test.c'),'-o',str(broadcast)],check=True)
+    subprocess.run([str(broadcast)],check=True,timeout=30,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
     subprocess.run([cc,*flags,'-Dt5_driver_get=text_driver_get','-c',str(ROOT/'Services/text_input/host.c'),'-o',str(obj)],check=True)
     exe=output/'test'
     subprocess.run([cc,*flags,str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/wifi_manager/app_test.c'),str(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c'),str(obj),'-o',str(exe)],check=True)

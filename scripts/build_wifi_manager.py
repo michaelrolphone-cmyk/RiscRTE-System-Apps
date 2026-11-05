@@ -17,6 +17,8 @@ def sdk(runtime, output):
         if not dest.exists():shutil.copyfile(source,dest)
     for source in (ROOT/'lib/PortableApps/include').glob('*.h'):
         if not (inc/source.name).exists():shutil.copyfile(source,inc/source.name)
+    # App-owned bridge must not be shadowed by an older staged SDK header.
+    shutil.copyfile(ROOT/'lib/PortableApps/include/PortableForegroundBroadcast.h',inc/'PortableForegroundBroadcast.h')
     for source in (ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2').glob('*.h'):
         shutil.copyfile(source,inc/source.name)
     return inc

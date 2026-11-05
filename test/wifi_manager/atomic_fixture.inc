@@ -11,7 +11,7 @@ typedef struct {
 static fixture_namespace fixture_profile={.revision=1,.ns=6,.collect_delay=1,.availability_generation=1};
 static fixture_namespace fixture_policy={.revision=1,.ns=1,.collect_delay=1,.availability_generation=1};
 static int32_t fixture_atomic_state(void *context,risc_key_value_atomic_state_v1 *out){
-    fixture_namespace *s=context;
+    fixture_namespace *s=context;assert(!broadcast_live);
     if(io_fail)return RISC_ATOMIC_IO;
     if(db_busy){--db_busy;return RISC_ATOMIC_BUSY;}
     if(s->token)return RISC_ATOMIC_BUSY;
@@ -23,7 +23,7 @@ static int32_t fixture_atomic_state(void *context,risc_key_value_atomic_state_v1
 }
 static int32_t fixture_atomic_get(void *context,uint64_t revision,const char *key,
         void *out,uint32_t capacity,uint32_t *size){
-    fixture_namespace *s=context;
+    fixture_namespace *s=context;assert(!broadcast_live);
     if(revision!=s->revision)return RISC_ATOMIC_STALE;
     int rc=kv_get((void*)(uintptr_t)s->ns,key,out,capacity,size);
     return rc==RISC_KEY_VALUE_OK?RISC_ATOMIC_OK:
@@ -34,7 +34,7 @@ static int32_t fixture_atomic_get(void *context,uint64_t revision,const char *ke
 static int32_t fixture_atomic_submit(void *context,uint64_t revision,
         const risc_key_value_atomic_mutation_v1 *mutations,uint32_t count,
         const void *intent,uint32_t size,uint64_t *token){
-    fixture_namespace *s=context;*token=0;
+    fixture_namespace *s=context;assert(!broadcast_live);*token=0;
     if(io_fail)return RISC_ATOMIC_IO;
     if(s->token)return RISC_ATOMIC_BUSY;
     if(revision!=s->revision)return RISC_ATOMIC_STALE;
@@ -51,7 +51,7 @@ static int32_t fixture_atomic_submit(void *context,uint64_t revision,
 }
 static int32_t fixture_atomic_collect(void *context,uint64_t token,
         risc_key_value_atomic_receipt_v1 *out){
-    fixture_namespace *s=context;assert(s->token==token&&token);
+    fixture_namespace *s=context;assert(!broadcast_live);assert(s->token==token&&token);
     if(s->collect_ticks++<s->collect_delay)return RISC_ATOMIC_PENDING;
     int rc=s->cancelled&&!s->commit_wins?RISC_ATOMIC_CANCELLED:
         s->submitted_revision!=s->revision?RISC_ATOMIC_STALE:
@@ -66,7 +66,7 @@ static int32_t fixture_atomic_collect(void *context,uint64_t token,
     ++s->collections;wipe(s->copied,sizeof(s->copied));s->count=0;s->token=0;return RISC_ATOMIC_OK;
 }
 static int32_t fixture_atomic_cancel(void *context,uint64_t token){
-    fixture_namespace *s=context;assert(s->token==token&&token);
+    fixture_namespace *s=context;assert(!broadcast_live);assert(s->token==token&&token);
     s->cancelled=true;++s->cancellations;return RISC_ATOMIC_PENDING;
 }
 static int32_t fixture_availability(void *context,risc_key_value_availability_state_v1 *out){

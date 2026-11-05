@@ -9,6 +9,7 @@
 #include "PortablePreferenceAtomic.h"
 #include "PortableSettingsAvailability.h"
 #include "PortableRadioPolicy.h"
+#include "PortableForegroundBroadcast.h"
 #include "WifiApi.h"
 #include <string.h>
 #include <stdio.h>
@@ -47,6 +48,7 @@ typedef struct {
     uint8_t policy_proposed;
     risc_runtime_capability_v1 grants[3];unsigned acquired;
     risc_scene_resident_v1 resident;
+    portable_foreground_broadcast broadcast;uint32_t broadcast_at;
     risc_components_document_v1 doc,next_doc;
     risc_scene_telemetry_v1 plot,last_plot;
     uint64_t session,editor_session,sequence;
@@ -74,6 +76,10 @@ static void copy_text(char *to,size_t size,const char *from){size_t n=0;if(from)
 static void wipe(void *p,size_t n){volatile unsigned char *b=p;while(n--)*b++=0;}
 static bool live(wifi_manager *a){if(a->retained)return false;if(!risc_runtime_get_api(1)){a->retained=true;return false;}return true;}
 static bool retain(wifi_manager *a){if(!a->retained&&live(a))a->rt->retain_invocation();a->retained=true;return false;}
+static bool broadcast_safe(void *context){wifi_manager*a=context;return live(a)&&risc_runtime_get_api(1)==a->rt;}
+static bool background_pause(wifi_manager*a){
+    return portable_foreground_broadcast_pause(&a->broadcast,a->operation!=0)?true:retain(a);
+}
 static bool scene_result(wifi_manager *a,int rc){return live(a)&&rc==RISC_SCENE_OK?true:retain(a);}
 static void route(wifi_manager *a,unsigned page){if(a->screen!=page){a->screen=page;++a->screen_key;}a->dirty=true;}
 static void notice(wifi_manager *a,const char *s){copy_text(a->message,sizeof(a->message),s);a->parent=a->screen;route(a,NOTICE);}
@@ -84,7 +90,7 @@ static bool api_radio(const wifi_async_v1 *w){return w&&w->base.api_version==1&&
 /* Pair storage access with the existing radio provider's PHY-safe lease.
  * Busy is a clean deferral. No app-private storage gate or duplicated codec. */
 static bool storage_begin(wifi_manager *a){
-    if(!live(a))return false;if(!a->operation)return true;
+    if(!live(a)||!background_pause(a))return false;if(!a->operation)return true;
     uint32_t token=0;int rc=a->radio->service_begin(a->radio->base.context,&token);
     if(!live(a))return false;
     if((rc==RISC_RADIO_AGAIN||rc==RISC_RADIO_BUSY)&&!token)return false;
@@ -130,6 +136,31 @@ static void connect_selected(wifi_manager *a){
     if(strlen(a->draft.password)<8)open_editor(a,1);else schedule(a,RISC_RADIO_REQUEST_JOIN);
 }
 #include "storage.inc"
+/* The provider owns RF; this bridge borrows the existing atomic read view. */
+static bool background_step(wifi_manager*a,uint32_t flags){
+    if(a->operation||a->queued_kind||a->stopping||storage_pending(a)||a->service||
+       a->exit_requested||a->shared_reason||a->keyboard_pending||a->editor_session||
+       (flags&(RISC_SCENE_PRESENTING|RISC_SCENE_INPUT_BUSY|RISC_SCENE_CLOSING))||
+       (uint32_t)(a->now-a->broadcast_at)<1000)return true;
+    if(!background_pause(a))return false;
+    telemetry_broadcast_policy_v1 policy={.struct_size=sizeof(policy)};
+    int rc=store_read_begin(a,&a->radio_storage);
+    if(!live(a))return false;
+    if(rc==RISC_ATOMIC_BUSY)return true;
+    if(rc==RISC_ATOMIC_OK){
+        uint8_t radios=0;
+        bool enabled=false;
+        bool valid=portable_broadcast_control_load(a->policy,&enabled);
+        if(!live(a))return false;
+        unsigned loaded=portable_radio_load_result(a->policy,&radios);
+        if(!live(a))return false;
+        policy.settings_valid=valid&&loaded<=PORTABLE_RADIO_DEFAULT;
+        policy.enabled=enabled;
+        policy.radios_allowed=(radios&(PORTABLE_RADIO_BLUETOOTH|PORTABLE_RADIO_AIRPLANE))==PORTABLE_RADIO_BLUETOOTH;
+    }
+    a->broadcast_at=a->now;
+    return portable_foreground_broadcast_step(&a->broadcast,false,true,&policy)?true:retain(a);
+}
 static bool scan_valid(const garden_radio_scan_result_v1 *s){
     if(s->struct_size!=sizeof(*s)||s->count>GARDEN_RADIO_SCAN_MAX||s->state>GARDEN_RADIO_SCAN_FAILED||s->reserved)return false;
     for(unsigned i=0;i<s->count;i++){const garden_radio_scan_entry_v1 *e=&s->entries[i];if(!memchr(e->ssid,0,sizeof(e->ssid))||e->reserved||e->channel>14||(e->auth>5&&e->auth!=255))return false;}return true;
@@ -144,6 +175,7 @@ static void radio_step(wifi_manager *a){
             a->queued_kind=0;a->enabled=false;a->save_on_connect=false;
             (void)storage_cancel(a);notice(a,"Wi-Fi radio policy is off or unavailable");return;
         }
+        if(!background_pause(a))return;
         risc_radio_request_v1 req={.struct_size=sizeof(req),.kind=a->queued_kind};
         if(req.kind==RISC_RADIO_REQUEST_JOIN){copy_text(req.ssid,sizeof(req.ssid),a->draft.ssid);copy_text(req.password,sizeof(req.password),a->draft.password);}
         uint32_t token=0;int rc=a->radio->begin(a->radio->base.context,&req,&token);wipe(&req,sizeof(req));
@@ -264,6 +296,7 @@ static bool init(wifi_manager *a){
     memset(a,0,sizeof(*a));a->screen_key=1;a->selected_slot=UINT32_MAX;a->selected.rssi=-127;a->dirty=true;
     a->rt=risc_runtime_get_api(1);
     if(!a->rt||a->rt->struct_size<RISC_RUNTIME_MONOTONIC_V1_SIZE||!a->rt->monotonic_ms||!a->rt->acquire||!a->rt->release||!a->rt->retain_invocation||!a->rt->yield_ms)return false;
+    portable_foreground_broadcast_init(&a->broadcast,a->rt,broadcast_safe,a);
     const char *caps[]={"ui.scene","ui.text-input","net.wifi"};unsigned instances[]={0,0,15};
     for(unsigned i=0;i<3;i++){risc_runtime_capability_v1 *g=&a->grants[a->acquired];g->struct_size=sizeof(*g);bool found=a->rt->acquire(caps[i],1,instances[i],g);if(!live(a))return false;if(!found){if(!i)return false;continue;}a->acquired++;
         if(i==0){a->scene=g->api;a->components=risc_scene_components_get_v1(a->scene);a->telemetry=risc_scene_telemetry_get_v1(a->scene);
@@ -291,10 +324,11 @@ static bool step(wifi_manager *a){
     if(a->exit_requested||a->shared_reason){
         if(!storage_exit(a))return live(a);
         a->queued_kind=0;if(a->operation){(void)stop_radio(a);return live(a);}
-        if(!close_scene(a))return live(a);
+        if(!background_pause(a)||!close_scene(a))return live(a);
         if(a->shared_reason){int rc=risc_scene_resident_dispatch_v1(&a->resident,a->shared_reason);a->shared_reason=0;
             if(!live(a)||rc==RISC_RESIDENT_RETAINED)return retain(a);
             if(rc!=RISC_RESIDENT_OK&&rc!=RISC_RESIDENT_BUSY){a->exit_requested=true;return true;}
+            portable_foreground_broadcast_invalidate(&a->broadcast);
             unsigned loaded=policy_load(a);if(!live(a))return false;a->enabled=loaded<=PORTABLE_RADIO_DEFAULT&&(a->radio_flags&PORTABLE_RADIO_WIFI);a->policy_loading=loaded==PORTABLE_RADIO_BUSY;a->dirty=true;return publish(a);}
         a->finished=true;return false;
     }
@@ -321,6 +355,7 @@ static bool step(wifi_manager *a){
         if(r==RISC_RESIDENT_EXIT)a->exit_requested=true;
         if(a->resident.policy&&!a->operation&&storage_idle(a))a->shared_reason=RISC_RESIDENT_CHECKPOINT_POLICY;
     }
+    if(!background_step(a,flags))return false;
     a->drawing=(flags&RISC_SCENE_PRESENTING)!=0;
     if(!a->drawing&&!a->view_settled){a->view_settled=true;a->last_view=a->now;}
     if(!(flags&(RISC_SCENE_PRESENTING|RISC_SCENE_INPUT_BUSY))&&(a->dirty||((a->link_up||a->scanning||a->screen==JOINING)&&(uint32_t)(a->now-a->last_view)>=2000)))return publish(a);
@@ -329,6 +364,7 @@ static bool step(wifi_manager *a){
 static void cleanup(wifi_manager *a){
     if(!live(a))return;
     if(a->operation||a->session||a->editor_session||storage_pending(a)){retain(a);return;}
+    if(!background_pause(a))return;
     if(!store_close(a,&a->network_storage)||!store_close(a,&a->radio_storage))return;
     wipe(&a->draft,sizeof(a->draft));
     while(a->acquired){if(!live(a))return;bool ok=a->rt->release(&a->grants[a->acquired-1]);if(!live(a)||!ok){retain(a);return;}a->acquired--;}
