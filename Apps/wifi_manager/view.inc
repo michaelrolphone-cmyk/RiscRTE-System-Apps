@@ -10,7 +10,7 @@ static void ipv4_text(char *s,size_t n,const uint8_t *p){snprintf(s,n,"%u.%u.%u.
 static void tabs(wifi_manager *a,unsigned selected){unsigned i=node(a,RISC_COMPONENT_TAB_BAR,TAB,"","");a->next_doc.nodes[i].maximum=1;a->next_doc.nodes[i].value=(int)selected;copy_text(a->next_doc.details[i].choices,72,"WI-FI|SAVED");a->next_doc.details[i].symbol=RISC_SYMBOL_WIFI;}
 static const char *quality(unsigned bars){static const char *const q[]={"NO SIGNAL","POOR","FAIR","GOOD","EXCELLENT"};return q[bars<5?bars:0];}
 static void declare(wifi_manager *a){
-    a->next_doc=(risc_components_document_v1){.api_version=1,.struct_size=sizeof(a->next_doc),.root=1,.route_count=1,.screen_key=a->screen_key,.flags=RISC_COMPONENTS_TELEMETRY|RISC_COMPONENTS_CONNECTIVITY};
+    a->next_doc=(risc_components_document_v1){.api_version=1,.struct_size=sizeof(a->next_doc),.root=1,.route_count=1,.screen_key=a->screen_key,.flags=RISC_COMPONENTS_CONNECTIVITY|(a->telemetry?RISC_COMPONENTS_TELEMETRY:0)};
     a->next_doc.routes[0]=(risc_scene_route_v1){1,BACK,"WI-FI"};
     a->next_doc.toast_token=a->toast;copy_text(a->next_doc.toast,40,a->feedback);
     a->plot=(risc_scene_telemetry_v1){.struct_size=sizeof(a->plot)};
@@ -42,6 +42,7 @@ static void declare(wifi_manager *a){
                 i=node(a,RISC_COMPONENT_ROW,ADD_NETWORK,"ADD NETWORK","");a->next_doc.details[i].symbol=RISC_SYMBOL_PLUS;
             }
         }
+        button_node(a,STORAGE_RELOAD,"SAVED-NETWORK STORAGE",false);
         tabs(a,0);
     }else if(a->screen==SAVED){
         copy_text(a->next_doc.routes[0].title,40,"SAVED");a->next_doc.flags|=RISC_COMPONENTS_ROOT_HEADER;
@@ -55,6 +56,7 @@ static void declare(wifi_manager *a){
         else if(!a->saved_rows)node(a,RISC_COMPONENT_EMPTY,0,"NO SAVED NETWORKS","Networks you successfully join are remembered here.");
         if(a->saved_base)button_node(a,SAVED_PREV,"PREVIOUS",false);
         if(a->saved_rows==8)button_node(a,SAVED_NEXT,"MORE SAVED NETWORKS",false);
+        button_node(a,STORAGE_RELOAD,"SAVED-NETWORK STORAGE",false);
         tabs(a,1);
     }else if(a->screen==DETAIL){
         copy_text(a->next_doc.routes[0].title,40,a->selected.ssid);
@@ -68,10 +70,11 @@ static void declare(wifi_manager *a){
         section(a,"DETAILS");stat(a,"SECURITY",auth_name(a->selected.auth));
         if(a->selected.channel)snprintf(b,sizeof(b),"%u / %u MHZ",a->selected.channel,a->selected.channel==14?2484:2407+a->selected.channel*5);else copy_text(b,sizeof(b),"NOT REPORTED");stat(a,"CHANNEL",b);stat(a,"BSSID","NOT REPORTED");
         if(on){ipv4_text(b,sizeof(b),a->progress.station);stat(a,"IP ADDRESS",b);ipv4_text(b,sizeof(b),a->progress.station+4);stat(a,"GATEWAY",b);ipv4_text(b,sizeof(b),a->progress.station+8);stat(a,"SUBNET MASK",b);stat(a,"DNS","NOT REPORTED");stat(a,"LINK SPEED","NOT REPORTED");stat(a,"INTERNET","NOT TESTED");
-            section(a,"SIGNAL / LAST 60 S");i=node(a,RISC_COMPONENT_PLOT,0,"RSSI","DBM");a->next_doc.nodes[i].value=60;
+            if(a->telemetry){section(a,"SIGNAL / LAST 60 S");i=node(a,RISC_COMPONENT_PLOT,0,"RSSI","DBM");a->next_doc.nodes[i].value=60;
             copy_text(a->next_doc.details[i].choices,72,"-45|-95");risc_scene_curve_v1 *cv=&a->plot.curves[0];cv->node=i+1;cv->count=60;
-            for(unsigned k=0;k<60;k++)cv->points[k]=k<60-a->history_count?RISC_TELEMETRY_GAP:a->history[(a->history_pos+60-a->history_count+k-(60-a->history_count))%60];a->plot.count=1;
+            for(unsigned k=0;k<60;k++)cv->points[k]=k<60-a->history_count?RISC_TELEMETRY_GAP:a->history[(a->history_pos+60-a->history_count+k-(60-a->history_count))%60];a->plot.count=1;}
         }
+        button_node(a,SAVE_DRAFT,"SAVE CREDENTIALS",false);
         if(a->selected_saved){section(a,"IP SETTINGS");i=node(a,RISC_COMPONENT_SEGMENTS,INFORMATION,"","");a->next_doc.nodes[i].maximum=1;a->next_doc.nodes[i].flags=RISC_SCENE_DISABLED;copy_text(a->next_doc.details[i].choices,72,"DHCP|STATIC");stat(a,"STATIC IP","PROVIDER NOT AVAILABLE");
             i=node(a,RISC_COMPONENT_ROW,FORGET_ASK,"FORGET NETWORK","");a->next_doc.nodes[i].flags=RISC_SCENE_DESTRUCTIVE;a->next_doc.details[i].symbol=RISC_SYMBOL_DELETE;}
     }else if(a->screen==ADD){
@@ -80,7 +83,15 @@ static void declare(wifi_manager *a){
         i=node(a,RISC_COMPONENT_SEGMENTS,SECURITY,"","");a->next_doc.nodes[i].maximum=2;a->next_doc.nodes[i].value=(int)a->security;copy_text(a->next_doc.details[i].choices,72,"NONE|WPA2|WPA3");
         if(a->security)node(a,RISC_COMPONENT_ROW,EDIT_PASSWORD,"PASSWORD",a->draft.password[0]?"ENTERED / HIDDEN":"REQUIRED");
         button_node(a,SAVE_CONNECT,"SAVE & CONNECT",true);if(!portable_wifi_credentials_validate(&a->draft))a->next_doc.nodes[a->next_doc.node_count-1].flags|=RISC_SCENE_DISABLED;
+        button_node(a,SAVE_DRAFT,"SAVE WITHOUT CONNECTING",false);
         if(a->db_job)stat(a,"SAVED PROFILE","LOOKING UP...");
+    }else if(a->screen==STORAGE){
+        copy_text(a->next_doc.routes[0].title,40,a->draft_dirty?"KEEP OR DISCARD DRAFT?":"SAVED-NETWORK STORAGE");
+        node(a,RISC_COMPONENT_CARD,0,"STORAGE",
+            store_cached_ready(&a->network_storage)?"Available locally; backup not confirmed":store_notice(&a->network_storage));
+        button_node(a,KEEP_DRAFT,a->draft_dirty?"KEEP DRAFT":"BACK",true);
+        button_node(a,DISCARD_RELOAD,a->draft_dirty?"DISCARD DRAFT AND RELOAD":"RELOAD SAVED NETWORKS",false);
+        button_node(a,DISCARD_EXIT,a->draft_dirty?"DISCARD DRAFT AND LEAVE":"LEAVE WI-FI",false);
     }else if(a->screen==JOINING){
         copy_text(a->next_doc.routes[0].title,40,"JOINING");copy_text(a->next_doc.subtitle,72,a->draft.ssid);
         unsigned phase=a->progress.phase;

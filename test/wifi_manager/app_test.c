@@ -29,7 +29,8 @@ static int32_t kv_put(void *ctx,const char *key,const void *buf,uint32_t size){
     unsigned i;for(i=0;i<storage_count;i++)if(storage[i].ns==(unsigned)(uintptr_t)ctx&&!strcmp(storage[i].key,key))break;
     if(i==storage_count){assert(storage_count<80);storage_count++;}strcpy(storage[i].key,key);storage[i].ns=(unsigned)(uintptr_t)ctx;memcpy(storage[i].bytes,buf,size);storage[i].size=size;return 0;
 }
-static const risc_key_value_v1 kv={1,sizeof(kv),(void*)6,kv_get,kv_put},pkv={1,sizeof(pkv),(void*)1,kv_get,kv_put};
+static const risc_key_value_v1 kv={1,sizeof(kv),(void*)6,kv_get,kv_put};
+#include "atomic_fixture.inc"
 static int32_t begin_radio(void *c,const risc_radio_request_v1 *r,uint32_t *token){
     (void)c;edge("begin");assert(!radio_id);radio_id++;*token=radio_id;radio_kind=r->kind;radio_ticks=0;stop_requested=false;
     if(r->kind==1)scans++;else{joins++;strcpy(sent_ssid,r->ssid);strcpy(sent_password,r->password);}return 0;
@@ -60,16 +61,19 @@ static bool rt_acquire(const char *cap,uint32_t version,uint64_t instance,risc_r
     if(!strcmp(cap,"ui.scene"))value=old_scene?(void*)&old_api:(void*)api;
     else if(!strcmp(cap,"ui.text-input")){if(missing_text)return false;value=text_api;}
     else if(!strcmp(cap,"net.wifi")){assert(instance==15);value=&rf;}
-    else if(!strcmp(cap,"storage.key-value")){assert(instance==6||instance==1);value=instance==6?&kv:&pkv;}
+    else if(!strcmp(cap,RISC_KEY_VALUE_ATOMIC_CAPABILITY)){assert(instance==6||instance==1);value=instance==6?&fixture_profile_atomic:&fixture_policy_atomic;}
+    else if(!strcmp(cap,RISC_KEY_VALUE_AVAILABILITY_CAPABILITY)){assert(instance==6||instance==1);value=instance==6?&fixture_profile_availability:&fixture_policy_availability;}
     else assert(!"unexpected app capability");g->api=value;g->slot=++active_grants;g->generation=1;return true;
 }
-static bool rt_release(risc_runtime_capability_v1 *g){edge("release");assert(active_grants&&g->api);active_grants--;g->api=NULL;return true;}
+static bool rt_release(risc_runtime_capability_v1 *g){edge("release");assert(active_grants&&g->api);active_grants--;g->api=NULL;g->slot=0;g->generation=0;return true;}
 static bool rt_clock(uint32_t *t){edge("clock");*t=(uint32_t)ms;return true;}
 static bool rt_retain(void){retains++;native_alive=false;return true;}
 static void rt_yield(uint32_t n){ms+=n;}
 static bool rt_diag(const char *msg){assert(!strstr(msg,"password123"));return true;}
+#define WIFI_MANAGER_STORAGE_PENDING() storage_pending(&wm)
+#include "resident_fixture.inc"
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){
-    static const risc_runtime_api_v1 r={.api_version=1,.struct_size=sizeof(r),.yield_ms=rt_yield,.diagnostic=rt_diag,.acquire=rt_acquire,.release=rt_release,.retain_invocation=rt_retain,.monotonic_ms=rt_clock};
+    static const risc_runtime_api_v1 r={.api_version=1,.struct_size=sizeof(r),.yield_ms=rt_yield,.diagnostic=rt_diag,.acquire=rt_acquire,.release=rt_release,.retain_invocation=rt_retain,.monotonic_ms=rt_clock,.resident_shell=rt_resident_fixture};
     return version==1&&native_alive?&r:NULL;
 }
 static void pump(unsigned n){for(unsigned i=0;i<n;i++){ms+=20;if(!wifi_manager_test_step())break;}}
@@ -87,7 +91,7 @@ static void capture(const char *dir,const char *name){
     if(!dir)return;char path[512];snprintf(path,sizeof(path),"%s/%s.pbm",dir,name);FILE *f=fopen(path,"wb");assert(f);fprintf(f,"P4\n480 800\n");
     for(unsigned yy=0;yy<800;yy++)for(unsigned bx=0;bx<60;bx++){unsigned b=0;for(unsigned k=0;k<8;k++){unsigned x=bx*8+k,px=yy,py=479-x;unsigned bit=(pixels[16+py*100+px/8]>>(7-px%8))&1u;b|=bit<<(7-k);}fputc((int)b,f);}fclose(f);
 }
-static void exit_app(void){wm.exit_requested=true;pump(200);assert(wm.finished&&!wm.retained);cleanup(&wm);assert(!active_grants&&!held&&!presenting&&!subscribed&&!radio_id);assert(driver->quiesce()&&td->quiesce());td->stop();driver->stop();}
+static void exit_app(void){if(wm.draft_dirty)wifi_manager_test_action(DISCARD_EXIT,0);wm.exit_requested=true;pump(200);assert(wm.finished&&!wm.retained);cleanup(&wm);assert(!active_grants&&!held&&!presenting&&!subscribed&&!radio_id);assert(driver->quiesce()&&td->quiesce());td->stop();driver->stop();}
 
 /* Profile-independent app transitions run against the real shared presenter.
  * The original paper-touch/keyboard scenarios below remain unchanged. */
@@ -144,7 +148,9 @@ int main(int argc,char **argv){
     if(!strcmp(mode,"missing-keyboard"))missing_text=true;
     if(!strcmp(mode,"storage-failure"))io_fail=true;
     if(!strcmp(mode,"busy-storage"))db_busy=5;
+    resident_fixture=!strcmp(mode,"resident-owned");
     assert(wifi_manager_test_init());pump(20);
+    if(resident_fixture){resident_fixture_run();return 0;}
     if(!strcmp(mode,"profile")){profile_behavior();return 0;}
     if(old_scene){assert(wm.upgrade);exit_app();puts("old scene: update message PASS");return 0;}
     if(io_fail){assert(wm.db_fault&&!wm.enabled);exit_app();puts("storage failure: no data overwritten PASS");return 0;}

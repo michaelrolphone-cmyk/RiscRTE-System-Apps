@@ -45,6 +45,9 @@ allocation_failed:
   else if(kind==RS_NP_CAPTION)limit=95;
   else if(kind==RS_QR_TEXT)limit=64;
   else if(kind==RS_QA_RENDER)limit=8;
+  #ifdef PORTABLE_NATIVE_CANVAS
+  else if(kind==RS_NU_NATIVE_TEXT)limit=96;
+#endif
   else if(kind==RS_PP_TEXT||kind==RS_NU_TEXT||kind==RS_NU_BUTTON||kind==RS_SV_TEXT||kind==RS_SV_BUTTON||kind==RS_WV_TEXT||kind==RS_WV_BUTTON)limit=96;
   unsigned n=0;while(n<limit && text[n]){c->text[n]=text[n];++n;}
 #ifdef PORTABLE_PAPER_PREFERENCES
@@ -172,7 +175,13 @@ static void raster_execute(const raster_command*c) {
 #ifdef PORTABLE_QUICK_ACTIONS
   case RS_QA_RENDER:
    if(!pqa_render_rows(&surface,c->pixels,s,a[0],(uint8_t)a[1],(unsigned)raster_band_top,(unsigned)(raster_band_bottom-raster_band_top)))failed=true;
-   raster_pixels+=(unsigned)(raster_band_bottom-raster_band_top)*240u;(void)raster_checkpoint();break;
+#ifdef PORTABLE_QUICK_NATIVE
+   raster_pixels+=(unsigned)(raster_band_bottom-raster_band_top)*info.width;
+#else
+   raster_pixels+=(unsigned)(raster_band_bottom-raster_band_top)*240u;
+#endif
+   (void)raster_checkpoint();break;
+#ifndef PORTABLE_WATCH_COLOR_ONLY
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
   case RS_QR_TEXT:{const quick_ref_font *fonts[]={&QUICK_REF_TITLE,&QUICK_REF_TIME,&QUICK_REF_NUMBER,&QUICK_REF_LABEL,&QUICK_REF_TILE,&QUICK_REF_SMALL,&QUICK_REF_BATTERY};qr_text(fonts[a[0]],a[1],a[2],s,a[3],a[4],a[5],a[6]);break;}
   case RS_QR_ROUND:qr_round(a[0],a[1],a[2],a[3],a[4],a[5]);break;
@@ -181,9 +190,15 @@ static void raster_execute(const raster_command*c) {
   case RS_QP_ICON:qp_icon((unsigned)a[0],a[1],a[2],a[3]);break;
 #endif
 #endif
+#endif
   case RS_NP_MASK:nova_mask_pending=true;np_mask();break;
   case RS_NP_PIXEL:np_pixel(a[0],a[1],(uint32_t)a[2],(unsigned)a[3]);break;
 #ifdef PORTABLE_NOVA_UI
+#ifdef PORTABLE_NATIVE_CANVAS
+  case RS_NU_NATIVE_ICON:(void)portable_nova_native_icon(a[0],a[1],a[2],s,(uint32_t)a[3]);break;
+  case RS_NU_NATIVE_TEXT:portable_nova_native_text((unsigned)a[0],a[1],a[2],a[3],s,(uint32_t)a[4]);break;
+  case RS_NU_NATIVE_ROUND:portable_nova_native_round(a[0],a[1],a[2],a[3],a[4],(uint32_t)a[5]);break;
+#endif
   case RS_NU_PIXEL:nu_pixel(a[0],a[1],(uint32_t)a[2],(unsigned)a[3]);break;
   case RS_NU_RECT:nu_rect(a[0],a[1],a[2],a[3],(uint32_t)a[4]);break;
   case RS_NU_TEXT:portable_nova_text((unsigned)a[0],a[1],a[2],a[3],s,(uint32_t)a[4]);break;
@@ -248,10 +263,24 @@ static void raster_command_span(const raster_command *c) {
    for(unsigned n=0;n<95;n++){const rpp_glyph*g=&rpp_text[(a[4]?0:95)+n];if(g->top<lo)lo=g->top;if(g->top+g->height>hi)hi=g->top+g->height;}
    top=(int64_t)a[1]+lo*zoom;bottom=(int64_t)a[1]+hi*zoom;break;
   }
+#ifdef PORTABLE_NATIVE_CANVAS
+  case RS_NU_NATIVE_ROUND:top=a[raster_band_columns?0:1];bottom=top+a[raster_band_columns?2:3];break;
+  case RS_NU_NATIVE_ICON:{
+   const rpi_glyph*g;int64_t left,above;int w,h;
+   if(!nu_native_icon_box(a[0],a[1],a[2],c->text,&g,&left,&above,&w,&h)||
+      left>=width()||left+w<=0||above>=height()||above+h<=0){top=bottom=0;break;}
+   top=raster_band_columns?left:above;bottom=top+(raster_band_columns?w:h);break;
+  }
+  case RS_NU_NATIVE_TEXT:{
+   int left=0,above=0,right=0,below=0;
+   if(!nu_native_text_bounds((unsigned)a[0],a[1],a[2],a[3],c->text,&left,&above,&right,&below)){top=bottom=0;break;}
+   top=raster_band_columns?left:above;bottom=raster_band_columns?right:below;break;
+  }
+#endif
   case RS_NU_PIXEL:case RS_SV_PIXEL:case RS_WV_PIXEL:top=(int64_t)a[1]+(height()-240)/2;bottom=top+1;break;
   case RS_NU_RECT:case RS_NU_ROUND:case RS_SV_RECT:case RS_WV_RECT:
    top=(int64_t)a[1]+(height()-240)/2;bottom=top+a[3];break;
-#ifdef PORTABLE_QUICK_ACTIONS
+#if defined(PORTABLE_QUICK_ACTIONS) && !defined(PORTABLE_WATCH_COLOR_ONLY)
   case RS_QP_ICON:top=raster_paper_y((int64_t)a[2]+c->paper_offset);bottom=top+34*width()/480+1;break;
   case RS_QR_ROUND:top=raster_paper_y((int64_t)a[1]+c->paper_offset);bottom=raster_paper_y((int64_t)a[1]+a[3]+c->paper_offset)+2;break;
   case RS_QR_ICON:top=raster_paper_y((int64_t)a[2]+c->paper_offset);bottom=raster_paper_y((int64_t)a[2]+40+c->paper_offset)+2;break;

@@ -1,0 +1,33 @@
+{
+  "purpose": "development-artifact-no-hardware-qualification",
+  "desk_clock": false,
+  "retained_wake_sdk_sha256": null,
+  "version": "0.2.1",
+  "clock_policy": "rtc-wall-time",
+  "display_rotation": 90,
+  "launcher_app": "springboard.elf",
+  "navigation": true,
+  "sleep_capability": null,
+  "local_sleep_source_sha256": null,
+  "alarm_client": true,
+  "quick_actions": true,
+  "quick_radios": false,
+  "home_app": null,
+  "sha256": "bb73786e036afbb57182777676d8aa5da4742596364a1e9093d04a03e49b28d3",
+  "size_bytes": 128080,
+  "imports": [
+    "free",
+    "malloc",
+    "memcmp",
+    "memcpy",
+    "memset",
+    "risc_runtime_get_api",
+    "snprintf",
+    "strcmp",
+    "strcpy"
+  ],
+  "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+  "repository_commit": "a1218d4c57577a7fa000ff95a891ccfbf3e84bb6",
+  "working_tree_dirty": true,
+  "automatic_provision": false
+}

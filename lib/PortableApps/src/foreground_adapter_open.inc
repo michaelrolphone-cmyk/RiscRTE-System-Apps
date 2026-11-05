@@ -10,25 +10,33 @@
       !display->acquire || !display->release || !display->submit ||
       !display->present_status)
     return -1;
-  if (!display->get_info(display->context, &info) || info.width < 160 ||
-      info.height < 160 || info.width > 1024 || info.height > 1024 ||
+  if (!display->get_info(display->context, &info) ||
+      !portable_display_dimensions(info.width, info.height) ||
       !(info.supported_formats & (RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)|
                                  RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1))))
     return -1;
+#ifdef PORTABLE_WATCH_COLOR_ONLY
+  if(!(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))return -1;
+#ifndef PORTABLE_WATCH_NATIVE_HEIGHT
+  if(info.width!=240 || info.height!=240)return -1;
+#endif
+#endif
 #ifdef PORTABLE_USB_TRANSFER_APP
   /* A blocking panel wait would starve the owner-task USB service. */
   if(!(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT))return -1;
 #endif
   surface_format=(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565))?
     RISC_DISPLAY_FORMAT_RGB565:RISC_DISPLAY_FORMAT_MONO1;
+  if(!portable_display_geometry(info.width,info.height,surface_format,NULL,NULL))return -1;
   paper_rotated=PORTABLE_DISPLAY_ROTATION==90 && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) && info.width>info.height;
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && !pp_enabled())return -1;
 #ifdef PORTABLE_PAPER_PREFERENCES
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && pp_enabled()) {
     paper_preferences_grant=(risc_runtime_capability_v1){.struct_size=sizeof(paper_preferences_grant)};unsigned value=0;
+    int preference_status=PORTABLE_READER_UNAVAILABLE;
     if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,PORTABLE_READER_STORE_INSTANCE,&paper_preferences_grant)) {
-      (void)portable_reader_preference_load(paper_preferences_grant.api,false,&value);
+      preference_status=portable_reader_preference_load(paper_preferences_grant.api,false,&value);
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
       if(native_custody_retained)return -1;
 #endif
@@ -44,10 +52,18 @@
         return -1;
       }
     }
-    paper_flip_ui=value!=0;
+    paper_preferences_pending=preference_status==PORTABLE_READER_UNAVAILABLE;
+    paper_preferences_retry_at=millis_now()+250u;
+    if(!paper_preferences_pending)paper_flip_ui=value!=0;
   }
 #endif
-#ifdef PORTABLE_NOVA_UI
+#if defined(PORTABLE_NATIVE_CANVAS)
+  /* Native callers paint capability-sized pixels on any admitted color aspect
+   * ratio. Legacy 240-wide NOVA callers are not implicitly migrated. */
+  if(!pp_enabled() && surface_format!=RISC_DISPLAY_FORMAT_RGB565)return -1;
+#elif defined(PORTABLE_WATCH_NATIVE_HEIGHT)
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || nu_height()<=0)return -1;
+#elif defined(PORTABLE_NOVA_UI)
   if(!pp_enabled() && (info.width!=240 || info.height!=240))return -1;
 #endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -94,7 +110,13 @@
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
   quick.ui.paper=pp_enabled();
+#ifdef PORTABLE_QUICK_NATIVE
+  /* Select native Quick without changing the foreground app or paper profile. */
+  if(!quick.ui.paper && !pqa_set_dimensions(&quick.ui,info.width,info.height))return -1;
+#endif
   if(!pqa_session_load(&quick,rt))return -1;
+  initial_brightness_pending=surface_format==RISC_DISPLAY_FORMAT_RGB565 &&
+    (info.flags&RISC_DISPLAY_INFO_BRIGHTNESS)!=0;
   quick_paper_capabilities();
 #ifdef PORTABLE_FRONTLIGHT_TONE
   if(quick.ui.paper && !pqa_session_sync_tone(&quick,display)){

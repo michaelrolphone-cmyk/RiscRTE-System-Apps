@@ -1,0 +1,78 @@
+{
+  "base": "fd9a028c5d38eb517c1328b869684c4330a5d4d9",
+  "native_adapter_test_fails_before_fix": true,
+  "selector_off": [
+    {
+      "profile": "default",
+      "snapshot": false,
+      "source": "adapter.c",
+      "identical_preprocessed_sha256": "62e9d5eee0d044cdc65454b2223936e41c53aa5f065d5c3e18a913b843be797e"
+    },
+    {
+      "profile": "default",
+      "snapshot": false,
+      "source": "quick_render.c",
+      "identical_preprocessed_sha256": "e410c6671ce24d658200ffde39230c4c2de2621677f92c7f3e31b84066e3c74b"
+    },
+    {
+      "profile": "default",
+      "snapshot": true,
+      "source": "adapter.c",
+      "identical_preprocessed_sha256": "db56d75d166e18355da4f297c5037f13a9f4af830dd31c4bb767350e87567e04"
+    },
+    {
+      "profile": "default",
+      "snapshot": true,
+      "source": "quick_render.c",
+      "identical_preprocessed_sha256": "cacee12f05d2e126b52c6a5c0a85f00b04c92af33b4aecd9d093473872fc47bf"
+    },
+    {
+      "profile": "height",
+      "snapshot": false,
+      "source": "adapter.c",
+      "identical_preprocessed_sha256": "b1486bfaad33b4033f885e4f8997a4ac521ee9ff7bd8dd7a4ec9a590fa6220a4"
+    },
+    {
+      "profile": "height",
+      "snapshot": false,
+      "source": "quick_render.c",
+      "identical_preprocessed_sha256": "90f5b77d0c18208af8fc931225ff4575b031fbf4258f7195e8ea6c29595ebf91"
+    },
+    {
+      "profile": "height",
+      "snapshot": true,
+      "source": "adapter.c",
+      "identical_preprocessed_sha256": "cc57e1b60674d556cab3c740a7088c4b9456088b9e4e255d49e46b0c92b2d396"
+    },
+    {
+      "profile": "height",
+      "snapshot": true,
+      "source": "quick_render.c",
+      "identical_preprocessed_sha256": "7ce6cf15eb0ff56220960ce915a65d4c5273102e3f17e3281fb65c7cd7776669"
+    },
+    {
+      "profile": "native",
+      "snapshot": false,
+      "source": "adapter.c",
+      "identical_preprocessed_sha256": "54597a39ba153e38c540b549daaec51faa2fff5d382f2d9275851c0647d6f28b"
+    },
+    {
+      "profile": "native",
+      "snapshot": false,
+      "source": "quick_render.c",
+      "identical_preprocessed_sha256": "e410c6671ce24d658200ffde39230c4c2de2621677f92c7f3e31b84066e3c74b"
+    },
+    {
+      "profile": "native",
+      "snapshot": true,
+      "source": "adapter.c",
+      "identical_preprocessed_sha256": "d10c12f60bdc13dbbc105b3393885ea0386198948916a8df8591ce1d85f8abd9"
+    },
+    {
+      "profile": "native",
+      "snapshot": true,
+      "source": "quick_render.c",
+      "identical_preprocessed_sha256": "cacee12f05d2e126b52c6a5c0a85f00b04c92af33b4aecd9d093473872fc47bf"
+    }
+  ]
+}

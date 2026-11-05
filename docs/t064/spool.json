@@ -1,0 +1,55 @@
+{
+  "hardware_tested": false,
+  "backend": "fake AppData with stat/read/atomic replace, revisions and injected faults",
+  "runtime_sdk": "/tmp/Runtime-wave-t054/sdk/app/RiscAppDataV1.h",
+  "runtime_sdk_sha256": "9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e",
+  "source_sha256": {
+    "lib/PortableApps/include/CrashReportSpool.h": "d5b87876ffb05eb0eeb813658495b02b95cdfe6e5013bf303be81e5383f54554",
+    "test/native_apps/crash_report_spool_test.c": "a1849e7a668e519b6e15e03dd07d25e3a64db322d00101faf42837c319c5db2e",
+    "scripts/test_crash_report_spool.py": "cd0b10eee03a3027bb4b0d90116f0b8194f065450a82b6c733aabe33e930fce3"
+  },
+  "runs": [
+    {
+      "mode": "normal",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-pedantic",
+        "-I/tmp/System-t054/lib/PortableApps/include",
+        "-I/tmp/Runtime-wave-t054/sdk/app",
+        "/tmp/System-t054/test/native_apps/crash_report_spool_test.c",
+        "-o",
+        "/tmp/t064-spool/crash-report-spool-normal"
+      ],
+      "result": "Crash report spool: 12 groups PASS; canonical LE/CRC, bounded UTF-8, exact dedupe/text variants, lossless full-queue backpressure, stale/ambiguous recovery, removal, reboot, corruption, terminal retained; state=37440 file_max=33232"
+    },
+    {
+      "mode": "sanitized",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-pedantic",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "-I/tmp/System-t054/lib/PortableApps/include",
+        "-I/tmp/Runtime-wave-t054/sdk/app",
+        "/tmp/System-t054/test/native_apps/crash_report_spool_test.c",
+        "-o",
+        "/tmp/t064-spool/crash-report-spool-sanitized"
+      ],
+      "result": "Crash report spool: 12 groups PASS; canonical LE/CRC, bounded UTF-8, exact dedupe/text variants, lossless full-queue backpressure, stale/ambiguous recovery, removal, reboot, corruption, terminal retained; state=37440 file_max=33232"
+    }
+  ]
+}

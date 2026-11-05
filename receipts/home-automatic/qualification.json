@@ -1,0 +1,111 @@
+{
+  "purpose": "local default-off X4 Home automatic qualification; no product/device/SD qualification",
+  "source_commit": "016c61ed9e8ca6ff71f1e7d74105527c0cdc76d0",
+  "targets": {
+    "on": {
+      "directory": "/workspace/shared/x4-home-automatic-target-on",
+      "build_source_commit": "016c61ed9e8ca6ff71f1e7d74105527c0cdc76d0",
+      "working_tree_dirty": false,
+      "elf_sha256": "f2312a9f817f210125479a6ae682024569478f73ecffc8e707d66c3fd46dc732",
+      "manifest_sha256": "8631b28dc4ad3ec615b9d5c383832862322b7e07af42011cd25da24c7d329343",
+      "size_bytes": 571752,
+      "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memmove",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy",
+        "strlen",
+        "strncmp"
+      ],
+      "atomic_home_automatic": {
+        "experimental": true,
+        "default_selected": false,
+        "namespace": 1,
+        "intent": "PFA0001",
+        "origin": "AUTOMATIC",
+        "boundaries": [
+          "low-battery",
+          "Home-rules",
+          "claimed-room-preset"
+        ],
+        "legacy_put_fallback": false,
+        "partial_failure_replay": false,
+        "editor_mask_applied_to_home_rules": false,
+        "sd_acknowledged": false,
+        "activation_gate": "foreign/conflicting sources remain unresolved; Utilities automatic rules remain separate",
+        "source_sha256": {
+          "lib/PortableApps/include/PortablePreferenceAutomatic.h": "ccb82ae80dcfed3dc81594efea70f0bd6b1b7c46bd4ff4f6169e525b324e22bc",
+          "lib/PortableApps/src/home_automatic.inc": "a67f6df0bbbc4de57d0204feb79c54abca809e278f7c2ce450c8a47a236e7e8e",
+          "lib/PortableApps/include/PortableLowBattery.h": "c83b663b1d5676c7eb7a8ec59157f0efc561802cfe2a3b6eb63937e28b0acca3",
+          "lib/PortableApps/include/PortableContextActions.h": "9ebea2abc377b880fed7ab8537b93fa123eb58ea11d35f53aa96bcf4fd0dbb0c",
+          "lib/PortableApps/include/PortableContextsClient.h": "d4f184419ed407f4359099df03ce5ae8386720c754bbe33216d58500fb6004b3",
+          "lib/PortableApps/src/contexts_rules_adapter.inc": "ee6549cb1f1597df0f874aacfa18dad130344bd1419ee96a7bc6990ee15b7143",
+          "lib/PortableApps/src/contexts_policy.inc": "943afb45c3e9c887f937d3ed064baa23f5d3b9fd104836651889223702df58d5",
+          "lib/PortableApps/src/quick_adapter.inc": "1359b46df86267c27abe5c3a7107ab314c9f943aedcbdb4dfa31b3b257d72ada",
+          "lib/PortableApps/src/adapter.c": "c97d47aa0f1971a4a19755bb8c3d05cab38f05b9d99b99e744a5755b9b91ec1f"
+        }
+      },
+      "target_validation": "passed structural ELF/import/export validation",
+      "command_file": "receipts/home-automatic/target-on-command.json"
+    },
+    "off": {
+      "directory": "/workspace/shared/x4-home-automatic-target-off",
+      "build_source_commit": "016c61ed9e8ca6ff71f1e7d74105527c0cdc76d0",
+      "working_tree_dirty": false,
+      "elf_sha256": "9b42c85959995290831b6ae87a3fdab8583de70fd4e3c5e567517b1d6407fb44",
+      "manifest_sha256": "fc16120d123932426974be2f253b4e22e4082745869240dc4065c689e8c7555b",
+      "size_bytes": 557352,
+      "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memmove",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy",
+        "strlen",
+        "strncmp"
+      ],
+      "atomic_home_automatic": null,
+      "target_validation": "passed structural ELF/import/export validation",
+      "command_file": "receipts/home-automatic/target-off-command.json"
+    }
+  },
+  "default_elf_and_manifest_unchanged": true,
+  "selected_manifest_matches_atomic_quick": true,
+  "tests": {
+    "home_normal": 47,
+    "home_asan_ubsan": 47,
+    "quick_normal": 41,
+    "quick_asan_ubsan": 41,
+    "legacy_low_battery_policy": "Watch and X4 normal + ASan/UBSan passed",
+    "legacy_low_battery_adapter": "cases 0 and 1 at rotations 0/180 normal + ASan/UBSan passed",
+    "context_preferences": "normal + ASan/UBSan passed; 512 corruption cases each"
+  },
+  "preexisting_failures": [
+    {
+      "test": "scripts/test_context_client.py",
+      "assertion": "test/native_apps/context_client_test.c:93 cached radio policy does not reload",
+      "reproduced_on": "a4c7805a531acf53c91fee089371481db425a2e4"
+    },
+    {
+      "test": "scripts/test_low_battery.py case 2",
+      "assertion": "test/native_apps/low_battery_adapter_test.c:50 expects 25000 ms",
+      "reproduced_on": "a4c7805a531acf53c91fee089371481db425a2e4"
+    }
+  ],
+  "invalid_profile_rejected": true
+}

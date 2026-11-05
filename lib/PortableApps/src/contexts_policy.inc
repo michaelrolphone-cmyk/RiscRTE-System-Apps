@@ -78,6 +78,9 @@ static bool contexts_face_save(const risc_key_value_v1 *kv,unsigned id) {
 #include "contexts_clock.inc"
 #endif
 static bool contexts_tick(void) {
+#ifdef PORTABLE_HOME_PROVISION
+  if(home_provision_busy)return !failed&&!native_custody_retained;
+#endif
   if(failed||native_custody_retained)return false;
 #ifdef PORTABLE_FILE_SHARING
   if(portable_file_browser_sharing_active())return true;
@@ -131,7 +134,11 @@ static bool contexts_tick(void) {
 #if !defined(PORTABLE_AUDIO_SESSION) && !defined(PORTABLE_RADIO_SESSION) && !defined(PORTABLE_WIFI_SETTINGS_APP) && !defined(PORTABLE_UPDATE_APP) && !defined(PORTABLE_BLE_FOREGROUND) && !defined(PORTABLE_CONTEXTS_EDITOR)
   uint16_t applied=0;
   contexts_policy_io=true;
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+  ok=contexts_client.rules_available?contexts_rules_tick():portable_contexts_apply_room_using(&contexts_client,&applied,contexts_face_save,home_automatic_preset);
+#else
   ok=contexts_client.rules_available?contexts_rules_tick():portable_contexts_apply_room(&contexts_client,&applied,contexts_face_save);
+#endif
   contexts_policy_io=false;
   if(!ok||native_custody_retained){portable_adapter_retain();return false;}
 

@@ -1,0 +1,61 @@
+{
+  "results": [
+    {
+      "sanitized": false,
+      "passed": true,
+      "output": "native geometry 1x1 admission/direct/replay/guards/cleanup PASS\nnative geometry 128x64 admission/direct/replay/guards/cleanup PASS\nnative geometry 160x96 admission/direct/replay/guards/cleanup PASS\nnative geometry 240x240 admission/direct/replay/guards/cleanup PASS\nnative geometry 410x502 admission/direct/replay/guards/cleanup PASS\nnative geometry 502x410 admission/direct/replay/guards/cleanup PASS\nnative geometry 800x480 admission/direct/replay/guards/cleanup PASS\nnative geometry 1025x256 admission/direct/replay/guards/cleanup PASS\nnative geometry 256x2049 admission/direct/replay/guards/cleanup PASS\nnative geometry 4096x16 admission/direct/replay/guards/cleanup PASS\nnative geometry 65535x1 admission/direct/replay/guards/cleanup PASS\nABI byte/stride/dimension boundary checks PASS\n"
+    },
+    {
+      "sanitized": true,
+      "passed": true,
+      "output": "native geometry 1x1 admission/direct/replay/guards/cleanup PASS\nnative geometry 128x64 admission/direct/replay/guards/cleanup PASS\nnative geometry 160x96 admission/direct/replay/guards/cleanup PASS\nnative geometry 240x240 admission/direct/replay/guards/cleanup PASS\nnative geometry 410x502 admission/direct/replay/guards/cleanup PASS\nnative geometry 502x410 admission/direct/replay/guards/cleanup PASS\nnative geometry 800x480 admission/direct/replay/guards/cleanup PASS\nnative geometry 1025x256 admission/direct/replay/guards/cleanup PASS\nnative geometry 256x2049 admission/direct/replay/guards/cleanup PASS\nnative geometry 4096x16 admission/direct/replay/guards/cleanup PASS\nnative geometry 65535x1 admission/direct/replay/guards/cleanup PASS\nABI byte/stride/dimension boundary checks PASS\n"
+    },
+    {
+      "profile": 0,
+      "sanitized": false,
+      "passed": true,
+      "output": "profile 0: 18 complete adapter init/fini and native input-edge cases PASS\n"
+    },
+    {
+      "profile": 0,
+      "sanitized": true,
+      "passed": true,
+      "output": "profile 0: 18 complete adapter init/fini and native input-edge cases PASS\n"
+    },
+    {
+      "profile": 1,
+      "sanitized": false,
+      "passed": true,
+      "output": "profile 1: 18 complete adapter init/fini and native input-edge cases PASS\n"
+    },
+    {
+      "profile": 1,
+      "sanitized": true,
+      "passed": true,
+      "output": "profile 1: 18 complete adapter init/fini and native input-edge cases PASS\n"
+    },
+    {
+      "profile": 2,
+      "sanitized": false,
+      "passed": true,
+      "output": "profile 2: 18 complete adapter init/fini and native input-edge cases PASS\n"
+    },
+    {
+      "profile": 2,
+      "sanitized": true,
+      "passed": true,
+      "output": "profile 2: 18 complete adapter init/fini and native input-edge cases PASS\n"
+    }
+  ],
+  "hardware": false,
+  "sha256": {
+    "lib/PortableApps/include/PortableDisplayGeometry.h": "a90c2163797097dcfe93798c78593236c7f2eb43fbd391704f3880b43abab6e8",
+    "lib/PortableApps/include/WatchLayout.h": "8a1a62346320a0dc76d0976d84e589ffbc5b0cdc064acf32a2d8057da0637aab",
+    "lib/PortableApps/src/adapter.c": "10224555c7b506991bc258fd36ab88f334ac478f4aaeb0b5033cb31d286f7ef9",
+    "lib/PortableApps/src/foreground_adapter_open.inc": "f5accdc954825652adfd8e8bf82e3e00bcef4b66926e38df64af79f5206eaba5",
+    "lib/PortableApps/src/nova_native.inc": "33b17484a41b83fe98f76952d070677cae671c8c94ba3dd827efec18f9ebe2de",
+    "test/native_apps/native_geometry_test.c": "1b7ef055b0927140a631bc1a87e6b1306666790f48f595ac0f4d0d915b43a1a1",
+    "test/native_apps/native_geometry_admission_test.c": "9f4144983a75d4cca1563dea7ebd157e8bbf150085b6259bc5fedb0e6fc06f38",
+    "scripts/test_native_geometry.py": "33af7ea679280ecbb66f823dda0d575a8e7b5417c133e7c8a321501d4b57fd08"
+  }
+}

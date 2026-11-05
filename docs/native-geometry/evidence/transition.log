@@ -1,0 +1,3 @@
+RGB565 transition: 12125 frames, independent two-pass clamped reference, exact endpoints, strides, canaries and 182 non-mutating rejections passed
+Retained handoff: exact first/final frame, held touch, delayed full-frame submit, rollover, allocation failures and interrupted cleanup passed
+Eager handoff: initial paint counted, first transfer blends, sharp by60ms; deliberate Back returns once, failures never synthesize a return

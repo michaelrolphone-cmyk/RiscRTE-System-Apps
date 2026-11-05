@@ -1,0 +1,126 @@
+portable real app scenario 0: lifecycle/touch/presentation passed
+portable real app scenario 1: lifecycle/touch/presentation passed
+portable real app scenario 2: lifecycle/touch/presentation passed
+portable real app scenario 3: lifecycle/touch/presentation passed
+portable sleep Settings scenario 40 passed
+portable sleep Settings scenario 41 passed
+portable sleep Settings scenario 42 passed
+portable sleep Settings scenario 43 passed
+portable sleep Settings scenario 44 passed
+portable sleep Settings scenario 45 passed
+portable sleep Settings scenario 46 passed
+portable sleep Settings scenario 47 passed
+portable Settings scenario 0 passed
+portable Settings scenario 1 passed
+portable Settings scenario 25 passed
+portable Settings scenario 29 passed
+portable Settings scenario 34 passed
+portable Settings scenario 35 passed
+portable Settings scenario 0 passed
+portable Settings scenario 1 passed
+portable Settings scenario 2 passed
+portable Settings scenario 3 passed
+portable Settings scenario 4 passed
+portable Settings scenario 5 passed
+portable Settings scenario 8 passed
+portable Settings scenario 9 passed
+portable Settings scenario 10 passed
+portable Settings scenario 11 passed
+portable Settings scenario 12 passed
+portable Settings scenario 14 passed
+portable Settings scenario 15 passed
+portable Settings scenario 18 passed
+portable Settings scenario 19 passed
+portable Settings scenario 25 passed
+portable Settings scenario 26 passed
+portable Settings scenario 27 passed
+portable Settings scenario 28 passed
+portable Settings scenario 29 passed
+portable Settings scenario 34 passed
+portable Settings scenario 35 passed
+portable Settings scenario 0 passed
+portable Settings scenario 20 passed
+portable Settings scenario 21 passed
+portable Settings scenario 22 passed
+portable Settings scenario 23 passed
+portable Settings scenario 24 passed
+portable Settings scenario 25 passed
+portable Settings scenario 26 passed
+portable Settings scenario 27 passed
+portable Settings scenario 28 passed
+portable Settings scenario 29 passed
+portable Settings scenario 34 passed
+portable Settings scenario 35 passed
+portable Settings scenario 30 passed
+portable Settings scenario 31 passed
+portable Settings scenario 30 passed
+portable Settings scenario 31 passed
+portable time policy: 876600 hourly round trips plus gap/fold/range fixtures passed
+portable time policy: 876585 hourly round trips plus gap/fold/range fixtures passed
+Shared sleep policy: bounded record, version/corruption/defaults, no-op and failed/verified save passed
+Portable idle scenario 0: 1 sleep entries, nested state/input and clean ownership passed
+Portable idle scenario 1: 3 sleep entries, nested state/input and clean ownership passed
+Portable idle scenario 2: 3 sleep entries, nested state/input and clean ownership passed
+Portable idle scenario 3: 1 sleep entries, nested state/input and clean ownership passed
+Portable idle scenario 4: 1 sleep entries, nested state/input and clean ownership passed
+Portable idle scenario 5: 1 sleep entries, nested state/input and clean ownership passed
+Portable idle scenario 6: 1 sleep entries, nested state/input and clean ownership passed
+Portable idle scenario 7: 1 sleep entries, nested state/input and clean ownership passed
+Nested retained unwind: RTC reads=0 KV reads=0 navigation resets=0 after sleep returned -1
+Nested retained unwind: RTC reads=0 KV reads=0 navigation resets=0 after sleep returned -1
+Time format scenario 0: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 1: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 2: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 3: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 4: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 5: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 6: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 7: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 8: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 9: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 10: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 11: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 12: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 15: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 16: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 17: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 18: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 0: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 1: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 2: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 3: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 4: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 5: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 6: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 7: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 8: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 9: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 10: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 11: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 12: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 15: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 16: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 17: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 18: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 0: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 1: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 2: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 3: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 4: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 5: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 6: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 7: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 8: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 9: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 10: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 11: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 12: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 13: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 14: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 15: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 16: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 17: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Time format scenario 18: UI, persistence, consumer labels and unchanged RTC/timezone passed
+Portable catalog 17/18 acceptance / 19 rejection and real calendar-check glyph passed
+Portable catalog 17/18 acceptance / 19 rejection and real calendar-check glyph passed
+Portable catalog 17/18 acceptance / 19 rejection and real calendar-check glyph passed

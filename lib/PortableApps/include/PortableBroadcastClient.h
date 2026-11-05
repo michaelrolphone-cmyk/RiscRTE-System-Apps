@@ -95,3 +95,10 @@ static inline bool portable_broadcast_close(portable_broadcast_client *c,const r
 bool portable_broadcast_status(telemetry_broadcast_status_v1 *out);
 bool portable_broadcast_enable(bool enabled);
 bool portable_broadcast_stop(void);
+
+#ifdef PORTABLE_BROADCAST_RESULT_ONLY
+/* Explicit external preference controller: report its checked terminal storage
+ * outcome without writing KV. The adapter preserves the ordinary save-failure
+ * pause latch until the next explicit retry. This is not a storage result. */
+bool portable_broadcast_preference_result(bool enabled,bool saved);
+#endif

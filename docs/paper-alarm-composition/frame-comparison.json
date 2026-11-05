@@ -1,0 +1,125 @@
+{
+  "comparisons": [
+    {
+      "candidate": "fixed/settings-height0-native0-san0/frame-3.pbm",
+      "baseline": "settings-height0-native0/frame-3.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height0-native0-san0/frame-2.pbm",
+      "baseline": "settings-height0-native0/frame-2.pbm",
+      "sha256": "76973f2841b34d15747db9c94725329447fc8ac79a5450e724772354c6b60b88"
+    },
+    {
+      "candidate": "fixed/settings-height0-native0-san0/frame-1.pbm",
+      "baseline": "settings-height0-native0/frame-1.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height0-native1-san0/frame-3.pbm",
+      "baseline": "settings-height0-native0/frame-3.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height0-native1-san0/frame-2.pbm",
+      "baseline": "settings-height0-native0/frame-2.pbm",
+      "sha256": "76973f2841b34d15747db9c94725329447fc8ac79a5450e724772354c6b60b88"
+    },
+    {
+      "candidate": "fixed/settings-height0-native1-san0/frame-1.pbm",
+      "baseline": "settings-height0-native0/frame-1.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height1-native0-san0/frame-3.pbm",
+      "baseline": "settings-height0-native0/frame-3.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height1-native0-san0/frame-2.pbm",
+      "baseline": "settings-height0-native0/frame-2.pbm",
+      "sha256": "76973f2841b34d15747db9c94725329447fc8ac79a5450e724772354c6b60b88"
+    },
+    {
+      "candidate": "fixed/settings-height1-native0-san0/frame-1.pbm",
+      "baseline": "settings-height0-native0/frame-1.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height1-native1-san0/frame-3.pbm",
+      "baseline": "settings-height0-native0/frame-3.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height1-native1-san0/frame-2.pbm",
+      "baseline": "settings-height0-native0/frame-2.pbm",
+      "sha256": "76973f2841b34d15747db9c94725329447fc8ac79a5450e724772354c6b60b88"
+    },
+    {
+      "candidate": "fixed/settings-height1-native1-san0/frame-1.pbm",
+      "baseline": "settings-height0-native0/frame-1.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height0-native0-san1/frame-3.pbm",
+      "baseline": "settings-height0-native0/frame-3.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height0-native0-san1/frame-2.pbm",
+      "baseline": "settings-height0-native0/frame-2.pbm",
+      "sha256": "76973f2841b34d15747db9c94725329447fc8ac79a5450e724772354c6b60b88"
+    },
+    {
+      "candidate": "fixed/settings-height0-native0-san1/frame-1.pbm",
+      "baseline": "settings-height0-native0/frame-1.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height0-native1-san1/frame-3.pbm",
+      "baseline": "settings-height0-native0/frame-3.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height0-native1-san1/frame-2.pbm",
+      "baseline": "settings-height0-native0/frame-2.pbm",
+      "sha256": "76973f2841b34d15747db9c94725329447fc8ac79a5450e724772354c6b60b88"
+    },
+    {
+      "candidate": "fixed/settings-height0-native1-san1/frame-1.pbm",
+      "baseline": "settings-height0-native0/frame-1.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height1-native0-san1/frame-3.pbm",
+      "baseline": "settings-height0-native0/frame-3.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height1-native0-san1/frame-2.pbm",
+      "baseline": "settings-height0-native0/frame-2.pbm",
+      "sha256": "76973f2841b34d15747db9c94725329447fc8ac79a5450e724772354c6b60b88"
+    },
+    {
+      "candidate": "fixed/settings-height1-native0-san1/frame-1.pbm",
+      "baseline": "settings-height0-native0/frame-1.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height1-native1-san1/frame-3.pbm",
+      "baseline": "settings-height0-native0/frame-3.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    },
+    {
+      "candidate": "fixed/settings-height1-native1-san1/frame-2.pbm",
+      "baseline": "settings-height0-native0/frame-2.pbm",
+      "sha256": "76973f2841b34d15747db9c94725329447fc8ac79a5450e724772354c6b60b88"
+    },
+    {
+      "candidate": "fixed/settings-height1-native1-san1/frame-1.pbm",
+      "baseline": "settings-height0-native0/frame-1.pbm",
+      "sha256": "349e29dabb0d92d9957bc305074b8452bdf55282955505d5f9c246ae1e894ab8"
+    }
+  ],
+  "all_identical": true
+}

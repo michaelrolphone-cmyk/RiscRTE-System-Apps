@@ -1,0 +1,358 @@
+
+Symbol table '.dynsym' contains 12 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND snprintf
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_package_manager_get_api
+     5: 000027e0     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+     6: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+     7: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strcmp
+     8: 000027e0     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+     9: 0000c894     0 NOTYPE  GLOBAL DEFAULT   12 _end
+    10: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+    11: 00000f44   578 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/app_store.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 6 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     2: 000014d4     0 NOTYPE  GLOBAL DEFAULT   10 __bss_start
+     3: 000014d4     0 NOTYPE  GLOBAL DEFAULT   10 _edata
+     4: 000014d4     0 NOTYPE  GLOBAL DEFAULT   10 _end
+     5: 0000020c   431 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/settings.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 18 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strcpy
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND snprintf
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_storage_get_api
+     5: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     6: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND malloc
+     7: 00002f38   158 FUNC    GLOBAL DEFAULT    6 app_hardware_takeover
+     8: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcmp
+     9: 00005af8     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+    10: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+    11: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strcmp
+    12: 00005af8     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+    13: 00005bfc     0 NOTYPE  GLOBAL DEFAULT   12 _end
+    14: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strlen
+    15: 00003850  2286 FUNC    GLOBAL DEFAULT    6 app_main
+    16: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_video_get_api
+    17: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND free
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/springboard.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 21 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND snprintf
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_storage_get_api
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     5: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strrchr
+     6: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memchr
+     7: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strncmp
+     8: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_file_open_get_api
+     9: 000042d8     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+    10: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+    11: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_provider_capability_get_api
+    12: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strcmp
+    13: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_file_browser_get_api
+    14: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_system_ui_get_api
+    15: 000042d8     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+    16: 000115cc     0 NOTYPE  GLOBAL DEFAULT   12 _end
+    17: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+    18: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strlen
+    19: 00002c44  2076 FUNC    GLOBAL DEFAULT    6 app_main
+    20: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strchr
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/file_browser.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 9 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_time_zone_get_api
+     3: 00001778     0 NOTYPE  GLOBAL DEFAULT   10 __bss_start
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+     5: 00001778     0 NOTYPE  GLOBAL DEFAULT   10 _edata
+     6: 00005f94     0 NOTYPE  GLOBAL DEFAULT   11 _end
+     7: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+     8: 0000051c   343 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/time_zone.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 10 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_network_get_api
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     4: 00001738     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+     5: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_system_ui_get_api
+     6: 00001738     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+     7: 00001748     0 NOTYPE  GLOBAL DEFAULT   12 _end
+     8: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+     9: 0000043c   332 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/wifi_settings.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 13 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strcpy
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND snprintf
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     5: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_package_manager_get_api
+     6: 000020f4     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+     7: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+     8: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strcmp
+     9: 000020f4     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+    10: 0001073c     0 NOTYPE  GLOBAL DEFAULT   12 _end
+    11: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+    12: 000013e4   762 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/package_manager.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 14 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strcpy
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND snprintf
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     5: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_package_manager_get_api
+     6: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_driver_manager_get_api
+     7: 00002140     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+     8: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+     9: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strcmp
+    10: 00002140     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+    11: 00019e20     0 NOTYPE  GLOBAL DEFAULT   12 _end
+    12: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+    13: 00001470   674 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/driver_manager.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 12 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND snprintf
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strrchr
+     5: 00001b20     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+     6: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+     7: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_sd_firmware_get_api
+     8: 00001b20     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+     9: 00001c8c     0 NOTYPE  GLOBAL DEFAULT   12 _end
+    10: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+    11: 0000069c   438 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/sd_firmware_update.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 12 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strcpy
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND snprintf
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     5: 00001900     0 NOTYPE  GLOBAL DEFAULT   12 __bss_start
+     6: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+     7: 00001900     0 NOTYPE  GLOBAL DEFAULT   12 _edata
+     8: 00001a18     0 NOTYPE  GLOBAL DEFAULT   13 _end
+     9: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+    10: 00000560   443 FUNC    GLOBAL DEFAULT    6 app_main
+    11: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_button_remap_get_api
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/button_remap.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 12 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strcpy
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND snprintf
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     5: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_cache_get_api
+     6: 0000194c     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+     7: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+     8: 0000194c     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+     9: 000019dc     0 NOTYPE  GLOBAL DEFAULT   12 _end
+    10: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+    11: 00000520   394 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/clear_cache.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 8 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_language_get_api
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     3: 000010c0     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+     4: 000010c0     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+     5: 00002d50     0 NOTYPE  GLOBAL DEFAULT   12 _end
+     6: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+     7: 000003ac   298 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/language_settings.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 10 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     3: 00001658     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+     5: 00001658     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+     6: 00001a5c     0 NOTYPE  GLOBAL DEFAULT   12 _end
+     7: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+     8: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_status_bar_get_api
+     9: 00000414   295 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/status_bar_settings.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 10 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND snprintf
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strncpy
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ota_get_api
+     5: 00001ac4     0 NOTYPE  GLOBAL DEFAULT   10 __bss_start
+     6: 00001ac4     0 NOTYPE  GLOBAL DEFAULT   10 _edata
+     7: 00001b70     0 NOTYPE  GLOBAL DEFAULT   11 _end
+     8: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+     9: 000005e0   454 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/ota_update.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 11 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strcpy
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND snprintf
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_font_get_api
+     5: 00001ab0     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+     6: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+     7: 00001ab0     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+     8: 00005d44     0 NOTYPE  GLOBAL DEFAULT   12 _end
+     9: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+    10: 00000750   324 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/font_manager.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 10 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_font_get_api
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     4: 00001650     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+     5: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+     6: 00001650     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+     7: 00002b64     0 NOTYPE  GLOBAL DEFAULT   12 _end
+     8: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+     9: 000003ec   324 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/font_selection.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 11 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND snprintf
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND strrchr
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_file_open_get_api
+     5: 00001758     0 NOTYPE  GLOBAL DEFAULT   10 __bss_start
+     6: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset
+     7: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_image_get_api
+     8: 00001758     0 NOTYPE  GLOBAL DEFAULT   10 _edata
+     9: 00001760     0 NOTYPE  GLOBAL DEFAULT   11 _end
+    10: 00000418   430 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/image_viewer.elf
+Native ELF structural validation tests passed
+
+Symbol table '.dynsym' contains 9 entries:
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_app_get_api
+     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy
+     3: 00001514     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start
+     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_system_ui_get_api
+     5: 00001514     0 NOTYPE  GLOBAL DEFAULT   11 _edata
+     6: 00001514     0 NOTYPE  GLOBAL DEFAULT   11 _end
+     7: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND t5_ui_get_api
+     8: 00000300   195 FUNC    GLOBAL DEFAULT    6 app_main
+
+Development ELF and integrity sidecar: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/dist/apps/file_transfer.elf
+Native ELF structural validation tests passed
+Validated 18 application ELFs and digest/version sidecars
+Published-byte parity: 14/18; unchanged published versions are byte-exact; newer versions are development builds
+Native ELF structural validation tests passed
+Portable Settings: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Settings: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Settings: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Native ELF structural validation tests passed
+Native ELF structural validation tests passed
+Portable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed
+Native ELF structural validation tests passed
+Portable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed
+Native ELF structural validation tests passed
+Portable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed
+Native ELF structural validation tests passed
+Portable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed
+Native ELF structural validation tests passed
+Portable Wi-Fi: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Wi-Fi: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Settings: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Springboard: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Springboard: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Settings: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Springboard: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Springboard: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Springboard: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Springboard: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Settings: target layout, ELF validator, import/export checks passed
+Native ELF structural validation tests passed
+Portable Settings: target layout, ELF validator, import/export checks passed

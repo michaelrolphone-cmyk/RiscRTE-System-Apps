@@ -6,6 +6,10 @@
 static int32_t alarm_result,alarm_error;
 static unsigned alarm_steps,alarm_status_calls;
 static bool modal_back;
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+static bool busy_fixture;
+static unsigned busy_after,busy_through;
+#endif
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
 static bool terminal_issued;
 static int32_t issued_result(int32_t r){if(r==ALARM_RETAINED)terminal_issued=true;return r;}
@@ -20,9 +24,17 @@ static int32_t tagged_status(void *context,alarm_status_v1 *out){
  #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
  if(alarm_error==ALARM_RETAINED)terminal_issued=true;
 #endif
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+ if(busy_fixture && !alarm_error && alarm_steps<=busy_through)out->state=ALARM_STATE_LOADING;
+#endif
  return issued_result(retain_alarm_status?ALARM_RETAINED:ALARM_OK);
 }
-static int32_t tagged_step(void *context){(void)context;io();++alarm_steps;return issued_result(alarm_result);}
+static int32_t tagged_step(void *context){(void)context;io();++alarm_steps;
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+ if(busy_fixture && alarm_steps>busy_after && alarm_steps<=busy_through)return ALARM_PENDING;
+#endif
+ return issued_result(alarm_result);
+}
 static int32_t tagged_refresh(void *context){(void)context;io();++refreshes;return issued_result(retain_refresh?ALARM_RETAINED:alarm_result);}
 static int32_t tagged_ack(void *context,const alarm_token_v1 *token){(void)token;return tagged_step(context);}
 static int32_t tagged_stop(void *context){(void)context;io();++alarm_stops;return issued_result(retain_alarm_stop?ALARM_RETAINED:ALARM_OK);}
@@ -73,6 +85,22 @@ int main(int argc,char **argv){
  }else if(!strcmp(name,"global-retained")){
   portable_adapter_retain_silent();unsigned before=calls;alarm_token_v1 t={0};
   assert(!alarms.retained&&!portable_alarm_pump(&alarms)&&!portable_alarm_status(&alarms)&&!portable_alarm_refresh(&alarms)&&!portable_alarm_acknowledge(&alarms,&t)&&!portable_alarm_failure_stop(&alarms)&&!portable_alarm_close(&alarms,&fx_runtime)&&!portable_alarm_open(&alarms,&fx_runtime));assert(calls==before);check_retained(view);
+#endif
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+ }else if(!strcmp(name,"busy-cold")||!strcmp(name,"busy-mid")) {
+  busy_fixture=true;busy_after=alarm_steps+(!strcmp(name,"busy-mid")?3u:0u);busy_through=busy_after+1000;
+  for(unsigned call=0;call<1000;call++) {
+   bool consumed=false;unsigned before=alarm_steps;
+   assert(alarm_foreground(&consumed)&&consumed&&alarms.deferred);
+   assert(alarms.status.state==ALARM_STATE_LOADING&&!failed&&!retained&&!alarm_error_seen&&!alarm_modal&&!alarm_stops);
+   assert(alarm_steps-before<5);fx_yield(1);
+  }
+  bool consumed=true;assert(alarm_foreground(&consumed)&&!consumed&&!alarms.deferred&&alarms.status.state==ALARM_STATE_READY);
+  assert(!failed&&!retained&&!alarm_stops);
+  /* Real errors after transient contention must still enter the visible modal. */
+  busy_fixture=false;alarm_result=alarm_error=ALARM_STORAGE;modal_back=true;
+  assert(alarm_foreground(&consumed)&&consumed&&alarm_error_seen&&alarms.status.state==ALARM_STATE_BLOCKED);
+  alarm_result=alarm_error=0;
 #endif
  }else assert(0);
  if(!retained){app_module_fini();assert(!live&&!frames&&!subscriptions);}

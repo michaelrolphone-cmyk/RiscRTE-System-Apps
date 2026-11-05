@@ -1,0 +1,160 @@
+{
+  "incomplete-rtc-provider": {
+    "explanation": "Initial Settings provider fixture omitted required rtc.write callback; admission failed. Added an assert-on-use callback without changing production source.",
+    "fixture_sha256": "5547508edca4c73fec3981f592a4c87d5d23b1bc29812efe9537aecbffb8476c",
+    "receipt": {
+      "source_pin": "9d2c55b32e88c0b12b1fa16200f399164767f5d1",
+      "rows": [
+        {
+          "name": "settings-height0-native0",
+          "flags": [
+            "-DPORTABLE_SETTINGS_APP",
+            "-DPORTABLE_SETTINGS_NATIVE_UI",
+            "-DPORTABLE_ALARM_CLIENT",
+            "-DPORTABLE_NOVA_UI",
+            "-DPORTABLE_NATIVE_CANVAS"
+          ],
+          "build_returncode": 0,
+          "binary_sha256": "b7b916f47a6feb216f0339fd1847f01a9fa2cf5b17d4b6e7efa22e42c81a14ef",
+          "returncode": -6,
+          "output": "test-binary: $EVIDENCE/settings_witness.c:37: main: Assertion `admitted==0' failed.\n"
+        },
+        {
+          "name": "settings-height0-native1",
+          "flags": [
+            "-DPORTABLE_SETTINGS_APP",
+            "-DPORTABLE_SETTINGS_NATIVE_UI",
+            "-DPORTABLE_ALARM_CLIENT",
+            "-DPORTABLE_NOVA_UI",
+            "-DPORTABLE_NATIVE_CANVAS",
+            "-DPORTABLE_ALARM_NATIVE"
+          ],
+          "build_returncode": 0,
+          "binary_sha256": "8926349ca6737c62d200792d37bd49d7ac47c6f000a57109a8f44573d00c4f08",
+          "returncode": -6,
+          "output": "test-binary: $EVIDENCE/settings_witness.c:37: main: Assertion `admitted==0' failed.\n"
+        },
+        {
+          "name": "settings-height1-native0",
+          "flags": [
+            "-DPORTABLE_SETTINGS_APP",
+            "-DPORTABLE_SETTINGS_NATIVE_UI",
+            "-DPORTABLE_ALARM_CLIENT",
+            "-DPORTABLE_NOVA_UI",
+            "-DPORTABLE_NATIVE_CANVAS",
+            "-DPORTABLE_WATCH_NATIVE_HEIGHT"
+          ],
+          "build_returncode": 0,
+          "binary_sha256": "ed206783a9851ade5f666cd3e57859d8d91661ab4d52449b63dd52f057116d9a",
+          "returncode": -6,
+          "output": "test-binary: $EVIDENCE/settings_witness.c:37: main: Assertion `admitted==0' failed.\n"
+        },
+        {
+          "name": "settings-height1-native1",
+          "flags": [
+            "-DPORTABLE_SETTINGS_APP",
+            "-DPORTABLE_SETTINGS_NATIVE_UI",
+            "-DPORTABLE_ALARM_CLIENT",
+            "-DPORTABLE_NOVA_UI",
+            "-DPORTABLE_NATIVE_CANVAS",
+            "-DPORTABLE_WATCH_NATIVE_HEIGHT",
+            "-DPORTABLE_ALARM_NATIVE"
+          ],
+          "build_returncode": 0,
+          "binary_sha256": "dcbd16f804e93766e1f0efd6641e701515c3dfc2cd95e5b8e8f9fbbdefc95580",
+          "returncode": -6,
+          "output": "test-binary: $EVIDENCE/settings_witness.c:37: main: Assertion `admitted==0' failed.\n"
+        }
+      ]
+    },
+    "logs": {
+      "settings-height1-native1.log": "test-binary: $EVIDENCE/settings_witness.c:37: main: Assertion `admitted==0' failed.\n",
+      "settings-height1-native0.log": "test-binary: $EVIDENCE/settings_witness.c:37: main: Assertion `admitted==0' failed.\n",
+      "settings-height0-native1.log": "test-binary: $EVIDENCE/settings_witness.c:37: main: Assertion `admitted==0' failed.\n",
+      "settings-height0-native0.log": "test-binary: $EVIDENCE/settings_witness.c:37: main: Assertion `admitted==0' failed.\n",
+      "settings-height1-native1-build.log": "",
+      "settings-height1-native0-build.log": "",
+      "settings-height0-native1-build.log": "",
+      "settings-height0-native0-build.log": ""
+    }
+  },
+  "reversed-pixel-oracle": {
+    "explanation": "Initial pixel oracle treated MONO1 zero as black. Corrected to source-defined black=1 before deciding the fix; earlier raw receipts retained.",
+    "fixture_sha256": "049d5154bec19f9f328a57bbe0e2a3a2268fea5adbd0cf8f962417565ad2289d",
+    "receipt": {
+      "source_pin": "9d2c55b32e88c0b12b1fa16200f399164767f5d1",
+      "rows": [
+        {
+          "name": "settings-height0-native0",
+          "flags": [
+            "-DPORTABLE_SETTINGS_APP",
+            "-DPORTABLE_SETTINGS_NATIVE_UI",
+            "-DPORTABLE_ALARM_CLIENT",
+            "-DPORTABLE_NOVA_UI",
+            "-DPORTABLE_NATIVE_CANVAS"
+          ],
+          "build_returncode": 0,
+          "binary_sha256": "37a34c8eb42147790e80e5158fe116cdd5c42c9db06af426f5befb8abefbe7cc",
+          "returncode": 1,
+          "output": "ADMISSION init=0 display=1 alarm=1\nRAW_UP 240,650\nMEASURE frames=3 ack=1 restored=1 input_events=2 button_top_black=0 expected=416 rectangle=32,612,416,88 state=1\nLIFECYCLE frames=0 grants=0 subscriptions=0 launches=0\n"
+        },
+        {
+          "name": "settings-height0-native1",
+          "flags": [
+            "-DPORTABLE_SETTINGS_APP",
+            "-DPORTABLE_SETTINGS_NATIVE_UI",
+            "-DPORTABLE_ALARM_CLIENT",
+            "-DPORTABLE_NOVA_UI",
+            "-DPORTABLE_NATIVE_CANVAS",
+            "-DPORTABLE_ALARM_NATIVE"
+          ],
+          "build_returncode": 0,
+          "binary_sha256": "378a4d805c2b5263e157064f3e91aca3077adc434d4e5ae7d92f86d00b78bb7a",
+          "returncode": 1,
+          "output": "ADMISSION init=0 display=1 alarm=1\nRAW_UP 240,650\nMEASURE frames=3 ack=1 restored=1 input_events=2 button_top_black=0 expected=416 rectangle=32,612,416,88 state=1\nLIFECYCLE frames=0 grants=0 subscriptions=0 launches=0\n"
+        },
+        {
+          "name": "settings-height1-native0",
+          "flags": [
+            "-DPORTABLE_SETTINGS_APP",
+            "-DPORTABLE_SETTINGS_NATIVE_UI",
+            "-DPORTABLE_ALARM_CLIENT",
+            "-DPORTABLE_NOVA_UI",
+            "-DPORTABLE_NATIVE_CANVAS",
+            "-DPORTABLE_WATCH_NATIVE_HEIGHT"
+          ],
+          "build_returncode": 0,
+          "binary_sha256": "b21fbe720c9cf97a21e1b7eb2d739ca13fc1a0f24369356f8c9f53bb1e3a5eed",
+          "returncode": 1,
+          "output": "ADMISSION init=0 display=1 alarm=1\nRAW_UP 240,650\nMEASURE frames=2 ack=0 restored=0 input_events=2 button_top_black=0 expected=416 rectangle=32,612,416,88 state=2\nLIFECYCLE frames=0 grants=0 subscriptions=0 launches=0\n"
+        },
+        {
+          "name": "settings-height1-native1",
+          "flags": [
+            "-DPORTABLE_SETTINGS_APP",
+            "-DPORTABLE_SETTINGS_NATIVE_UI",
+            "-DPORTABLE_ALARM_CLIENT",
+            "-DPORTABLE_NOVA_UI",
+            "-DPORTABLE_NATIVE_CANVAS",
+            "-DPORTABLE_WATCH_NATIVE_HEIGHT",
+            "-DPORTABLE_ALARM_NATIVE"
+          ],
+          "build_returncode": 0,
+          "binary_sha256": "d9391543cc6e46cf007c64e917769a603cf17bd8a02f7d65a5fb3f7703a6806c",
+          "returncode": 1,
+          "output": "ADMISSION init=0 display=1 alarm=1\nRAW_UP 240,650\nMEASURE frames=2 ack=0 restored=0 input_events=2 button_top_black=0 expected=416 rectangle=32,612,416,88 state=2\nLIFECYCLE frames=0 grants=0 subscriptions=0 launches=0\n"
+        }
+      ]
+    },
+    "logs": {
+      "settings-height1-native1.log": "ADMISSION init=0 display=1 alarm=1\nRAW_UP 240,650\nMEASURE frames=2 ack=0 restored=0 input_events=2 button_top_black=0 expected=416 rectangle=32,612,416,88 state=2\nLIFECYCLE frames=0 grants=0 subscriptions=0 launches=0\n",
+      "settings-height1-native1-build.log": "",
+      "settings-height1-native0.log": "ADMISSION init=0 display=1 alarm=1\nRAW_UP 240,650\nMEASURE frames=2 ack=0 restored=0 input_events=2 button_top_black=0 expected=416 rectangle=32,612,416,88 state=2\nLIFECYCLE frames=0 grants=0 subscriptions=0 launches=0\n",
+      "settings-height1-native0-build.log": "",
+      "settings-height0-native1.log": "ADMISSION init=0 display=1 alarm=1\nRAW_UP 240,650\nMEASURE frames=3 ack=1 restored=1 input_events=2 button_top_black=0 expected=416 rectangle=32,612,416,88 state=1\nLIFECYCLE frames=0 grants=0 subscriptions=0 launches=0\n",
+      "settings-height0-native1-build.log": "",
+      "settings-height0-native0.log": "ADMISSION init=0 display=1 alarm=1\nRAW_UP 240,650\nMEASURE frames=3 ack=1 restored=1 input_events=2 button_top_black=0 expected=416 rectangle=32,612,416,88 state=1\nLIFECYCLE frames=0 grants=0 subscriptions=0 launches=0\n",
+      "settings-height0-native0-build.log": ""
+    }
+  }
+}

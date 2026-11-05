@@ -32,6 +32,12 @@
 #include "PointsUtcSchedule.h"
 #endif
 static const char *test,*state_path;
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+bool shared_settings_force_busy;
+static unsigned shared_alarm_refreshes,shared_live_cues;
+static unsigned shared_leave_phase;
+extern void shared_settings_assert(void);
+#endif
 static bool terminal,in_main,loaded,pending,panel_off,touch_off,sd_off,dark,promoted,native_valid;
 static bool seeded_image,promotion_attempted,loaded_pixels,rtc_live;
 static unsigned barriers;
@@ -41,9 +47,10 @@ static uint8_t home_idle_pixels[48000];static bool home_idle_saved,home_quick_se
 #endif
 static unsigned entries,seeds,restores,clears,promotions,starts,kv_reads,rtc_reads,native_reads;
 static unsigned battery_acquires,display_acquires,native_live,seed_calls,key_reads,high_water;
-static uint32_t epoch=1791331197u,start_ms;static int native_context,promotion_context;
+static uint32_t epoch=1791331197u,start_ms;
+static uint32_t rtc_epoch,rtc_start_ms;static int native_context,promotion_context;
 static uint8_t physical[sizeof(pixels)];
-#ifdef TEST_SHARED_QUICK_REFERENCE
+#if PORTABLE_DESK_CLOCK_RECORD_BYTES > RISC_RETAINED_WAKE_PAYLOAD_MAX
 /* Selected Desk Points records use the canonical tagged extended wake tail. */
 static struct {uint32_t struct_size,type,schema_version,size;uint8_t payload[RISC_RETAINED_WAKE_EXTENDED_MAX];} value;
 #else
@@ -256,7 +263,13 @@ static int32_t panel_resume(void*c,uint32_t timeout){(void)c;(void)timeout;io();
  panel_off=false;restores++;return RISC_DISPLAY_POWER_OK;}
 static int32_t touch_prepare(void*c,uint32_t timeout){(void)c;safe();assert(promoted&&timeout&&!subs&&!frames);touch_off=true;return RISC_TOUCH_POWER_OK;}
 static int32_t touch_resume(void*c,uint32_t timeout){(void)c;(void)timeout;io();assert(!panel_off&&!sd_off);touch_off=false;return RISC_TOUCH_POWER_OK;}
-static bool prepare_sd(void*c){(void)c;io();assert(promoted&&!subs&&!frames&&panel_off&&touch_off);return true;}
+static bool prepare_sd(void*c){(void)c;io();assert(!subs&&!frames&&panel_off);
+#ifdef TEST_X4_TIMER_STORAGE
+ assert(promoted?touch_off:!touch_off);
+#else
+ assert(promoted&&touch_off);
+#endif
+ return true;}
 static bool commit_sd(void*c){(void)c;io();sd_off=true;return true;}
 static int32_t resume_sd(void*c){(void)c;io();sd_off=false;return RISC_STORAGE_SLEEP_READY;}
 static bool legacy_sd(void*c){(void)c;assert(0);return false;}
@@ -266,9 +279,27 @@ static bool disable_bt(void*c,bool enabled){(void)c;(void)enabled;safe();assert(
 static bool bt_status(void*c,uint8_t*out){(void)c;safe();assert(promoted);*out=PORTABLE_BLUETOOTH_OFF;return true;}
 static const wifi_api_v1 wifi={.api_version=1,.struct_size=sizeof(wifi),.status=wifi_status,.disconnect_checked=disconnect_wifi};
 static const portable_bluetooth_control_v1 bt={.api_version=1,.struct_size=sizeof(bt),.set_enabled=disable_bt,.status=bt_status};
-static int32_t step_alarm(void*c){safe();if(promoted&&which("alarm-output")){terminal=true;return ALARM_OUTPUT;}return alarm_step(c);}
+static int32_t step_alarm(void*c){safe();
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ if(promoted && getenv("SHARED_SETTINGS_BUSY") && (uint32_t)(ms-start_ms)<400u) {
+  assert(alarm_state.state==ALARM_STATE_CUE);++shared_live_cues;
+  alarm_state.state=ALARM_STATE_READY;alarm_state.occurrence=(alarm_token_v1){0};return ALARM_OK;
+ }
+#endif
+ if(promoted&&which("alarm-output")){terminal=true;return ALARM_OUTPUT;}return alarm_step(c);
+}
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+static int32_t shared_alarm_refresh(void*c){
+ safe();assert(!promoted || !getenv("SHARED_SETTINGS_BUSY") || (uint32_t)(ms-start_ms)>=400u);
+ ++shared_alarm_refreshes;alarm_state.state=ALARM_STATE_READY;alarm_state.error=0;return alarm_refresh(c);
+}
+#endif
 static int32_t status_alarm(void*c,alarm_status_v1*out){safe();int32_t result=alarm_status(c,out);
- if(promoted&&which("alarm-uncertain")){out->output_uncertain=1;terminal=true;}return result;}
+ if(promoted&&which("alarm-uncertain")){out->output_uncertain=1;terminal=true;}
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ if(promoted && getenv("SHARED_SETTINGS_BUSY") && !shared_alarm_refreshes && out->state!=ALARM_STATE_CUE){out->state=ALARM_STATE_BLOCKED;out->error=ALARM_STORAGE;}
+#endif
+ return result;}
 static int32_t prepare_alarm(void*c,alarm_sleep_v1*out){(void)c;safe();out->rtc_seconds=epoch+(ms-start_ms)/1000u;
  out->deadline=which("alarm-due")?out->rtc_seconds:0;return ALARM_OK;}
 static int32_t read_record(void*c,uint32_t type,uint32_t schema,risc_retained_wake_record_v1*out,uint32_t*cause){(void)c;safe();assert(!starts&&!presents&&type==PORTABLE_DESK_CLOCK_RECORD_TYPE&&schema==PORTABLE_DESK_CLOCK_RECORD_SCHEMA);
@@ -282,7 +313,7 @@ static int32_t stage_record(void*c,const risc_retained_wake_record_v1*in){(void)
 static int32_t clear_record(void*c){(void)c;safe();clears++;
  if(which("clear-retained")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}
  pending=false;return RISC_RETAINED_WAKE_OK;}
-#ifdef TEST_SHARED_QUICK_REFERENCE
+#if PORTABLE_DESK_CLOCK_RECORD_BYTES > RISC_RETAINED_WAKE_PAYLOAD_MAX
 static int32_t read_record_bytes(void*c,uint32_t type,uint32_t schema,void*out,uint32_t capacity,uint32_t*size,uint32_t*cause){
  risc_retained_wake_record_v1 legacy;int status=read_record(c,type,schema,&legacy,cause);
  if(status!=RISC_RETAINED_WAKE_OK)return status;
@@ -293,12 +324,17 @@ static int32_t stage_record_bytes(void*c,uint32_t type,uint32_t schema,const voi
  (void)c;safe();assert(!subs&&!frames&&!native_live&&type==PORTABLE_DESK_CLOCK_RECORD_TYPE&&schema==PORTABLE_DESK_CLOCK_RECORD_SCHEMA&&size==PORTABLE_DESK_CLOCK_RECORD_BYTES&&size<=sizeof(value.payload));
  value.type=type;value.schema_version=schema;value.size=size;memcpy(value.payload,in,size);pending=true;ms+=17;return RISC_RETAINED_WAKE_OK;
 }
-static const risc_retained_wake_api_v1_extended wake={{1,sizeof(wake),NULL,read_record,stage_record,clear_record},RISC_RETAINED_WAKE_EXTENDED_TAG,1,RISC_RETAINED_WAKE_EXTENDED_MAX,0,read_record_bytes,stage_record_bytes};
+static risc_retained_wake_api_v1_extended wake={{1,sizeof(wake),NULL,read_record,stage_record,clear_record},RISC_RETAINED_WAKE_EXTENDED_TAG,1,RISC_RETAINED_WAKE_EXTENDED_MAX,0,read_record_bytes,stage_record_bytes};
 #else
 static const risc_retained_wake_api_v1 wake={1,sizeof(wake),NULL,read_record,stage_record,clear_record};
 #endif
 static int32_t deep(void*c,uint32_t duration){(void)c;io();assert(pending&&duration&&duration<=60000&&!subs&&!frames&&dark&&panel_off&&!native_live);
- assert(promoted?(touch_off&&sd_off):(!touch_off&&!sd_off));entries++;
+#ifdef TEST_X4_TIMER_STORAGE
+ assert(sd_off && (promoted?touch_off:!touch_off));
+#else
+ assert(promoted?(touch_off&&sd_off):(!touch_off&&!sd_off));
+#endif
+ entries++;
 #ifdef TEST_HOME_DESK_LOCK
  if(which("manual")){
   assert(lock_attempted && lock_phase==2 && ms>=lock_hold_until && lock_clean_frames);
@@ -314,6 +350,14 @@ static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){(void)c;safe();a
  /* Explicit manual sleep for recovery/timezone scenarios; otherwise leave via
   * a foreground confirm after a neutral first frame. */
  unsigned leave=4;
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ /* Hydration intentionally resets input. Send a fresh edge after restoration,
+  * rather than tying it to a raw-sample count which may skip during repaint. */
+ if((uint32_t)(ms-start_ms)>=900u && shared_leave_phase<2){
+  if(shared_leave_phase++)out->pressed=out->released=RISC_NAV_CONFIRM;
+ }
+ return true;
+#endif
 #ifdef TEST_HOME_DESK_LOCK
  if(which("terminal"))assert(!"Retained timer must reach terminal entry, not foreground fallback");
  if(which("manual")) {
@@ -356,6 +400,9 @@ static bool nav_foreground(void*c,const risc_input_foreground_v1*f,size_t n){(vo
 static bool nav_reset(void*c){(void)c;safe();assert(promoted);return true;}
 static const risc_input_navigation_api_v1 navigation={1,sizeof(navigation),NULL,nav_poll,nav_foreground,nav_reset};
 static int32_t preferences(void*c,const char*k,void*out,uint32_t cap,uint32_t*size){(void)c;safe();assert(promoted);kv_reads++;
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ if(shared_settings_force_busy || (getenv("SHARED_SETTINGS_BUSY") && (uint32_t)(ms-start_ms)<400u))return RISC_KEY_VALUE_BUSY;
+#endif
  if(raw_brightness&&!strcmp(k,"brightness")&&raw_brightness_writes){assert(cap>=1);*(uint8_t*)out=(uint8_t)raw_brightness_value;*size=1;return RISC_KEY_VALUE_OK;}
  if(!strcmp(k,PORTABLE_TIMEZONE_KEY)){
   if(which("missing-zone")){*size=0;return RISC_KEY_VALUE_NOT_FOUND;}
@@ -455,7 +502,7 @@ static bool read_rtc(void*c,twatch_rtc_time_v1*out){(void)c;safe();assert(promot
  if(which("rtc-read-retained")){terminal=true;return false;}
  if(which("fold")){*out=(twatch_rtc_time_v1){2026,11,1,0,1,30,0};return true;}
  if(which("gap")){*out=(twatch_rtc_time_v1){2026,3,8,0,2,30,0};return true;}
- time_t stamp=epoch;struct tm*tm=gmtime(&stamp);assert(tm);*out=(twatch_rtc_time_v1){(uint16_t)(tm->tm_year+1900),(uint8_t)(tm->tm_mon+1),(uint8_t)tm->tm_mday,(uint8_t)tm->tm_wday,(uint8_t)tm->tm_hour,(uint8_t)tm->tm_min,(uint8_t)tm->tm_sec};return true;}
+ time_t stamp=(getenv("CLOCK_NATIVE_DRIFT")?rtc_epoch:epoch)+(ms-(getenv("CLOCK_NATIVE_DRIFT")?rtc_start_ms:start_ms))/1000u;struct tm*tm=gmtime(&stamp);assert(tm);*out=(twatch_rtc_time_v1){(uint16_t)(tm->tm_year+1900),(uint8_t)(tm->tm_mon+1),(uint8_t)tm->tm_mday,(uint8_t)tm->tm_wday,(uint8_t)tm->tm_hour,(uint8_t)tm->tm_min,(uint8_t)tm->tm_sec};return true;}
 static bool read_battery(void*c,risc_battery_sample_v1*out){safe();assert(promoted);return battery_read(c,out);}
 #ifdef PORTABLE_BLE_BROADCAST
 #include "TelemetryBroadcastV1.h"
@@ -475,12 +522,23 @@ static bool obtain(const char*name,uint32_t version,uint64_t id,risc_runtime_cap
  else if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){
   #ifdef ALARM_SERVICE_TAGGED_V2
   assert(version==2);static alarm_service_descriptor_v2 service;service=(alarm_service_descriptor_v2){.base=alarm_api,.tag=ALARM_SERVICE_DESCRIPTOR_TAG,.descriptor_version=ALARM_SERVICE_DESCRIPTOR_VERSION};
-  service.base.api_version=2;service.base.struct_size=sizeof(service);service.base.prepare_sleep=prepare_alarm;service.base.step=step_alarm;service.base.status=status_alarm;api=&service.base;
+  service.base.api_version=2;service.base.struct_size=sizeof(service);service.base.prepare_sleep=prepare_alarm;service.base.step=step_alarm;service.base.status=status_alarm;
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+  service.base.refresh=shared_alarm_refresh;
+#endif
+  api=&service.base;
 #else
-  static alarm_service_v1 service;service=alarm_api;service.prepare_sleep=prepare_alarm;service.step=step_alarm;service.status=status_alarm;api=&service;
+  static alarm_service_v1 service;service=alarm_api;service.prepare_sleep=prepare_alarm;service.step=step_alarm;service.status=status_alarm;
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+  service.refresh=shared_alarm_refresh;
+#endif
+  api=&service;
 #endif
  }
  else if(!strcmp(name,X4_POWER_CAPABILITY)){assert(version==1&&id==17);api=&power;}
+#ifdef TEST_X4_TIMER_STORAGE
+ else if(!strcmp(name,"storage.volume")){assert(version==1&&(promoted?(id==0||id==9):id==9));api=&sd;}
+#endif
  else {assert(promoted&&promotion_attempted);
   if(!strcmp(name,"input.touch.raw"))api=&touch_power;
   else if(!strcmp(name,"input.navigation"))api=&navigation;
@@ -554,8 +612,13 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
   assert(app_module_init()==-1);app_module_fini();assert(!grants&&!starts&&!native_reads&&!barriers);return 0;
  }
  if(getenv("CLOCK_MILLIS"))ms=(uint32_t)strtoul(getenv("CLOCK_MILLIS"),NULL,10);
- assert(app_module_init()==0);assert(!grants&&!starts&&!kv_reads&&!native_reads);in_main=true;start_ms=ms;
+#if PORTABLE_DESK_CLOCK_RECORD_BYTES > RISC_RETAINED_WAKE_PAYLOAD_MAX
+ if(getenv("NATIVE_WAKE_CAPACITY"))wake.max_payload_bytes=(uint32_t)atoi(getenv("NATIVE_WAKE_CAPACITY"));
+#endif
+ assert(app_module_init()==0);assert(!grants&&!starts&&!kv_reads&&!native_reads);in_main=true;start_ms=ms;rtc_epoch=epoch;rtc_start_ms=ms;
+ if(getenv("CLOCK_NATIVE_DRIFT"))epoch=(uint32_t)((int64_t)epoch+atoi(getenv("CLOCK_NATIVE_DRIFT")));
  if(setjmp(entry)){assert(terminal&&entries&&grants&&!subs&&!frames&&!native_live);
+ if(getenv("CLOCK_NATIVE_DRIFT"))assert(seed_calls==1 && rtc_reads==1);
 #ifndef PORTABLE_SLEEP_MANUAL_ONLY
  if(raw_lifetime){assert(raw_dismiss_started&&raw_restored&&raw_sheet_updates>=3&&(uint32_t)(ms-raw_released_at)>=90000u);printf("Paper inspection completed before ordinary idle sleep PASS\n");return 0;}
 #endif
@@ -566,7 +629,12 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  assert(!home_reads&&!home_acquires);
 #endif
- assert(high_water<=6);}
+#ifdef TEST_X4_TIMER_STORAGE
+ assert(high_water<=7);
+#else
+ assert(high_water<=6);
+#endif
+ }
  else assert(promoted&&promotions==1&&battery_acquires==1&&high_water<=16);
 #ifdef TEST_HOME_DESK_LOCK
  if(getenv("LOCK_SAME_MINUTE"))assert(seeds&&!presents);
@@ -577,9 +645,13 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
  printf("Desk lock terminal direction=%u clean=%u quality=%u fast=%u polls=%u queued_press=%u\n",record.config.flip_ui,lock_clean_frames,lock_quality_frames,lock_fast_frames,polls,lock_queued_press);
 #endif
  printf("Sparse terminal PASS (%u grants max, %u native reads)\n",high_water,native_reads);return 0;}
+ #ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ if(getenv("SHARED_LIVE_CUE"))alarm_state.state=ALARM_STATE_CUE;
+ #endif
  app_main();if(which("cold-acquire")||which("cold-submit")||which("cold-wait"))assert(!rtc_reads&&!native_reads&&!launches);if(portable_app_sleep_retained()){assert(terminal&&(grants||which("native-acquire-retained"))&&barriers==1);unsigned held=grants;app_module_fini();assert(grants==held);printf("Sparse retained %s PASS\n",test);return 0;}
 #ifdef TEST_HOME_DESK_LOCK
  if(which("manual")) {
+  if(getenv("NATIVE_WAKE_CAPACITY")){assert(!entries&&!pending);puts("Manual lock refused before deep entry: native payload capacity too small");}
   if(getenv("LOCK_REFUSE"))assert(entries==1&&restores==1&&clears==1);
   else assert(!entries);
   if(lock_attempted)assert(lock_restored_frames);
@@ -589,7 +661,13 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
  }
  if(which("gpio"))assert(!entries&&!lock_clean_frames&&!lock_quality_frames&&lock_fast_frames);
 #endif
- assert(!terminal);app_module_fini();assert(!grants&&!subs&&!frames&&!pending&&!panel_off&&!touch_off&&!sd_off&&!native_live);
+ assert(!terminal);
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ shared_settings_assert();
+ if(getenv("SHARED_SETTINGS_BUSY"))assert(shared_alarm_refreshes==1);
+ if(getenv("SHARED_LIVE_CUE"))assert(shared_live_cues==1);
+#endif
+ app_module_fini();assert(!grants&&!subs&&!frames&&!pending&&!panel_off&&!touch_off&&!sd_off&&!native_live);
  assert(promotions==(which("promotion-failed")||which("promotion-partial")||which("refused-promotion-failed")||which("refused-promotion-partial")?2u:1u));
  if(!which("promotion-failed")&&!which("refused-promotion-failed")){
 #ifdef SPARSE_EXPECT_LAUNCHES
@@ -604,6 +682,7 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
 #endif
  }
  if(raw_lifetime||raw_brightness){assert(raw_restored&&raw_dismiss_started);if(raw_lifetime)assert((uint32_t)(ms-raw_released_at)>=90000u);}
+ if(getenv("CLOCK_NATIVE_DRIFT")){assert(seed_calls==1 && rtc_reads==1);assert(epoch==rtc_epoch+(start_ms-rtc_start_ms)/1000u);}
  if(which("unset")||which("missing-zone")||which("missing-basis"))assert(seed_calls==1&&rtc_reads==1);
  if(which("bad-zone")||which("bad-basis"))assert(!seed_calls&&!rtc_reads);
  if(which("fold")||which("gap"))assert(!seed_calls&&rtc_reads==1);

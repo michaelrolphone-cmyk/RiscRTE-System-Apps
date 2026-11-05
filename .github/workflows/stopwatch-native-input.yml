@@ -1,0 +1,31 @@
+name: Stopwatch native input qualification
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  ownership:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - run: python3 scripts/test_stopwatch_native_input.py
+      - run: python3 scripts/test_stopwatch_native_adapter.py
+      - run: python3 scripts/test_stopwatch_native_optout.py
+      - run: python3 scripts/test_frequency_native_input.py
+      - run: python3 scripts/test_files_native_input.py
+      - run: python3 scripts/test_calculator_native_input.py
+      - run: python3 scripts/test_lora_native_input.py
+      - run: python3 scripts/test_points_native_input.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stopwatch-native-ownership-${{ github.sha }}
+          path: |
+            build/stopwatch-native-input/*.log
+            build/stopwatch-native-adapter/*.log
+            build/stopwatch-native-optout/results.json
+          retention-days: 14
+          if-no-files-found: error

@@ -7,6 +7,9 @@
 extern "C" {
 #endif
 #define RISC_SCENE_FEATURE_SHARED_CONTROLS 1u
+/* Opt-in routine policy checkpoints preserve bounded touch/contact history.
+ * The client must mark a real focus/sleep transition on resume. */
+#define RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY 2u
 /* Semantic request only: the presenter never displays shared controls.
  * node, action and value are zero; revision and sequence follow base events.
  * Deliberate top-pull thresholds and arbitration belong to the presenter.

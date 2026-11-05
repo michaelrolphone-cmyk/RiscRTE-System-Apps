@@ -1,0 +1,22 @@
+{
+  "runtime_export_source_sha256": "65252bf5999c89b619e5c1264fed343cfced585688b30f04f714a59375105b3b",
+  "runtime_commit": "341e6e38ce00b7c57d5daaf5f8c829c3575db931",
+  "sdk_header_sha256": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+  "source_sha256": {
+    "lib/PortableApps/src/PortableRealtimeClient.c": "9bf7d696fa0d5578f622ddf9634093057f95a684f62aa93007d0121b936f44d6",
+    "lib/PortableApps/src/PortableTimeZone.c": "28c0fecf7a4d83bde07d2b72cb591122cf3c49c3219c8344b97b82a90625c5e7",
+    "lib/PortableApps/src/PortableTimeZoneCatalog.c": "29d4c86037f7554c94a4404d5e39e28091430a1f9c23b5e35224aed3df826f20",
+    "lib/PortableApps/include/PortableRealtimeClient.h": "43877995f95622d7e7e9733f6bca181f6aad222b604d1d4ba85b344551ec6f1b",
+    "lib/PortableApps/include/PortableRtcBasis.h": "89bd6751cf29c78e0eb3b76b3fe1862d5ebe733b9da0de4688e95150885496f9",
+    "lib/PortableApps/include/PortableRtcClock.h": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c",
+    "lib/PortableApps/include/PortableTimeZone.h": "3cfb6687d8f3675beb020a059b8cd3b3d8beffd42c11c6fd61d14b48af729c54",
+    "test/native_apps/portable_realtime_client_test.c": "3deb130190f4b42e51c5179d4f8363fb6b13cd2ab9325942078a6a96e35d2521",
+    "test/native_apps/fixtures/portable_realtime_elf.c": "8398ce29f9ba603e64c5b9e2eeaca6d94aa3f1bc22dcae02d9331d8bdf83c5f8",
+    "scripts/test_portable_realtime.py": "834212dbe170743240348520e2a1c0944199b18eb481ea4e945b785186634c4c",
+    "test/native_apps/portable_realtime_reconcile_test.c": "a0514c2d223c19cacd46732c04b822a8f03e97e576f79bc03408e6fa3ce4368c"
+  },
+  "reconcile": true,
+  "host_plain": "Portable realtime production client: 123 scenarios PASS (timer isolation, recovery, ambiguity, bounds, grants, no-I/O stops and projection)\nRTC reconciliation PASS: +/-drift, 1200 refreshes, 1440 minute checks, explicit changes, light/deep foreground wake, timer isolation, malformed/slow/uncertain RTC and seed verification",
+  "host_undefined": "Portable realtime production client: 123 scenarios PASS (timer isolation, recovery, ambiguity, bounds, grants, no-I/O stops and projection)\nRTC reconciliation PASS: +/-drift, 1200 refreshes, 1440 minute checks, explicit changes, light/deep foreground wake, timer isolation, malformed/slow/uncertain RTC and seed verification",
+  "xtensa": "NOT RUN (supply --xtensa-cc)"
+}

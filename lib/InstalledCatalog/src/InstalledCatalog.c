@@ -32,9 +32,13 @@ bool installed_catalog_begin(installed_catalog*c,uint8_t medium) {
   for(uint32_t i=0;i<c->count;++i)if(c->current[i].medium!=medium)c->pending[c->pending_count++]=c->current[i];
   return true;
 }
+bool installed_catalog_begin_all(installed_catalog*c){
+ if(!c||c->scanning||c->generation==UINT32_MAX)return false;
+ c->scanning=true;c->failed=false;c->scanning_medium=0;c->pending_count=0;return true;
+}
 bool installed_catalog_offer(installed_catalog*c,const installed_record*r) {
   if(!c || !c->scanning || c->failed)return false;
-  if(!record_ok(r) || r->medium!=c->scanning_medium || c->pending_count==INSTALLED_CATALOG_MAX){c->failed=true;return false;}
+  if(!record_ok(r) || (c->scanning_medium&&r->medium!=c->scanning_medium) || c->pending_count==INSTALLED_CATALOG_MAX){c->failed=true;return false;}
   for(uint32_t i=0;i<c->pending_count;++i)if((c->pending[i].medium==r->medium && !strcmp(c->pending[i].id,r->id)) ||
       (c->pending[i].medium==r->medium && !strcmp(c->pending[i].path,r->path))){c->failed=true;return false;}
   c->pending[c->pending_count++]=*r;return true;

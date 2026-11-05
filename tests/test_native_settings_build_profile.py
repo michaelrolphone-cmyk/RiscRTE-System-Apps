@@ -100,6 +100,7 @@ class NativeSettingsBuildProfile(unittest.TestCase):
                 raise AssertionError(command)
 
             with mock.patch.object(builder, 'ROOT', root), mock.patch.object(builder, 'native_time_sdk', return_value=sdk), \
+                    mock.patch.object(builder, 'resolve_compiler', return_value='xtensa-esp32s3-elf-gcc'), \
                     mock.patch.object(builder.subprocess, 'run', side_effect=run), \
                     mock.patch.object(builder.subprocess, 'check_output', side_effect=output), \
                     contextlib.redirect_stdout(io.StringIO()):

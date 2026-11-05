@@ -329,9 +329,9 @@
     {
       "path": "test/native_apps/file_browser_oversize_usb_handle_runtime_test.py",
       "upstream_path": "test/native_apps/file_browser_oversize_usb_handle_runtime_test.py",
-      "source_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
-      "git_blob": "fe214f1eb86b154bcc7644c9176b84b4485db20a",
-      "sha256": "7a2d752e61cd64e60f2174d417fe41dca028b61f803eae3573f8185ee61dac24"
+      "source_commit": "3a29060edbf09f0767c6214b55d1dea0736e7d41",
+      "git_blob": "639119f24d325f547a246a8425cfe0ef16bd0a54",
+      "sha256": "986190cdd4be008892d3da925f402c64d90e89742fb747695ec5ec9b75ac4758"
     },
     {
       "path": "lib/NativeApps/include/T5HardwareTakeover.h",

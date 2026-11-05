@@ -48,7 +48,7 @@ static void discover(void){
     copy=*lifecycle;assert(risc_scene_lifecycle_get_v1(&copy.base)==&copy);
     unsigned before=calls;
     assert(lifecycle->configure(NULL,session+1,0)==RISC_SCENE_STALE);
-    assert(lifecycle->configure(NULL,session,2)==RISC_SCENE_INVALID);
+    assert(lifecycle->configure(NULL,session,4)==RISC_SCENE_INVALID);
     assert(calls==before);
     settle();touch_tap(lw()/2,lh()/2);risc_scene_event_v1 e;(void)tick(&e);
     assert(!(flags_now()&(RISC_SCENE_ACTIVITY|RISC_SCENE_INPUT_BUSY)));

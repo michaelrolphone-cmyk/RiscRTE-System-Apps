@@ -1,0 +1,7 @@
+client-0: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/test/native_apps/context_client_test.c:93: main: Assertion `portable_contexts_step(&c,true,true)&&!last_policy.radio_allowed' failed.
+Traceback (most recent call last):
+  File "/workspace/shared/watch-launch-brightness-20261015/system-consolidation/scripts/test_context_client.py", line 13, in <module>
+    subprocess.run([str(binary)],check=True)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/workspace/shared/watch-launch-brightness-20261015/system-consolidation/build/contexts/client-0']' died with <Signals.SIGABRT: 6>.

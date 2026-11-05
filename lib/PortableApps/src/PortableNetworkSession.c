@@ -68,6 +68,18 @@ portable_network_result portable_network_session_start(portable_network_session 
     s->phase = SESSION_INSPECT; return s->view.result = PORTABLE_NETWORK_PENDING;
 }
 
+portable_network_result portable_network_session_start_private(portable_network_session*s,
+        bool ap,const char*ssid,const char*password,uint32_t now){
+    if(!s || !ssid || !password || !memchr(ssid,0,33) || !ssid[0] ||
+       !memchr(password,0,64) || strlen(password)<8)return PORTABLE_NETWORK_INVALID;
+    portable_network_result rc=portable_network_session_start(s,now);
+    if(rc!=PORTABLE_NETWORK_PENDING || s->phase!=SESSION_INSPECT)return rc;
+    s->request=(risc_radio_request_v1){.struct_size=sizeof(s->request),
+      .kind=ap?RISC_RADIO_REQUEST_AP:RISC_RADIO_REQUEST_JOIN,.flags=RISC_RADIO_TEMPORARY};
+    strcpy(s->request.ssid,ssid);strcpy(s->request.password,password);s->phase=SESSION_SUBMIT;
+    return PORTABLE_NETWORK_PENDING;
+}
+
 /* Status/address/RSSI are copied reads. Never mistake UP alone for a usable IP.
  * A previously borrowed link is never reconnected after it disappears. */
 static portable_network_result inspect(portable_network_session *s) {

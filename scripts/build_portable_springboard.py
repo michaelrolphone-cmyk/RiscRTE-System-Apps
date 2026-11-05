@@ -4,6 +4,7 @@
 Development artifact only. The deployment supplies display.output@1,
 input.touch.raw@1 grants; RTC requires an explicitly selected deployment policy; no additional runtime exports.
 """
+from native_toolchain import compiler_path as resolve_compiler
 import argparse
 import hashlib
 import json
@@ -105,10 +106,7 @@ def build():
     if args.alarm_client: flags.append("-DPORTABLE_ALARM_CLIENT")
     if args.full_frames: flags.append("-DPORTABLE_FORCE_FULL_FRAMES")
     if args.retained_rgb565_handoff: flags.append("-DPORTABLE_RETAINED_RGB565_HANDOFF")
-    cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
-    if not cc:
-        core = Path(os.environ.get('PLATFORMIO_CORE_DIR', Path.home()/'.platformio'))
-        cc = str(core/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+    cc = resolve_compiler()
     out = args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
     notices=out/'licenses/portable-apps';notices.mkdir(parents=True,exist_ok=True)
@@ -213,7 +211,10 @@ def build():
     if args.installed_catalog_volume_instance is not None:
         record['installed_catalog']={'capability':'software.installed-apps','api':1,'volume_instance':args.installed_catalog_volume_instance,
           'storage_sdk_sha256':hashlib.sha256((includes/'RiscStorageVolumeV1.h').read_bytes()).hexdigest(),
-          'discovery':'copied-async-owner-polls','cache':'internal-app-data','status':'experimental-integration'}
+          'discovery':'copied-async-owner-polls','idle_settings_maintenance':'settings_pending-v1','settings_retry_ms':2000,'shared_preferences_retry':'foreground-250ms','cache':'internal-app-data','status':'experimental-integration'}
+    if args.installed_catalog_volume_instance is not None:
+        for path in ['lib/PortableApps/src/PortableInstalledCatalog.c','lib/PortableApps/include/PortableInstalledCatalog.h','lib/PortableApps/include/InstalledAppsV1.h','lib/PortableApps/src/installed_catalog_adapter.inc']:
+            record['source_sha256'][path]=hashlib.sha256((ROOT/path).read_bytes()).hexdigest()
     portable_broadcast_build.record(args,ROOT,record,manifest,flags)
     portable_idle_build.record(args,record,flags)
     portable_quick_build.record(args,record)

@@ -11,10 +11,10 @@ subprocess.run([str(out/'motion')],check=True)
 for count in [0,1,2,3]:
  binary=out/('launcher-'+str(count))
  subprocess.run([*flags,'-DCATALOG_COUNT='+str(count),'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(ROOT/'test/native_apps/springboard_nova_test.c'),'-Wl,--wrap=t5_app_get_api','-o',str(binary)],check=True)
- scenarios=list(range(35))+[36,37,38] if count==3 else [0,1,2,6,14,15,16]
+ scenarios=list(range(35))+[36,37,38,39,40,41,42] if count==3 else [0,1,2,6,14,15,16]
  for scenario in scenarios:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)
 
-for name,extra,scenarios in [('rotation180',['-DPORTABLE_TOUCH_ROTATION=180','-DTEST_ROTATION_180'],[0,1,2,6,12,16]),('denver',['-DPORTABLE_RTC_UTC8_DENVER'],[0,32,33]),('handoff',['-DPORTABLE_RETAINED_RGB565_HANDOFF','-DPORTABLE_FORCE_FULL_FRAMES'],list(range(35))+[36,37,38])]:
+for name,extra,scenarios in [('rotation180',['-DPORTABLE_TOUCH_ROTATION=180','-DTEST_ROTATION_180'],[0,1,2,6,12,16]),('denver',['-DPORTABLE_RTC_UTC8_DENVER'],[0,32,33]),('handoff',['-DPORTABLE_RETAINED_RGB565_HANDOFF','-DPORTABLE_FORCE_FULL_FRAMES'],list(range(35))+[36,37,38,39,40,41,42])]:
  binary=out/name
  subprocess.run([*flags,*extra,'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(ROOT/'test/native_apps/springboard_nova_test.c'),'-Wl,--wrap=t5_app_get_api','-o',str(binary)],check=True)
  for scenario in scenarios:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)
@@ -41,3 +41,29 @@ subprocess.run([*flags,'-DNOVA_DAILY_CATALOG','-DCATALOG_COUNT=5','-DPORTABLE_RT
  str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),
  str(ROOT/'test/native_apps/springboard_nova_test.c'),'-Wl,--wrap=t5_app_get_api','-o',str(binary)],check=True)
 for scenario in [0,6,14,16,32,33]:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)
+
+# The same production application follows capability geometry on a tall display.
+rows=json.loads((ROOT/'tests/fixtures/watch-suite-catalog.json').read_text())
+(out/'watch_suite_catalog.inc').write_text('\n'.join('{.display_name='+json.dumps(r['display_name'])+',.file_name='+json.dumps(r['file_name'])+',.icon='+json.dumps(r['icon'])+',.compatible=true},' for r in rows))
+runtime_sdk=pathlib.Path(os.environ.get('RISC_RUNTIME_SDK',ROOT.parent/'runtime/sdk/app'))
+(out/'RiscRealtimeV1.h').write_bytes((runtime_sdk/'RiscRealtimeV1.h').read_bytes())
+binary=out/'native-410x502'
+subprocess.run([*flags,'-DPORTABLE_NOVA_UI','-DPORTABLE_WATCH_NATIVE_HEIGHT','-DTEST_WIDTH=410','-DTEST_HEIGHT=502','-DNOVA_WATCH_CATALOG','-DPORTABLE_CHECKED_STORAGE_RUNTIME','-DPORTABLE_RUNTIME_APP_CATALOG','-DPORTABLE_NATIVE_CUSTODY_FENCE','-DCATALOG_COUNT='+str(len(rows)),'-I'+str(out),
+ '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
+ str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),
+ str(ROOT/'test/native_apps/springboard_nova_test.c'),'-Wl,--wrap=t5_app_get_api','-o',str(binary)],check=True)
+for scenario in [0,1,2,6,14,15,16,23,24,36,37,39,40,41,42]:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)
+
+# Real app + adapter with asynchronous 55/75/95/115ms providers. The next
+# already-due paint must start on the first app poll after lease completion.
+for name,extra in [('slow-normal',[]),('slow-sanitized',[
+ '-fsanitize=address,undefined','-fno-sanitize-recover=all',
+ '-fno-omit-frame-pointer','-no-pie'])]:
+ binary=out/name
+ subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',
+  *extra,'-DCATALOG_COUNT=3','-I'+str(ROOT/'lib/PortableApps/include'),
+  '-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/springboard.c'),
+  str(ROOT/'lib/PortableApps/src/adapter.c'),
+  str(ROOT/'test/native_apps/springboard_nova_test.c'),
+  '-Wl,--wrap=t5_app_get_api','-o',str(binary)],check=True)
+ for scenario in [39,40,41,42]:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)

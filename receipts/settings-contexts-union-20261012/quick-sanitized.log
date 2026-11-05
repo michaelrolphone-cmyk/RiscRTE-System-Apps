@@ -1,0 +1,41 @@
+quick queued-controls ordered copied reducer actions PASS
+quick queue-overflow ordered copied reducer actions PASS
+quick raw-brightness actual input PASS
+quick raw-tone actual input PASS
+quick raw-coalesced actual input PASS
+quick raw-stale actual input PASS
+quick raw-cancel actual input PASS
+quick repeated independent gestures PASS
+quick brightness PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick off PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick off-already PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick restore-stale PASS: submits=0 collects=0 cancels=0 legacy-puts=0
+quick tone PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick dnd PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick contexts PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick radio PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick same-value PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick preview PASS
+quick torch restore PASS
+quick origins PASS
+quick automatic setters not USER PASS
+quick copy PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick busy PASS: submits=4 collects=3 cancels=0 legacy-puts=0
+quick stale PASS: submits=1 collects=0 cancels=0 legacy-puts=0
+quick display-stale PASS: submits=0 collects=0 cancels=0 legacy-puts=0
+quick cancel PASS: submits=1 collects=3 cancels=1 legacy-puts=0
+quick cancel-race PASS: submits=1 collects=3 cancels=1 legacy-puts=0
+quick terminal custody PASS
+quick small-group PASS: submits=0 collects=0 cancels=0 legacy-puts=0
+quick wrong-namespace PASS: submits=0 collects=0 cancels=0 legacy-puts=0
+quick read-io PASS: submits=0 collects=0 cancels=0 legacy-puts=0
+quick missing PASS: submits=0 collects=0 cancels=0 legacy-puts=0
+quick submit-io PASS: submits=1 collects=0 cancels=0 legacy-puts=0
+quick uncertain PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick capacity PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick conflict PASS: submits=1 collects=3 cancels=0 legacy-puts=0
+quick terminal custody PASS
+quick terminal custody PASS
+quick terminal custody PASS
+quick terminal custody PASS
+quick close pending retains PASS

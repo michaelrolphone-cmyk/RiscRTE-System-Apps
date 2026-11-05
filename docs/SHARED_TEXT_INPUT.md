@@ -16,8 +16,8 @@ into each application. That draft is not the implementation delivered here.
 - A private System keyboard scene node extends that presenter. There is no
   second text-input renderer, and no new Runtime UI implementation.
 - `RiscTextEntryV1.h` is the application contract. The original PR60 scene SDK
-  headers are copied unchanged with source provenance. This prototype does not
-  add an email, URL, password or numeric format.
+  headers are copied unchanged with source provenance. Masking is an optional
+  suffix; no email, URL or numeric validation is added.
 - Current text storage is bounded printable ASCII, up to 71 bytes. Each app
   supplies its own smaller capacity. App validation and durable save remain
   outside the host.
@@ -42,6 +42,29 @@ uses the distinct `RiscTextEntryV1.h` name/types; a compile regression includes
 both ABIs together. This first host backend uses the existing raw HID snapshot
 capability so hardware preference can be determined reliably.
 
+## Password visibility
+
+A caller that requests `RISC_TEXT_ENTRY_REQUEST_MASKED` always opens masked.
+The shared presenter displays a password-only Show/Hide control. Explicitly
+selecting Show reveals the copied draft; selecting Hide restores masking without
+changing the draft, capacity, keyboard page or application result. Typing, Delete
+and Clear work in either visibility state. Clear also wipes the entire owned
+text buffer. No credential is logged.
+
+The same control is touch-accessible in portrait and compact profiles. With
+onscreen navigation, Up from the first letter row reaches Show/Hide. With a
+hardware keyboard attached, touch still controls visibility; navigation Page
+Back/Forward also toggles it, while Confirm/Back keep their Done/Cancel behavior.
+Hide cancels an owned, unsubmitted revealed raster before any further submit;
+already-submitted display refreshes retain normal custody until completion.
+Done, Cancel and Home reset visibility. Every fresh session starts masked,
+including reuse after pending close or a different app invocation.
+
+This uses the private provider-to-provider keyboard contract only. Public API
+structures, version tags and result layouts are unchanged. Existing presenters
+accept the keyboard flags but omit the new control, leaving a new masked session
+masked. The latest text host and scene host together provide the control.
+
 ## Lifetime and safety
 
 The host and scene presenter check native Runtime liveness immediately after
@@ -61,7 +84,8 @@ host close succeeds and its grant is released, with input neutrality reset.
 cleanup after yielding. RETAINED is a one-way fence: no more service I/O or
 application/host unmapping. The provider refuses quiescence while active or
 uncertain. Display submit consumes the mutable frame; the presenter retains only
-the asynchronous presentation token afterward. This also corrects PR88's prior
+the asynchronous presentation token afterward. Successful close wipes the text
+owner’s request/result storage and both logical and frozen scene documents. This also corrects PR88's prior
 release-after-submit mistake.
 
 The client permits its existing alarm service to step only at host-confirmed
@@ -83,15 +107,16 @@ claim of automatic abandoned-session reclamation in the opaque Runtime ABI.
 Scripts:
 
 - `test_text_input_host.py`: copied requests, validation, hardware attach/detach,
-  held-key neutrality, capacity, keyboard gaps/errors, cancel, pending close and
+  held-key neutrality, capacity, Show/Hide, re-masking, keyboard gaps/errors, cancel, pending close and
   retained no-further-I/O behavior.
 - `test_scene_host.py`: existing Alarms presenter plus shared keyboard, glyphs,
-  stale/pending/superseded frame, touch cancellation and profile coverage.
+  stale/pending/superseded frame, touch cancellation, password control navigation
+  and profile coverage.
 - `test_text_input_runtime.py`: production Runtime, provider graph and loader;
   actual unloadable app, scene/text providers, hardware doubles, repeated fresh
-  app invocations, pending close and retained graph behavior: 23 modes for each
-  of eager, demand, unpromoted demand-retained and explicitly armed
-  demand-retained activation (92 executions per build).
+  app invocations, masked/revealed/re-masked raster checks, pending close and
+  retained graph behavior for eager, demand, unpromoted demand-retained and
+  explicitly armed demand-retained activation.
 - `build_text_input_services.py`: Xtensa GCC8.4 builds and strict ELF validation
   for text host, scene host and both external profiles.
 
@@ -102,3 +127,11 @@ selection, cohort binding and physical Watch/X4 testing remain separate; see
 `SHARED_TEXT_INPUT_INTEGRATION.md` for the exact edges and remaining migration
 scope. No
 product image, hardware operation, release, push or PR update is performed here.
+
+## Optional resident-policy checkpoints
+
+Text host 0.1.7 provides a backward-compatible, opt-in checkpoint suffix that
+preserves an open editor across resident power-policy and idle-Light handoffs.
+Existing callers retain their original ABI and behavior. See
+[SHARED_TEXT_INPUT_CHECKPOINT.md](SHARED_TEXT_INPUT_CHECKPOINT.md) for ownership,
+activity, pause/resume and qualification requirements.

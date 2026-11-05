@@ -1,0 +1,38 @@
+{
+  "@r0@/lib/PortableApps/settings_fonts/text-faces-012.inc": {
+    "sha256": "5aa2c530cd0aaf9281e4b07f0c7188c8f42bded3a303feb058d33c096b46548d"
+  },
+  "@work@/target-lora/generated/empty_catalog.c": {
+    "text": "#include \"PortableApps.h\"\nconst t5_app_manifest_t portable_catalog[]={{.display_name=\"Clock\",.file_name=\"clock.elf\",.icon=\"solid:f017\",.compatible=true},{.display_name=\"Battery\",.file_name=\"battery.elf\",.icon=\"solid:f240\",.compatible=true},{.display_name=\"Settings\",.file_name=\"settings.elf\",.icon=\"solid:f013\",.compatible=true},{.display_name=\"Calculator\",.file_name=\"calculator.elf\",.icon=\"solid:f1ec\",.compatible=true},{.display_name=\"Stopwatch\",.file_name=\"stopwatch.elf\",.icon=\"solid:f2f2\",.compatible=true},{.display_name=\"Alarms\",.file_name=\"alarms.elf\",.icon=\"solid:f0f3\",.compatible=true},{.display_name=\"Countdown\",.file_name=\"countdown.elf\",.icon=\"solid:f254\",.compatible=true},{.display_name=\"Wi-Fi\",.file_name=\"wifi_settings.elf\",.icon=\"solid:f1eb\",.compatible=true},{.display_name=\"Firmware Update\",.file_name=\"ota_update.elf\",.icon=\"solid:f021\",.compatible=true},{.display_name=\"App Store\",.file_name=\"app_store.elf\",.icon=\"solid:f019\",.compatible=true},{.display_name=\"Points in Time\",.file_name=\"points_in_time.elf\",.icon=\"solid:f783\",.compatible=true},{.display_name=\"Frequency Generator\",.file_name=\"frequency_generator.elf\",.icon=\"solid:f028\",.compatible=true},{.display_name=\"Audio Spectrum\",.file_name=\"audio_spectrum.elf\",.icon=\"solid:f130\",.compatible=true},{.display_name=\"Waterfall\",.file_name=\"waterfall.elf\",.icon=\"solid:f0ec\",.compatible=true},{.display_name=\"Files\",.file_name=\"file_browser.elf\",.icon=\"solid:f07c\",.compatible=true},{.display_name=\"LoRa Messages\",.file_name=\"lora_messages.elf\",.icon=\"solid:f27a\",.compatible=true},{.display_name=\"BLE Scanner\",.file_name=\"ble_scanner.elf\",.icon=\"solid:f7c0\",.compatible=true},{.display_name=\"Timecard\",.file_name=\"timecard.elf\",.icon=\"solid:f274\",.compatible=true},{.display_name=\"BLE Touchpad\",.file_name=\"ble_touchpad.elf\",.icon=\"solid:f245\",.compatible=true},{.display_name=\"BLE Buttons\",.file_name=\"ble_buttons.elf\",.icon=\"solid:f11c\",.compatible=true},{.display_name=\"Contexts\",.file_name=\"contexts.elf\",.icon=\"solid:f015\",.compatible=true},{.display_name=\"Lists\",.file_name=\"lists.elf\",.icon=\"solid:f274\",.compatible=true},{.display_name=\"3D Viewer\",.file_name=\"model_viewer.elf\",.icon=\"regular:f03e\",.compatible=true}};\nconst unsigned portable_catalog_count=23;\n",
+    "template_sha256": "0f00645d5834dc582197aeea4caec4d9a797dfc14dda3c2cfbe2d32d38da3b4b"
+  },
+  "@work@/target-lora/generated/watch-alarm-profile.h": {
+    "text": "#include \"@r15@/lib/Alarm/include/AlarmServiceV1.h\"\n#define ALARM_MODE_VISUAL 0u\nstatic inline uint32_t alarm_service_output_modes(const alarm_service_v1*s){return s?ALARM_MODE_BOTH:ALARM_MODE_VISUAL;}\n",
+    "template_sha256": "4e1c76575c60a50b8f422159086e1bedce6a66d5038318b0e6aeb2dbc7821749"
+  },
+  "@r15@/Apps/PortableLoRaV2.h": {
+    "sha256": "41cd5d6867612fd99e7d65cee2e029862737505fe5106a26468494412382c11d"
+  },
+  "@r15@/Apps/alarm_writer.h": {
+    "sha256": "6a28cd9955cbd099fe778777c63ebcb2c606ee48bab206fece6f45c644138ba0"
+  },
+  "@r15@/Apps/lora_messages.c": {
+    "sha256": "c06433d7e16d6b0e1af71fb1e4e976fd3e36fb570cd18aa42234aa40b30fd9ff"
+  },
+  "@r15@/Apps/lora_messages_model.h": {
+    "sha256": "f016d871020b8f6f2cb5757cb68beb258638e7978779d87191b90d588f8be9a3"
+  },
+  "@r15@/Apps/utility_frame.h": {
+    "sha256": "9eb5120642d00cb9bcf6cfa64f342b77028e5dfefed938678432de5c9a29e29b"
+  },
+  "@r15@/lib/Alarm/include/AlarmRecords.h": {
+    "sha256": "e04d9cfa6c32a70125ef618b85d048936afad2204fb97d459cda8c36fd0b2066"
+  },
+  "@r15@/lib/Alarm/include/AlarmServiceV1.h": {
+    "sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5"
+  },
+  "@work@/target-lora/fixed-final/exports.map": {
+    "text": "{global:app_main;app_module_fini;app_module_init;local:*;};\n",
+    "template_sha256": "6a4f0306496e7574c02b3c566cfd68edaf8ae11fd19933029134e663ed1ea399"
+  }
+}

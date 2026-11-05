@@ -14,8 +14,13 @@ static uint16_t nc_color(unsigned tone){
     return colors[tone<=RISC_TONE_MUTED?tone:0];
 }
 static const pc_font *nc_font(unsigned role){
+#if SCENE_HOST_WATCH_240
+    static const pc_font *const faces[6]={&nova_title_1,&nova_section_1,&nova_body_1,&nova_small_1,&nova_value_1,&nova_tab_1};
+    return faces[role];
+#else
     static const pc_font *const faces[2][6]={{&nova_title_1,&nova_section_1,&nova_body_1,&nova_small_1,&nova_value_1,&nova_tab_1},{&nova_title_2,&nova_section_2,&nova_body_2,&nova_small_2,&nova_value_2,&nova_tab_2}};
     return faces[nc_scale()-1][role];
+#endif
 }
 static int nc_tracking(unsigned role){return role==5?31*nc_scale():0;}
 static int nc_measure(unsigned role,const char *s){return (paper_measure(nc_font(role),s,0)+(int)strlen(s)*nc_tracking(role)+32)/64;}
@@ -29,8 +34,11 @@ static void nc_text(int x,int baseline,int maximum,const char *s,unsigned role,u
             if(maximum>nc_size(8))fill(x+maximum-nc_size(6),baseline-nc_size(2),nc_size(4),nc_size(1),color);
             break;
         }
-        for(int row=0;row<g->height;row++){
-            int yy=baseline+g->top+row;if(yy<(int)clip_top||yy>=(int)clip_bottom)continue;
+        int first=(int)clip_top-baseline-g->top,last=(int)clip_bottom-baseline-g->top;
+        if(first<0)first=0;
+        if(last>g->height)last=g->height;
+        for(int row=first;row<last;row++){
+            int yy=baseline+g->top+row;
             for(int col=0;col<g->width;col++)if(paper_bit(g,col,row))pixel(x+(pen+32)/64+g->left+col,yy,color);
         }
         pen+=g->advance+nc_tracking(role);
@@ -41,8 +49,10 @@ static void nc_round(int x,int y,int w,int h,int radius,uint16_t color){
     if(layout_only||w<=0||h<=0)return;
     if(radius>w/2)radius=w/2;
     if(radius>h/2)radius=h/2;
-    for(int row=0;row<h;row++){
-        if(y+row<(int)clip_top||y+row>=(int)clip_bottom)continue;
+    int first=(int)clip_top-y,last=(int)clip_bottom-y;
+    if(first<0)first=0;
+    if(last>h)last=h;
+    for(int row=first;row<last;row++){
         int dy=row<radius?radius-row-1:row>=h-radius?row-h+radius:0,inset=0;
         if(dy)while(inset<radius&&(radius-inset)*(radius-inset)+dy*dy>radius*radius)++inset;
         fill(x+inset,y+row,w-2*inset,1,color);
@@ -70,6 +80,11 @@ static void nc_icon(unsigned symbol,int x,int y,int size,uint16_t c){
         const uint32_t *mask=nc_connectivity_icons[symbol-RISC_SYMBOL_WIFI];
         if(!layout_only&&size>0)for(int yy=0;yy<size;yy++)for(int xx=0;xx<size;xx++)
             if(mask[yy*28/size]&(1u<<(27-xx*28/size)))pixel(x+xx,y+yy,c);
+        return;
+    }
+    if(symbol==RISC_SYMBOL_REFRESH){
+        if(!layout_only&&size>0)for(int yy=0;yy<size;yy++)for(int xx=0;xx<size;xx++)
+            if(nc_connectivity_refresh[yy*32/size]&(UINT32_C(1)<<(31-xx*32/size)))pixel(x+xx,y+yy,c);
         return;
     }
     if(symbol>=RISC_SYMBOL_GAUGE){tm_icon(symbol,x,y,size,c);return;}
@@ -206,6 +221,7 @@ static int nc_ring_phase(int x,int y){
     int q=lo*100+(a+b?100*a/(a+b):0);
     return y<=0?(x>=0?q:(10000-q)%10000):(x>=0?5000-q:5000+q);
 }
+// Shared connectivity rendering follows the existing clipping and hit ownership.
 #include "connectivity.inc"
 static void nc_draw_node(unsigned index,int x,int y,int w,int h){
     if(cn_draw(index,x,y,w,h)||tm_draw(index,x,y,w,h))return;
@@ -456,7 +472,11 @@ static void nc_header(int y){
     fill(16*s,y+hh-(nc_paper()?2*s:s),(int)width-32*s,nc_paper()?2*s:s,line);
 }
 static void nc_modal(void){
-    int s=nc_scale(),w=((document.flags&3u)==RISC_COMPONENTS_ALERT?206:196)*s,h=140*s,x=((int)width-w)/2,y=((int)height-h)/2;
+    int s=nc_scale(),w=((document.flags&3u)==RISC_COMPONENTS_ALERT?206:196)*s,h=140*s;
+    /* Narrow admitted displays must retain both the action pills and the
+     * dialog frame; canonical Watch/paper dimensions are unchanged. */
+    if(w>(int)width-16*s)w=(int)width-16*s;
+    int x=((int)width-w)/2,y=((int)height-h)/2;
     uint16_t ink=nc_color(RISC_TONE_ACCENT);unsigned actions=0,body=0;
     for(unsigned i=0;i<document.node_count;i++)if(!(document.nodes[i].flags&RISC_SCENE_HIDDEN)){
         if(document.nodes[i].kind==RISC_SCENE_ACTION)actions++;
@@ -496,12 +516,29 @@ static void component_draw(void){
     if(document.flags&3u){nc_modal();return;}
     const risc_scene_node_v1 *keyboard=current_keyboard();
     if(keyboard){if(nc_paper())paper_keyboard(keyboard);else {
-        int s=nc_scale();nc_text(54*s,28*s,(int)width-70*s,keyboard->label,0,nc_color(RISC_TONE_ACCENT));
-        nc_box(16*s,10*s,28*s,28*s,14*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
-        nc_icon(RISC_SYMBOL_BACK,23*s,17*s,14*s,nc_color(RISC_TONE_ACCENT));
-        nc_hit(13*s,7*s,34*s,34*s,HIT_VALUE,keyboard,RISC_SCENE_KEY_CANCEL,true);
-        nc_box(16*s,42*s,(int)width-32*s,32*s,10*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
-        const char *tail=keyboard->text;while(*tail&&nc_measure(2,tail)>(int)width-48*s)++tail;nc_text(24*s,63*s,(int)width-48*s,tail,2,nc_fg());
+        /* Match the key grid's display-height proportions. Fixed scaled Y
+         * coordinates overlap its first row on short native color surfaces. */
+        int s=nc_scale(),button_y=10*(int)height/240,button_h=28*(int)height/240;
+        int field_y=42*(int)height/240,field_h=32*(int)height/240;
+        nc_text(54*s,28*(int)height/240,(int)width-70*s,keyboard->label,0,nc_color(RISC_TONE_ACCENT));
+        nc_box(16*s,button_y,28*s,button_h,14*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
+        int icon=button_h/2;if(icon>14*s)icon=14*s;
+        nc_icon(RISC_SYMBOL_BACK,16*s+(28*s-icon)/2,button_y+(button_h-icon)/2,icon,nc_color(RISC_TONE_ACCENT));
+        nc_hit(13*s,7*(int)height/240,34*s,34*(int)height/240,HIT_VALUE,keyboard,RISC_SCENE_KEY_CANCEL,true);
+        keyboard_key visibility;bool password=keyboard_visibility_bounds(keyboard,&visibility);
+        int field_width=password?visibility.x-24*s:(int)width-32*s;
+        nc_box(16*s,field_y,field_width,field_h,10*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
+        const char *tail=keyboard->text;while(*tail&&nc_measure(2,tail)>field_width-16*s)++tail;nc_text(24*s,field_y+(field_h+10*s)/2,field_width-16*s,tail,2,nc_fg());
+        if(password){
+            bool selected=keyboard->id==path.focus[path.depth-1]&&focus_part==KEYBOARD_VISIBILITY_INDEX;
+            nc_box(visibility.x,visibility.y,visibility.w,visibility.h,6*s,selected?2*s:s,nc_color(RISC_TONE_ACCENT),nc_bg());
+            nc_center(visibility.x,visibility.y+visibility.h/2+4*s,visibility.w,keyboard_visibility_caption(keyboard),3,nc_fg());
+            add_hit(visibility.x,visibility.y,visibility.w,visibility.h,HIT_VALUE,keyboard->id,0,RISC_SCENE_KEY_VISIBILITY);
+        }
+        if(keyboard->flags&RISC_SCENE_DISABLED){
+            nc_center(0,100*s,(int)width,"Hardware keyboard",3,nc_fg());
+            nc_center(0,125*s,(int)width,"ENTER done / ESC cancel",3,nc_fg());return;
+        }
         for(unsigned i=0;;i++){keyboard_key k;if(!keyboard_bounds((unsigned)keyboard->value,i,&k))break;char ch[2];const char *label=keyboard_caption((unsigned)keyboard->value,k.key,ch);
             bool selected=keyboard->id==path.focus[path.depth-1]&&i==focus_part;nc_box(k.x,k.y,k.w,k.h,3*s,s,nc_color(RISC_TONE_ACCENT),selected?nc_color(RISC_TONE_ACCENT):nc_bg());nc_center(k.x,k.y+k.h/2+4*s,k.w,label,3,selected?nc_bg():nc_fg());nc_hit(k.x,k.y,k.w,k.h,HIT_VALUE,keyboard,(int)k.key,true);
         }
@@ -537,6 +574,7 @@ static void component_draw(void){
 static bool component_activate(const hit *h){
     if(h->kind==HIT_TOAST){if(model->toast_until&&document.toast_action)emit(RISC_SCENE_ACTION_EVENT,0,document.toast_action,0);return true;}
     int i=node_index(&document,h->node);if(i<0)return true;const risc_scene_node_v1 *n=&document.nodes[i];
+    if(n->kind==RISC_SCENE_KEYBOARD_NODE)return false;
     if(n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_HIDDEN))return true;
     if(h->kind==HIT_VALUE&&(n->kind==RISC_COMPONENT_SEGMENTS||n->kind==RISC_COMPONENT_TAB_BAR))focus_part=(unsigned)(h->value-n->minimum);
     if(h->kind==HIT_SECONDARY){path.focus[path.depth-1]=n->id;emit(RISC_SCENE_ACTION_EVENT,n->id,document.details[i].secondary_action,0);return true;}return false;
@@ -569,11 +607,23 @@ static void component_focus(int direction){
     if(document.nodes[target].kind==RISC_COMPONENT_TAB_BAR||document.nodes[target].kind==RISC_COMPONENT_HEADER_ACTION){invalidate_view();rebuild_hits();return;}
     int x,y,w,h;nc_layout(target,&x,&y,&w,&h);
     int min=nc_paper()?nc_header_height():0;if(y-model->scroll<min)model->scroll=y-min;
-    if(y+h-model->scroll>(int)height-tm_footer())model->scroll=y+h-(int)height+tm_footer();
+    /* The fixed Back control is painted after content. Keep keyboard-focused
+     * controls above it, including on narrow displays where it covers the
+     * center of the entire action row. */
+    int footer=tm_footer();
+    if(nc_back_button()&&!tm_tabbed()){
+        int back=(nc_paper()?38:40)*nc_scale();if(footer<back)footer=back;
+    }
+    if(y+h-model->scroll>(int)height-footer)model->scroll=y+h-(int)height+footer;
     invalidate_view();rebuild_hits();
 }
 static bool component_valid(const risc_components_document_v1 *d){
-    if(!d->screen_key||d->flags&~63u||(d->flags&3u)==3u||((d->flags&3u)&&(d->flags&4u))||!terminated(d->subtitle,sizeof(d->subtitle))||!terminated(d->toast,sizeof(d->toast))||(((d->flags&3u)!=0)!=(d->cancel_action!=0)))return false;
+#if !SCENE_HOST_TELEMETRY
+    if(d->flags&RISC_COMPONENTS_TELEMETRY)return false;
+    for(unsigned i=0;i<d->node_count;i++)if((tm_kind(d->nodes[i].kind)&&d->nodes[i].kind!=RISC_COMPONENT_TAB_BAR)||
+        (d->details[i].symbol>=RISC_SYMBOL_GAUGE&&d->details[i].symbol<=RISC_SYMBOL_GEAR&&d->details[i].symbol!=RISC_SYMBOL_REFRESH))return false;
+#endif
+    if(!d->screen_key||d->flags&~127u||(d->flags&3u)==3u||((d->flags&3u)&&(d->flags&4u))||!terminated(d->subtitle,sizeof(d->subtitle))||!terminated(d->toast,sizeof(d->toast))||(((d->flags&3u)!=0)!=(d->cancel_action!=0)))return false;
     bool cancel=!(d->flags&3u);unsigned headers=0,modal_actions=0,modal_texts=0,tabs=0,tiles=0;
     for(unsigned i=0;i<d->node_count;i++){
         const risc_scene_node_v1 *n=&d->nodes[i];const risc_component_detail_v1 *a=&d->details[i];
@@ -583,13 +633,14 @@ static bool component_valid(const risc_components_document_v1 *d){
         if(n->kind==RISC_SCENE_ACTION&&n->action==d->cancel_action&&!(n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_DESTRUCTIVE|RISC_SCENE_HIDDEN)))cancel=true;
         if(n->kind==RISC_COMPONENT_HEADER_ACTION&&++headers>2)return false;
         if(n->kind>=RISC_COMPONENT_ROW&&n->kind!=RISC_COMPONENT_PROGRESS&&n->kind!=RISC_COMPONENT_EMPTY&&n->kind<RISC_COMPONENT_CARD&&!n->action)return false;
-        if(tm_kind(n->kind)&&!(d->flags&RISC_COMPONENTS_TELEMETRY))return false;
+        if(tm_kind(n->kind)&&!(d->flags&RISC_COMPONENTS_TELEMETRY)&&
+           !(n->kind==RISC_COMPONENT_TAB_BAR&&(d->flags&RISC_COMPONENTS_CONNECTIVITY)))return false;
         if(n->kind==RISC_COMPONENT_TAB_BAR&&(++tabs>1||!n->action||n->minimum!=0||n->maximum<1||n->maximum>5||n->step!=1||n->value<0||n->value>n->maximum))return false;
         if(n->kind==RISC_COMPONENT_METRIC_TILE&&++tiles>8)return false;
         if(n->kind==RISC_COMPONENT_BAR_GAUGE&&(n->minimum<0||n->maximum<1||n->maximum>65535||n->value<0||n->value>n->maximum))return false;
         if(n->kind==RISC_COMPONENT_PLOT&&(n->minimum<0||n->minimum>10000||n->maximum<0||n->maximum>10000||n->step<0||n->step>3||n->value<1||n->value>600))return false;
         if((n->kind==RISC_COMPONENT_TRACE_LEGEND||n->kind==RISC_COMPONENT_STATUS_TILE)&&(n->value<0||n->value>2))return false;
-        if((n->kind==RISC_COMPONENT_NETWORK_ROW||n->kind==RISC_COMPONENT_SIGNAL_HERO||n->kind==RISC_COMPONENT_CONNECTION_CARD)&&(n->value<0||n->value>4))return false;
+        if((n->kind==RISC_COMPONENT_NETWORK_ROW||n->kind==RISC_COMPONENT_CONNECTION_CARD||n->kind==RISC_COMPONENT_SIGNAL_HERO)&&(n->value<0||n->value>4))return false;
         if(n->kind==RISC_COMPONENT_CONNECTION_STEP&&(n->value<0||n->value>2))return false;
         if(n->kind==RISC_COMPONENT_RING&&(n->maximum<1||n->maximum>100||n->value<0||n->value>n->maximum))return false;
         if(n->kind==RISC_COMPONENT_STRENGTH&&(n->value<0||n->value>3))return false;

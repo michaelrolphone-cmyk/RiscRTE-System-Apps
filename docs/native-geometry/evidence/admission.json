@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "tests": 4,
+  "normal_admission_cases": 690,
+  "runs": [
+    {
+      "profile": 0,
+      "defines": [],
+      "cases": 230,
+      "stdout": "profile 0: 230 actual admission cases PASS",
+      "fixture_sha256": "a1ad9d8fa0fe0ab3c78fd5bbcc5c985f2119d698fd59d8cc5e142d9a288a8655"
+    },
+    {
+      "profile": 1,
+      "defines": [
+        "PORTABLE_WATCH_COLOR_ONLY",
+        "PORTABLE_NOVA_UI"
+      ],
+      "cases": 230,
+      "stdout": "profile 1: 230 actual admission cases PASS",
+      "fixture_sha256": "a1ad9d8fa0fe0ab3c78fd5bbcc5c985f2119d698fd59d8cc5e142d9a288a8655"
+    },
+    {
+      "profile": 2,
+      "defines": [
+        "PORTABLE_WATCH_COLOR_ONLY",
+        "PORTABLE_NOVA_UI",
+        "PORTABLE_WATCH_NATIVE_HEIGHT"
+      ],
+      "cases": 230,
+      "stdout": "profile 2: 230 actual admission cases PASS",
+      "fixture_sha256": "a1ad9d8fa0fe0ab3c78fd5bbcc5c985f2119d698fd59d8cc5e142d9a288a8655"
+    }
+  ],
+  "hardware": false,
+  "source_sha256": {
+    "scripts/test_watch_color_profile.py": "6969678648895eaace44e92e47025d1f7a7f7c64db9c493046e172d77f73a58b",
+    "lib/PortableApps/src/foreground_adapter_open.inc": "f5accdc954825652adfd8e8bf82e3e00bcef4b66926e38df64af79f5206eaba5",
+    "lib/PortableApps/src/nova_ui.inc": "48a16b7c17f6cf7bfcd8eb115e68c679c126ff1a8e26319509a00ba2a8a55379",
+    "lib/PortableApps/include/WatchLayout.h": "8a1a62346320a0dc76d0976d84e589ffbc5b0cdc064acf32a2d8057da0637aab",
+    "lib/PortableApps/include/RiscDisplayOutputV1.h": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726"
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+  "command": [
+    "/workspace/scratch/c744abbbbd60/watch-build-tools/platformio-core/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc",
+    "-std=c11",
+    "-Os",
+    "-fPIC",
+    "-mtext-section-literals",
+    "-mlongcalls",
+    "-ffreestanding",
+    "-fno-builtin",
+    "-nostdlib",
+    "-nostartfiles",
+    "-shared",
+    "-Wl,--hash-style=sysv",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+    "/tmp/quick-native-adapter-20261017/test/native_apps/paper_geometry_target.c",
+    "-o",
+    "/tmp/quick-native-adapter-20261017/build/paper-geometry-target/projection.elf"
+  ],
+  "validator_command": [
+    "cc",
+    "-std=c11",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-I/tmp/quick-native-adapter-20261017/test/native_apps/stubs",
+    "-I/tmp/quick-native-adapter-20261017/lib/elf_loader/include",
+    "/tmp/quick-native-adapter-20261017/lib/elf_loader/src/esp_elf_validate.c",
+    "/tmp/quick-native-adapter-20261017/test/native_apps/validate_test.c",
+    "-o",
+    "/tmp/quick-native-adapter-20261017/build/paper-geometry-target/validate-elf"
+  ],
+  "imports": [],
+  "symbols": "000012c8 D __bss_start\n000012c8 D _edata\n000012c8 D _end\n00000190 T paper_project_probe\n",
+  "compiler_sha256": "732bebd44b70a21687ffa3ac5da55edc9b555080ad21cfd74503b2288a143d3f",
+  "compiler_non_system_dependencies": [
+    {
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/platformio-core/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc",
+        "-std=c11",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-nostdlib",
+        "-nostartfiles",
+        "-shared",
+        "-Wl,--hash-style=sysv",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/paper_geometry_target.c",
+        "-MM"
+      ],
+      "output": "paper_geometry_target.o: \\\n /tmp/quick-native-adapter-20261017/test/native_apps/paper_geometry_target.c \\\n /tmp/quick-native-adapter-20261017/lib/PortableApps/include/PortablePaperGeometry.h\n",
+      "sha256": {
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/include/PortablePaperGeometry.h": "09090f544f6f84ca701742285039cb4a0e7b59ba5446ba225281f80be42c2c55",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/paper_geometry_target.c": "c9f37e2ef0ac57ea134746859fdf95bd7ba8ef02b967f7431be457e564c1cd5b"
+      }
+    },
+    {
+      "command": [
+        "cc",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/test/native_apps/stubs",
+        "-I/tmp/quick-native-adapter-20261017/lib/elf_loader/include",
+        "/tmp/quick-native-adapter-20261017/lib/elf_loader/src/esp_elf_validate.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/validate_test.c",
+        "-MM"
+      ],
+      "output": "esp_elf_validate.o: \\\n /tmp/quick-native-adapter-20261017/lib/elf_loader/src/esp_elf_validate.c \\\n /tmp/quick-native-adapter-20261017/lib/elf_loader/include/private/elf_types.h \\\n /tmp/quick-native-adapter-20261017/test/native_apps/stubs/sdkconfig.h\nvalidate_test.o: \\\n /tmp/quick-native-adapter-20261017/test/native_apps/validate_test.c \\\n /tmp/quick-native-adapter-20261017/lib/elf_loader/include/private/elf_types.h \\\n /tmp/quick-native-adapter-20261017/test/native_apps/stubs/sdkconfig.h\n",
+      "sha256": {
+        "/tmp/quick-native-adapter-20261017/lib/elf_loader/include/private/elf_types.h": "13a6aa3f2977c9da9d83ed7101a6deed9c01e96d0c614be3f84963be0c1a3eda",
+        "/tmp/quick-native-adapter-20261017/lib/elf_loader/src/esp_elf_validate.c": "67b6a0c09038821cb51c7d04a0c00d8c7e25eb974f3d4df6e51fa95febbf46fe",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/stubs/sdkconfig.h": "d18f0fce9e3255f9b1f5f934c5441b0685edd310375c68745c61ec0ce275e4ae",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/validate_test.c": "1fcb4274a6b8df77fd5c31dee8ee7dfb929c7fd62a634071a19cd6c9697b42a2"
+      }
+    }
+  ],
+  "validator_stdout": "Native ELF structural validation tests passed\n",
+  "source_sha256": {
+    "lib/PortableApps/include/PortablePaperGeometry.h": "09090f544f6f84ca701742285039cb4a0e7b59ba5446ba225281f80be42c2c55",
+    "test/native_apps/paper_geometry_target.c": "c9f37e2ef0ac57ea134746859fdf95bd7ba8ef02b967f7431be457e564c1cd5b",
+    "scripts/test_paper_geometry_target.py": "d602ab293151a204e0cd6acc7288768ade8aff981af1992f4e049c05ab07baf0",
+    "scripts/native_toolchain.py": "18da16e5cb4b5a9b33154085f278eaa24bd54a9b9aacb97f1165c7625c62022c",
+    "lib/elf_loader/src/esp_elf_validate.c": "67b6a0c09038821cb51c7d04a0c00d8c7e25eb974f3d4df6e51fa95febbf46fe",
+    "test/native_apps/validate_test.c": "1fcb4274a6b8df77fd5c31dee8ee7dfb929c7fd62a634071a19cd6c9697b42a2"
+  },
+  "executable_sha256": {
+    "projection.elf": "ee34405fb3ce8322239855e842d8003b9c733e998385e7cd5e47223236c6bb7e",
+    "validate-elf": "b6f82ec32bde62a9b78108f6a41c683e7586d65ab1d21cb99e7018f9a7808564"
+  }
+}

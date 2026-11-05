@@ -126,6 +126,10 @@ int portable_text_adapter_suspend(void) {
 int portable_text_adapter_attention(void) {
     if(!text_input_alive())return text_input_failure();
     if(!text_input_suspended)return RISC_TEXT_ENTRY_INVALID;
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+    if(handoff_requested||risc_runtime_exit_requested_v1(rt))return 1;
+    if(!text_input_alive())return text_input_failure();
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
     /* Caller invokes only after a settled host frame. Never paint the app or
      * alarm over a host lease; a pending alarm instead cancels the editor. */

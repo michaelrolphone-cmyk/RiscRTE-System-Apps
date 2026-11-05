@@ -1,0 +1,199 @@
+scene host behavior watch PASS (frames=4 calls=283)
+scene host inflight watch PASS (frames=1 calls=118)
+scene host stale-frame watch PASS (frames=3 calls=195)
+scene host gap watch PASS (frames=3 calls=202)
+scene host transient watch PASS (frames=4 calls=260)
+scene host held watch PASS (frames=4 calls=261)
+scene host busy-acquire watch PASS (frames=1 calls=95)
+scene host status-fault watch PASS (frames=2 calls=131)
+scene host snapshot-fault watch PASS (frames=1 calls=71)
+scene host provider-fault watch PASS (frames=1 calls=70)
+scene host close-fault watch PASS (frames=1 calls=69)
+scene host native-open-before watch PASS (no I/O after retention)
+scene host native-poll-before watch PASS (no I/O after retention)
+scene host native-close-before watch PASS (no I/O after retention)
+scene host native-open-get_info watch PASS (no I/O after retention)
+scene host native-open-subscribe watch PASS (no I/O after retention)
+scene host native-open-snapshot watch PASS (no I/O after retention)
+scene host native-open-snapshot-fail watch PASS (no I/O after retention)
+scene host native-open-foreground watch PASS (no I/O after retention)
+scene host native-open-reset watch PASS (no I/O after retention)
+scene host native-poll-poll watch PASS (no I/O after retention)
+scene host native-poll-next watch PASS (no I/O after retention)
+scene host native-poll-snapshot watch PASS (no I/O after retention)
+scene host native-poll-nav_poll watch PASS (no I/O after retention)
+scene host native-poll-acquire watch PASS (no I/O after retention)
+scene host native-poll-submit watch PASS (no I/O after retention)
+scene host native-poll-status watch PASS (no I/O after retention)
+scene host native-close-status watch PASS (no I/O after retention)
+scene host native-close-unsubscribe watch PASS (no I/O after retention)
+scene host native-close-foreground watch PASS (no I/O after retention)
+scene host native-close-reset watch PASS (no I/O after retention)
+scene host behavior paper PASS (frames=4 calls=2859)
+scene host inflight paper PASS (frames=1 calls=762)
+scene host stale-frame paper PASS (frames=3 calls=2127)
+scene host gap paper PASS (frames=3 calls=2134)
+scene host transient paper PASS (frames=4 calls=2836)
+scene host held paper PASS (frames=4 calls=2837)
+scene host busy-acquire paper PASS (frames=1 calls=739)
+scene host status-fault paper PASS (frames=2 calls=1419)
+scene host snapshot-fault paper PASS (frames=1 calls=715)
+scene host provider-fault paper PASS (frames=1 calls=714)
+scene host close-fault paper PASS (frames=1 calls=713)
+scene host native-open-before paper PASS (no I/O after retention)
+scene host native-poll-before paper PASS (no I/O after retention)
+scene host native-close-before paper PASS (no I/O after retention)
+scene host native-open-get_info paper PASS (no I/O after retention)
+scene host native-open-subscribe paper PASS (no I/O after retention)
+scene host native-open-snapshot paper PASS (no I/O after retention)
+scene host native-open-snapshot-fail paper PASS (no I/O after retention)
+scene host native-open-foreground paper PASS (no I/O after retention)
+scene host native-open-reset paper PASS (no I/O after retention)
+scene host native-poll-poll paper PASS (no I/O after retention)
+scene host native-poll-next paper PASS (no I/O after retention)
+scene host native-poll-snapshot paper PASS (no I/O after retention)
+scene host native-poll-nav_poll paper PASS (no I/O after retention)
+scene host native-poll-acquire paper PASS (no I/O after retention)
+scene host native-poll-submit paper PASS (no I/O after retention)
+scene host native-poll-status paper PASS (no I/O after retention)
+scene host native-close-status paper PASS (no I/O after retention)
+scene host native-close-unsubscribe paper PASS (no I/O after retention)
+scene host native-close-foreground paper PASS (no I/O after retention)
+scene host native-close-reset paper PASS (no I/O after retention)
+scene host behavior gray PASS (frames=4 calls=2859)
+scene host inflight gray PASS (frames=1 calls=762)
+scene host stale-frame gray PASS (frames=3 calls=2127)
+scene host gap gray PASS (frames=3 calls=2134)
+scene host transient gray PASS (frames=4 calls=2836)
+scene host held gray PASS (frames=4 calls=2837)
+scene host busy-acquire gray PASS (frames=1 calls=739)
+scene host status-fault gray PASS (frames=2 calls=1419)
+scene host snapshot-fault gray PASS (frames=1 calls=715)
+scene host provider-fault gray PASS (frames=1 calls=714)
+scene host close-fault gray PASS (frames=1 calls=713)
+scene host native-open-before gray PASS (no I/O after retention)
+scene host native-poll-before gray PASS (no I/O after retention)
+scene host native-close-before gray PASS (no I/O after retention)
+scene host native-open-get_info gray PASS (no I/O after retention)
+scene host native-open-subscribe gray PASS (no I/O after retention)
+scene host native-open-snapshot gray PASS (no I/O after retention)
+scene host native-open-snapshot-fail gray PASS (no I/O after retention)
+scene host native-open-foreground gray PASS (no I/O after retention)
+scene host native-open-reset gray PASS (no I/O after retention)
+scene host native-poll-poll gray PASS (no I/O after retention)
+scene host native-poll-next gray PASS (no I/O after retention)
+scene host native-poll-snapshot gray PASS (no I/O after retention)
+scene host native-poll-nav_poll gray PASS (no I/O after retention)
+scene host native-poll-acquire gray PASS (no I/O after retention)
+scene host native-poll-submit gray PASS (no I/O after retention)
+scene host native-poll-status gray PASS (no I/O after retention)
+scene host native-close-status gray PASS (no I/O after retention)
+scene host native-close-unsubscribe gray PASS (no I/O after retention)
+scene host native-close-foreground gray PASS (no I/O after retention)
+scene host native-close-reset gray PASS (no I/O after retention)
+scene host keyboard-hide-inflight watch PASS (frames=2 calls=672)
+scene host keyboard-hide-native watch PASS (no I/O after privacy-release retention)
+scene host keyboard-visibility watch PASS (frames=16 calls=5028)
+scene host keyboard-fast watch PASS (frames=3 calls=1544)
+scene host keyboard-overflow watch PASS (bounded queue retained without further I/O)
+scene host keyboard-press watch PASS (frames=3 calls=946)
+scene host keyboard-touch watch PASS (frames=135 calls=42646)
+scene host keyboard-navigation watch PASS (frames=11 calls=3453)
+scene host keyboard-pending watch PASS (frames=2 calls=641)
+scene host keyboard-stale watch PASS (frames=3 calls=952)
+scene host keyboard-hardware watch PASS (frames=6 calls=1920)
+scene host keyboard-long watch PASS (frames=10 calls=3143)
+scene host keyboard-invalid watch PASS (frames=1 calls=324)
+scene host keyboard-gesture watch PASS (frames=4 calls=1267)
+scene host keyboard-raster watch PASS (frames=97 calls=30175)
+scene host keyboard-superseded watch PASS (frames=2 calls=636)
+scene host keyboard-native-snapshot watch PASS (no I/O after completion callback retention)
+scene host keyboard-native-reset watch PASS (no I/O after completion callback retention)
+scene host keyboard-hide-inflight paper PASS (frames=2 calls=3240)
+scene host keyboard-hide-native paper PASS (no I/O after privacy-release retention)
+scene host keyboard-visibility paper PASS (frames=15 calls=24158)
+scene host keyboard-fast paper PASS (frames=3 calls=5408)
+scene host keyboard-overflow paper PASS (bounded queue retained without further I/O)
+scene host keyboard-press paper PASS (frames=3 calls=4834)
+scene host keyboard-touch paper PASS (frames=135 calls=217606)
+scene host keyboard-navigation paper PASS (frames=11 calls=17709)
+scene host keyboard-pending paper PASS (frames=2 calls=3233)
+scene host keyboard-stale paper PASS (frames=3 calls=4840)
+scene host keyboard-hardware paper PASS (frames=6 calls=9696)
+scene host keyboard-long paper PASS (frames=10 calls=16103)
+scene host keyboard-invalid paper PASS (frames=1 calls=1620)
+scene host keyboard-gesture paper PASS (frames=4 calls=6451)
+scene host keyboard-raster paper PASS (frames=97 calls=155887)
+scene host keyboard-superseded paper PASS (frames=2 calls=3228)
+scene host keyboard-native-snapshot paper PASS (no I/O after completion callback retention)
+scene host keyboard-native-reset paper PASS (no I/O after completion callback retention)
+scene host keyboard-hide-inflight gray PASS (frames=2 calls=3240)
+scene host keyboard-hide-native gray PASS (no I/O after privacy-release retention)
+scene host keyboard-visibility gray PASS (frames=15 calls=24158)
+scene host keyboard-fast gray PASS (frames=3 calls=5408)
+scene host keyboard-overflow gray PASS (bounded queue retained without further I/O)
+scene host keyboard-press gray PASS (frames=3 calls=4834)
+scene host keyboard-touch gray PASS (frames=135 calls=217606)
+scene host keyboard-navigation gray PASS (frames=11 calls=17709)
+scene host keyboard-pending gray PASS (frames=2 calls=3233)
+scene host keyboard-stale gray PASS (frames=3 calls=4840)
+scene host keyboard-hardware gray PASS (frames=6 calls=9696)
+scene host keyboard-long gray PASS (frames=10 calls=16103)
+scene host keyboard-invalid gray PASS (frames=1 calls=1620)
+scene host keyboard-gesture gray PASS (frames=4 calls=6451)
+scene host keyboard-raster gray PASS (frames=97 calls=155887)
+scene host keyboard-superseded gray PASS (frames=2 calls=3228)
+scene host keyboard-native-snapshot gray PASS (no I/O after completion callback retention)
+scene host keyboard-native-reset gray PASS (no I/O after completion callback retention)
+scene host keyboard-visibility watch PASS (frames=16 calls=5028)
+scene host keyboard-visibility paper PASS (frames=15 calls=24158)
+scene host keyboard-visibility gray PASS (frames=15 calls=24158)
+scene host lifecycle-discovery watch PASS
+scene host lifecycle-activity watch PASS
+scene host lifecycle-busy watch PASS
+scene host lifecycle-controls watch PASS
+scene host lifecycle-cancellation watch PASS
+scene host lifecycle-report-order watch PASS
+scene host lifecycle-keyboard watch PASS
+scene host lifecycle-header-split watch PASS
+scene host lifecycle-keyboard-header-split watch PASS
+scene host lifecycle-close watch PASS
+scene host lifecycle-native-before watch PASS
+scene host lifecycle-native-snapshot watch PASS
+scene host lifecycle-native-snapshot-fail watch PASS
+scene host lifecycle-native-reset watch PASS
+scene host lifecycle-discovery paper PASS
+scene host lifecycle-activity paper PASS
+scene host lifecycle-busy paper PASS
+scene host lifecycle-controls paper PASS
+scene host lifecycle-cancellation paper PASS
+scene host lifecycle-report-order paper PASS
+scene host lifecycle-keyboard paper PASS
+scene host lifecycle-header-split paper PASS
+scene host lifecycle-keyboard-header-split paper PASS
+scene host lifecycle-close paper PASS
+scene host lifecycle-native-before paper PASS
+scene host lifecycle-native-snapshot paper PASS
+scene host lifecycle-native-snapshot-fail paper PASS
+scene host lifecycle-native-reset paper PASS
+scene host lifecycle-discovery gray PASS
+scene host lifecycle-activity gray PASS
+scene host lifecycle-busy gray PASS
+scene host lifecycle-controls gray PASS
+scene host lifecycle-cancellation gray PASS
+scene host lifecycle-report-order gray PASS
+scene host lifecycle-keyboard gray PASS
+scene host lifecycle-header-split gray PASS
+scene host lifecycle-keyboard-header-split gray PASS
+scene host lifecycle-close gray PASS
+scene host lifecycle-native-before gray PASS
+scene host lifecycle-native-snapshot gray PASS
+scene host lifecycle-native-snapshot-fail gray PASS
+scene host lifecycle-native-reset gray PASS
+scene host profile-orientation watch PASS (frames=135 calls=42650)
+scene host profile-orientation paper PASS (frames=135 calls=217610)
+keyboard raster clock/custody failure stays retained PASS
+keyboard raster clock/custody failure stays retained PASS
+keyboard raster clock/custody failure stays retained PASS
+Old portrait90 rejected by independent installed physical raster assertion PASS
+197 presenter/profile executions passed; hardware remains untested.

@@ -1,6 +1,8 @@
 #include "PortableApps.h"
 #include "RiscDisplayOutputV1.h"
 #include "RiscRuntimeV1.h"
+#include "RiscAppCatalogV1.h"
+#include "RiscBatteryGaugeV1.h"
 #include "RiscTouchV1.h"
 #include "PortableRtcClock.h"
 #include "../../Apps/SpringboardPresentation.h"
@@ -12,6 +14,11 @@
 #define CATALOG_COUNT 3
 #endif
 void app_main(void);int app_module_init(void);void app_module_fini(void);
+#ifdef NOVA_WATCH_CATALOG
+const t5_app_manifest_t portable_catalog[]={
+#include "watch_suite_catalog.inc"
+};
+#else
 const t5_app_manifest_t portable_catalog[]={
  {.display_name="Clock",.file_name="default.elf",.icon="solid:f017",.compatible=true},
 #ifdef NOVA_DAILY_CATALOG
@@ -23,44 +30,99 @@ const t5_app_manifest_t portable_catalog[]={
  {.display_name="Settings",.file_name="settings.elf",.icon="solid:f013",.compatible=true},
  {.display_name="Battery",.file_name="battery.elf",.icon="solid:f240",.compatible=true}};
 #endif
+#endif
 const unsigned portable_catalog_count=CATALOG_COUNT;
 static unsigned present_started,last_touch_ms,max_touch_gap,script_ms;
 static bool clock_gap;
 static unsigned ms,polls,subs,grants,frames,presents,scenario,launches,last_present,max_presents;
-static uint16_t pixels[240*240];static char launched[128];
+#ifndef TEST_WIDTH
+#define TEST_WIDTH 240
+#define TEST_HEIGHT 240
+#endif
+static uint16_t pixels[TEST_WIDTH*TEST_HEIGHT];static char launched[128];
 /* App frames are rate-limited at their logical present boundary. Deferred
  * raster completion and an explicit ownership drain may submit closer together. */
 static unsigned logical_presents,last_logical_present,launch_ms;
+static bool slow_paint_blocked;
+static unsigned slow_completed_at, slow_available_poll_at, slow_followup_frames, slow_max_ready_delay;
 static void (*original_present)(bool);
 static void logical_present(bool full){
  if(logical_presents && scenario!=22)assert(ms-last_logical_present>=40);
  last_logical_present=ms;++logical_presents;original_present(full);
+}
+/* Measure the first app opportunity after completion, not raster cost or
+ * provider polling time: a large catalog can finish a token while drawing. */
+static bool (*original_frame_ready)(void);
+static bool observed_frame_ready(void){
+ bool ready=original_frame_ready();
+ if(!ready)slow_paint_blocked=true;
+ if(ready && scenario>=39 && scenario<=42 && slow_available_poll_at){
+  unsigned delay=ms-slow_available_poll_at;
+  if(delay>slow_max_ready_delay)slow_max_ready_delay=delay;
+  ++slow_followup_frames;
+ }
+ if(ready){slow_paint_blocked=false;slow_completed_at=slow_available_poll_at=0;}
+ return ready;
+}
+static bool (*original_poll)(t5_app_input_t *,uint32_t);
+static bool observed_poll(t5_app_input_t *input,uint32_t wait){
+ bool ok=original_poll(input,wait);
+ if(slow_paint_blocked&&slow_completed_at&&!slow_available_poll_at)slow_available_poll_at=ms;
+ return ok;
 }
 const t5_app_api_v1 *__real_t5_app_get_api(uint32_t version);
 const t5_app_api_v1 *__wrap_t5_app_get_api(uint32_t version){
  const t5_app_api_v1 *source=__real_t5_app_get_api(version);
  if(!source)return NULL;
  static t5_app_api_v1 observed;observed=*source;
- original_present=source->present;observed.present=logical_present;return &observed;
+ original_present=source->present;observed.present=logical_present;
+ original_poll=source->poll;observed.poll=observed_poll;
+ original_frame_ready=source->frame_ready;observed.frame_ready=observed_frame_ready;return &observed;
 }
 /* Physical reports advance with time, never with capture-only raster polls.
  * The explicit scheduler stall leaves the finger script held across the gap. */
-static unsigned script_step(void){return script_ms/20u;}
-static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;return script_step()<350;}
+static unsigned script_step(void){
+#ifdef NOVA_WATCH_CATALOG
+ /* A user taps after the first visible frame; raster checkpoints may advance
+  * the modeled clock while a full catalog is still being drawn. */
+ if(!presents)return 0;
+#endif
+ return script_ms/20u;
+}
+static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;
+#ifdef NOVA_WATCH_CATALOG
+ return true; /* Test completion is an orderly exit, not a failed Runtime. */
+#else
+ return script_step()<350;
+#endif
+}
 static void yield_ms(uint32_t n){
  unsigned elapsed=scenario==23?8u:scenario==24?33u:n;ms+=elapsed;script_ms+=elapsed;
  if((scenario==19||scenario==30)&&!clock_gap&&script_step()>=6){ms+=1000;clock_gap=true;}
 }
 static bool diagnostic(const char *s){(void)s;return true;}
 static bool launch_app(const char *s){launch_ms=ms;++launches;if(scenario==11)return false;strcpy(launched,s);return true;}
-static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=o->height=240;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565);o->nominal_refresh_millihz=scenario==22?0:60000;o->typical_present_latency_us=16000;return true;}
-static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c;assert(!frames);frames=1;*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.size_bytes=sizeof(pixels),.width=240,.height=scenario==10?200:240,.stride_bytes=480,.pixel_format=f};return true;}
+static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=TEST_WIDTH;o->height=TEST_HEIGHT;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565);o->nominal_refresh_millihz=scenario==22?0:60000;o->typical_present_latency_us=16000;if((scenario>=39&&scenario<=42))o->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;return true;}
+static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c;assert(!frames);frames=1;*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.size_bytes=sizeof(pixels),.width=TEST_WIDTH,.height=scenario==10?200:TEST_HEIGHT,.stride_bytes=TEST_WIDTH*2,.pixel_format=f};return true;}
 static void release_frame(void *c,risc_display_frame_v1 f){(void)c;assert(f==1&&frames);frames=0;}
 static void save_frame(void){
  const char *dir=getenv("NOVA_FRAMES");if(!dir)return;char name[512];snprintf(name,sizeof(name),"%s/frame-%04u-%06u.rgb565",dir,presents,ms);FILE *f=fopen(name,"wb");assert(f);assert(fwrite(pixels,1,sizeof(pixels),f)==sizeof(pixels));fclose(f);
 }
-static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){(void)c;(void)r;(void)n;(void)o;assert(f==1&&frames);if(scenario==9||(scenario==34&&script_step()>=6))return false;frames=0;if(presents)assert(ms>=last_present);last_present=ms;*token=++presents;present_started=ms;save_frame();return true;}
-static bool present_status(void *c,risc_display_present_token_v1 t,risc_display_present_status_v1 *s){(void)c;(void)t;s->state=(scenario==36||scenario==37)&&presents>1&&ms-present_started<(scenario==36?120u:600u)?RISC_DISPLAY_PRESENT_ACTIVE:RISC_DISPLAY_PRESENT_COMPLETE;return true;}
+static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){(void)c;(void)r;(void)n;(void)o;assert(f==1&&frames);if(scenario==9||(scenario==34&&script_step()>=6))return false;frames=0;
+#ifdef NOVA_WATCH_CATALOG
+ if(!presents)script_ms=0;
+#endif
+ if(presents){assert(ms>=last_present);}
+ last_present=ms;*token=++presents;present_started=ms;save_frame();return true;}
+static bool present_status(void *c,risc_display_present_token_v1 t,risc_display_present_status_v1 *s){
+ (void)c;(void)t;
+ unsigned latency=scenario==36?120u:scenario==37?600u:(scenario>=39&&scenario<=42)?(55u+20u*(scenario-39)):0u;
+ s->state=latency&&presents>1&&ms-present_started<latency?RISC_DISPLAY_PRESENT_ACTIVE:RISC_DISPLAY_PRESENT_COMPLETE;
+ if((scenario>=39&&scenario<=42)&&presents>1&&s->state==RISC_DISPLAY_PRESENT_COMPLETE&&!slow_completed_at)
+  slow_completed_at=ms;
+ return true;
+}
+
 static risc_touch_snapshot_v1 touch_state;
 static risc_touch_event_v1 touch_events[RISC_TOUCH_QUEUE_LENGTH];
 static unsigned touch_head,touch_count,last_script_step;
@@ -69,12 +131,13 @@ static risc_touch_contact_v1 script_contact(unsigned id,unsigned x,unsigned y){
 #ifdef TEST_ROTATION_180
  x=239u-x;y=239u-y;
 #endif
+ x=x*TEST_WIDTH/240;y=((int)y-120)*TEST_WIDTH/240+TEST_HEIGHT/2;
  return (risc_touch_contact_v1){.id=id,.x=(uint16_t)x,.y=(uint16_t)y};
 }
 static void script_snapshot(unsigned step,risc_touch_snapshot_v1 *s){
- memset(s,0,sizeof(*s));s->width=s->height=240;int x=120,y=120;bool down=false;
+ memset(s,0,sizeof(*s));s->width=TEST_WIDTH;s->height=TEST_HEIGHT;int x=120,y=120;bool down=false;
  if(scenario==1||scenario==2||scenario==16){down=step<=3;if(scenario==2){x=120+(int)step*20;y=120+(int)step*10;}}
- else if(scenario==6||scenario==7||scenario==14||scenario==15||scenario==23||scenario==24){down=step>=2&&step<=6;if(step>=3){x=120+(int)(step-2)*20;y=120+(int)(step-2)*12;}}
+ else if(scenario==6||scenario==7||scenario==14||scenario==15||scenario==23||scenario==24||(scenario>=39&&scenario<=42)){down=step>=2&&step<=6;if(step>=3){x=120+(int)(step-2)*20;y=120+(int)(step-2)*12;}}
  else if(scenario==18){down=step>=2&&step<=6;x=120+(int)(step>3?step-3:0)*20;}
  else down=step==2;
  if(scenario==8||scenario==13||scenario==21||scenario==32||scenario==33)down=false;
@@ -145,9 +208,32 @@ static const risc_display_output_api_v1 d={.api_version=1,.struct_size=sizeof(d)
 static bool clock_read(void *c,twatch_rtc_time_v1 *out){(void)c;*out=(twatch_rtc_time_v1){2026,10,4,0,0,40,0};return scenario!=33;}
 static const twatch_rtc_api_v1 clock_api={.api_version=2,.struct_size=sizeof(clock_api),.read=clock_read};
 static const risc_touch_api_v1 t={1,sizeof(t),NULL,subscribe,unsubscribe,poll_touch,next_touch,snapshot};
-static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capability_v1 *g){assert(!id&&g->struct_size==sizeof(*g));if(!strcmp(name,"rtc.clock")){assert(v==2);g->api=&clock_api;++grants;return true;}assert(v==1);if(!strcmp(name,"display.output"))g->api=&d;else if(!strcmp(name,"input.touch.raw"))g->api=&t;else return false;++grants;return true;}
-static bool release(risc_runtime_capability_v1 *g){assert(grants&&g->api);--grants;g->api=NULL;return true;}
-static const risc_runtime_api_v1 rt={.api_version=1,.struct_size=sizeof(rt),.health=health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=acquire,.release=release};
+#ifdef NOVA_WATCH_CATALOG
+static bool battery_read(void*c,risc_battery_sample_v1*out){(void)c;*out=(risc_battery_sample_v1){.millivolts=4000,.percent=80};return true;}
+static const risc_battery_gauge_api_v1 battery_api={1,sizeof(battery_api),NULL,battery_read};
+static int32_t catalog_snapshot(void*c,risc_app_catalog_snapshot_v1*out){(void)c;out->count=CATALOG_COUNT;out->generation=1;return 0;}
+static int32_t catalog_get(void*c,uint64_t generation,uint32_t index,risc_app_catalog_entry_v1*out){
+ (void)c;assert(generation==1);if(index>=CATALOG_COUNT)return RISC_APP_CATALOG_NOT_FOUND;
+ const t5_app_manifest_t*m=&portable_catalog[index];out->flags=RISC_APP_CATALOG_AVAILABLE;
+ strcpy(out->display_name,m->display_name);strcpy(out->file_name,m->file_name);strcpy(out->icon,m->icon);snprintf(out->id,sizeof(out->id),"app-%u",index);return 0;
+}
+static const risc_app_catalog_v1 catalog_api={1,sizeof(catalog_api),NULL,catalog_snapshot,catalog_get};
+static bool exit_requested(void){return script_step()>=350;}
+static bool retain(void){assert(!"unexpected retained fixture invocation");return true;}
+#endif
+static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capability_v1 *g){assert(!id&&g->struct_size==sizeof(*g));
+#ifdef NOVA_WATCH_CATALOG
+ g->slot=grants+1;g->generation=1;
+ if(!strcmp(name,"board.battery")){g->api=&battery_api;++grants;return true;}
+ if(!strcmp(name,"app.catalog")){g->api=&catalog_api;++grants;return true;}
+#endif
+ if(!strcmp(name,"rtc.clock")){assert(v==2);g->api=&clock_api;++grants;return true;}assert(v==1);if(!strcmp(name,"display.output"))g->api=&d;else if(!strcmp(name,"input.touch.raw"))g->api=&t;else return false;++grants;return true;}
+static bool release(risc_runtime_capability_v1 *g){assert(grants&&g->api);--grants;*g=(risc_runtime_capability_v1){.struct_size=sizeof(*g)};return true;}
+static const risc_runtime_api_v1 rt={.api_version=1,.struct_size=sizeof(rt),.health=health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=acquire,.release=release
+#ifdef NOVA_WATCH_CATALOG
+ ,.retain_invocation=retain,.exit_requested=exit_requested
+#endif
+ };
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&rt:NULL;}
 int main(int argc,char **argv){
  assert(argc==2);scenario=(unsigned)atoi(argv[1]);assert(app_module_init()==0);
@@ -167,5 +253,6 @@ int main(int argc,char **argv){
 #endif
  if(scenario==6||scenario==7||scenario==14||scenario==15||scenario==23||scenario==24)assert(presents<100);
  if(scenario==36||scenario==37)assert(max_touch_gap<=32);
+ if((scenario>=39&&scenario<=42)){printf("slow followups=%u max_ready_delay=%u\n",slow_followup_frames,slow_max_ready_delay);assert(slow_followup_frames>2);assert(slow_max_ready_delay==0);}
  printf("NOVA real app scenario %u, catalog %u: %u bounded frames, %u logical frames, %u launch requests at %u ms, clean teardown\n",scenario,portable_catalog_count,presents,logical_presents,launches,launch_ms);
 }

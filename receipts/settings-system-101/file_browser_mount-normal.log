@@ -1,0 +1,10 @@
+{"command": ["bash", "scripts/test_file_browser_mount.sh"], "cwd": "/workspace/shared/x4-settings-system-101-20261012", "environment": {"SANITIZE": "0", "OUTPUT_DIR": "/workspace/shared/x4-settings-system-101-evidence-20261012/file_browser_mount-normal"}}
+Mounted peer: common rows/navigation/preview/rename/mkdir/copy/move/delete/cancel and checked disconnect PASS
+Mounted async busy/retry/cancel/expiry preserves generation, rows and local source identity PASS
+Actual Watch eight-path export in common browser: mapped folders, children, preview, Copy out, confirmed revision-safe Copy back, unavailable operations PASS
+Mounted peer: common rows/navigation/preview/rename/mkdir/copy/move/delete/cancel and checked disconnect PASS
+Mounted async busy/retry/cancel/expiry preserves generation, rows and local source identity PASS
+Actual Watch eight-path export in common browser: mapped folders, children, preview, Copy out, confirmed revision-safe Copy back, unavailable operations PASS
+Mounted peer: common rows/navigation/preview/rename/mkdir/copy/move/delete/cancel and checked disconnect PASS
+Mounted async busy/retry/cancel/expiry preserves generation, rows and local source identity PASS
+Actual Watch eight-path export in common browser: mapped folders, children, preview, Copy out, confirmed revision-safe Copy back, unavailable operations PASS

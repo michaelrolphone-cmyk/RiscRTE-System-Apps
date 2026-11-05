@@ -10,6 +10,7 @@ static struct {
  unsigned generation;bool native_live,rtc_live,fail_native_acquire,fail_rtc_acquire;
  int acquire_shape,release_mode,native_status,seed_status,post_seed_status;
  bool malformed_after_seed;
+ uint32_t rtc_delay_us;int seed_offset_seconds;
  bool rtc_read_ok,seed_unset,hidden_retained,retention_on_rtc_failure;
  int fail_release_number;
  const void *native_table,*rtc_table;
@@ -41,13 +42,14 @@ static int32_t seed_native(void *context,int64_t epoch,uint32_t ns) {
  ++f.seeds;f.seeded_epoch=epoch;f.seeded_ns=ns;event('S');
  if(f.seed_status==RISC_REALTIME_IO){f.snapshot.validity=RISC_REALTIME_UNSET;f.snapshot.epoch_seconds=0;f.snapshot.nanoseconds=0;}
  if(f.seed_status)return f.seed_status;
- if(!f.seed_unset){f.snapshot.validity=RISC_REALTIME_VALID;f.snapshot.epoch_seconds=epoch;f.snapshot.nanoseconds=ns;}
+ if(!f.seed_unset){f.snapshot.validity=RISC_REALTIME_VALID;f.snapshot.epoch_seconds=epoch+f.seed_offset_seconds;f.snapshot.nanoseconds=ns;}
  f.native_status=f.post_seed_status;
  if(f.malformed_after_seed)f.snapshot.reserved=1;
  return RISC_REALTIME_OK;
 }
 static bool read_rtc(void *context,twatch_rtc_time_v1 *out) {
  assert(f.rtc_live && context==&f);++f.rtc_reads;event('C');
+ f.snapshot.monotonic_before_us+=f.rtc_delay_us;f.snapshot.monotonic_after_us+=f.rtc_delay_us;
  *out=f.calendar;
  if(!f.rtc_read_ok && f.retention_on_rtc_failure)f.hidden_retained=true;
  return f.rtc_read_ok;

@@ -3,6 +3,9 @@
  * Its saved frame is app-owned; no lease or callback crosses service calls. */
 #include "PortableAlarmClient.h"
 static portable_alarm_client alarms;
+#ifdef PORTABLE_HOME_PROVISION
+static bool home_provision_alarm_busy(void){return portable_alarm_cue(&alarms);}
+#endif
 #if defined(PORTABLE_WIFI_SESSION_APP) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))
 #define PORTABLE_WIFI_SERVICE_LEASE
 static bool alarm_refresh_pending,alarm_ack_pending,alarm_service_deferred;
@@ -197,6 +200,9 @@ static const char *alarm_title(const alarm_status_v1 *s,char out[24]) {
     }
     return s->occurrence.kind==ALARM_KIND_COUNTDOWN?"COUNTDOWN FINISHED":"ALARM";
 }
+#ifdef PORTABLE_ALARM_NATIVE
+#include "alarm_native.inc"
+#endif
 static void alarm_draw(void) {
     const alarm_status_v1 *s=&alarms.status;
     char title[24];
@@ -216,6 +222,10 @@ static void alarm_draw(void) {
         }
         present(false);return;
     }
+#ifdef PORTABLE_ALARM_NATIVE
+    alarm_native_draw(s,alarm_title(s,title));
+    present(false);return;
+#endif
 #ifdef PORTABLE_NOVA_UI
     portable_nova_begin();
     portable_nova_center(0,16,34,208,alarm_title(s,title),NOVA_CYAN);
@@ -278,6 +288,19 @@ static bool alarm_wifi_pause(const uint16_t *saved) {
     alarm_cancel_input();return !failed;
 }
 #endif
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+/* LOADING defers logical input, not the owner task or an immutable queued
+ * frame. In particular, startup animation waits poll this path before Home
+ * exists. Returning consumed without progress starves both raster replay and
+ * the native worker that must resolve the pending alarm storage operation. */
+static bool alarm_defer_loading(bool *consumed) {
+    *consumed=true;
+    input_service();
+    if(failed || !paper_present_progress())return alarm_failure();
+    rt->yield_ms(1);
+    return !failed && !native_sleep_retained;
+}
+#endif
 /* Returns false only on foreground failure; consumed prevents initiating Back
  * or touch from leaking into the suspended app after a modal closes. */
 static bool alarm_foreground(bool *consumed) {
@@ -293,9 +316,34 @@ static bool alarm_foreground(bool *consumed) {
 #if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;
 #endif
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+    /* A cold shared map is not an alarm error. Only inspect copied status while
+     * Home restores it; never hide an existing occurrence or uncertain output. */
+    if(desk_settings_pending || desk_alarm_refresh_pending) {
+        if(!portable_alarm_status(&alarms) || alarms.status.output_uncertain)return alarm_failure();
+        if(!portable_alarm_owned(&alarms)) {
+            if(desk_settings_pending)return true;
+#if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+            if(!portable_alarm_refresh(&alarms))return alarm_failure();
+#else
+            int32_t status=alarms.api->refresh(alarms.api->context);
+            if(status!=ALARM_OK && status!=ALARM_PENDING)return alarm_failure();
+#endif
+            desk_alarm_refresh_pending=false;
+        }
+    }
+#endif
     if(!alarm_audio_pump()){failed=true;return alarm_failure();}
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+    if(desk_settings_pending && !portable_alarm_owned(&alarms))return true;
+#endif
 #ifdef PORTABLE_WIFI_SERVICE_LEASE
     if(alarm_service_deferred)return true;
+#endif
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+    if(alarms.deferred && alarms.status.state==ALARM_STATE_LOADING) {
+        return alarm_defer_loading(consumed);
+    }
 #endif
     /* Reconciliation is bounded by service phases, not provider poll. Input
        waits until the snapshot says READY or gives an alert/error. */
@@ -303,6 +351,10 @@ static bool alarm_foreground(bool *consumed) {
     for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING || portable_alarm_cue(&alarms);n++) {
         if(n>=64){failed=true;return alarm_failure();}
         if(portable_alarm_cue(&alarms)){
+#ifdef PORTABLE_HOME_PROVISION
+            int rc=home_provision_close();
+            if(rc!=INSTALLED_APPS_OK){*consumed=true;return rc==INSTALLED_APPS_WORKING;}
+#endif
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
             if(!portable_background_stop())return false;
 #endif
@@ -318,6 +370,12 @@ static bool alarm_foreground(bool *consumed) {
 #ifdef PORTABLE_WIFI_SERVICE_LEASE
         if(alarm_service_deferred)return true;
 #endif
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+        if(alarms.deferred && alarms.status.state==ALARM_STATE_LOADING) {
+            return alarm_defer_loading(consumed);
+        }
+#endif
+
         /* Drain one short cue with the original frame untouched. Finish once
          * its outputs and durable ACK are settled; subsequent simultaneous
          * cues reconcile on the next foreground call rather than exhausting
@@ -328,6 +386,9 @@ static bool alarm_foreground(bool *consumed) {
             break;
         }
     }
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+    if(desk_settings_pending && !portable_alarm_owned(&alarms)){if(cue_seen)alarm_cancel_input();return true;}
+#endif
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
     if(!portable_alarm_owned(&alarms) && (!error ||
         (alarm_error_seen && alarm_seen_error==alarms.status.error && alarm_seen_snapshot==alarms.status.snapshot)))return true;
@@ -357,6 +418,11 @@ static bool alarm_foreground(bool *consumed) {
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
 #endif
         portable_touch_sample sample;input_take(&sample);
+#if defined(PORTABLE_WATCH_NATIVE_HEIGHT) && !defined(PORTABLE_ALARM_NATIVE)
+        /* Paper draws and hits in native coordinates; only the legacy RGB
+         * alarm view needs the native-height sample projected to 240 units. */
+        if(!pp_enabled() && info.width){sample.x=(uint32_t)sample.x*240u/info.width;sample.y=(uint32_t)sample.y*240u/info.width;}
+#endif
         uint32_t buttons=navigation_pending;navigation_pending=0;
         bool tap=sample.valid && sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled;
         bool paper=pp_enabled();
@@ -371,6 +437,14 @@ static bool alarm_foreground(bool *consumed) {
             retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && sample.y>=height()-92);
             dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=height()-188 && sample.y<height()-100);
         }
+#ifdef PORTABLE_ALARM_NATIVE
+        else {
+            portable_alarm_layout l;
+            if(!portable_alarm_layout_for(width(),height(),alarms.status.state==ALARM_STATE_BLOCKED,&l))return alarm_failure();
+            retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && portable_alarm_hit(l.retry,sample.x,sample.y));
+            dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && portable_alarm_hit(l.dismiss,sample.x,sample.y));
+        }
+#endif
         if(alarms.status.state==ALARM_STATE_BLOCKED && retry) {
 #if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
 #ifdef PORTABLE_WIFI_SERVICE_LEASE

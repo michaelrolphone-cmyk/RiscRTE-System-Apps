@@ -1,0 +1,44 @@
+name: Mounted Files browser
+on:
+  push:
+    branches: [feat/files-mounted-peer-browser, feat/files-volume-open-handoff]
+  pull_request:
+    paths:
+      - 'Apps/file_browser*'
+      - 'lib/RemoteFiles/**'
+      - 'lib/PortableApps/include/PortablePeerFiles.h'
+      - 'scripts/test_file_browser_mount.sh'
+      - 'scripts/test_file_browser_source.sh'
+      - 'lib/PortableApps/include/RiscFileOpenSourceV1.h'
+      - 'scripts/test_file_browser_local_scopes.sh'
+      - 'test/native_apps/file_browser*'
+      - 'test/remote_files/**'
+      - '.github/workflows/mounted-browser-regressions.yml'
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: system
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 3b90cd11cf0ff4e8116bb54d2d9eb9c7c67a148b
+          path: runtime
+          persist-credentials: false
+      - name: Actual mounted browser and native service boundaries
+        working-directory: system
+        run: |
+          python3 tests/test_file_sharing_build.py
+          for script in test_file_browser_mount test_file_browser_source test_file_browser_local_scopes test_file_browser_peer test_file_browser_peer_resident test_webdav_peer; do
+            bash scripts/$script.sh
+            ASAN_OPTIONS=detect_leaks=0 SANITIZE=1 bash scripts/$script.sh
+          done
+          python3 scripts/test_file_browser_operations.py
+          python3 scripts/test_file_browser_paper.py

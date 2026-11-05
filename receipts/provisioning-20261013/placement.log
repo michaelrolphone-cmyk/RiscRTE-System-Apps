@@ -1,0 +1,20 @@
+test_ambiguous (__main__.PlanTests.test_ambiguous) ... ok
+test_capacity (__main__.PlanTests.test_capacity) ... ok
+test_cycle (__main__.PlanTests.test_cycle) ... ok
+test_duplicate_path (__main__.PlanTests.test_duplicate_path) ... ok
+test_full_sd_internal_fallback (__main__.PlanTests.test_full_sd_internal_fallback) ... ok
+test_input_unchanged (__main__.PlanTests.test_input_unchanged) ... ok
+test_invalid_file (__main__.PlanTests.test_invalid_file) ... ok
+test_missing (__main__.PlanTests.test_missing) ... ok
+test_native_dependency (__main__.PlanTests.test_native_dependency) ... ok
+test_no_sd_internal_fallback (__main__.PlanTests.test_no_sd_internal_fallback) ... ok
+test_package_not_split_between_media (__main__.PlanTests.test_package_not_split_between_media) ... ok
+test_partial_sd_capacity (__main__.PlanTests.test_partial_sd_capacity) ... ok
+test_sd_bootstrap_closure (__main__.PlanTests.test_sd_bootstrap_closure) ... ok
+test_unused_binding (__main__.PlanTests.test_unused_binding) ... ok
+test_wrong_api (__main__.PlanTests.test_wrong_api) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.001s
+
+OK

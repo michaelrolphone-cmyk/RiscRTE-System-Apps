@@ -1,6 +1,8 @@
 /* Production host + production idle helper, deterministic native providers.
  * The separate product matrix uses the real tagged alarm service as well. */
 #include <AlarmServiceV2.h>
+#include "PortableResidentPolicyInput.h"
+#include "review_frozen_scene_resident.h"
 /* Legacy shell fixture aggregate is used only by its unused baseline main. */
 typedef struct { alarm_service_v1 service; uint32_t output_modes; } alarm_service_outputs_v1;
 #define main original_resident_shell_main
@@ -19,6 +21,8 @@ static const char *idle_case;
 static bool touch_prepared,panel_prepared,storage_prepared,idle_active,overlay_visible;
 static unsigned status_calls,overlay_frames,restored_frames,sleep_calls,alarm_prepares,alarm_resumes,post_prepare_display;
 static int result_seen;
+static bool continuity_timer_changed;
+static unsigned continuity_touch_refusals;
 static void (*known_fail)(void),(*known_retain)(void);
 static bool (*known_flipped)(void);
 void idle_fixture_bind(void (*fail)(void),void (*retained)(void),bool (*flipped)(void)){known_fail=fail;known_retain=retained;known_flipped=flipped;}
@@ -49,6 +53,10 @@ static bool settled_case(void){return !strncmp(idle_case,"settled-",8);}
 #endif
 static void idle_safe(void);
 static int32_t idle_preferences(void*c,const char*key,void*p,uint32_t n,uint32_t*used){
+ if(continuity_timer_changed&&!strcmp(key,"sleep_idle")) {
+  const uint8_t saved[]={0x54,1,5,0,5^0xa5};idle_safe();assert(n>=sizeof(saved));
+  memcpy(p,saved,sizeof(saved));*used=sizeof(saved);return RISC_KEY_VALUE_OK;
+ }
 #ifdef PORTABLE_FRONTLIGHT_TONE
  if(tone_case()&&(!strcmp(key,"brightness")||!strcmp(key,"frontlight_tone"))){
   idle_safe();assert(n>=1);*(uint8_t*)p=!strcmp(key,"brightness")?0:80;*used=1;return RISC_KEY_VALUE_OK;
@@ -90,8 +98,13 @@ static int32_t idle_panel_prepare(void*c,uint32_t n){
  return is("panel-refused")?RISC_DISPLAY_POWER_BUSY:RISC_DISPLAY_POWER_OK;
 }
 static int32_t idle_panel_resume(void*c,uint32_t n){(void)c;live();assert(n&&panel_prepared&&!storage_prepared);panel_prepared=false;return RISC_DISPLAY_POWER_OK;}
-static int32_t idle_touch_prepare(void*c,uint32_t n){(void)c;idle_safe();assert(n);touch_prepared=true;return RISC_TOUCH_POWER_OK;}
-static int32_t idle_touch_resume(void*c,uint32_t n){(void)c;live();assert(n&&touch_prepared&&!panel_prepared&&!storage_prepared);touch_prepared=false;return RISC_TOUCH_POWER_OK;}
+static int32_t idle_touch_prepare(void*c,uint32_t n){
+ (void)c;idle_safe();assert(n);
+ /* Exact selected GT911 gate: passive subscribers still prevent power-off. */
+ if(subs){++continuity_touch_refusals;return RISC_TOUCH_POWER_BUSY;}
+ touch_prepared=true;return RISC_TOUCH_POWER_OK;
+}
+static int32_t idle_touch_resume(void*c,uint32_t n){(void)c;live();assert(n&&!panel_prepared&&!storage_prepared);touch_prepared=false;return RISC_TOUCH_POWER_OK;}
 static bool idle_sd_prepare(void*c){(void)c;live();assert(panel_prepared&&touch_prepared);storage_prepared=true;return true;}
 static bool idle_sd_commit(void*c){(void)c;live();assert(storage_prepared);return true;}
 static int32_t idle_sd_resume(void*c){(void)c;live();assert(storage_prepared);storage_prepared=false;return RISC_STORAGE_SLEEP_READY;}
@@ -248,10 +261,65 @@ static bool idle_obtain(const char*name,uint32_t version,uint64_t id,risc_runtim
  if(!strcmp(name,ALARM_SERVICE_CAPABILITY))out->api=&idle_alarm;
  return true;
 }
+static unsigned continuity_old_client_callbacks;
+static int32_t continuity_old_checkpoint(uint64_t invocation,const risc_resident_request_v1*request,risc_resident_reply_v1*reply){
+ assert(invocation==2);++continuity_old_client_callbacks;
+ if(request->reason==RISC_RESIDENT_CHECKPOINT_POLICY)assert(!subs&&!focus&&!frame);
+ return callbacks.dispatch(NULL,request,reply);
+}
+static int32_t continuity_policy_run(risc_resident_result_v1*out) {
+ idle_active=in_dispatch=true;
+ risc_resident_request_v1 request={sizeof(request),RISC_RESIDENT_CHECKPOINT_POLL,0,0};
+ risc_resident_reply_v1 reply={sizeof(reply),0};
+ bool legacy=is("continuity-legacy-host"),old_client=is("continuity-old-scene-client");
+ bool full=is("continuity-full-detach")||legacy;
+ ms+=is("continuity-full-detach")?60001u:5001u;
+ if(old_client){
+  risc_scene_resident_v1 old={.enabled=true,.client={.invocation=2,.checkpoint=continuity_old_checkpoint}};
+  subs=1;focus=2;
+  assert(risc_scene_resident_poll_v1(&old,0)==RISC_RESIDENT_OK&&old.policy);
+  subs=0;focus=0; /* Historical caller fulfills the full-close precondition. */
+  assert(risc_scene_resident_dispatch_v1(&old,RISC_RESIDENT_CHECKPOINT_POLICY)==RISC_RESIDENT_OK&&!old.policy);
+  assert(continuity_old_client_callbacks==2&&!sleep_calls&&!overlay_frames);
+  in_dispatch=idle_active=false;out->status=RISC_RESIDENT_OK;return out->status;
+ }
+ assert(callbacks.dispatch(NULL,&request,&reply)==RISC_RESIDENT_OK);
+ assert(reply.flags&RISC_RESIDENT_REPLY_POLICY_REQUEST);
+ assert(!!(reply.flags&PORTABLE_RESIDENT_REPLY_INPUT_CONTINUITY)==!full);
+ if(legacy)ms+=60001u;
+ if(!full) {
+  /* An opted-in editor still owns a passive subscription/navigation claim. */
+  subs=1;focus=2;
+  if(is("continuity-deadline"))ms+=60001u;
+  if(is("continuity-preferences"))continuity_timer_changed=true;
+  if(is("continuity-inhibit")) {
+   request.flags=RISC_RESIDENT_POLL_INHIBIT_POLICY;reply=(risc_resident_reply_v1){sizeof(reply),0};
+   assert(callbacks.dispatch(NULL,&request,&reply)==RISC_RESIDENT_OK&&!reply.flags);
+  }
+  request.reason=RISC_RESIDENT_CHECKPOINT_POLICY;request.flags=0;reply=(risc_resident_reply_v1){sizeof(reply),0};
+  assert(callbacks.dispatch(NULL,&request,&reply)==(is("continuity-inhibit")?RISC_RESIDENT_BUSY:RISC_RESIDENT_OK));
+  assert(!(reply.flags&RISC_RESIDENT_REPLY_REDRAW)&&!sleep_calls&&!overlay_frames&&!continuity_touch_refusals);
+  assert(subs==1&&focus==2);
+  /* A completed promise cannot be reused without another POLL. */
+  assert(callbacks.dispatch(NULL,&request,&reply)==RISC_RESIDENT_BUSY);
+  subs=0;focus=0;
+  if(is("continuity-low-battery")){in_dispatch=idle_active=false;out->status=RISC_RESIDENT_OK;return out->status;}
+  if(is("continuity-inhibit"))ms+=60001u;
+  request.reason=RISC_RESIDENT_CHECKPOINT_POLL;reply=(risc_resident_reply_v1){sizeof(reply),0};
+  assert(callbacks.dispatch(NULL,&request,&reply)==RISC_RESIDENT_OK);
+  assert((reply.flags&RISC_RESIDENT_REPLY_POLICY_REQUEST)&&!(reply.flags&PORTABLE_RESIDENT_REPLY_INPUT_CONTINUITY));
+ }
+ request.reason=RISC_RESIDENT_CHECKPOINT_POLICY;reply=(risc_resident_reply_v1){sizeof(reply),0};
+ assert(callbacks.dispatch(NULL,&request,&reply)==RISC_RESIDENT_OK);
+ assert((reply.flags&RISC_RESIDENT_REPLY_REDRAW)&&sleep_calls==1&&!continuity_touch_refusals);
+ assert(!subs&&!focus&&!overlay_visible);
+ in_dispatch=idle_active=false;out->status=RISC_RESIDENT_OK;return out->status;
+}
 static int32_t idle_run(uint64_t id,const char*path,risc_resident_result_v1*out){
  live();assert(id==1&&!strcmp(path,"child.elf")&&!focus&&!subs&&!frame);
  if(is("flip-on")||is("flip-off"))assert(known_flipped&&known_flipped()==is("flip-off"));
  memset(child_image,0x55,sizeof(child_image));memcpy(completed,child_image,sizeof(completed));
+ if(!strncmp(idle_case,"continuity-",11))return continuity_policy_run(out);
  ms+=60001;idle_active=true;in_dispatch=true;
  risc_resident_request_v1 request={.struct_size=sizeof(request),.reason=RISC_RESIDENT_CHECKPOINT_POLL};
  risc_resident_reply_v1 reply={.struct_size=sizeof(reply)};

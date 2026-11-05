@@ -1,4 +1,5 @@
 #pragma once
+#include "PortableNativeCanvas.h"
 #include "T5AppApi.h"
 /* Deployment-owned bounded catalog, linked into the application. No discovery,
  * filesystem access or installation claims. Entries are admitted by boot

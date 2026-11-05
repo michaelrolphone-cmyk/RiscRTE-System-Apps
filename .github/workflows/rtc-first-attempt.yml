@@ -1,0 +1,62 @@
+name: Watch first-attempt RTC composition
+on:
+  pull_request:
+    paths:
+      - .github/workflows/rtc-first-attempt.yml
+      - scripts/test_rtc_first_attempt.py
+      - test/native_apps/rtc_first_attempt_*.c
+      - test/native_apps/portable_settings_test.c
+      - Apps/settings.c
+      - lib/PortableApps/**
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/rtc-first-attempt.yml
+      - scripts/test_rtc_first_attempt.py
+      - test/native_apps/rtc_first_attempt_*.c
+      - test/native_apps/portable_settings_test.c
+      - Apps/settings.c
+      - lib/PortableApps/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  first-save:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 659d859acb122640ef4003bb8d7099501d4381be
+          path: .deps/runtime
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: fc9f93402050f020a3422ee889620b2414c7ad5d
+          path: .deps/utilities
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/riscrte-t-watch-s3
+          ref: aa91c1cd7eb664d9a5bd78df05cab53b2c683f18
+          path: .deps/twatch
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/riscrte-wavshare-s3-touch-amoled-2.06
+          ref: 92be7bd0b3666dfdf63d468f9206762cd1804053
+          path: .deps/waveshare
+      - name: Real Settings, RTC providers and alarm service, normal and sanitizers
+        run: >-
+          python3 scripts/test_rtc_first_attempt.py
+          --runtime .deps/runtime --utilities .deps/utilities
+          --twatch .deps/twatch --waveshare .deps/waveshare
+      - name: Existing Settings clock-change contract
+        run: python3 scripts/test_settings_clock_change.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: watch-first-attempt-rtc-source-evidence
+          path: build/rtc-first-attempt/evidence.json
+          if-no-files-found: error

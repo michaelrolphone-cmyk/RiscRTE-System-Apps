@@ -69,11 +69,24 @@ static const risc_retained_wake_api_v1_extended expiry_wake={
  .extension_tag=RISC_RETAINED_WAKE_EXTENDED_TAG,.extension_version=1,.max_payload_bytes=512,
  .read_bytes=expiry_read,.stage_bytes=expiry_stage};
 static points_service_v2 expiry_service;
+#ifdef TEST_TIMER_STORAGE_SLEEP
+static bool expiry_sd_prepare(void *c) {
+ (void)c;io();assert(!promoted&&!subs&&!frames&&panel_off&&!touch_off);
+ return true;
+}
+#endif
 static bool expiry_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *g) {
- safe();assert(strcmp(name,RISC_PROVIDER_PROMOTION_CAPABILITY));
+ safe();
+ if(!strcmp(name,RISC_PROVIDER_PROMOTION_CAPABILITY)) {
+  fputs("REGRESSION: minute clock painted, then promoted Home after native SD-open refusal\n",stderr);
+  assert(!"A healthy minute wake must return to deep sleep, not Home");
+ }
  const void *api=NULL;
  if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){assert(version==2&&!id);api=&expiry_service;}
  else if(!strcmp(name,RISC_RETAINED_WAKE_CAPABILITY))api=&expiry_wake;
+#ifdef TEST_TIMER_STORAGE_SLEEP
+ else if(!strcmp(name,"storage.volume")){assert(version==1&&id==9);api=&sd;}
+#endif
  else return obtain(name,version,id,g);
  g->api=api;g->slot=++grants;g->generation=1;if(grants>high_water)high_water=grants;return true;
 }
@@ -92,7 +105,15 @@ static bool expiry_submit(void *c,risc_display_frame_v1 f,const risc_display_rec
 }
 static int32_t expiry_deep(void *c,uint32_t duration) {
  (void)c;io();assert(pending&&duration&&duration<=60000&&!subs&&!frames&&dark&&panel_off&&!native_live);
- assert(!touch_off&&!sd_off&&alarm_prepared);entries++;terminal=true;longjmp(entry,1);
+ assert(!touch_off&&alarm_prepared);
+#ifdef TEST_TIMER_STORAGE_SLEEP
+ /* NativeHardware.cpp deepReady uses NativeSdmmc::closed(), not idle().
+  * The delivered loader mounts SD while resolving provider packages. */
+ if(!sd_off){fputs("NATIVE_DEEP_BUSY: mounted SD transport remains open\n",stderr);return RISC_DEEP_SLEEP_BUSY;}
+#else
+ assert(!sd_off);
+#endif
+ entries++;terminal=true;longjmp(entry,1);
 }
 static void save_image(const char *path){FILE *f=fopen(path,"wb");assert(f);fprintf(f,"P4\n800 480\n");assert(fwrite(physical,1,sizeof(physical),f)==sizeof(physical));assert(!fclose(f));
  char record[1024];assert(snprintf(record,sizeof(record),"%s.record",path)>0);f=fopen(record,"wb");assert(f);
@@ -106,6 +127,11 @@ int main(int argc,char **argv) {
  panel.history.extension_tag=RISC_DISPLAY_HISTORY_TAG;panel.history.extension_version=1;panel.history.seed_previous=expiry_seed;
  panel.power_tag=RISC_DISPLAY_POWER_TAG;panel.power_version=1;panel.prepare=panel_prepare;panel.resume=panel_resume;
  power=(x4_power_deep_v1){{1,sizeof(power),NULL,read_key,NULL},X4_POWER_DEEP_TAG,1,expiry_deep};
+#ifdef TEST_TIMER_STORAGE_SLEEP
+ sd.terminal.power.volume.base=(risc_storage_volume_api_v1){.api_version=1,.struct_size=sizeof(sd)};
+ sd.terminal.extension_tag=RISC_STORAGE_POWER_COMMIT_TAG;sd.terminal.extension_version=1;sd.terminal.commit_power_down=legacy_sd;
+ sd.sleep_tag=RISC_STORAGE_SLEEP_TAG;sd.sleep_version=1;sd.prepare_sleep=expiry_sd_prepare;sd.commit_sleep=commit_sd;sd.resume_sleep=resume_sd;
+#endif
  expiry_service.base=(alarm_service_descriptor_v2){.base=alarm_api,.tag=ALARM_SERVICE_DESCRIPTOR_TAG,.descriptor_version=1};
  expiry_service.base.base.api_version=2;expiry_service.base.base.struct_size=sizeof(expiry_service);
  expiry_service.base.base.status=expiry_status;expiry_service.base.base.refresh=expiry_refresh;
@@ -136,7 +162,13 @@ int main(int argc,char **argv) {
  if(setjmp(entry)) {
   assert(entries==1&&terminal&&grants&&!subs&&!frames&&!native_live);
   assert(!promoted&&!promotions&&!kv_reads&&!home_reads&&!home_acquires&&!rtc_reads&&!battery_acquires&&!launches);
-  assert(high_water<=6&&!raw_brightness_writes&&portable_desk_adapter_timer_only());
+  assert(high_water<=
+#ifdef TEST_TIMER_STORAGE_SLEEP
+   7
+#else
+   6
+#endif
+   &&!raw_brightness_writes&&portable_desk_adapter_timer_only());
   bool unchanged=which("valid")||which("other-face");
   if(unchanged) {
    assert(!refreshes&&!steps&&!copies);

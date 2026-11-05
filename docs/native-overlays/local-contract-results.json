@@ -1,0 +1,26 @@
+{
+  "overlay-all-contracts-final.log": {
+    "sha256": "decb9f3b769bcad976c09a965b0982b581cb6739f73d16291bed8df307875ba2",
+    "status": "PASS"
+  },
+  "settings-contracts-final.log": {
+    "sha256": "e13bee786fc87d98000ff5c3c11d3794977b2feeff185fc65029ecc2ffeea716",
+    "status": "PASS"
+  },
+  "wifi-contracts-final.log": {
+    "sha256": "88f3a8b982a0c69efb6fd8b173d405de6c3dc77f5e8b65f4869a40ffcf13445c",
+    "status": "PASS"
+  },
+  "replay-guard-token-tests-final.log": {
+    "sha256": "74ebafd3ce382deef93845fbb513d5105966aeb5bcfa58cfef9e9d25ae5e0e37",
+    "status": "PASS"
+  },
+  "quick-selector-contracts.log": {
+    "sha256": "9feed9fd8e014ea546b952d542baab634c05ed132e07ced239578dd9c09f7798",
+    "status": "PASS"
+  },
+  "pipeline-shell-contracts.log": {
+    "sha256": "6e0db5540aafcfc54358787f7fc554a5a774dbd8d106fafeec5213f7ad7dec42",
+    "status": "PASS"
+  }
+}

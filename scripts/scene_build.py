@@ -1,4 +1,5 @@
 """Small deterministic target-ELF builder for optional scene packages."""
+from native_toolchain import compiler_path as resolve_compiler
 import hashlib
 import json
 import os
@@ -11,8 +12,7 @@ IMPORTS = {'risc_runtime_get_api', 'memcpy', 'memset', 'memcmp', 'memchr', 'strc
 
 
 def compiler_path() -> str:
-    compiler = (os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
-                or str(Path.home()/'.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc'))
+    compiler = resolve_compiler()
     if not Path(compiler).is_file():
         raise FileNotFoundError(f'Xtensa compiler not installed: {compiler}')
     return compiler

@@ -1,12 +1,19 @@
 #include <stdio.h>
+#include "PortablePaperGeometry.h"
 #ifdef ALARM_SERVICE_TAGGED_V2
 #define quick_alarm_output_modes() alarm_output_modes()
+#elif defined(PORTABLE_TIMECARD_NATIVE_UI) && defined(ALARM_SERVICE_SLEEP_RESUME_SUPPORTED)
+/* Canonical API1 appends a resume callback, not an output-mode descriptor.
+ * Legacy API1 requires both outputs; never reinterpret the callback suffix. */
+#define quick_alarm_output_modes() ALARM_MODE_BOTH
 #else
 #define quick_alarm_output_modes() alarm_service_output_modes(alarm_sleep_api())
 #endif
 /* NOVA-7 paper sheet: large two-column tiles, static 1-bit presentation.
  * Uses existing licensed quick-control masks and shared paper text. */
+#ifndef PORTABLE_RESIDENT_SHELL_HOST
 static int qp_x(int x){return x*width()/480;}
+#endif
 #ifdef PORTABLE_PAPER_TRANSITIONS
 static int qp_offset;
 static bool quick_copy_background(void);
@@ -14,10 +21,22 @@ static int qp_y(int y){return (y+qp_offset)*height()/800;}
 #else
 static int qp_y(int y){return y*height()/800;}
 #endif
-static void qp_rect(int x,int y,int w,int h,bool black){fill(qp_x(x),qp_y(y),qp_x(w),h*height()/800,black?0:0xffff);}
+static void qp_rect(int x,int y,int w,int h,bool black){
+ int32_t px,py,pw,ph;int offset=0;
+#ifdef PORTABLE_PAPER_TRANSITIONS
+ offset=qp_offset;
+#endif
+ if(portable_paper_project_axis(x,w,0,(uint32_t)width(),480,&px,&pw)&&
+    portable_paper_project_axis(y,h,offset,(uint32_t)height(),800,&py,&ph))
+  fill(px,py,pw,ph,black?0:0xffff);
+}
 #ifndef PORTABLE_RESIDENT_SHELL_HOST
 static void qp_text(int x,int y,int w,const char *s,bool heading,bool black) {
- pp_text(qp_x(x),qp_y(y),qp_x(w),s,heading?2:1,heading,black);
+ int max_width=qp_x(w);unsigned options=heading?2u:1u;
+ /* Keep complete state labels inside their native slot at narrow paper widths.
+  * Existing glyph height and all reference-size pixels remain unchanged. */
+ if(pp_measure(s,heading)>max_width)options|=PAPER_TEXT_FIT;
+ pp_text(qp_x(x),qp_y(y),max_width,s,options,heading,black);
 }
 #define qp_tile qp_rect
 static void qp_icon(unsigned icon,int x,int y,bool black){
@@ -116,9 +135,17 @@ static void quick_paper_render(const char *time,bool battery_valid,unsigned batt
  qp_tile(32,612,416,64,true);qp_tile(36,616,408,56,false);
  qp_text(74,632,360,"USB SD TRANSFER",false,true);
  qp_text(74,695,360,"SWIPE UP TO CLOSE",false,true);
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_HOME_AUTOMATIC_PREFERENCES)
+ if(!portable_home_settings_available())qp_text(52,726,400,portable_home_settings_notice(),false,true);
+ else
+#endif
  if(quick.ui.error_flags)qp_text(52,726,400,"CHANGE UNCONFIRMED",false,true);
 #else
  qp_rect(32,640,416,3,true);qp_text(74,665,360,"SWIPE UP TO CLOSE",false,true);
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_HOME_AUTOMATIC_PREFERENCES)
+ if(!portable_home_settings_available())qp_text(52,708,400,portable_home_settings_notice(),false,true);
+ else
+#endif
  if(quick.ui.error_flags)qp_text(52,708,400,"CHANGE UNCONFIRMED",false,true);
 #endif
  qp_text(32,756,70,"BATT",false,true);

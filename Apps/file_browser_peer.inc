@@ -1,34 +1,33 @@
 /* Shared Nova/paper peer UI. Commands enqueue work; the ordinary foreground
  * tick owns all BLE, TCP and bounded storage operations. */
 static portable_peer_status fpeer_status;
-static portable_peer_row fpeer_selected;
-static unsigned fpeer_choice,fpeer_page,fpeer_edit_kind;
-static bool fpeer_open_after,fpeer_launch;
+static unsigned fpeer_choice;
+static bool fpeer_launch;
 static uint32_t fpeer_pair_generation,fpeer_pair_number;
 static char fpeer_local_folder[FB_PATH_CAP],fpeer_upload_path[FB_PATH_CAP],fpeer_upload_name[128],fpeer_launch_path[FB_PATH_CAP];
-static const char *const fpeer_actions[]={"Download","Download and open","Rename","Move to path","Copy to path","Delete","Replace with selected local file","Back to folder"};
+#include "file_browser_mount.inc"
 static bool fpeer_close(void){
  if(!fpeer)return true;
- if(!portable_file_browser_services_begin())return false;
+ fbm_unmount();
+ /* The peer owns its internal leases; cancellation must run outside them. */
  portable_peer_stop(fpeer);
 portable_peer_tick(fpeer,fsh_clock());
 portable_peer_status_get(fpeer,&fpeer_status);
  if(fpeer_status.state==PEER_RETAINED){fsh_retain();
 return false;
 }
- if(!portable_file_browser_services_end())return false;
- if(fpeer_status.state!=PEER_OFF||fsh_service_ending)return false;
+ if(fpeer_status.state!=PEER_OFF)return false;
  if(!portable_peer_destroy(fpeer)){fsh_retain();
 return false;
 }fpeer=NULL;
 return true;
 }
 static void fpeer_open(void){
+ if(fsh_phase!=FSH_OFF){fbx_notice("Stop the current sharing session before connecting");return;}
  if(!portable_file_browser_safe()||!fb_ready())return;
  fpeer_mode=true;
-fpeer_editing=false;
-fpeer_page=fpeer_choice=0;
-fpeer_open_after=fpeer_launch=false;
+fpeer_choice=0;
+fpeer_launch=false;
  fpeer_pair_generation=0;
 memset(&fpeer_status,0,sizeof(fpeer_status));
  strcpy(fpeer_local_folder,fb_path);
@@ -56,175 +55,61 @@ return;
 }
   fsh_phase=FSH_ACTIVE;
  }
- if(!portable_file_browser_services_begin())return;
+ /* Do not lease over JOIN/poll/cancel. The peer scopes its own I/O. */
  portable_peer_tick(fpeer,now);
 portable_peer_status next;
 portable_peer_status_get(fpeer,&next);
  if(next.state==PEER_RETAINED){fsh_retain();
 return;
 }
- if(!portable_file_browser_services_end())return;
  if(memcmp(&next,&fpeer_status,sizeof(next))){
   if(next.state!=fpeer_status.state)fpeer_choice=0;
   fpeer_status=next;
 fb_dirty=true;
  }
- if(next.state==PEER_READY&&fpeer_open_after){
-  fpeer_open_after=false;
-  if(next.published_path[0]&&strlen(next.published_path)<sizeof(fpeer_launch_path)){
-   strcpy(fpeer_launch_path,next.published_path);
-fpeer_launch=true;
-fsh_phase=FSH_STOPPING;
-  }
- }
+ fbm_tick();
  if(next.state==PEER_OFF){fsh_error(next.message[0]?next.message:"Peer session ended");
 fsh_phase=FSH_STOPPING;
 }
 }
 static void fpeer_after_close(void){
- if(!fpeer_launch||fsh_phase!=FSH_OFF)return;
+ if((!fpeer_launch&&!fbm_dispatch_pending)||fsh_phase!=FSH_OFF)return;
+#ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
+ if(fbm_dispatch_pending){fbm_dispatch_pending=false;fpeer_mode=false;fbx_dispatch(0);return;}
+#endif
 fpeer_launch=false;
 fpeer_mode=false;
+ if(fb_storage_index&&!fbx_swap_local()){fb_message("Primary storage unavailable after download");return;}
  strcpy(fb_file_path,fpeer_launch_path);
 memset(&fb_selected,0,sizeof(fb_selected));
  const char*name=strrchr(fb_file_path,'/');
-snprintf(fb_selected.name,sizeof(fb_selected.name),"%s",name?name+1:fb_file_path);
+snprintf(fb_selected.name,sizeof(fb_selected.name),"%.*s",(int)sizeof(fb_selected.name)-1,name?name+1:fb_file_path);
  fb_mode=FB_ACTIONS;
 fb_choice=0;
 fb_dirty=true;
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
- fbx_open(false);
+ fbx_open(fbm_choose_handler);
  /* Existing declared file.open broker, including ELF rejection. */
 #endif
 }
-static unsigned fpeer_count(void){if(fpeer_status.state==PEER_PAIRING)return 3;
-if(fpeer_status.state==PEER_DISCOVERING)return fpeer_status.count+1;
-if(fpeer_status.state!=PEER_READY)return 1;
-if(fpeer_page==2||fpeer_page==3)return 2;
-if(fpeer_page==1)return 8;
-return fpeer_status.count+5;
-}
-static void fpeer_move(int direction){unsigned count=fpeer_count();
-if(direction<0)fpeer_choice=fpeer_choice?fpeer_choice-1:count-1;
-else fpeer_choice=(fpeer_choice+1)%count;
-fb_dirty=true;
-}
+/* Connection setup ends at mount. All file rows and operations use the normal
+ * browser controller and its existing RGB/paper presentation. */
+static unsigned fpeer_count(void){return fpeer_status.state==PEER_PAIRING?3:fpeer_status.state==PEER_DISCOVERING?fpeer_status.count+1:1;}
+static void fpeer_move(int direction){unsigned count=fpeer_count();fpeer_choice=(fpeer_choice+count+(unsigned)direction)%count;fb_dirty=true;}
 static const char *fpeer_label(unsigned i,char*out,size_t n){
  if(fpeer_status.state==PEER_PAIRING)return i==0?"Reject":i==1?"Match":"Stop";
- if(fpeer_status.state==PEER_DISCOVERING){portable_peer_row row;
-if(i<fpeer_status.count&&portable_peer_row_get(fpeer,i,&row)){snprintf(out,n,"%s",row.name[0]?row.name:"RiscRTE Files");
-return out;
-}return "Stop";
-}
- if(fpeer_status.state!=PEER_READY)return fsh_phase==FSH_OFF?"Reconnect":"Stop";
- if(fpeer_page==3)return i?"Replace existing file":"Cancel replacement";
- if(fpeer_page==2)return i?"Delete permanently":"Cancel deletion";
- if(fpeer_page==1)return fpeer_actions[i];
- portable_peer_row row;
-if(i<fpeer_status.count&&portable_peer_row_get(fpeer,i,&row)){snprintf(out,n,"%s%s",row.directory?"/ ":"",row.name);
-return out;
-}
- unsigned action=i-fpeer_status.count;
-return action==0?"Parent folder":action==1?"Upload selected local file":action==2?"New folder":action==3?"Folder actions":"Stop";
-}
-static void fpeer_edit(unsigned kind,const char*initial){fpeer_edit_kind=kind;
-snprintf(fb_editor,sizeof(fb_editor),"%s",initial);
-fpeer_editing=true;
-fb_key_page=PWK_INITIAL_PAGE;
-fbp_key_page=0;
-fb_choice=0;
-fb_mode=FB_RENAME;
-fb_message(kind==3||kind==4?"Enter absolute remote destination":"Enter a name");
-}
-static void fpeer_edit_done(void){
- char path[513];
-bool okay=false;
- if(fpeer_edit_kind==3||fpeer_edit_kind==4){if(fb_editor[0]!='/'){fb_message("Use an absolute remote path");
-return;
-}strcpy(path,fb_editor);
-}
- else if(!fb_name_valid(fb_editor,sizeof(fb_editor))||!fb_join(fpeer_status.path,fb_editor,path,sizeof(path))){fb_message("Invalid name or path");
-return;
-}
- if(fpeer_edit_kind==0)okay=portable_peer_mutate(fpeer,"MKCOL",path,NULL);
- else okay=portable_peer_mutate(fpeer,fpeer_edit_kind==4?"COPY":"MOVE",fpeer_selected.path,path);
- if(!okay){fb_message("Peer is busy or the session ended");
-return;
-}
- fpeer_editing=false;
-fb_mode=FB_SHARING;
-fpeer_page=fpeer_choice=0;
-fb_dirty=true;
+ if(fpeer_status.state==PEER_DISCOVERING){portable_peer_row row;if(i<fpeer_status.count&&portable_peer_row_get(fpeer,i,&row)){snprintf(out,n,"%s",row.name[0]?row.name:"RiscRTE Files");return out;}}
+ return fsh_phase==FSH_OFF?"Reconnect":"Stop";
 }
 static void fpeer_action(void){
- if(fsh_phase==FSH_OFF){fpeer_open();
-return;
-}
+ if(fsh_phase==FSH_OFF){fpeer_open();return;}
  if(fpeer_status.state==PEER_PAIRING){
   if(fpeer_choice<2){if(!portable_file_browser_setup_frame_ready()||fpeer_pair_generation!=fpeer_status.pairing_generation||fpeer_pair_number!=fpeer_status.pairing_number)return;
-   (void)portable_peer_confirm(fpeer,fpeer_pair_generation,fpeer_pair_number,fpeer_choice==1);
-fpeer_pair_generation=0;
+   (void)portable_peer_confirm(fpeer,fpeer_pair_generation,fpeer_pair_number,fpeer_choice==1);fpeer_pair_generation=0;
   }else fsh_phase=FSH_STOPPING;
  }else if(fpeer_status.state==PEER_DISCOVERING){portable_peer_row row;
-if(fpeer_choice<fpeer_status.count&&portable_peer_row_get(fpeer,fpeer_choice,&row))(void)portable_peer_select(fpeer,row.peer_id);
-else fsh_phase=FSH_STOPPING;
-}
- else if(fpeer_status.state!=PEER_READY)fsh_phase=FSH_STOPPING;
- else if(fpeer_page==3){if(fpeer_choice){if(!fpeer_upload_path[0])fsh_error("Select a local replacement file first");
-else (void)portable_peer_replace(fpeer,fb_volume,fpeer_upload_path,fpeer_selected.path);
-}fpeer_page=fpeer_choice=0;
-}
- else if(fpeer_page==2){if(fpeer_choice)(void)portable_peer_mutate(fpeer,"DELETE",fpeer_selected.path,NULL);
-fpeer_page=fpeer_choice=0;
-}
- else if(fpeer_page==1){
-  char destination[FB_PATH_CAP];
-switch(fpeer_choice){
-   case 0:case 1:
-    if(fpeer_selected.directory){fsh_error("Open the folder to select a file");
-break;
-}
-    if(fpeer_choice==1&&fb_storage_index){fsh_error("Select primary storage before download and open");
-break;
-}
-    if(fb_join(fpeer_local_folder,fpeer_selected.name,destination,sizeof(destination))&&portable_peer_download(fpeer,fpeer_selected.path,fb_volume,destination)){fpeer_open_after=fpeer_choice==1;
-fpeer_page=fpeer_choice=0;
-}else fsh_error("Download unavailable for this local volume");
-break;
-   case 2:fpeer_edit(2,fpeer_selected.name);
-break;
-   case 3:fpeer_edit(3,fpeer_selected.path);
-break;
-   case 4:fpeer_edit(4,fpeer_selected.path);
-break;
-   case 6:fpeer_page=3;
-fpeer_choice=0;
-break;
-   case 5:fpeer_page=2;
-fpeer_choice=0;
-break;
-   default:fpeer_page=fpeer_choice=0;
-(void)portable_peer_list(fpeer,fpeer_status.path);
-break;
-  }
- }else if(fpeer_choice<fpeer_status.count){
-  if(portable_peer_row_get(fpeer,fpeer_choice,&fpeer_selected)){if(fpeer_selected.directory)(void)portable_peer_list(fpeer,fpeer_selected.path);
-else {fpeer_page=1;
-fpeer_choice=0;
-}}
- }else{unsigned action=fpeer_choice-fpeer_status.count;
-char path[513];
-  if(action==0){strcpy(path,fpeer_status.path);
-(void)fb_parent(path);
-(void)portable_peer_list(fpeer,path);
-}
-  else if(action==1){if(!fpeer_upload_path[0])fsh_error("Select a local file before opening Nearby files");
-else if(fb_join(fpeer_status.path,fpeer_upload_name,path,sizeof(path)))(void)portable_peer_upload(fpeer,fb_volume,fpeer_upload_path,path);
-}
-  else if(action==2)fpeer_edit(0,"");
-else if(action==3){if(!strcmp(fpeer_status.path,"/")){fsh_error("The shared root cannot be renamed or deleted");}else{memset(&fpeer_selected,0,sizeof(fpeer_selected));fpeer_selected.directory=true;strcpy(fpeer_selected.path,fpeer_status.path);const char*n=strrchr(fpeer_status.path,'/');snprintf(fpeer_selected.name,sizeof(fpeer_selected.name),"%s",n?n+1:fpeer_status.path);fpeer_page=1;fpeer_choice=0;}}
-else fsh_phase=FSH_STOPPING;
- }
+  if(fpeer_choice<fpeer_status.count&&portable_peer_row_get(fpeer,fpeer_choice,&row))(void)portable_peer_select(fpeer,row.peer_id);else fsh_phase=FSH_STOPPING;
+ }else fsh_phase=FSH_STOPPING;
  fb_dirty=true;
 }
 static void fpeer_draw(void){
@@ -233,7 +118,7 @@ static void fpeer_draw(void){
 bool pairing=frame.state==PEER_PAIRING;
 char title[64],label[160],detail[96];
  snprintf(title,sizeof(title),pairing?"COMPARE %06u":"NEARBY FILES",frame.pairing_number);
- snprintf(detail,sizeof(detail),"%s",pairing?"Compare both numbers. Match only if identical.":fsh_message[0]?fsh_message:frame.message[0]?frame.message:frame.state==PEER_DISCOVERING?"Select the device sharing its files":frame.state==PEER_READY?frame.path:"Connecting; Back cancels");
+ snprintf(detail,sizeof(detail),"%.*s",(int)sizeof(detail)-1,pairing?"Compare both numbers. Match only if identical.":fsh_message[0]?fsh_message:frame.message[0]?frame.message:frame.state==PEER_DISCOVERING?(frame.count?"Select the device sharing its files":"Waiting for nearby Files; Back cancels"):frame.state==PEER_READY?frame.path:"Connecting; Back cancels");
  unsigned count=fpeer_count();
 if(fpeer_choice>=count)fpeer_choice=0;
 unsigned first=fpeer_choice/2*2;

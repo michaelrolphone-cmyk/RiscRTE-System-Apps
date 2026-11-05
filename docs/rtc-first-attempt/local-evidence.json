@@ -1,0 +1,50 @@
+{
+  "hardware_tested": false,
+  "target_instructions_executed": false,
+  "shipping_settings_elf_reproduced": false,
+  "source_sha256": {
+    "provider_fixture": "9eb406b15e7409d3a12ade6cf532e4536031da946934676b147d4edb9f646bc2",
+    "alarm_fixture": "158564a2779ade7a83dec7ab953bfd59ab6a2fba3c11dce753e15d8915239bd2",
+    "settings_fixture": "1cd3b00663200ccc31652629479a86c4237a64c7a0c19a4a3a9d5eb39f9a3598",
+    "settings": "16b8b615e684db558fc10cb7085021b7073cf87d3218d1ef195185335461afcd",
+    "alarm": "a9c84351b828dbe3d2b2fe84e7e7a511cb59cf8ccb543d87087ca5f1e4580c0e",
+    "controller": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+    "pcf8563": "b8d91acc9ae532eb9aea688ee347bc42db5ae7353a4c4b392e9dc6710c8b0eec",
+    "pcf85063": "54bd40af10f219ab5ec134b3f6e78db1a4914a130232a170e78ce9d20bb95edd"
+  },
+  "system_revision": "cb483470887b5198e2f3cd2457586ef6622142a9",
+  "runtime_revision": "659d859acb122640ef4003bb8d7099501d4381be",
+  "utilities_revision": "fc9f93402050f020a3422ee889620b2414c7ad5d",
+  "twatch_revision": "aa91c1cd7eb664d9a5bd78df05cab53b2c683f18",
+  "waveshare_revision": "b5931645853b6d7b5d74211b1a0b397cc80a1331",
+  "result": "passed",
+  "case_count": 256,
+  "profile_counts": {
+    "pcf85063-normal-raw-ui": 4,
+    "pcf85063-normal-raw-alarm": 28,
+    "pcf85063-normal-denver-ui": 4,
+    "pcf85063-normal-denver-alarm": 28,
+    "pcf85063-sanitized-raw-ui": 4,
+    "pcf85063-sanitized-raw-alarm": 28,
+    "pcf85063-sanitized-denver-ui": 4,
+    "pcf85063-sanitized-denver-alarm": 28,
+    "pcf8563-normal-raw-ui": 4,
+    "pcf8563-normal-raw-alarm": 28,
+    "pcf8563-normal-denver-ui": 4,
+    "pcf8563-normal-denver-alarm": 28,
+    "pcf8563-sanitized-raw-ui": 4,
+    "pcf8563-sanitized-raw-alarm": 28,
+    "pcf8563-sanitized-denver-ui": 4,
+    "pcf8563-sanitized-denver-alarm": 28
+  },
+  "aggregate_python_tests": {
+    "passed": 129,
+    "failures": 0
+  },
+  "existing_settings_clock_change": {
+    "normal": "passed",
+    "asan_ubsan": "passed"
+  },
+  "main_base": "769cde61ae0c69b602843ce293985deb2c4fc187",
+  "main_source_and_test_blobs_equal": true
+}

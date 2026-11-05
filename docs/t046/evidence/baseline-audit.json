@@ -1,0 +1,274 @@
+{
+  "watch": {
+    "baseline_sha256": "5426b4da443c243f11c80ec839d4d560497a6b9616bc78fe1544d7dc63cf3e9a",
+    "geometry": [
+      240,
+      240
+    ],
+    "callers": [
+      {
+        "id": "audio_spectrum",
+        "version": "0.5.6",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "ble_scanner",
+        "version": "0.2.4",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "contexts",
+        "version": "0.4.5",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "file_browser",
+        "version": "1.5.38",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "lists",
+        "version": "0.1.2",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "lora_messages",
+        "version": "0.1.16",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "points_in_time",
+        "version": "0.5.3",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "timecard",
+        "version": "0.2.14",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "waterfall",
+        "version": "0.3.5",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "wifi_settings",
+        "version": "1.1.30",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      }
+    ],
+    "native_unchanged": true,
+    "changed_files": [
+      "cohort.json",
+      "text-input/driver.elf",
+      "text-input/manifest.json",
+      "ui-scene/driver.elf",
+      "ui-scene/manifest.json"
+    ]
+  },
+  "wave": {
+    "baseline_sha256": "b67a3d50dfbd55f5177e43035452f14d2faa08fe0743fbbaa5921e0c1a31b276",
+    "geometry": [
+      410,
+      502
+    ],
+    "callers": [
+      {
+        "id": "audio_spectrum",
+        "version": "0.5.7",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "ble_scanner",
+        "version": "0.2.4",
+        "shared_text_required": false,
+        "shared_text_granted": false,
+        "source": "internal"
+      },
+      {
+        "id": "contexts",
+        "version": "0.4.5",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "file_browser",
+        "version": "1.5.38",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "lists",
+        "version": "0.1.2",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "lora_messages",
+        "version": "0.1.16",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": {
+          "path": "Apps/lora_messages/lora_messages.elf",
+          "volume_instance": 12
+        }
+      },
+      {
+        "id": "points_in_time",
+        "version": "0.5.3",
+        "shared_text_required": false,
+        "shared_text_granted": false,
+        "source": "internal"
+      },
+      {
+        "id": "timecard",
+        "version": "0.2.14",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "waterfall",
+        "version": "0.3.6",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "wifi_settings",
+        "version": "1.1.30",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      }
+    ],
+    "native_unchanged": true,
+    "changed_files": [
+      "ble_scanner.json",
+      "boot.json",
+      "cohort.json",
+      "points_in_time.json",
+      "text-input/driver.elf",
+      "text-input/manifest.json",
+      "ui-scene/driver.elf",
+      "ui-scene/manifest.json"
+    ]
+  },
+  "x4": {
+    "baseline_sha256": "fb89e6d1457968f81e78dfb6cede94d8277ce47d4c9fb7bcbc40c0597a722251",
+    "geometry": [
+      480,
+      800
+    ],
+    "callers": [
+      {
+        "id": "file_browser",
+        "version": "1.5.38",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "ble_scanner",
+        "version": "0.2.26",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": {
+          "path": "Apps/ble_scanner/image-2fd57fe781737b6203f7d35479152825e8c636705e0284594007c0f260c2754c/ble_scanner.elf",
+          "volume_instance": 9
+        }
+      },
+      {
+        "id": "points_in_time",
+        "version": "0.6.18",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": {
+          "path": "Apps/points_in_time/image-cbc08f8c5846967b7c9cdc5cae4f832e2a0ec7c8a3534d565eebef804ae92a2d/points_in_time.elf",
+          "volume_instance": 9
+        }
+      },
+      {
+        "id": "timecard",
+        "version": "0.2.17",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": {
+          "path": "Apps/timecard/image-9a03a9a97bdcfc90c50f5ef6c5b54e2b0d5e8d810ff2d58ed3d67308e3c17b53/timecard.elf",
+          "volume_instance": 9
+        }
+      },
+      {
+        "id": "wifi_settings",
+        "version": "1.1.30",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": "internal"
+      },
+      {
+        "id": "waterfall",
+        "version": "0.3.5",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": {
+          "path": "Apps/waterfall/image-f670dc7ec2194a80a75057d818f87314d76721f3b0e811af4994568ef0618ac1/waterfall.elf",
+          "volume_instance": 9
+        }
+      },
+      {
+        "id": "contexts",
+        "version": "0.4.5",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": {
+          "path": "Apps/contexts/image-60890de25747a929841df28346a21214b4509934261e2a1e21e0f008d37ce7a9/contexts.elf",
+          "volume_instance": 9
+        }
+      },
+      {
+        "id": "lists",
+        "version": "0.1.2",
+        "shared_text_required": true,
+        "shared_text_granted": true,
+        "source": {
+          "path": "Apps/lists/image-8bdbc1a3c500a43bb59a115736b0e263d433f840195e5da5b34dd122ab87ba4c/lists.elf",
+          "volume_instance": 9
+        }
+      }
+    ],
+    "native_unchanged": true,
+    "changed_files": [
+      "boot.json",
+      "cohort.json",
+      "ui-scene/driver.elf",
+      "ui-scene/manifest.json",
+      "ui-text/driver.elf",
+      "ui-text/manifest.json"
+    ]
+  }
+}

@@ -5,19 +5,33 @@
 #include "RiscSceneResidentV1.h"
 #include "RiscTextEntryV1.h"
 #include "PortableWifiProfiles.h"
+#include "PortableWifiAtomic.h"
+#include "PortablePreferenceAtomic.h"
+#include "PortableSettingsAvailability.h"
 #include "PortableRadioPolicy.h"
 #include "WifiApi.h"
 #include <string.h>
 #include <stdio.h>
 #include <limits.h>
 
-enum { MAIN, SAVED, DETAIL, ADD, JOINING, FAILURE, FORGET, NOTICE };
+enum { MAIN, SAVED, DETAIL, ADD, JOINING, FAILURE, FORGET, NOTICE, STORAGE };
 enum { BACK=1, TAB, TOGGLE, SCAN, SELECT_CURRENT, CONNECT, DISCONNECT, PASSWORD,
        ADD_NETWORK, EDIT_SSID, EDIT_PASSWORD, SECURITY, SAVE_CONNECT, CANCEL,
        FORGET_ASK, FORGET_YES, SAVED_PREV, SAVED_NEXT, RETRY, INFORMATION,
+       SAVE_DRAFT, STORAGE_RELOAD, KEEP_DRAFT, DISCARD_RELOAD, DISCARD_EXIT,
        SELECT_SCAN=100, SELECT_SAVED=200 };
-enum { DB_NONE, DB_LIST, DB_FIND, DB_SAVE, DB_FORGET };
+enum { DB_NONE, DB_LIST, DB_FIND, DB_SAVE, DB_FORGET, DB_PREPARE_CONNECT, DB_PREPARE_FORGET };
 enum { AFTER_DETAIL, AFTER_CONNECT };
+typedef struct {
+    risc_runtime_capability_v1 grant;
+    PortableSettingsAvailability availability;
+    const risc_key_value_atomic_v1 *raw;
+    risc_key_value_atomic_v1 checked;
+    risc_key_value_v1 view;
+    uint64_t loaded_generation,read_revision;
+    uint32_t namespace_id;
+    bool loaded;
+} wm_store;
 typedef struct {
     const risc_runtime_api_v1 *rt;
     const risc_scene_api_v1 *scene;
@@ -26,9 +40,12 @@ typedef struct {
     const risc_text_entry_api_v1 *text;
     const wifi_async_v1 *radio;
     const risc_key_value_v1 *store,*policy;
-    risc_key_value_v1 checked_store,checked_policy;
-    const risc_key_value_v1 *raw_store,*raw_policy;
-    risc_runtime_capability_v1 grants[5];unsigned acquired;
+    wm_store network_storage,radio_storage;
+    portable_wifi_atomic atomic_edit;
+    portable_preference_atomic policy_edit;
+    bool atomic_ready,draft_dirty,storage_cancelling,storage_leave;
+    uint8_t policy_proposed;
+    risc_runtime_capability_v1 grants[3];unsigned acquired;
     risc_scene_resident_v1 resident;
     risc_components_document_v1 doc,next_doc;
     risc_scene_telemetry_v1 plot,last_plot;
@@ -57,15 +74,6 @@ static void copy_text(char *to,size_t size,const char *from){size_t n=0;if(from)
 static void wipe(void *p,size_t n){volatile unsigned char *b=p;while(n--)*b++=0;}
 static bool live(wifi_manager *a){if(a->retained)return false;if(!risc_runtime_get_api(1)){a->retained=true;return false;}return true;}
 static bool retain(wifi_manager *a){if(!a->retained&&live(a))a->rt->retain_invocation();a->retained=true;return false;}
-/* Keep every callback in the reused profile codec inside the live invocation. */
-static int32_t checked_get(void *ctx,const char *key,void *data,uint32_t cap,uint32_t *size){
-    const risc_key_value_v1 *raw=ctx;if(!live(&wm)){if(size)*size=0;return RISC_KEY_VALUE_IO;}
-    int rc=raw->get(raw->context,key,data,cap,size);return live(&wm)?rc:RISC_KEY_VALUE_IO;
-}
-static int32_t checked_put(void *ctx,const char *key,const void *data,uint32_t size){
-    const risc_key_value_v1 *raw=ctx;if(!live(&wm))return RISC_KEY_VALUE_IO;
-    int rc=raw->put(raw->context,key,data,size);return live(&wm)?rc:RISC_KEY_VALUE_IO;
-}
 static bool scene_result(wifi_manager *a,int rc){return live(a)&&rc==RISC_SCENE_OK?true:retain(a);}
 static void route(wifi_manager *a,unsigned page){if(a->screen!=page){a->screen=page;++a->screen_key;}a->dirty=true;}
 static void notice(wifi_manager *a,const char *s){copy_text(a->message,sizeof(a->message),s);a->parent=a->screen;route(a,NOTICE);}
@@ -98,13 +106,17 @@ static bool stop_radio(wifi_manager *a){
     if(rc!=RISC_RADIO_PENDING&&rc!=RISC_RADIO_AGAIN&&rc!=RISC_RADIO_QUIESCENT)return retain(a);
     a->stopping=true;a->link_up=false;a->scanning=false;a->dirty=true;return false;
 }
+static void storage_connect(wifi_manager *a);
 static void schedule(wifi_manager *a,unsigned kind){
+    if(kind==RISC_RADIO_REQUEST_JOIN&&!a->atomic_ready){storage_connect(a);return;}
+    if(kind==RISC_RADIO_REQUEST_JOIN&&a->atomic_edit.operation!=PORTABLE_WIFI_ATOMIC_SAVE){notice(a,"Finish the saved-network action first");return;}
     if(!a->enabled){notice(a,"Turn on Wi-Fi before scanning or joining.");return;}
     if(!a->radio){notice(a,"The asynchronous Wi-Fi provider is unavailable.");return;}
     a->queued_kind=kind;if(a->operation)(void)stop_radio(a);
     if(kind==RISC_RADIO_REQUEST_JOIN){a->save_on_connect=true;route(a,JOINING);}else{a->scanning=true;route(a,MAIN);}
 }
 static void open_editor(wifi_manager *a,unsigned field){
+    if(a->atomic_ready){portable_wifi_atomic_clear(&a->atomic_edit);a->atomic_ready=false;a->save_on_connect=false;}
     if(!a->text||(field&& !risc_text_entry_masked(a->text))){notice(a,"Shared password keyboard unavailable. Update text-input provider.");return;}
     a->editor_field=field;a->editor_return=a->screen;a->keyboard_pending=true;a->dirty=true;
 }
@@ -117,42 +129,7 @@ static void connect_selected(wifi_manager *a){
     }
     if(strlen(a->draft.password)<8)open_editor(a,1);else schedule(a,RISC_RADIO_REQUEST_JOIN);
 }
-static void db_step(wifi_manager *a){
-    if(!a->db_job)return;
-    if(!a->store){a->db_job=DB_NONE;a->db_fault=true;toast(a,"Saved-network storage unavailable");return;}
-    if(!storage_begin(a))return;unsigned job=a->db_job;int rc=0;bool completed=false;
-    portable_wifi_credentials value;memset(&value,0,sizeof(value));
-    if(job==DB_LIST){
-        if(!a->db_count){rc=portable_wifi_profile_count(a->store,&a->db_count);}
-        else if(a->db_next<a->db_count){uint32_t slot=a->db_next;
-            rc=portable_wifi_profile_load(a->store,slot,&value);
-            if(rc!=PORTABLE_WIFI_PROFILE_AGAIN){a->db_next++;
-                if(!rc&&slot>=a->saved_base&&a->saved_rows<8){unsigned i=a->saved_rows++;a->saved_slots[i]=slot;copy_text(a->saved_names[i],33,value.ssid);}
-                if(rc==PORTABLE_WIFI_CREDENTIALS_EMPTY)rc=0;
-            }
-        }
-        if(a->db_count&&a->db_next>=a->db_count)completed=true;
-    }else if(job==DB_FIND){
-        rc=portable_wifi_profile_search_step(a->store,&a->search);
-        if(rc!=PORTABLE_WIFI_PROFILE_AGAIN){
-            if(!rc||rc==PORTABLE_WIFI_CREDENTIALS_EMPTY){
-                a->selected_slot=a->search.index;
-                if(!rc){rc=portable_wifi_profile_load(a->store,a->selected_slot,&value);
-                    if(!rc){if(a->after_find==AFTER_DETAIL)a->draft=value;a->selected_saved=true;if(a->selected.rssi==-127&&!value.password[0])a->selected.auth=0;}}
-                else rc=0;
-            }
-            if(rc!=PORTABLE_WIFI_PROFILE_AGAIN)completed=true;
-        }
-    }else if(job==DB_SAVE){rc=portable_wifi_profile_save(a->store,a->selected_slot,&a->draft);completed=rc!=PORTABLE_WIFI_PROFILE_AGAIN;}
-    else if(job==DB_FORGET){rc=portable_wifi_profile_forget(a->store,a->selected_slot);if(rc==PORTABLE_WIFI_CREDENTIALS_FORGOTTEN||rc==PORTABLE_WIFI_CREDENTIALS_CLEANUP_REMANENCE)rc=0;completed=rc!=PORTABLE_WIFI_PROFILE_AGAIN;}
-    wipe(&value,sizeof(value));if(!live(a)||!storage_end(a))return;
-    if(rc==PORTABLE_WIFI_PROFILE_AGAIN)return;
-    if(rc){a->db_job=DB_NONE;a->db_fault=true;toast(a,"Storage failed; saved data not replaced");return;}
-    if(!completed)return;a->db_job=DB_NONE;a->dirty=true;
-    if(job==DB_FIND&&a->after_find==AFTER_CONNECT)connect_selected(a);
-    else if(job==DB_SAVE){wipe(a->draft.password,sizeof(a->draft.password));a->selected_saved=true;toast(a,"Network saved");}
-    else if(job==DB_FORGET){wipe(&a->draft,sizeof(a->draft));a->selected_saved=false;route(a,SAVED);list_start(a);toast(a,"Network forgotten");}
-}
+#include "storage.inc"
 static bool scan_valid(const garden_radio_scan_result_v1 *s){
     if(s->struct_size!=sizeof(*s)||s->count>GARDEN_RADIO_SCAN_MAX||s->state>GARDEN_RADIO_SCAN_FAILED||s->reserved)return false;
     for(unsigned i=0;i<s->count;i++){const garden_radio_scan_entry_v1 *e=&s->entries[i];if(!memchr(e->ssid,0,sizeof(e->ssid))||e->reserved||e->channel>14||(e->auth>5&&e->auth!=255))return false;}return true;
@@ -161,6 +138,12 @@ static void radio_step(wifi_manager *a){
     if(!a->radio||!live(a))return;
     if(!a->operation&&a->queued_kind){
         if(a->exit_requested||a->shared_reason||!a->enabled){a->queued_kind=0;return;}
+        unsigned policy=policy_load(a);if(!live(a))return;
+        if(policy==PORTABLE_RADIO_BUSY)return;
+        if(policy>PORTABLE_RADIO_DEFAULT||!(a->radio_flags&PORTABLE_RADIO_WIFI)){
+            a->queued_kind=0;a->enabled=false;a->save_on_connect=false;
+            (void)storage_cancel(a);notice(a,"Wi-Fi radio policy is off or unavailable");return;
+        }
         risc_radio_request_v1 req={.struct_size=sizeof(req),.kind=a->queued_kind};
         if(req.kind==RISC_RADIO_REQUEST_JOIN){copy_text(req.ssid,sizeof(req.ssid),a->draft.ssid);copy_text(req.password,sizeof(req.password),a->draft.password);}
         uint32_t token=0;int rc=a->radio->begin(a->radio->base.context,&req,&token);wipe(&req,sizeof(req));
@@ -194,18 +177,19 @@ static void radio_step(wifi_manager *a){
     }
 }
 static void select_network(wifi_manager *a,const garden_radio_scan_entry_v1 *entry){
-    a->selected=*entry;wipe(&a->draft,sizeof(a->draft));copy_text(a->draft.ssid,sizeof(a->draft.ssid),entry->ssid);
+    a->selected=*entry;wipe(&a->draft,sizeof(a->draft));a->draft_dirty=true;copy_text(a->draft.ssid,sizeof(a->draft.ssid),entry->ssid);
     a->selected_live=a->link_up&&a->connected_known&&!strcmp(entry->ssid,a->connected.ssid);
     a->parent=a->screen;route(a,DETAIL);find_start(a,AFTER_DETAIL);
 }
 static void action(wifi_manager *a,unsigned intent,int value){
     if(a->upgrade){a->exit_requested=true;return;}
+    if(!storage_action(a,intent))return;
     if(intent>=SELECT_SCAN&&intent<SELECT_SCAN+GARDEN_RADIO_SCAN_MAX){unsigned i=intent-SELECT_SCAN;if(i<a->scan.count)select_network(a,&a->scan.entries[i]);return;}
     if(intent>=SELECT_SAVED&&intent<SELECT_SAVED+8){unsigned i=intent-SELECT_SAVED;if(i<a->saved_rows){garden_radio_scan_entry_v1 e={.auth=GARDEN_RADIO_AUTH_WPA2_PSK,.rssi=-127};copy_text(e.ssid,sizeof(e.ssid),a->saved_names[i]);for(unsigned j=0;j<a->scan.count;j++)if(!strcmp(a->scan.entries[j].ssid,e.ssid)){e=a->scan.entries[j];break;}select_network(a,&e);}return;}
     switch(intent){
     case BACK:if(a->screen==JOINING){a->queued_kind=0;a->save_on_connect=false;(void)stop_radio(a);route(a,MAIN);}else if(a->screen==MAIN||a->screen==SAVED)a->exit_requested=true;else if(a->screen==FORGET)route(a,DETAIL);else route(a,MAIN);break;
     case TAB:route(a,value?SAVED:MAIN);if(value){a->saved_base=0;list_start(a);}break;
-    case TOGGLE:a->radio_flags^=PORTABLE_RADIO_WIFI;if(a->radio_flags&PORTABLE_RADIO_WIFI)a->radio_flags&=(uint8_t)~PORTABLE_RADIO_AIRPLANE;a->policy_dirty=true;break;
+    case TOGGLE:policy_toggle(a);break;
     case SCAN:schedule(a,RISC_RADIO_REQUEST_SCAN);break;
     case SELECT_CURRENT:if(a->link_up)select_network(a,&a->connected);break;
     case CONNECT:connect_selected(a);break;
@@ -213,13 +197,19 @@ static void action(wifi_manager *a,unsigned intent,int value){
     case DISCONNECT:a->queued_kind=0;(void)stop_radio(a);route(a,MAIN);break;
     case CANCEL:a->queued_kind=0;a->save_on_connect=false;(void)stop_radio(a);route(a,MAIN);break;
     case RETRY:connect_selected(a);break;
-    case ADD_NETWORK:wipe(&a->draft,sizeof(a->draft));memset(&a->selected,0,sizeof(a->selected));a->selected.auth=2;a->selected.rssi=-127;a->security=1;a->selected_saved=false;a->selected_slot=UINT32_MAX;a->db_job=DB_NONE;route(a,ADD);break;
+    case ADD_NETWORK:wipe(&a->draft,sizeof(a->draft));a->draft_dirty=false;memset(&a->selected,0,sizeof(a->selected));a->selected.auth=2;a->selected.rssi=-127;a->security=1;a->selected_saved=false;a->selected_slot=UINT32_MAX;a->db_job=DB_NONE;route(a,ADD);break;
     case EDIT_SSID:open_editor(a,0);break;
     case EDIT_PASSWORD:open_editor(a,2);break;
-    case SECURITY:a->security=(unsigned)value;a->selected.auth=value==0?0:value==2?4:2;if(!value)wipe(a->draft.password,sizeof(a->draft.password));a->dirty=true;break;
+    case SECURITY:a->draft_dirty=true;a->security=(unsigned)value;a->selected.auth=value==0?0:value==2?4:2;if(!value)wipe(a->draft.password,sizeof(a->draft.password));a->dirty=true;break;
     case SAVE_CONNECT:if(portable_wifi_credentials_validate(&a->draft)){copy_text(a->selected.ssid,sizeof(a->selected.ssid),a->draft.ssid);find_start(a,AFTER_CONNECT);}else toast(a,"Name required; password 8 to 63 characters");break;
-    case FORGET_ASK:a->parent=a->screen;route(a,FORGET);break;
-    case FORGET_YES:if(a->selected_saved&&a->selected_slot!=UINT32_MAX){if(a->selected_live)(void)stop_radio(a);a->db_job=DB_FORGET;}break;
+    case FORGET_ASK:storage_forget(a);break;
+    case FORGET_YES:if(a->atomic_ready&&a->atomic_edit.operation==PORTABLE_WIFI_ATOMIC_FORGET){
+        if(a->selected_live)(void)stop_radio(a);a->db_job=DB_FORGET;}break;
+    case SAVE_DRAFT:storage_save(a);break;
+    case STORAGE_RELOAD:a->parent=a->screen;route(a,STORAGE);break;
+    case KEEP_DRAFT:route(a,a->parent);break;
+    case DISCARD_RELOAD:storage_discard(a);route(a,MAIN);storage_reload(a);break;
+    case DISCARD_EXIT:storage_discard(a);a->storage_leave=true;a->exit_requested=true;break;
     case SAVED_PREV:a->saved_base=a->saved_base>=8?a->saved_base-8:0;list_start(a);break;
     case SAVED_NEXT:if(a->saved_rows==8){a->saved_base=a->saved_slots[7]+1;list_start(a);}break;
     case INFORMATION:notice(a,"This Wi-Fi provider does not expose static IP, DNS or internet tests.");break;
@@ -258,7 +248,7 @@ static bool keyboard_step(wifi_manager *a){
         int rc=a->text->poll(a->text->context,a->editor_session,&result);if(!live(a)){wipe(&result,sizeof(result));return false;}
         if(rc!=RISC_TEXT_ENTRY_OK||result.state>RISC_TEXT_ENTRY_CANCELLED||!memchr(result.text,0,a->editor_field?64:33)){wipe(&result,sizeof(result));return retain(a);}
         if(result.state!=RISC_TEXT_ENTRY_EDITING){a->editor_done=true;a->editor_result=result.state;a->editor_flags=result.flags;
-            if(result.state==RISC_TEXT_ENTRY_ACCEPTED)copy_text(a->editor_field?a->draft.password:a->draft.ssid,a->editor_field?64:33,result.text);}
+            if(result.state==RISC_TEXT_ENTRY_ACCEPTED){copy_text(a->editor_field?a->draft.password:a->draft.ssid,a->editor_field?64:33,result.text);a->draft_dirty=true;}}
         wipe(&result,sizeof(result));
     }
     if(a->editor_done){int rc=a->text->close(a->text->context,a->editor_session);if(!live(a))return false;if(rc==RISC_TEXT_ENTRY_AGAIN)return true;if(rc!=RISC_TEXT_ENTRY_OK)return retain(a);
@@ -270,39 +260,25 @@ static bool keyboard_step(wifi_manager *a){
     }
     return true;
 }
-static bool policy_step(wifi_manager *a){
-    if(a->policy_loading){
-        if(!storage_begin(a))return live(a);
-        unsigned loaded=portable_radio_load_result(a->policy,&a->radio_flags);
-        if(!live(a)||!storage_end(a))return false;
-        if(loaded==PORTABLE_RADIO_BUSY)return true;
-        a->policy_loading=false;a->enabled=loaded<=PORTABLE_RADIO_DEFAULT&&(a->radio_flags&PORTABLE_RADIO_WIFI);a->dirty=true;
-    }
-    if(!a->policy_dirty)return true;if(!a->policy){a->policy_dirty=false;notice(a,"Radio settings storage unavailable");return true;}
-    if(!storage_begin(a))return live(a);
-    bool ok=portable_radio_save(a->policy,a->radio_flags);if(!live(a)||!storage_end(a))return false;
-    a->policy_dirty=false;
-    if(!ok){notice(a,"Radio setting was not saved. Reopen Wi-Fi to reload.");return true;}
-    a->enabled=(a->radio_flags&PORTABLE_RADIO_WIFI)!=0;
-    if(!a->enabled){a->queued_kind=0;(void)stop_radio(a);}else schedule(a,RISC_RADIO_REQUEST_SCAN);
-    a->dirty=true;return true;
-}
 static bool init(wifi_manager *a){
     memset(a,0,sizeof(*a));a->screen_key=1;a->selected_slot=UINT32_MAX;a->selected.rssi=-127;a->dirty=true;
     a->rt=risc_runtime_get_api(1);
     if(!a->rt||a->rt->struct_size<RISC_RUNTIME_MONOTONIC_V1_SIZE||!a->rt->monotonic_ms||!a->rt->acquire||!a->rt->release||!a->rt->retain_invocation||!a->rt->yield_ms)return false;
-    const char *caps[]={"ui.scene","ui.text-input","net.wifi","storage.key-value","storage.key-value"};unsigned instances[]={0,0,15,6,1};
-    for(unsigned i=0;i<5;i++){risc_runtime_capability_v1 *g=&a->grants[a->acquired];g->struct_size=sizeof(*g);bool found=a->rt->acquire(caps[i],1,instances[i],g);if(!live(a))return false;if(!found){if(!i)return false;continue;}a->acquired++;
+    const char *caps[]={"ui.scene","ui.text-input","net.wifi"};unsigned instances[]={0,0,15};
+    for(unsigned i=0;i<3;i++){risc_runtime_capability_v1 *g=&a->grants[a->acquired];g->struct_size=sizeof(*g);bool found=a->rt->acquire(caps[i],1,instances[i],g);if(!live(a))return false;if(!found){if(!i)return false;continue;}a->acquired++;
         if(i==0){a->scene=g->api;a->components=risc_scene_components_get_v1(a->scene);a->telemetry=risc_scene_telemetry_get_v1(a->scene);
             if(!a->components||!a->components->lifecycle.configure||!a->scene->next||!a->scene->snapshot||!a->scene->close)return false;
             if(!risc_scene_connectivity_get_v1(a->scene)){a->upgrade=true;break;}}
         else if(i==1){const risc_text_entry_api_v1 *t=g->api;if(risc_text_entry_home_reason(t)&&t->open&&t->poll&&t->close)a->text=t;}
         else if(i==2){if(api_radio(g->api))a->radio=g->api;}
-        else if(portable_wifi_credentials_api_valid(g->api)){risc_key_value_v1 *checked=i==3?&a->checked_store:&a->checked_policy;*checked=(risc_key_value_v1){1,sizeof(*checked),(void*)g->api,checked_get,checked_put};if(i==3){a->raw_store=g->api;a->store=checked;}else{a->raw_policy=g->api;a->policy=checked;}}
+    }
+    if(!a->upgrade){
+        if(!store_open(a,&a->network_storage,6)||!store_open(a,&a->radio_storage,1))return false;
+        a->store=&a->network_storage.view;a->policy=&a->radio_storage.view;
     }
     if(!risc_scene_resident_bind_v1(a->rt,&a->resident))return false;
     if(!a->rt->monotonic_ms(&a->now)||!live(a))return false;
-    unsigned loaded=portable_radio_load_result(a->policy,&a->radio_flags);if(!live(a))return false;
+    unsigned loaded=policy_load(a);if(!live(a))return false;
     a->enabled=loaded<=PORTABLE_RADIO_DEFAULT&&(a->radio_flags&PORTABLE_RADIO_WIFI);a->policy_loading=loaded==PORTABLE_RADIO_BUSY;
     if(loaded>PORTABLE_RADIO_DEFAULT)copy_text(a->message,sizeof(a->message),"Radio settings unavailable");
     if(a->rt->diagnostic)a->rt->diagnostic("Wi-Fi Manager 2.0.0 scene-only shared-password-keyboard");
@@ -313,16 +289,16 @@ static bool step(wifi_manager *a){
     if(!live(a)||!a->rt->monotonic_ms(&a->now)||!live(a))return false;
     radio_step(a);if(!live(a))return false;
     if(a->exit_requested||a->shared_reason){
-        if(a->db_job==DB_SAVE){db_step(a);if(!live(a)||a->db_job==DB_SAVE)return live(a);}
+        if(!storage_exit(a))return live(a);
         a->queued_kind=0;if(a->operation){(void)stop_radio(a);return live(a);}
         if(!close_scene(a))return live(a);
         if(a->shared_reason){int rc=risc_scene_resident_dispatch_v1(&a->resident,a->shared_reason);a->shared_reason=0;
             if(!live(a)||rc==RISC_RESIDENT_RETAINED)return retain(a);
             if(rc!=RISC_RESIDENT_OK&&rc!=RISC_RESIDENT_BUSY){a->exit_requested=true;return true;}
-            unsigned loaded=portable_radio_load_result(a->policy,&a->radio_flags);if(!live(a))return false;a->enabled=loaded<=PORTABLE_RADIO_DEFAULT&&(a->radio_flags&PORTABLE_RADIO_WIFI);a->policy_loading=loaded==PORTABLE_RADIO_BUSY;a->dirty=true;return publish(a);}
+            unsigned loaded=policy_load(a);if(!live(a))return false;a->enabled=loaded<=PORTABLE_RADIO_DEFAULT&&(a->radio_flags&PORTABLE_RADIO_WIFI);a->policy_loading=loaded==PORTABLE_RADIO_BUSY;a->dirty=true;return publish(a);}
         a->finished=true;return false;
     }
-    db_step(a);if(!live(a)||!policy_step(a))return false;
+    storage_observe(a);db_step(a);if(!live(a)||!policy_step(a))return false;
     if(a->keyboard_pending||a->editor_session)return keyboard_step(a);
     if(!a->session&& !publish(a))return false;
     risc_scene_event_v1 e={.struct_size=sizeof(e)};int rc=a->scene->next(a->scene->context,a->session,&e);
@@ -338,11 +314,12 @@ static bool step(wifi_manager *a){
     if(a->exit_requested||a->shared_reason||a->keyboard_pending)return true;
     risc_scene_navigation_v1 nav={.struct_size=sizeof(nav)};uint32_t flags=0;
     if(!scene_result(a,a->scene->snapshot(a->scene->context,a->session,&nav,&flags)))return false;
-    if((uint32_t)(a->now-a->policy_at)>=100){a->policy_at=a->now;
-        int r=risc_scene_resident_poll_work_v1(&a->resident,flags,a->operation||a->db_job?RISC_RESIDENT_POLL_INHIBIT_IDLE|RISC_RESIDENT_POLL_INHIBIT_POLICY:0);
+    if(flags&RISC_SCENE_ACTIVITY)a->resident.activity=true;
+    if((uint32_t)(a->now-a->policy_at)>=100&&!a->operation&&!a->queued_kind&&!a->stopping&&!storage_pending(a)){a->policy_at=a->now;
+        int r=risc_scene_resident_poll_work_v1(&a->resident,flags,storage_idle(a)?0:RISC_RESIDENT_POLL_INHIBIT_IDLE|RISC_RESIDENT_POLL_INHIBIT_POLICY);
         if(r==RISC_RESIDENT_RETAINED||!live(a))return retain(a);
         if(r==RISC_RESIDENT_EXIT)a->exit_requested=true;
-        if(a->resident.policy&&!a->operation&&!a->db_job)a->shared_reason=RISC_RESIDENT_CHECKPOINT_POLICY;
+        if(a->resident.policy&&!a->operation&&storage_idle(a))a->shared_reason=RISC_RESIDENT_CHECKPOINT_POLICY;
     }
     a->drawing=(flags&RISC_SCENE_PRESENTING)!=0;
     if(!a->drawing&&!a->view_settled){a->view_settled=true;a->last_view=a->now;}
@@ -351,7 +328,8 @@ static bool step(wifi_manager *a){
 }
 static void cleanup(wifi_manager *a){
     if(!live(a))return;
-    if(a->operation||a->session||a->editor_session){retain(a);return;}
+    if(a->operation||a->session||a->editor_session||storage_pending(a)){retain(a);return;}
+    if(!store_close(a,&a->network_storage)||!store_close(a,&a->radio_storage))return;
     wipe(&a->draft,sizeof(a->draft));
     while(a->acquired){if(!live(a))return;bool ok=a->rt->release(&a->grants[a->acquired-1]);if(!live(a)||!ok){retain(a);return;}a->acquired--;}
 }

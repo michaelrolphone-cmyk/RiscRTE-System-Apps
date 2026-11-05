@@ -280,7 +280,9 @@ static bool test_release(risc_runtime_capability_v1 *grant){
   --grants;grant->api=NULL;return true;
 }
 static const risc_runtime_api_v1 runtime_api={.api_version=1,.struct_size=sizeof(runtime_api),.health=test_health,.yield_ms=test_yield,.diagnostic=test_diagnostic,.request_launch=test_launch,.acquire=test_acquire,.release=test_release};
+#ifndef TEST_SETTINGS_CUSTOM_RUNTIME
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version==1?&runtime_api:NULL;}
+#endif
 
 static void calendar_checks(void){
   uint32_t day=0;

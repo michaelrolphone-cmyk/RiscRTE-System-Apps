@@ -33,3 +33,13 @@ void scroll_files_coordinate_checks(void){
  fbs_slide_coordinates();assert(fbs_origin==0&&before==(unsigned)fbs_scroll.position_q8);
  fb_mode=saved_mode;fb_matched=saved_matched;fb_loaded=saved_loaded;fbs_reset();
 }
+
+void scroll_files_protected_checks(bool listing) {
+ if(listing){
+  assert(fb_matched==96);
+  for(unsigned i=0;i<fb_count;++i)assert(!risc_protected_settings_path(fb_rows[i].name));
+ }else{
+  char saved[FB_PATH_CAP];strcpy(saved,fb_path);strcpy(fb_path,"/rTeCfG. /private");
+  assert(!fbs_read(1,NULL,0) && !fb_count && !fb_loaded);strcpy(fb_path,saved);
+ }
+}

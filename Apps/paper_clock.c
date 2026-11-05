@@ -176,6 +176,9 @@ static home_scene_key home_scene_current(const twatch_rtc_time_v1 *time,bool kno
  return key;
 }
 static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,const char*notice,bool initial){
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!notice||!*notice)notice=portable_home_settings_notice();
+#endif
  clock_clean|=initial;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  if(home_refresh_pending){if(!home_points_refresh(known))return false;home_refresh_pending=false;}
@@ -231,6 +234,9 @@ static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,con
 home_composite:
  if(portable_layer_valid(home_scene_layer))portable_raster_layer_blit(home_scene_layer,0,0,app->screen_width(),app->screen_height(),0,0);
  app->present(clock_clean);clock_dirty=clock_clean=false;
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+ portable_desk_adapter_home_submitted();
+#endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
 #endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
@@ -292,6 +298,10 @@ static void home_main(void){
 #endif
 break;}
   if(input.exit_requested)break;
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(desk_hydrate()){known=read_clock(&time);clock_dirty=clock_clean=true;}
+  if(desk_retained || portable_app_sleep_retained())return;
+#endif
 #ifdef PORTABLE_DESK_CLOCK
   if(desk_returned){desk_returned=false;down=neutral=false;strcpy(notice,desk_notice());known=read_clock(&time);
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
@@ -425,6 +435,7 @@ break;}
 #endif
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
    if(shell_result>0)notice[0]=0;
+   else if(portable_resident_launch_busy())strcpy(notice,"APP NOT READY. RETRY SHORTLY.");
    down=neutral=false;known=read_clock(&time);
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
    if(desk_retained || portable_app_sleep_retained())return;

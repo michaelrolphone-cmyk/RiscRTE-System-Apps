@@ -54,12 +54,12 @@ static inline int portable_wifi_profile_reserve(const risc_key_value_v1 *kv,uint
     return portable_wifi_credentials_write_status(kv,PORTABLE_WIFI_PROFILE_COUNT_KEY,data,sizeof(data));
 }
 static inline int32_t portable_wifi_profile_get(void *context,const char *key,void *data,uint32_t capacity,uint32_t *size) {
-    portable_wifi_profile_context *c=context;char mapped[16];
+    portable_wifi_profile_context *c=(portable_wifi_profile_context*)context;char mapped[16];
     if(!portable_wifi_profile_key(c->index,key,mapped)){if(size)*size=0;return RISC_KEY_VALUE_INVALID;}
     return c->source->get(c->source->context,mapped,data,capacity,size);
 }
 static inline int32_t portable_wifi_profile_put(void *context,const char *key,const void *data,uint32_t size) {
-    portable_wifi_profile_context *c=context;char mapped[16];
+    portable_wifi_profile_context *c=(portable_wifi_profile_context*)context;char mapped[16];
     if(!portable_wifi_profile_key(c->index,key,mapped))return RISC_KEY_VALUE_INVALID;
     return c->source->put(c->source->context,mapped,data,size);
 }

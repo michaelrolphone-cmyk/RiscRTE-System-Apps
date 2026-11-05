@@ -19,17 +19,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: 8d713b52edca004e1d53bf30a1c584859fe33d14
+          ref: a9587bec00015ad56c302192a8359b6d70cde01a
           path: Runtime
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Generate existing shared typography
+      - name: Verify current main shared typography
         run: |
-          python -m pip install Pillow==12.3.0
-          python scripts/generate_telemetry_fonts.py
-          echo '2d7501e42d6223ebbc191817715431182c435fea944a1a02166a0748a577eaf1  Services/scene_host/fonts/telemetry.inc' | sha256sum --check
+          echo '928e6c01d863767a2fbb641963a8c9f63e76243c95d52208caaa62961909f7a6  Services/scene_host/fonts/telemetry.inc' | sha256sum --check
       - name: Exercise actual app, scene and shared keyboard
         run: |
           set -euo pipefail
@@ -60,3 +58,32 @@ jobs:
             build/wifi-tests/frames/behavior/
             evidence/
           retention-days: 14
+
+  product-baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: 710b200021b983ea55eb86a6fbddbbf5ce10a984
+          path: PinnedSystem
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: ab9ff33975680c5bb8d9a2e7ed346d0300732a4e
+          path: Bootfs
+          persist-credentials: false
+      - name: Inspect published Wi-Fi product contracts
+        run: python3 scripts/inspect_shared_wifi_baseline.py --system PinnedSystem --bootfs-tools Bootfs/scripts --output build/shared-wifi-baseline
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-wifi-product-baseline-${{ github.event.pull_request.head.sha || github.sha }}
+          path: build/shared-wifi-baseline/
+          if-no-files-found: error

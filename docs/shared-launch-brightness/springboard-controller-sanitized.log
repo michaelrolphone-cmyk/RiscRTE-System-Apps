@@ -1,0 +1,40 @@
+Initial brightness 240x240 sync dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 240x240 sync retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 240x240 sync preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 240x240 sync torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 240x240 sync unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Application brightness 240x240 sync application-dark: real controller, visible pixels, three clean invocations PASS
+Application brightness 240x240 sync application-retained: real controller, visible pixels, three clean invocations PASS
+Initial brightness 240x240 async dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 240x240 async retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 240x240 async preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 240x240 async torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 240x240 async unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Application brightness 240x240 async application-dark: real controller, visible pixels, three clean invocations PASS
+Application brightness 240x240 async application-retained: real controller, visible pixels, three clean invocations PASS
+Initial brightness 410x502 sync dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 410x502 sync retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 410x502 sync preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 410x502 sync torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 410x502 sync unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Application brightness 410x502 sync application-dark: real controller, visible pixels, three clean invocations PASS
+Application brightness 410x502 sync application-retained: real controller, visible pixels, three clean invocations PASS
+Initial brightness 410x502 async dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 410x502 async retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 410x502 async preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 410x502 async torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness 410x502 async unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS
+Application brightness 410x502 async application-dark: real controller, visible pixels, three clean invocations PASS
+Application brightness 410x502 async application-retained: real controller, visible pixels, three clean invocations PASS

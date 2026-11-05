@@ -14,7 +14,7 @@ import hashlib, json
 from pathlib import Path
 root = Path('lib/PortableApps')
 source = json.loads((root / 'SOURCES.json').read_text())['RiscBluetoothSessionSetupV1.h']
-assert source['commit'] == '09b56e84e723368d10c4f14cec494e4da0bbead0'
+assert source['commit'] == 'c66da311c1348b81666d9abeb28e6b151267d4ce'
 assert source['path'] == 'sdk/driver/RiscBluetoothSessionSetupV1.h'
 assert hashlib.sha256((root / 'include/RiscBluetoothSessionSetupV1.h').read_bytes()).hexdigest() == source['sha256']
 print('canonical setup header provenance passed')

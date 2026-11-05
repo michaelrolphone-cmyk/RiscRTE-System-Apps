@@ -45,7 +45,11 @@ portable_file_sharing_status status(portable_file_sharing*p){portable_file_shari
 void tick(portable_file_sharing*p,uint64_t now=1){auto before=calls+files->calls;portable_file_sharing_tick(p,now);assert(calls+files->calls-before<=1);}
 void ready(portable_file_sharing*p){for(unsigned i=0;i<20&&status(p).state==PORTABLE_FILE_SHARING_PREPARING;++i)tick(p);assert(status(p).state==PORTABLE_FILE_SHARING_LISTENING);}
 void finished(portable_file_sharing*p,unsigned count){for(unsigned i=0;i<10000&&status(p).completed_requests<count;++i)tick(p);assert(status(p).completed_requests==count);}
-void terminal(portable_file_sharing*p){assert(status(p).state==PORTABLE_FILE_SHARING_RETAINED&&status(p).active_work&&!status(p).password[0]);auto before=calls+files->calls;portable_file_sharing_stop(p);tick(p);assert(!portable_file_sharing_close(p,1));assert(!portable_file_sharing_destroy(&p));assert(calls+files->calls==before);}
+void terminal(portable_file_sharing*p){assert(status(p).state==PORTABLE_FILE_SHARING_RETAINED&&status(p).active_work&&!status(p).password[0]);auto before=calls+files->calls;portable_file_sharing_stop(p);tick(p);assert(!portable_file_sharing_close(p,1));assert(!portable_file_sharing_destroy(&p));assert(calls+files->calls==before);
+ // The production object must retain ownership above. The fixture now models
+ // process reset and reclaims only its synthetic allocation for LeakSanitizer.
+ assert(memory.size()==1&&memory.count(p)==1);std::free(p);memory.clear();
+}
 }
 int main(int argc,char**argv){
  assert(argc==2);std::string mode=argv[1];Fixture fixture;files=&fixture;

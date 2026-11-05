@@ -1,0 +1,324 @@
+{
+  "purpose": "final-System-union-availability-with-Files-shared-input-host-suffix-regression",
+  "date_utc": "2026-10-12",
+  "source_commit": "24c695092636383ac0038095825876a5637c232b",
+  "source_tree": "035e1a5206d2425ffecfded6850c92e44d548343",
+  "tracked_source_inputs_unchanged": true,
+  "source_edits": false,
+  "tracked_file_count": 2057,
+  "full_sorted_source_manifest_sha256": "67f6484047cf6e8ab5c411b237de343c4b588e02107611e74388ba116f211f29",
+  "full_manifest_and_logs_local_directory": "/workspace/shared/x4-settings-availability-final-union-evidence-20261012",
+  "source_sha256": {
+    "lib/PortableApps/include/RiscKeyValueAvailabilityV1.h": "7cf7765c26af74813f86a1a041a0a92495840c883f5e231c391294dd928ad976",
+    "lib/PortableApps/include/PortableSettingsAvailability.h": "5c5b9982bce02a532b18644580c4f7ece11bfa0df01ae0c1078bc86183d20be8",
+    "lib/PortableApps/include/RiscTextEntryV1.h": "371e779aea3501999dc9ec2ffed1a3d31306a35b880a5089a037798a1a37284b",
+    "sdk/app/RiscTextEntryV1.h": "371e779aea3501999dc9ec2ffed1a3d31306a35b880a5089a037798a1a37284b",
+    "Services/text_input/host.c": "2a20bec2bf79ce383670c6828b4e88a2b6d407cb9f88dac3ed2c6fa571752ea6",
+    "Services/text_input/SceneKeyboardV1.h": "ab76f2a86483d89e77bc4553c7d9995122a6b91f2ff54403f72d248afd424b1c",
+    "Services/scene_host/host.c": "aeb3eee9a23581e5b7bb9184632dbc2620887237630a970069ec20ec41e67cf0",
+    "Services/scene_host/keyboard_paper.inc": "c748627b4ecc595b59ff2d28b86a25846266d7f9436aff0ca2ad712ab969c8c7",
+    "lib/PortableApps/src/adapter.c": "7f3b8f65024dd1ed29b96af0691196fe0e58594484e8665a4c23a5a447a594bb",
+    "lib/PortableApps/src/settings_availability.inc": "e98e391f285bc363e5f2bf77fcc9136db69babbd3a6e2d414a7058f58ec7daed",
+    "lib/PortableApps/src/home_settings_availability.inc": "dfb3807a2d7acf35f11ff28e69fcafad41b93e6dfd0ad99b7edcf8653580c27f",
+    "lib/PortableApps/src/quick_atomic.inc": "bb39eaeede46f0b9ae45ed6f9a6069cf7f0e96123a4ff4ac172d31f46a8b449e",
+    "Apps/paper_clock.c": "0aade280df258ed30ac2720a889225ff9a015150608c9a2f24d9e7075284243e",
+    "Apps/paper_sparse_clock.inc": "56048abefc88d5ce3c98091da0e1bbb10b8d6c33d7af4d56ae13d9846d137a52"
+  },
+  "runs": [
+    {
+      "name": "settings-availability-normal",
+      "command": [
+        "python3",
+        "scripts/test_settings_availability.py",
+        "--target",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/settings-header-fixture",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/settings-availability-normal"
+      ],
+      "exit_code": 0,
+      "seconds": 3.95,
+      "log_sha256": "888a70e740c000900006adfeb6db7ce4d53ae5a7d69a9bfd23f575c5e5dac367",
+      "cases": 17,
+      "sanitizers": "none"
+    },
+    {
+      "name": "settings-availability-asan",
+      "command": [
+        "python3",
+        "scripts/test_settings_availability.py",
+        "--target",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/settings-header-fixture",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/settings-availability-asan",
+        "--sanitize"
+      ],
+      "exit_code": 0,
+      "seconds": 14.36,
+      "log_sha256": "888a70e740c000900006adfeb6db7ce4d53ae5a7d69a9bfd23f575c5e5dac367",
+      "cases": 17,
+      "sanitizers": "ASan+UBSan"
+    },
+    {
+      "name": "settings-atomic-normal",
+      "command": [
+        "python3",
+        "scripts/test_settings_atomic.py",
+        "--target",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/settings-header-fixture",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/settings-atomic-normal"
+      ],
+      "exit_code": 0,
+      "seconds": 5.14,
+      "log_sha256": "65d6280ce54a49e7080aa2575f165dcf385686a4832b4b075cc9d8a9c0d983f5",
+      "cases": 47,
+      "sanitizers": "none"
+    },
+    {
+      "name": "settings-atomic-asan",
+      "command": [
+        "python3",
+        "scripts/test_settings_atomic.py",
+        "--target",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/settings-header-fixture",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/settings-atomic-asan",
+        "--sanitize"
+      ],
+      "exit_code": 0,
+      "seconds": 11.1,
+      "log_sha256": "65d6280ce54a49e7080aa2575f165dcf385686a4832b4b075cc9d8a9c0d983f5",
+      "cases": 47,
+      "sanitizers": "ASan+UBSan"
+    },
+    {
+      "name": "home-availability-normal",
+      "command": [
+        "python3",
+        "scripts/test_home_settings_availability.py",
+        "--target",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-header-fixture",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-availability-normal"
+      ],
+      "exit_code": 0,
+      "seconds": 1.02,
+      "log_sha256": "655fdd1743560732d023c8f9249e088d4969e70b0562ba72ec4e4afb17010ba6",
+      "cases": 9,
+      "sanitizers": "none"
+    },
+    {
+      "name": "home-availability-asan",
+      "command": [
+        "python3",
+        "scripts/test_home_settings_availability.py",
+        "--target",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-header-fixture",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-availability-asan",
+        "--sanitize"
+      ],
+      "exit_code": 0,
+      "seconds": 2.07,
+      "log_sha256": "655fdd1743560732d023c8f9249e088d4969e70b0562ba72ec4e4afb17010ba6",
+      "cases": 9,
+      "sanitizers": "ASan+UBSan"
+    },
+    {
+      "name": "home-automatic-normal",
+      "command": [
+        "python3",
+        "scripts/test_home_automatic.py",
+        "--target",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-header-fixture",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-automatic-normal"
+      ],
+      "exit_code": 0,
+      "seconds": 2.08,
+      "log_sha256": "69957b20a2cfebcad6eb5872eb907fb7de3be10e458a66199cffb25d620c4338",
+      "cases": 47,
+      "sanitizers": "none"
+    },
+    {
+      "name": "home-automatic-asan",
+      "command": [
+        "python3",
+        "scripts/test_home_automatic.py",
+        "--target",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-header-fixture",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-automatic-asan",
+        "--sanitize"
+      ],
+      "exit_code": 0,
+      "seconds": 4.92,
+      "log_sha256": "69957b20a2cfebcad6eb5872eb907fb7de3be10e458a66199cffb25d620c4338",
+      "cases": 47,
+      "sanitizers": "ASan+UBSan"
+    },
+    {
+      "name": "quick-atomic-normal",
+      "command": [
+        "python3",
+        "scripts/test_quick_atomic.py",
+        "--target",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-header-fixture",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/quick-atomic-normal"
+      ],
+      "exit_code": 0,
+      "seconds": 1.19,
+      "log_sha256": "23b4e328e5b4a6962d16ff2220f3be5d32b506261fb9b1381a0d98c4836262e5",
+      "cases": 41,
+      "sanitizers": "none"
+    },
+    {
+      "name": "quick-atomic-asan",
+      "command": [
+        "python3",
+        "scripts/test_quick_atomic.py",
+        "--target",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-header-fixture",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/quick-atomic-asan",
+        "--sanitize"
+      ],
+      "exit_code": 0,
+      "seconds": 2.64,
+      "log_sha256": "23b4e328e5b4a6962d16ff2220f3be5d32b506261fb9b1381a0d98c4836262e5",
+      "cases": 41,
+      "sanitizers": "ASan+UBSan"
+    },
+    {
+      "name": "text-host-normal",
+      "command": [
+        "python3",
+        "scripts/test_text_input_host.py",
+        "--runtime",
+        "/workspace/shared/x4-settings-unavailable-20261012",
+        "--provider-system",
+        "/workspace/shared/x4-settings-availability-union-20261012",
+        "--decoupled-attention",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/text-host-normal"
+      ],
+      "exit_code": 0,
+      "seconds": 2.0,
+      "log_sha256": "c9857695a8873960b7385a400b7e3a5929cacbc78af9b2c9c48d668e2ff4ec18",
+      "sanitizers": "none"
+    },
+    {
+      "name": "text-host-asan",
+      "command": [
+        "python3",
+        "scripts/test_text_input_host.py",
+        "--runtime",
+        "/workspace/shared/x4-settings-unavailable-20261012",
+        "--provider-system",
+        "/workspace/shared/x4-settings-availability-union-20261012",
+        "--decoupled-attention",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/text-host-asan",
+        "--sanitize"
+      ],
+      "exit_code": 0,
+      "seconds": 4.6,
+      "log_sha256": "c9857695a8873960b7385a400b7e3a5929cacbc78af9b2c9c48d668e2ff4ec18",
+      "sanitizers": "ASan+UBSan"
+    },
+    {
+      "name": "home-render-reload",
+      "command": [
+        "python3",
+        "scripts/test_home_settings_availability_render.py",
+        "--target",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-header-fixture",
+        "--output",
+        "/workspace/shared/x4-settings-availability-final-union-evidence-20261012/home-render-reload"
+      ],
+      "exit_code": 0,
+      "log_sha256": "d5d6fbc8cccd70aa1fc490205cdef3fdd8e504c2d6b85b2d89ed62b0de02b59c",
+      "sanitizers": "normal and ASan+UBSan"
+    },
+    {
+      "name": "settings-profiles",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_settings*profile*.py"
+      ],
+      "exit_code": 0,
+      "log_sha256": "ba7ccc824660f99f10c5378a4598ede6de9cccb44d4230bf847998033f779998",
+      "cases": 6,
+      "sanitizers": "none"
+    },
+    {
+      "name": "quick-profile",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_quick_atomic_build_profile.py"
+      ],
+      "exit_code": 0,
+      "log_sha256": "8fc491c33af10c373d8f98a2362fd7e66cdc6c96497aa5aa59d429264ca5ac92",
+      "cases": 1,
+      "sanitizers": "none"
+    },
+    {
+      "name": "sdk-compatibility",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_sdk_additive_compatibility.py"
+      ],
+      "exit_code": 0,
+      "log_sha256": "c346f1228fe88f4ab3cb336ffa610dc3a34ec7c7bb7d05df7a1c222f2d928881",
+      "cases": 1,
+      "sanitizers": "none"
+    }
+  ],
+  "fixture_staging": "Only headers and existing profile receipts copied; no target ELF copies or target rebuilds. Current portable helpers plus new union RiscTextEntryV1 and availability SDK were explicitly staged for both Settings and Home.",
+  "new_text_suffix_verification": {
+    "settings_header_fixture_matches_current_System_SDK": true,
+    "home_header_fixture_matches_current_System_SDK": true,
+    "portable_and_System_SDK_copies_identical": true,
+    "text_host_compiles_current_production_source": true,
+    "text_host_cases": "All scripted legacy-prefix, masked-password, input, native-custody, overflow, ABI-coexistence, client, privacy and extended-client modes passed in both normal and ASan+UBSan runs.",
+    "runtime_sdk_source": "/workspace/shared/x4-settings-unavailable-20261012",
+    "runtime_sdk_source_commit": "2ea546b705d6232c1e556098b1757f7c2e0cc961"
+  },
+  "Home_raster_and_reconciliation": {
+    "actual_scene_cache_and_raster": true,
+    "normal_and_sanitized_pixels_identical": true,
+    "all_availability_captions_fit": true,
+    "recovery_reload": "Exactly one complete clean-foreground configuration read and zero writes; no TIMER or held-input discovery/reload."
+  },
+  "sanitizer_environment": {
+    "ASAN_OPTIONS": "detect_leaks=0",
+    "UBSAN_OPTIONS": "halt_on_error=1",
+    "LSan": "disabled under ptrace"
+  },
+  "related_wifi_receipt": "receipts/availability-final-union-wifi-20261012.json",
+  "limits": [
+    "No source edits, product activation, hardware, target rebuild, deployment or publication.",
+    "Only small test-header fixtures were restaged; existing target ELFs were reused as profile provenance and were not copied.",
+    "No Files/text regression was observed in the exercised paths; the complete Files and dynamic Runtime/scene/text integration qualification remains separate.",
+    "Host fixtures do not establish hardware SD persistence or Runtime settings reconciliation."
+  ]
+}

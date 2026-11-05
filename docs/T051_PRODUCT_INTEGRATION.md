@@ -1,0 +1,5 @@
+# T051 product integration source
+
+This checkpoint builds on 098d35cc30896b7f89eb186cda785e42c423abd8. It preserves the 15-second scan and 30-second join progress deadlines, restored product Springboard selection and ordered touch release metadata from f74db7d. The shared Wi-Fi controller gains the existing opt-in atomic/availability profile from X4; T-Watch continues to use internal key-value storage. The full feature profile selects the shared text input client for both products. Native retention is honored when terminal alarm retention is selected.
+
+Local verification: 64 workflow cases plus 50 profile cases normally and under UBSan; 23 atomic-controller cases; 17 availability cases. Both full-feature target ELFs compile with the native custody, radio, motion, alarm, contexts and shared keyboard feature selections. Product manifests/grants and complete-store admission remain separate integration gates. These tests do not prove deployed Waveshare SD persistence: its current synchronous SD provider does not expose the async/package suffix required by the candidate native settings service. No firmware release is qualified by this source checkpoint.

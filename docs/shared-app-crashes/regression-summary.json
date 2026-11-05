@@ -1,0 +1,50 @@
+{
+  "source_parent": "ffe0295eff869f0d33d56f98548f9b435975d584",
+  "compiler": "cc (Debian 14.2.0-19) 14.2.0",
+  "profiles": [
+    "paper-async",
+    "paper-sync",
+    "rgb240",
+    "rgb410"
+  ],
+  "cases": [
+    "bad-namespace-1",
+    "bad-namespace-5",
+    "bad-version",
+    "capture-input-retained",
+    "capture-present-retained",
+    "capture-raster-retained",
+    "clean-2",
+    "clean-3",
+    "clean-4",
+    "dirty-1",
+    "dirty-2",
+    "dirty-3",
+    "dirty-4",
+    "dirty-5",
+    "failed-release",
+    "fingerprint-caller-retained",
+    "fingerprint-checkpoint-retained",
+    "fingerprint-generic-open-retained",
+    "fingerprint-open-retained",
+    "first-poll",
+    "missing-health",
+    "revoked-health",
+    "revoked-identity",
+    "step-caller-retained"
+  ],
+  "checks": 192,
+  "passed": 192,
+  "production_sha256": {
+    "adapter.c": "3d57c143c32169c0ecf1205b52f666328a8f183b30a7f90d6a13ce4fc9f9844a",
+    "native_custody_adapter.inc": "478a77ec895642eadf77c1b7cb57a4a1100b11e8fa222f5a3777c05a782dd0d9",
+    "contexts_adapter.inc": "95b27ff26c416800e69eafa140ffeb052a14a8448b1e3ee007ebac78a004165e",
+    "contexts_policy.inc": "943afb45c3e9c887f937d3ed064baa23f5d3b9fd104836651889223702df58d5",
+    "PortableContextActions.h": "9ebea2abc377b880fed7ab8537b93fa123eb58ea11d35f53aa96bcf4fd0dbb0c",
+    "PortableContextFingerprints.h": "11493f75a58e83a67189c24c33bbd9657fdfd86da19266e4d8c56e98342a3d18",
+    "PortableContextPreferences.h": "1fb5e6d3cc796892f15c15162bd38b64d4b4508756de5f0c77b2015fbe388826",
+    "PortableContextRules.h": "b259780f2366e80f9e818e63da659cc7cd8883dd73c22d2192f1452efa87e510",
+    "PortableContextsClient.h": "85ea82215f8d0ac73cfc0263ac0c06d2de59931332806af0b9cddf425e2f1e8b"
+  },
+  "hardware_tested": false
+}

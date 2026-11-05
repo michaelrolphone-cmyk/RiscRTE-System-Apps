@@ -1,0 +1,734 @@
+[
+  {
+    "config": "legacy480",
+    "x": 31,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=480x800 logical=480x800 tap=(31,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy480",
+    "x": 32,
+    "y": 345,
+    "expected_writes": 2,
+    "result": "provider=480x800 logical=480x800 tap=(32,345) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy480",
+    "x": 235,
+    "y": 345,
+    "expected_writes": 2,
+    "result": "provider=480x800 logical=480x800 tap=(235,345) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy480",
+    "x": 236,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=480x800 logical=480x800 tap=(236,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy480",
+    "x": 130,
+    "y": 301,
+    "expected_writes": 0,
+    "result": "provider=480x800 logical=480x800 tap=(130,301) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy480",
+    "x": 130,
+    "y": 302,
+    "expected_writes": 2,
+    "result": "provider=480x800 logical=480x800 tap=(130,302) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy480",
+    "x": 130,
+    "y": 393,
+    "expected_writes": 2,
+    "result": "provider=480x800 logical=480x800 tap=(130,393) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy480",
+    "x": 130,
+    "y": 394,
+    "expected_writes": 0,
+    "result": "provider=480x800 logical=480x800 tap=(130,394) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy480",
+    "case": "navigation-back-cancel",
+    "result": "provider=480x800 logical=480x800 tap=(130,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=1"
+  },
+  {
+    "config": "legacy410",
+    "x": 26,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(26,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "x": 27,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(27,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "x": 28,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(28,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "x": 200,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(200,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "x": 201,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(201,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "x": 202,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(202,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "x": 100,
+    "y": 263,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,263) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "x": 100,
+    "y": 264,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,264) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "x": 100,
+    "y": 265,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,265) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "x": 100,
+    "y": 343,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,343) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "x": 100,
+    "y": 344,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,344) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "x": 100,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "legacy410",
+    "case": "navigation-back-cancel",
+    "result": "provider=410x700 logical=410x700 tap=(100,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=1"
+  },
+  {
+    "config": "legacy410",
+    "case": "delayed-immutable",
+    "result": "provider=410x700 logical=410x700 tap=(100,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=2\nDelayed immutable presentation checks=195, no pending ownership"
+  },
+  {
+    "config": "rotate480",
+    "x": 31,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=800x480 logical=480x800 tap=(31,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate480",
+    "x": 32,
+    "y": 345,
+    "expected_writes": 2,
+    "result": "provider=800x480 logical=480x800 tap=(32,345) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate480",
+    "x": 235,
+    "y": 345,
+    "expected_writes": 2,
+    "result": "provider=800x480 logical=480x800 tap=(235,345) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate480",
+    "x": 236,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=800x480 logical=480x800 tap=(236,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate480",
+    "x": 130,
+    "y": 301,
+    "expected_writes": 0,
+    "result": "provider=800x480 logical=480x800 tap=(130,301) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate480",
+    "x": 130,
+    "y": 302,
+    "expected_writes": 2,
+    "result": "provider=800x480 logical=480x800 tap=(130,302) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate480",
+    "x": 130,
+    "y": 393,
+    "expected_writes": 2,
+    "result": "provider=800x480 logical=480x800 tap=(130,393) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate480",
+    "x": 130,
+    "y": 394,
+    "expected_writes": 0,
+    "result": "provider=800x480 logical=480x800 tap=(130,394) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate480",
+    "case": "navigation-back-cancel",
+    "result": "provider=800x480 logical=480x800 tap=(130,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=1"
+  },
+  {
+    "config": "flip480",
+    "x": 31,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=480x800 logical=480x800 tap=(31,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip480",
+    "x": 32,
+    "y": 345,
+    "expected_writes": 2,
+    "result": "provider=480x800 logical=480x800 tap=(32,345) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip480",
+    "x": 235,
+    "y": 345,
+    "expected_writes": 2,
+    "result": "provider=480x800 logical=480x800 tap=(235,345) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip480",
+    "x": 236,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=480x800 logical=480x800 tap=(236,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip480",
+    "x": 130,
+    "y": 301,
+    "expected_writes": 0,
+    "result": "provider=480x800 logical=480x800 tap=(130,301) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip480",
+    "x": 130,
+    "y": 302,
+    "expected_writes": 2,
+    "result": "provider=480x800 logical=480x800 tap=(130,302) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip480",
+    "x": 130,
+    "y": 393,
+    "expected_writes": 2,
+    "result": "provider=480x800 logical=480x800 tap=(130,393) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip480",
+    "x": 130,
+    "y": 394,
+    "expected_writes": 0,
+    "result": "provider=480x800 logical=480x800 tap=(130,394) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip480",
+    "case": "navigation-back-cancel",
+    "result": "provider=480x800 logical=480x800 tap=(130,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=1"
+  },
+  {
+    "config": "snapshot410",
+    "x": 26,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(26,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "x": 27,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(27,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "x": 28,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(28,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "x": 200,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(200,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "x": 201,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(201,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "x": 202,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(202,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "x": 100,
+    "y": 263,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,263) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "x": 100,
+    "y": 264,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,264) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "x": 100,
+    "y": 265,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,265) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "x": 100,
+    "y": 343,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,343) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "x": 100,
+    "y": 344,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,344) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "x": 100,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "snapshot410",
+    "case": "navigation-back-cancel",
+    "result": "provider=410x700 logical=410x700 tap=(100,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=1"
+  },
+  {
+    "config": "snapshot410",
+    "case": "delayed-immutable",
+    "result": "provider=410x700 logical=410x700 tap=(100,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=2\nDelayed immutable presentation checks=193, no pending ownership"
+  },
+  {
+    "config": "rotate410",
+    "x": 26,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=700x410 logical=410x700 tap=(26,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "x": 27,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=700x410 logical=410x700 tap=(27,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "x": 28,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=700x410 logical=410x700 tap=(28,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "x": 200,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=700x410 logical=410x700 tap=(200,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "x": 201,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=700x410 logical=410x700 tap=(201,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "x": 202,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=700x410 logical=410x700 tap=(202,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "x": 100,
+    "y": 263,
+    "expected_writes": 0,
+    "result": "provider=700x410 logical=410x700 tap=(100,263) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "x": 100,
+    "y": 264,
+    "expected_writes": 0,
+    "result": "provider=700x410 logical=410x700 tap=(100,264) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "x": 100,
+    "y": 265,
+    "expected_writes": 2,
+    "result": "provider=700x410 logical=410x700 tap=(100,265) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "x": 100,
+    "y": 343,
+    "expected_writes": 2,
+    "result": "provider=700x410 logical=410x700 tap=(100,343) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "x": 100,
+    "y": 344,
+    "expected_writes": 2,
+    "result": "provider=700x410 logical=410x700 tap=(100,344) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "x": 100,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=700x410 logical=410x700 tap=(100,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rotate410",
+    "case": "navigation-back-cancel",
+    "result": "provider=700x410 logical=410x700 tap=(100,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=1"
+  },
+  {
+    "config": "flip410",
+    "x": 26,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(26,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "x": 27,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(27,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "x": 28,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(28,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "x": 200,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(200,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "x": 201,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(201,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "x": 202,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(202,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "x": 100,
+    "y": 263,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,263) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "x": 100,
+    "y": 264,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,264) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "x": 100,
+    "y": 265,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,265) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "x": 100,
+    "y": 343,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,343) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "x": 100,
+    "y": 344,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,344) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "x": 100,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "flip410",
+    "case": "navigation-back-cancel",
+    "result": "provider=410x700 logical=410x700 tap=(100,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=1"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 26,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(26,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 27,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(27,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 28,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(28,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 200,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(200,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 201,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(201,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 202,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(202,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 100,
+    "y": 263,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,263) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 100,
+    "y": 264,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,264) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 100,
+    "y": 265,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,265) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 100,
+    "y": 343,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,343) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 100,
+    "y": 344,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,344) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "x": 100,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "rawrotate410",
+    "case": "navigation-back-cancel",
+    "result": "provider=410x700 logical=410x700 tap=(100,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=1"
+  },
+  {
+    "config": "sanitized410",
+    "x": 26,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(26,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "x": 27,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(27,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "x": 28,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(28,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "x": 200,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(200,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "x": 201,
+    "y": 300,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(201,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "x": 202,
+    "y": 300,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(202,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "x": 100,
+    "y": 263,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,263) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "x": 100,
+    "y": 264,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,264) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "x": 100,
+    "y": 265,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,265) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "x": 100,
+    "y": 343,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,343) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "x": 100,
+    "y": 344,
+    "expected_writes": 2,
+    "result": "provider=410x700 logical=410x700 tap=(100,344) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "x": 100,
+    "y": 345,
+    "expected_writes": 0,
+    "result": "provider=410x700 logical=410x700 tap=(100,345) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=0"
+  },
+  {
+    "config": "sanitized410",
+    "case": "navigation-back-cancel",
+    "result": "provider=410x700 logical=410x700 tap=(100,300) writes=0 early=0 refreshes=0 presents=3 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=1"
+  },
+  {
+    "config": "sanitized410",
+    "case": "delayed-immutable",
+    "result": "provider=410x700 logical=410x700 tap=(100,300) writes=2 early=0 refreshes=1 presents=4 restore=1 frames=0 grants=0 subs=0 diagnostics=0 mode=2\nDelayed immutable presentation checks=195, no pending ownership"
+  }
+]

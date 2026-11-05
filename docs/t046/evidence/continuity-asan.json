@@ -1,0 +1,642 @@
+{
+  "hardware_tested": false,
+  "scope": "compiled production scene and text hosts; synthetic native transport input",
+  "scenarios": [
+    {
+      "profile": "watch",
+      "mode": "configure-continuity",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "before-pause",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "queued",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "repeat",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "held",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "home",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "back",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "focus-changed",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "gap",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "pause-again",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "presenting-input",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "close-paused",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "overflow",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-focus-snapshot",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-focus-foreground",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-focus-reset",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "fault-focus-snapshot",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-close-unsubscribe",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-close-foreground",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-close-reset",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "fault-close-unsubscribe",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "configure-continuity",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "before-pause",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "queued",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "repeat",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "held",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "home",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "back",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "focus-changed",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "gap",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "pause-again",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "presenting-input",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "close-paused",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "overflow",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-focus-snapshot",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-focus-foreground",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-focus-reset",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "fault-focus-snapshot",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-close-unsubscribe",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-close-foreground",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-close-reset",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "fault-close-unsubscribe",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "static",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "external",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "raster",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "pending",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "paused-close",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "unsubscribe-fault",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "subscribe",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "snapshot",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "foreground",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "reset",
+      "sanitized": false,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "configure-continuity",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "before-pause",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "queued",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "repeat",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "held",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "home",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "back",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "focus-changed",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "gap",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "pause-again",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "presenting-input",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "close-paused",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "overflow",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-focus-snapshot",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-focus-foreground",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-focus-reset",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "fault-focus-snapshot",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-close-unsubscribe",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-close-foreground",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "loss-close-reset",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "watch",
+      "mode": "fault-close-unsubscribe",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "configure-continuity",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "before-pause",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "queued",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "repeat",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "held",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "home",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "back",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "focus-changed",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "gap",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "pause-again",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "presenting-input",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "close-paused",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "overflow",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-focus-snapshot",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-focus-foreground",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-focus-reset",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "fault-focus-snapshot",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-close-unsubscribe",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-close-foreground",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "loss-close-reset",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "mode": "fault-close-unsubscribe",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "static",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "external",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "raster",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "pending",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "paused-close",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "unsubscribe-fault",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "subscribe",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "snapshot",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "foreground",
+      "sanitized": true,
+      "result": "PASS"
+    },
+    {
+      "profile": "paper",
+      "legacy_mode": "reset",
+      "sanitized": true,
+      "result": "PASS"
+    }
+  ],
+  "source_sha256": {
+    "Services/scene_host/host.c": "2aff03f2e56b8812c66120e4dd411ee160ce7d5512de118ce47d41efff0d630b",
+    "Services/text_input/host.c": "c99c61bf39b9268a23e661deee7fc32142e99533f318e170836ac45b7793500e",
+    "Services/text_input/checkpoint.inc": "6cbff0c0dfcac6a2235dab6bfbcd90b65a887d1e9ca4e2be95f974f62b0fd117",
+    "sdk/app/RiscSceneLifecycleV1.h": "52a3d5dcfc6a9be8d598e0c93bf9bf6c6f824674280ef03ee0c0043a01eb31f5",
+    "sdk/app/RiscSceneCheckpointV1.h": "478ca88a15aeeb5a906623fb67482b29a0b5fa37dd933a5c9ca3a856ec967e44",
+    "test/text_input/review_checkpoint_handoff_test.c": "8b064d79834bf34b2474bcf2dbed5ca45e103b957d0d294d2ed2ccc8bda25ad2",
+    "test/text_input/review_checkpoint_handoff_probe.c": "58c96d80a1de69ae6c02165dca0f4a87cca20e300d9082327a1d9b8c6b82b24e",
+    "scripts/test_text_input_handoff_continuity.py": "1e308f408250a8e242b504361610cd1f780c51fc1a5224e90edd77236418fc1e",
+    "test/scene/checkpoint_test.c": "fc94c6e9b81ddb2dccfb6e72de1bce0219f93acb346f665e823d421aeba75425",
+    "test/scene/lifecycle_test.c": "53ac0b2d1c4550e810d4c43fe1ee4737cef81eaa7351248e77befc7dc09ff840"
+  }
+}

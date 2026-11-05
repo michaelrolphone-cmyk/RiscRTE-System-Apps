@@ -46,8 +46,16 @@ void portable_desk_clock_radios_off(void);
 /* Defer optional radio policy application until normal foreground is needed. */
 int portable_desk_clock_mode(void);
 bool portable_desk_adapter_foreground(void);
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+/* Mark a real foreground Home submission, not logo/loading/desk imagery. */
+void portable_desk_adapter_home_submitted(void);
+#endif
 
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+/* Confirmed foreground sleep return: schedule one fresh RTC check. */
+void portable_desk_clock_resumed(void);
+/* Foreground hydration gate only; retained TIMER never changes this state. */
+void portable_desk_adapter_settings_pending(bool pending);
 /* Pure cached classification from the existing boot_read; no extra native read. */
 bool portable_desk_clock_boot_is_cold(void);
 bool portable_desk_clock_boot_is_interactive(void);
@@ -76,4 +84,12 @@ bool portable_desk_clock_time(uint8_t *hour,uint8_t *minute);
 bool portable_desk_clock_request_lock(bool enabled);
 bool portable_desk_clock_lock_requested(void);
 bool portable_desk_adapter_landscape(bool landscape,unsigned direction);
+#endif
+
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+/* Selected foreground-only settings status; private app linkage, no Runtime export. */
+bool portable_home_settings_poll(void);
+uint64_t portable_home_settings_generation(void);
+bool portable_home_settings_available(void);
+const char *portable_home_settings_notice(void);
 #endif

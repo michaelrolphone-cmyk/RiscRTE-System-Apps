@@ -2,6 +2,7 @@
 #include "host_test.c"
 #undef main
 #include "RiscSceneComponentsV1.h"
+#include "SceneKeyboardV1.h"
 static risc_components_document_v1 rich;
 static const risc_scene_components_api_v1 *components;
 static void component_document(void){
@@ -36,5 +37,20 @@ int main(int argc,char **argv){
  /* Ordinary documents cannot masquerade as a component table or read suffix
   * fields on older providers. */
  risc_scene_api_v1 old=*api;old.struct_size=sizeof(old);assert(!risc_scene_components_get_v1(&old));
+ /* The same password control is available through the component presenter,
+  * including when hardware attachment suppresses the editable grid. */
+ uint32_t revision=rich.revision+1;
+ rich=(risc_components_document_v1){.api_version=1,.struct_size=sizeof(rich),.revision=revision,.root=1,.route_count=1,.node_count=1,.screen_key=90,
+  .routes={{.id=1,.title="Password"}},.nodes={{.id=1,.route=1,.kind=RISC_SCENE_KEYBOARD_NODE,.flags=RISC_SCENE_KEYBOARD_PASSWORD,.action=77,.maximum=3,.step=1,.label="Password",.text="***********"}}};
+ assert(!components->update(NULL,session,&rich));settle();
+ unsigned vx=paper?240:192,vy=paper?278:58;
+ touch_tap(vx,vy);assert(tick(&e)==RISC_SCENE_OK&&e.value==RISC_SCENE_KEY_VISIBILITY&&e.action==77);
+ rich.revision++;rich.nodes[0].flags|=RISC_SCENE_KEYBOARD_REVEALED;strcpy(rich.nodes[0].text,"Fixture-a9!");
+ assert(!components->update(NULL,session,&rich));settle();
+ touch_tap(vx,vy);assert(tick(&e)==RISC_SCENE_OK&&e.value==RISC_SCENE_KEY_VISIBILITY);
+ rich.revision++;rich.nodes[0].flags=RISC_SCENE_KEYBOARD_PASSWORD|RISC_SCENE_DISABLED;strcpy(rich.nodes[0].text,"***********");
+ assert(!components->update(NULL,session,&rich));settle();
+ touch_tap(paper?52:26,paper?412:97);assert(tick(&e)==RISC_SCENE_IDLE);
+ touch_tap(vx,vy);assert(tick(&e)==RISC_SCENE_OK&&e.value==RISC_SCENE_KEY_VISIBILITY);
  finish();printf("Shared NOVA component scrolling, control targets, validation %s PASS\n",argv[1]);return 0;
 }

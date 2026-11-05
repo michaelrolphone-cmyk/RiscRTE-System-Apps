@@ -1,0 +1,317 @@
+{
+  "@r0@/lib/NativeApps/include/T5AppApi.h": {
+    "sha256": "23ec6910005343055e71d0a364458824734f52c91a28364e419a85e94aa4ff42"
+  },
+  "@r0@/lib/NativeApps/include/T5AppFrame.h": {
+    "sha256": "2a8fd35c485045294a2f9dceaf1b8474226e1475e63849080711601f6b60c8f9"
+  },
+  "@r0@/lib/NativeApps/include/T5StorageApi.h": {
+    "sha256": "be0d63a89943a75a58723b703284992e8c6e95956c7cb39a9b3523af2c5d23ba"
+  },
+  "@r0@/lib/NativeApps/include/T5UiApi.h": {
+    "sha256": "88dbfde2a45ab385c69ee0b8192e8025446c9872711e4810f799251479b1057a"
+  },
+  "@r0@/lib/NativeApps/include/T5VideoApi.h": {
+    "sha256": "af3f2318e53e20efb4e8e9e98d93abae11f1788fe14640c7b02392c22d08c6a4"
+  },
+  "@r0@/lib/PortableApps/time/denver/display_time.h": {
+    "sha256": "9460e26e1d6faf574a212cdec86d9477de7a0e5d50168d5e7e76613be2868a03"
+  },
+  "@r0@/lib/PortableApps/time/denver/twatch_calendar.h": {
+    "sha256": "67e4a670e4ee8a485843e99be0d198d0b60d84a0bc8d84fc77a3d0e4bde39733"
+  },
+  "@r0@/lib/PortableApps/time/denver/twatch_caps.h": {
+    "sha256": "b8b3003c77c72eb251227329c94fda7244389fb45c7a7e92aa01a5ddce50600e"
+  },
+  "@r0@/lib/PortableApps/include/AlarmServiceV1.h": {
+    "sha256": "19984058bf5ec47f2772cf56acf0d3c41a389b7edc5bd4e41aaddab5a32a017b"
+  },
+  "@r0@/lib/PortableApps/include/ContextFingerprintService.h": {
+    "sha256": "edbd70bd1542824f58ddd487cf22d7b59ced4bb762361288210a489a01c4f0b7"
+  },
+  "@r0@/lib/PortableApps/include/ContextsRules.h": {
+    "sha256": "e890b236dd7a969f25db9642fcd8eea25eaed68f3dcb41820ffaacc95c159c89"
+  },
+  "@r0@/lib/PortableApps/include/ContextsServiceV1.h": {
+    "sha256": "ade2f40d01c7c384c6a71b4ee2a3b077c140ac6af06d7cc69350f02f7be6643d"
+  },
+  "@r0@/lib/PortableApps/include/PortableAlarmClient.h": {
+    "sha256": "587a85823462e36a2819fe22227b029bcd687fee6d4484a86063b03b4e420aa1"
+  },
+  "@r0@/lib/PortableApps/include/PortableAlarmSettings.h": {
+    "sha256": "cf4fb88bfeabb99282b02a871963858a9d20c8985e7da80d57341c33c5250284"
+  },
+  "@r0@/lib/PortableApps/include/PortableAppCatalog.h": {
+    "sha256": "9328b640d09910d58cd83cfc3b14872a3a77133f1d50c15e4053bfaf2a3529e2"
+  },
+  "@r0@/lib/PortableApps/include/PortableAppSleep.h": {
+    "sha256": "027f70965663bc86e7f3bbf2733002870e2254ec92d39037def5f42c52fedc62"
+  },
+  "@r0@/lib/PortableApps/include/PortableApps.h": {
+    "sha256": "d8fc1fae3669c439fda7af94568a93bc1d1f35ddc6fe05615eac1cb41ea4a78e"
+  },
+  "@r0@/lib/PortableApps/include/PortableBackgroundServices.h": {
+    "sha256": "f1291afed98c321a81550e7648234d478652f81299cbad9c44814218a384e5b8"
+  },
+  "@r0@/lib/PortableApps/include/PortableBluetoothControl.h": {
+    "sha256": "777f0c7f92092d05a428c04255b6df1b3e9510a36c7425fc95092b3321e67a2c"
+  },
+  "@r0@/lib/PortableApps/include/PortableBroadcastClient.h": {
+    "sha256": "deb4ef3b3259ea813e4822da46a17c8f9c2dd88f920596b1900b1d2cfd821687"
+  },
+  "@r0@/lib/PortableApps/include/PortableContextActions.h": {
+    "sha256": "9ebea2abc377b880fed7ab8537b93fa123eb58ea11d35f53aa96bcf4fd0dbb0c"
+  },
+  "@r0@/lib/PortableApps/include/PortableContextFingerprints.h": {
+    "sha256": "11493f75a58e83a67189c24c33bbd9657fdfd86da19266e4d8c56e98342a3d18"
+  },
+  "@r0@/lib/PortableApps/include/PortableContextPreferences.h": {
+    "sha256": "1fb5e6d3cc796892f15c15162bd38b64d4b4508756de5f0c77b2015fbe388826"
+  },
+  "@r0@/lib/PortableApps/include/PortableContextRules.h": {
+    "sha256": "b259780f2366e80f9e818e63da659cc7cd8883dd73c22d2192f1452efa87e510"
+  },
+  "@r0@/lib/PortableApps/include/PortableContextsClient.h": {
+    "sha256": "85ea82215f8d0ac73cfc0263ac0c06d2de59931332806af0b9cddf425e2f1e8b"
+  },
+  "@r0@/lib/PortableApps/include/PortableFingerprintClock.h": {
+    "sha256": "26ec2a7c36f6a795d466c2cf2c4fafe37c03c24fa41060096676913b4c3a059d"
+  },
+  "@r0@/lib/PortableApps/include/PortableLowBattery.h": {
+    "sha256": "c83b663b1d5676c7eb7a8ec59157f0efc561802cfe2a3b6eb63937e28b0acca3"
+  },
+  "@r0@/lib/PortableApps/include/PortableNativeCustody.h": {
+    "sha256": "0abf81f9964fbe191c0ddfed56a8ce7580367dcfb14fbd219424bc96d52ca310"
+  },
+  "@r0@/lib/PortableApps/include/PortableNavigation.h": {
+    "sha256": "f3b9623d1e97d6a18df565aef0d9c934f18a1b97b701fbbc208de3bf0a344e6d"
+  },
+  "@r0@/lib/PortableApps/include/PortableNovaUi.h": {
+    "sha256": "c171d7b14d6fb6bca53fa500b9ce9e34daa17b6eed62ae9fd2452ed1ef0d5c5c"
+  },
+  "@r0@/lib/PortableApps/include/PortableOptionalService.h": {
+    "sha256": "e8731e97933bd07a27e90cce29eb09566c7f4db0c7af5fd30faf2c7364c9460a"
+  },
+  "@r0@/lib/PortableApps/include/PortablePerformance.h": {
+    "sha256": "4242d93019235138f6d0a80cd1edc58e55b9c591157d5f90b0d6c2992ce0672e"
+  },
+  "@r0@/lib/PortableApps/include/PortablePowerStatus.h": {
+    "sha256": "957925504f2032963d1f2411bc676f2f6b493b41db3f9317182c2cca1a3067e4"
+  },
+  "@r0@/lib/PortableApps/include/PortablePreferenceAtomic.h": {
+    "sha256": "734ff16d28efd8dcf46eb4c683b0c4bf6866e9f6403bc4116d192c890f380997"
+  },
+  "@r0@/lib/PortableApps/include/PortablePreferenceAutomatic.h": {
+    "sha256": "071c8c099abc403fb63176939b13158f821c839b51c7ccf57e9b5c3d2c565d66"
+  },
+  "@r0@/lib/PortableApps/include/PortableQuickActions.h": {
+    "sha256": "04a53b71f7d50dd34771475e0ae6996e273743fe5a0ceb41822ad79f6abef0dd"
+  },
+  "@r0@/lib/PortableApps/include/PortableQuickPreferences.h": {
+    "sha256": "bc0de08849d553da4049cee1608d765db1f48d89aa27524094088ea31d8b1b91"
+  },
+  "@r0@/lib/PortableApps/include/PortableQuickRadios.h": {
+    "sha256": "32fa2d45a164507d975acb7cd2f1eb41100b01020d7fa91537d0923e244763f5"
+  },
+  "@r0@/lib/PortableApps/include/PortableQuickRender.h": {
+    "sha256": "a442eff258880584976d81407cef82aac66e86b91d68ee919f477e92f5bef36a"
+  },
+  "@r0@/lib/PortableApps/include/PortableQuickSession.h": {
+    "sha256": "039d8034f819ea6b494bcd9179408f57546f834a347b844c1f29c37b7c428ce8"
+  },
+  "@r0@/lib/PortableApps/include/PortableQuickUserPreference.h": {
+    "sha256": "cef595ee29659622dc8be0f5d841d40fa9ed18f6a082bd0140fde7c67e563f42"
+  },
+  "@r0@/lib/PortableApps/include/PortableRadioPolicy.h": {
+    "sha256": "560cf6d492bcf3453b2ee260e6e4dfa102afece7fb1d406a77f2fa32465d1ae3"
+  },
+  "@r0@/lib/PortableApps/include/PortableRtcClock.h": {
+    "sha256": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c"
+  },
+  "@r0@/lib/PortableApps/include/PortableSleepPolicy.h": {
+    "sha256": "70fa8ff8f63270b2a04d591bdbc61cd7e16d6483421121a96fe22f2855966d9d"
+  },
+  "@r0@/lib/PortableApps/include/PortableStageLog.h": {
+    "sha256": "b347496d8bbb70cbbc19bd85d4a4a214f57b660d90cfb1ccaab9138fac787f02"
+  },
+  "@r0@/lib/PortableApps/include/PortableTime.h": {
+    "sha256": "350b8c5255dafa9e25c4a20cfb458cdcda3439da929dab05e0de0c82e981ff6e"
+  },
+  "@r0@/lib/PortableApps/include/PortableTimeFormat.h": {
+    "sha256": "8eb4d0f850c974da910a516c0f13ed9302ad3928849aa85d7641bdbcf3bd1867"
+  },
+  "@r0@/lib/PortableApps/include/PortableTouch.h": {
+    "sha256": "ac620d1725beec57df1eeb31474644180099305ee132b605d264af6ce98a01c6"
+  },
+  "@r0@/lib/PortableApps/include/RiscAppCatalogV1.h": {
+    "sha256": "34550d01d90513459ff7f3284681c4c108af9e64d5c20af6ae4696a1c051b0c5"
+  },
+  "@r0@/lib/PortableApps/include/RiscAppDataV1.h": {
+    "sha256": "9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e"
+  },
+  "@r0@/lib/PortableApps/include/RiscBatteryGaugeV1.h": {
+    "sha256": "03d2f2b78e8f261cfb10f5c44bcabc1495bfecb17d7953586a58c27dce151b86"
+  },
+  "@r0@/lib/PortableApps/include/RiscDisplayOutputV1.h": {
+    "sha256": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726"
+  },
+  "@r0@/lib/PortableApps/include/RiscInputNavigationV1.h": {
+    "sha256": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26"
+  },
+  "@r0@/lib/PortableApps/include/RiscKeyValueAtomicV1.h": {
+    "sha256": "552b0be1890eced2c688700671832bbd1ec15b3663801d59ae946173f94313c5"
+  },
+  "@r0@/lib/PortableApps/include/RiscKeyValueV1.h": {
+    "sha256": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179"
+  },
+  "@r0@/lib/PortableApps/include/RiscProviderV2.h": {
+    "sha256": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17"
+  },
+  "@r0@/lib/PortableApps/include/RiscRadioAsyncV1.h": {
+    "sha256": "2b5a916cfe9e1fb6520043c2b8f3e8c13ea8e022166fcbdfa6b50ce691ebfe48"
+  },
+  "@r0@/lib/PortableApps/include/RiscRadioScanV1.h": {
+    "sha256": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b"
+  },
+  "@r0@/lib/PortableApps/include/RiscRuntimeHostControlV1.h": {
+    "sha256": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815"
+  },
+  "@r0@/lib/PortableApps/include/RiscRuntimeV1.h": {
+    "sha256": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387"
+  },
+  "@r0@/lib/PortableApps/include/RiscStreamProviderV1.h": {
+    "sha256": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432"
+  },
+  "@r0@/lib/PortableApps/include/RiscTelemetryV1.h": {
+    "sha256": "8ef64c586e8392c1d7521498c25cfdaccefd53242530e2dda9116e9cc12a5d48"
+  },
+  "@r0@/lib/PortableApps/include/RiscTouchV1.h": {
+    "sha256": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d"
+  },
+  "@r0@/lib/PortableApps/include/T5BatteryApi.h": {
+    "sha256": "f939c924102099de4ed746519791ce2b68eb2bac79bc212caeaad1366dc8c9a5"
+  },
+  "@r0@/lib/PortableApps/include/TelemetryBroadcastV1.h": {
+    "sha256": "986a52b5a3ddd361189d204e33624ce6275d953bca6a94a6e6dd5c136a89e2d5"
+  },
+  "@r0@/lib/PortableApps/include/WatchLayout.h": {
+    "sha256": "e622bcf52e40ad7fd343f4c209dfa1dfe2ed87db979558cce26c39bfd6752b63"
+  },
+  "@r0@/lib/PortableApps/include/WifiApi.h": {
+    "sha256": "eddb48c2e4284a592f32a540e10e02572bf251e3145783e9083278afd1aa0159"
+  },
+  "@r0@/Apps/PaperPresentation.h": {
+    "sha256": "8d13a8c73187d1e35f67c3208f861b95ceac143b6401e6572c2b4356ef409747"
+  },
+  "@r0@/Apps/SpringboardPresentation.h": {
+    "sha256": "af80cd3f66de0ca0ca7077a926e196a14de2c79263d449f90e501090aa55031b"
+  },
+  "@r0@/lib/PortableApps/fonts/text.inc": {
+    "sha256": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42"
+  },
+  "@r0@/lib/PortableApps/fonts/watch-native-icons.inc": {
+    "sha256": "8e3d9a110f13787048cab5643f06313c48bb69b0d1ddd4545786cd3a6d2fc351"
+  },
+  "@r0@/lib/PortableApps/paper_fonts/text.inc": {
+    "sha256": "9ee273df1c27df92d8ab2a985fb474d15b715770984894da4fee40b8cd9f2e4a"
+  },
+  "@r0@/lib/PortableApps/settings_fonts/text.inc": {
+    "sha256": "8453a3f7c123799354a0ff4246dba420de2a612f421d6d9de9bf4c976073b449"
+  },
+  "@r0@/lib/PortableApps/src/adapter.c": {
+    "sha256": "98f705ebcbe3ea7fdcb270354d93108555b0d96b95eb86c54281d5f35318b249"
+  },
+  "@r0@/lib/PortableApps/src/alarm.inc": {
+    "sha256": "69162d4e5e68717a6973978126d935c2cb656f23c84a0ce5918c2a68996aa597"
+  },
+  "@r0@/lib/PortableApps/src/broadcast_adapter.inc": {
+    "sha256": "a4dd913081ff3e15fc312a525b58c73270b00a83d6d39bab7ea7fc756333ce89"
+  },
+  "@r0@/lib/PortableApps/src/contexts_adapter.inc": {
+    "sha256": "95b27ff26c416800e69eafa140ffeb052a14a8448b1e3ee007ebac78a004165e"
+  },
+  "@r0@/lib/PortableApps/src/contexts_policy.inc": {
+    "sha256": "943afb45c3e9c887f937d3ed064baa23f5d3b9fd104836651889223702df58d5"
+  },
+  "@r0@/lib/PortableApps/src/contexts_rules_adapter.inc": {
+    "sha256": "1f5ed1e29109d9e53ce53389d290b43f97e5b81d5d015993ca3e9c85b571245c"
+  },
+  "@r0@/lib/PortableApps/src/foreground_adapter_open.inc": {
+    "sha256": "d2b45ef71179cd3fb0337c9f03066818e54544ee33e5b53b54b52ceb05853ba7"
+  },
+  "@r0@/lib/PortableApps/src/home_automatic.inc": {
+    "sha256": "c650e54f03754434697a9aed7482b14dc82da58c2cbf1a0f3047516f91c19182"
+  },
+  "@r0@/lib/PortableApps/src/installed_catalog_adapter.inc": {
+    "sha256": "76aabb6052b96cd2925d03d7f5648a1d4d295a08f0f8e108f9334bd314409d4b"
+  },
+  "@r0@/lib/PortableApps/src/native_custody_adapter.inc": {
+    "sha256": "478a77ec895642eadf77c1b7cb57a4a1100b11e8fa222f5a3777c05a782dd0d9"
+  },
+  "@r0@/lib/PortableApps/src/nova.inc": {
+    "sha256": "fdf01a3d48083dd13365065cc324d6e4fc1b3b021170da9b0f44b31e00afe497"
+  },
+  "@r0@/lib/PortableApps/src/nova_ui.inc": {
+    "sha256": "48a16b7c17f6cf7bfcd8eb115e68c679c126ff1a8e26319509a00ba2a8a55379"
+  },
+  "@r0@/lib/PortableApps/src/paper.inc": {
+    "sha256": "15ff86a7bbc307b8c20c1d7ece8aabecfbb2f80b439bea217f8b889f1e4aa3fb"
+  },
+  "@r0@/lib/PortableApps/src/performance.inc": {
+    "sha256": "547a1f1902f60b816b8dc25a28821fb0a4c84c21e219c460a6dbb760a8c71db9"
+  },
+  "@r0@/lib/PortableApps/src/quick_actions.c": {
+    "sha256": "eae925bc7ba6041310531a62458d9ca77a20f4e5be3346c4c5f7aad7775d6994"
+  },
+  "@r0@/lib/PortableApps/src/quick_actions_assets.inc": {
+    "sha256": "6e0eadad1387eee501f4524d3b21d86fac61e9051822c368070468b9c41d896c"
+  },
+  "@r0@/lib/PortableApps/src/quick_adapter.inc": {
+    "sha256": "561d5110328f39d2e90cd55060b11de6889304f9f93794b6748bc08bdf6d8f1f"
+  },
+  "@r0@/lib/PortableApps/src/quick_atomic.inc": {
+    "sha256": "ff3ac48f7cae5b09c7575574dec4f37aaa626935e111f3e37a00cf8ec22d3710"
+  },
+  "@r0@/lib/PortableApps/src/quick_radios.c": {
+    "sha256": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+  },
+  "@r0@/lib/PortableApps/src/quick_render.c": {
+    "sha256": "a4e729f3e66240815c3614c602647777951fbbf2fba6fb06809eb914b72b3387"
+  },
+  "@r0@/lib/PortableApps/src/quick_session.c": {
+    "sha256": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96"
+  },
+  "@r0@/lib/PortableApps/src/resident_adapter.inc": {
+    "sha256": "c8086ddb8f773046eb3961d2bb4e20b9916867d3e14351d7231c316c38b2d806"
+  },
+  "@r0@/lib/PortableApps/src/resident_shell.inc": {
+    "sha256": "1da77c2ced23782ceef3ebf21e5393834d7f70a3b70187cbbcc40569c6d0fdda"
+  },
+  "@work@/target-basic/input-fixtures/AlarmServiceV1.h": {
+    "sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+    "text": "#ifndef UTILITIES_ALARM_SERVICE_V1_H\n#define UTILITIES_ALARM_SERVICE_V1_H\n/* Utilities-owned, opaque-to-Runtime ordinary provider capability. */\n#include <stdbool.h>\n#include <stddef.h>\n#include <stdint.h>\n#define ALARM_SERVICE_CAPABILITY \"alarm.service\"\n#define ALARM_SERVICE_API_V1 1u\n#define ALARM_STATUS_CUE_SUPPORTED 1u\n#define ALARM_KIND_ALARM 1u\n#define ALARM_KIND_COUNTDOWN 2u\n#define ALARM_MODE_VIBRATE 1u\n#define ALARM_MODE_SOUND 2u\n#define ALARM_MODE_BOTH 3u\nenum { ALARM_OK=0, ALARM_PENDING=1, ALARM_BUSY=-1, ALARM_INVALID=-2,\n       ALARM_STALE=-3, ALARM_STORAGE=-4, ALARM_RTC=-5, ALARM_OUTPUT=-6,\n       ALARM_EXHAUSTED=-7, ALARM_FOREGROUND=-8 };\nenum { ALARM_STATE_LOADING, ALARM_STATE_READY, ALARM_STATE_ALERT,\n       ALARM_STATE_DISMISSING, ALARM_STATE_BLOCKED,\n       /* Additive copied status: non-modal output reservation, before open and\n        * through cleanup. Updated clients must drain it without painting an\n        * alarm overlay. Earlier clients reject unknown states safely. */\n       ALARM_STATE_CUE };\nenum { ALARM_SCHEDULE_OFF, ALARM_SCHEDULE_ARMED, ALARM_SCHEDULE_DUE,\n       ALARM_SCHEDULE_DISMISSED, ALARM_SCHEDULE_EXPIRED };\ntypedef struct {\n    uint32_t kind, revision, deadline, generation;\n} alarm_token_v1;\ntypedef struct {\n    uint32_t revision, deadline, state;\n} alarm_schedule_status_v1;\ntypedef struct {\n    uint32_t api_version, struct_size, state;\n    int32_t error;\n    uint32_t snapshot, rtc_seconds, mode, output_uncertain;\n    alarm_schedule_status_v1 schedules[2];\n    alarm_token_v1 occurrence;\n    uint32_t recovery_until, remaining_ms;\n    char label[24];\n} alarm_status_v1;\ntypedef struct {\n    uint32_t struct_size, snapshot, rtc_seconds, deadline;\n    /* deadline=0 means no schedule. Decision is consumed immediately by the\n       serialized caller, with no intervening service/writer call. */\n} alarm_sleep_v1;\ntypedef struct {\n    uint32_t api_version, struct_size;\n    void *context;\n    /* Memory-only copied values; caller sets struct_size. No retained pointers. */\n    int32_t (*status)(void *, alarm_status_v1 *);\n    /* One cooperative phase, at most two dependency calls (three with the DND\n       preflight enabled). Explicit foreground\n       safe point only; synchronous\n       NVS has no hard latency guarantee. Never invoke from provider poll. */\n    int32_t (*step)(void *);\n    /* Memory-only hint; does not prove a writer commit. Also retries blocked\n       storage/RTC reconciliation, without silently acknowledging an alert. */\n    int32_t (*refresh)(void *);\n    /* Queues exact-current dismissal. Fully dismissed only after status READY,\n       matching schedule DISMISSED, safe output stop and verified durable ACK. */\n    int32_t (*acknowledge)(void *, const alarm_token_v1 *);\n    /* Starts/finishes a fresh reconciliation. PENDING means call step and retry.\n       No suppression flag or retained sleep lease; service has no I/O poll. */\n    int32_t (*prepare_sleep)(void *, alarm_sleep_v1 *);\n    /* Failure-only cleanup while a foreground presentation is not settled.\n       One stop/silence/close operation per call, no storage or output start.\n       OK proves both outputs stopped, but does NOT acknowledge an occurrence.\n       OUTPUT means retain the invocation/resources; no normal handoff. */\n    int32_t (*stop_only)(void *);\n} alarm_service_v1;\n/* Optional append-only suffix. The original table remains an unchanged prefix,\n   so existing clients and providers keep their source and binary layouts. */\n#define ALARM_SERVICE_SLEEP_RESUME_SUPPORTED 1u\ntypedef struct {\n    alarm_service_v1 base;\n    /* Only the serialized sleep owner may call this, exactly once after native\n       Light sleep returns OK, before another mutating service/writer call.\n       Pass the unchanged successful prepare_sleep decision. A refusal must not\n       call it. One RTC read rejects invalid/backward time, then reanchors the\n       independent awake monotonic clock and starts full reconciliation. OK\n       confirms this boundary only; due work still requires normal steps.\n       STALE rejects a wrong, reused or invalidated decision without I/O. */\n    int32_t (*resume_sleep)(void *, const alarm_sleep_v1 *);\n} alarm_service_sleep_v1;\n#define ALARM_SERVICE_SLEEP_V1_SIZE ((uint32_t)sizeof(alarm_service_sleep_v1))\n#if defined(__cplusplus)\n#define ALARM_STATIC_ASSERT static_assert\n#else\n#define ALARM_STATIC_ASSERT _Static_assert\n#endif\nALARM_STATIC_ASSERT(sizeof(alarm_token_v1)==16,\"alarm occurrence token ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_status_v1)==104,\"alarm copied status ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_sleep_v1)==16,\"alarm sleep decision ABI\");\nALARM_STATIC_ASSERT(offsetof(alarm_service_sleep_v1,base)==0,\"alarm sleep base prefix\");\nALARM_STATIC_ASSERT(offsetof(alarm_service_sleep_v1,resume_sleep)==sizeof(alarm_service_v1),\"alarm sleep suffix offset\");\n#if UINTPTR_MAX == UINT32_MAX\nALARM_STATIC_ASSERT(sizeof(alarm_service_v1)==36,\"alarm service target ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_service_sleep_v1)==40,\"alarm sleep service target ABI\");\n#endif\n#undef ALARM_STATIC_ASSERT\n#endif\n",
+    "template_sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5"
+  },
+  "@work@/target-basic/input-fixtures/empty_catalog.c": {
+    "sha256": "0f00645d5834dc582197aeea4caec4d9a797dfc14dda3c2cfbe2d32d38da3b4b",
+    "text": "#include \"PortableApps.h\"\nconst t5_app_manifest_t portable_catalog[]={{.display_name=\"Clock\",.file_name=\"clock.elf\",.icon=\"solid:f017\",.compatible=true},{.display_name=\"Battery\",.file_name=\"battery.elf\",.icon=\"solid:f240\",.compatible=true},{.display_name=\"Settings\",.file_name=\"settings.elf\",.icon=\"solid:f013\",.compatible=true},{.display_name=\"Calculator\",.file_name=\"calculator.elf\",.icon=\"solid:f1ec\",.compatible=true},{.display_name=\"Stopwatch\",.file_name=\"stopwatch.elf\",.icon=\"solid:f2f2\",.compatible=true},{.display_name=\"Alarms\",.file_name=\"alarms.elf\",.icon=\"solid:f0f3\",.compatible=true},{.display_name=\"Countdown\",.file_name=\"countdown.elf\",.icon=\"solid:f254\",.compatible=true},{.display_name=\"Wi-Fi\",.file_name=\"wifi_settings.elf\",.icon=\"solid:f1eb\",.compatible=true},{.display_name=\"Firmware Update\",.file_name=\"ota_update.elf\",.icon=\"solid:f021\",.compatible=true},{.display_name=\"App Store\",.file_name=\"app_store.elf\",.icon=\"solid:f019\",.compatible=true},{.display_name=\"Points in Time\",.file_name=\"points_in_time.elf\",.icon=\"solid:f783\",.compatible=true},{.display_name=\"Frequency Generator\",.file_name=\"frequency_generator.elf\",.icon=\"solid:f028\",.compatible=true},{.display_name=\"Audio Spectrum\",.file_name=\"audio_spectrum.elf\",.icon=\"solid:f130\",.compatible=true},{.display_name=\"Waterfall\",.file_name=\"waterfall.elf\",.icon=\"solid:f0ec\",.compatible=true},{.display_name=\"Files\",.file_name=\"file_browser.elf\",.icon=\"solid:f07c\",.compatible=true},{.display_name=\"LoRa Messages\",.file_name=\"lora_messages.elf\",.icon=\"solid:f27a\",.compatible=true},{.display_name=\"BLE Scanner\",.file_name=\"ble_scanner.elf\",.icon=\"solid:f7c0\",.compatible=true},{.display_name=\"Timecard\",.file_name=\"timecard.elf\",.icon=\"solid:f274\",.compatible=true},{.display_name=\"BLE Touchpad\",.file_name=\"ble_touchpad.elf\",.icon=\"solid:f245\",.compatible=true},{.display_name=\"BLE Buttons\",.file_name=\"ble_buttons.elf\",.icon=\"solid:f11c\",.compatible=true},{.display_name=\"Contexts\",.file_name=\"contexts.elf\",.icon=\"solid:f015\",.compatible=true},{.display_name=\"Lists\",.file_name=\"lists.elf\",.icon=\"solid:f274\",.compatible=true},{.display_name=\"3D Viewer\",.file_name=\"model_viewer.elf\",.icon=\"regular:f03e\",.compatible=true}};\nconst unsigned portable_catalog_count=23;\n",
+    "template_sha256": "0f00645d5834dc582197aeea4caec4d9a797dfc14dda3c2cfbe2d32d38da3b4b"
+  },
+  "@work@/target-basic/input-fixtures/watch-alarm-profile.h": {
+    "sha256": "a72e241ceaf4dc6cc9833ed9b219c5869aaea1b3d12fec2990ef9f1fd91d14cb",
+    "text": "#include \"AlarmServiceV1.h\"\n#define ALARM_MODE_VISUAL 0u\nstatic inline uint32_t alarm_service_output_modes(const alarm_service_v1*s){return s?ALARM_MODE_BOTH:ALARM_MODE_VISUAL;}\n",
+    "template_sha256": "a72e241ceaf4dc6cc9833ed9b219c5869aaea1b3d12fec2990ef9f1fd91d14cb"
+  },
+  "@r1@/sdk/app/RiscRealtimeV1.h": {
+    "sha256": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d"
+  },
+  "@r0@/lib/PortableApps/src/nova_native.inc": {
+    "sha256": "b256e3f2be6ec3b09ef275f17d34b8a071a3359db0585b1c7b819de17418eb26"
+  },
+  "@r0@/lib/PortableApps/src/raster_snapshot_replay.inc": {
+    "sha256": "21141f2cd4891eb23754530f403769c91df0aa89c43e1d3117a154dd07f53115"
+  },
+  "@r0@/lib/PortableApps/src/raster_snapshot_state.inc": {
+    "sha256": "6e57833f7e61b7a4675b0f214cbdfe46dd312a33fccac63c9e80998caf3b0986"
+  }
+}

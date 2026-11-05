@@ -6,6 +6,7 @@
 #ifdef PORTABLE_TOUCH_SCROLL
 #include "PortableTouchScroll.h"
 void portable_file_browser_scroll_interrupt(void);
+bool portable_file_browser_scroll_active(void);
 void portable_file_browser_touch_sample(portable_touch_sample *sample,uint32_t *now);
 void portable_file_browser_scroll_clip(const portable_scroll_viewport *view);
 #endif

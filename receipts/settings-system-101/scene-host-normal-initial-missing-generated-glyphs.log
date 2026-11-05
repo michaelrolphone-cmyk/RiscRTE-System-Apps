@@ -1,0 +1,15 @@
+{"command": ["python3", "scripts/test_scene_host.py", "--runtime", "/workspace/shared/x4-https-099-20261012/runtime"], "cwd": "/workspace/shared/x4-settings-system-101-20261012", "environment": {}}
+In file included from /workspace/shared/x4-settings-system-101-20261012/Services/scene_host/host.c:796:
+/workspace/shared/x4-settings-system-101-20261012/Services/scene_host/telemetry_draw.inc:3:10: fatal error: fonts/telemetry.inc: No such file or directory
+    3 | #include "fonts/telemetry.inc"
+      |          ^~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+Traceback (most recent call last):
+  File "/workspace/shared/x4-settings-system-101-20261012/scripts/test_scene_host.py", line 111, in <module>
+    count = run(args.runtime.resolve(), Path(temporary), args.sanitize)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/shared/x4-settings-system-101-20261012/scripts/test_scene_host.py", line 39, in run
+    subprocess.run([compiler, *flags, '-I'+str(include),
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['cc', '-std=c11', '-O1', '-Wall', '-Wextra', '-Werror', '-I/tmp/risc-scene-host-tms2mqla/sdk/include', '/workspace/shared/x4-settings-system-101-20261012/Services/scene_host/host.c', '/workspace/shared/x4-settings-system-101-20261012/test/scene/host_test.c', '-o', '/tmp/risc-scene-host-tms2mqla/scene-host-test']' returned non-zero exit status 1.

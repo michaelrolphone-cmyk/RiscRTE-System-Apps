@@ -20,6 +20,7 @@ static void clear_comparison(portable_file_setup *s) {
 }
 static portable_file_setup_result retain(portable_file_setup *s, int32_t error) {
     wipe(&s->descriptor, sizeof(s->descriptor));
+    wipe(&s->network,sizeof(s->network));
     clear_comparison(s);
     s->view.state = PORTABLE_FILE_SETUP_STATE_RETAINED;
     s->view.remaining_ms = 0;
@@ -45,6 +46,7 @@ static portable_file_setup_result result(const portable_file_setup *s) {
 }
 static void finish(portable_file_setup *s) {
     wipe(&s->descriptor, sizeof(s->descriptor));
+    wipe(&s->network,sizeof(s->network));
     wipe(&s->api, sizeof(s->api));
     wipe(&s->config, sizeof(s->config));
     clear_comparison(s);
@@ -56,6 +58,7 @@ static void finish(portable_file_setup *s) {
 }
 static portable_file_setup_result ending(portable_file_setup *s, int32_t error, bool cleanup) {
     wipe(&s->descriptor, sizeof(s->descriptor));
+    wipe(&s->network,sizeof(s->network));
     clear_comparison(s);
     s->cleanup_mode = s->cleanup_mode || cleanup;
     s->view.state = s->cleanup_mode ? PORTABLE_FILE_SETUP_STATE_CLEANUP_PENDING : PORTABLE_FILE_SETUP_STATE_ENDING;
@@ -126,6 +129,15 @@ portable_file_setup_result portable_file_setup_start(portable_file_setup *s,
     s->phase = PHASE_ACQUIRE;
     return PORTABLE_FILE_SETUP_PENDING;
 }
+portable_file_setup_result portable_file_setup_start_network(portable_file_setup*s,
+    const portable_file_setup_config*c,const risc_bluetooth_network_offer_v1*n,uint64_t now){
+    if(!n || n->struct_size!=sizeof(*n) || !memchr(n->ssid,0,sizeof(n->ssid)) || !n->ssid[0] ||
+      !memchr(n->password,0,sizeof(n->password)) || strlen(n->password)<8)return PORTABLE_FILE_SETUP_INVALID;
+    if(!s || s->phase!=PHASE_IDLE)return PORTABLE_FILE_SETUP_INVALID;
+    portable_file_setup_result rc=portable_file_setup_start(s,c,&n->endpoint,now);
+    if(rc==PORTABLE_FILE_SETUP_PENDING)s->network=*n;
+    return rc;
+}
 static portable_file_setup_result acquire_provider(portable_file_setup *s) {
     s->grant = (risc_runtime_capability_v1){.struct_size = sizeof(s->grant)};
     bool ok = s->acquire(RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY, RISC_BLUETOOTH_SESSION_SETUP_API_V1,
@@ -146,6 +158,10 @@ static portable_file_setup_result acquire_provider(portable_file_setup *s) {
     }
     memset(&s->api,0,sizeof(s->api));
     memcpy(&s->api,api,offsetof(risc_bluetooth_session_setup_v1,peer_tag));
+    if(s->network.struct_size){
+      if(api->struct_size<sizeof(*api)||api->network_tag!=RISC_SESSION_NETWORK_TAG||!api->open_network){s->unavailable_after_close=true;return ending(s,PORTABLE_FILE_SETUP_CONTRACT,false);}
+      s->api=*api;
+    }
     s->phase = PHASE_OPEN;
     return PORTABLE_FILE_SETUP_PENDING;
 }
@@ -153,11 +169,13 @@ static portable_file_setup_result open_provider(portable_file_setup *s, uint64_t
     uint64_t elapsed = now_ms - s->started_ms;
     if (elapsed >= s->descriptor.remaining_lifetime_ms) return ending(s, RISC_SETUP_EXPIRED, false);
     s->descriptor.remaining_lifetime_ms -= (uint32_t)elapsed;
-    int32_t rc = s->api.open(s->api.context, s->config.name, &s->descriptor,
+    s->network.endpoint=s->descriptor;
+    int32_t rc = s->network.struct_size ? s->api.open_network(s->api.context,s->config.name,&s->network,s->config.setup_lifetime_ms,&s->token) : s->api.open(s->api.context, s->config.name, &s->descriptor,
         s->config.setup_lifetime_ms, &s->token);
     /* open retains no caller pointers. Never retain a second local secret copy
      * for an implicit retry, even if the result is BUSY or otherwise failed. */
     wipe(&s->descriptor, sizeof(s->descriptor));
+    wipe(&s->network,sizeof(s->network));
     if (!owner(s)) return PORTABLE_FILE_SETUP_RETAINED;
     s->view.error = rc;
     if (rc == RISC_SETUP_OK || rc == RISC_SETUP_PENDING) {
@@ -195,7 +213,7 @@ static portable_file_setup_result native_result(portable_file_setup *s, int32_t 
 }
 static bool valid_status(const portable_file_setup *s, const risc_bluetooth_session_setup_status_v1 *v) {
     if (v->struct_size != sizeof(*v) || v->state < RISC_SETUP_STARTING || v->state > RISC_SETUP_FAILED ||
-        (v->flags & ~(RISC_SETUP_ENCRYPTED | RISC_SETUP_AUTHENTICATED | RISC_SETUP_NUMERIC_CONFIRMED | RISC_SETUP_READABLE)) ||
+        (v->flags & ~(RISC_SETUP_ENCRYPTED | RISC_SETUP_AUTHENTICATED | RISC_SETUP_NUMERIC_CONFIRMED | RISC_SETUP_READABLE | RISC_SETUP_NETWORK_AUTHORIZED)) ||
         v->remaining_ms > s->config.setup_lifetime_ms || v->pairing_number > 999999 ||
         v->pairing_generation < s->pairing_generation || v->connection_generation < s->connection_generation ||
         (s->connection_generation && v->connection_generation != s->connection_generation)) return false;
@@ -209,7 +227,7 @@ static bool valid_status(const portable_file_setup *s, const risc_bluetooth_sess
              v->pairing_number != s->view.pairing_number)) return false;
     } else if (v->pairing_number) return false;
     if ((v->flags & RISC_SETUP_READABLE) && (v->state != RISC_SETUP_READY ||
-        v->flags != (RISC_SETUP_ENCRYPTED | RISC_SETUP_AUTHENTICATED | RISC_SETUP_NUMERIC_CONFIRMED | RISC_SETUP_READABLE) ||
+        (v->flags & ~RISC_SETUP_NETWORK_AUTHORIZED) != (RISC_SETUP_ENCRYPTED | RISC_SETUP_AUTHENTICATED | RISC_SETUP_NUMERIC_CONFIRMED | RISC_SETUP_READABLE) ||
         !s->confirmed_generation || v->pairing_generation != s->confirmed_generation)) return false;
     return true;
 }
@@ -238,6 +256,7 @@ portable_file_setup_result portable_file_setup_step(portable_file_setup *s, uint
     if (!valid_status(s, &value)) return retain(s, PORTABLE_FILE_SETUP_CONTRACT);
     s->view.provider_state = value.state;
     s->view.flags = value.flags;
+    if(value.flags&RISC_SETUP_NETWORK_AUTHORIZED){if(!s->confirmed_generation||value.pairing_generation!=s->confirmed_generation)return retain(s,PORTABLE_FILE_SETUP_CONTRACT);s->view.network_authorized=true;}
     s->view.remaining_ms = value.remaining_ms;
     s->view.error = value.error;
     s->pairing_generation = value.pairing_generation;

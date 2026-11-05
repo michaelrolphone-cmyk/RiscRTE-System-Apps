@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build and validate the development entropy facade; no deployment."""
+from native_toolchain import compiler_path as resolve_compiler
 import argparse
 import hashlib
 import json
@@ -17,10 +18,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "dist/portable/entropy")
     args = parser.parse_args()
-    cc = os.environ.get("NATIVE_APP_CC") or shutil.which("xtensa-esp32s3-elf-gcc")
-    if not cc:
-        cc = str(Path(os.environ.get("PLATFORMIO_CORE_DIR", Path.home() / ".platformio")) /
-                 "packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc")
+    cc = resolve_compiler()
     if not Path(cc).is_file():
         parser.error("ESP32-S3 toolchain unavailable; set NATIVE_APP_CC or PLATFORMIO_CORE_DIR")
     cxx, nm = cc.removesuffix("gcc") + "g++", cc.removesuffix("gcc") + "nm"

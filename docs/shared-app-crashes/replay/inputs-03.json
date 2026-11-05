@@ -1,0 +1,322 @@
+{
+  "@r0@/lib/PortableApps/include/RiscStorageVolumeV1.h": {
+    "sha256": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5"
+  },
+  "@r0@/lib/PortableApps/src/PortableFileSetup.c": {
+    "sha256": "1ca0ae0964a0d16dbe05904dbff52486ec8eef59aa1d5da55418e796c7a0ab1f"
+  },
+  "@r0@/lib/PortableApps/src/PortableNetworkSession.c": {
+    "sha256": "acaa29ebc74d3c874efffa98a23290ba9dc0681f6bf1aa5034070312ad1e0ed5"
+  },
+  "@r1@/sdk/app/RiscResidentShellV1.h": {
+    "sha256": "1a84715c03fcc7fae7f75cb72c0daf875e761567dda5d1b39ec0dc8b14fba8bd"
+  },
+  "@work@/target-remaining/sharing-objects/WebDavCore.o": {
+    "sha256": "713ef26f53fe933bc923d002bf80b4bb70fe432af5c0025716e799698c089d8d"
+  },
+  "@work@/target-remaining/sharing-objects/WebDavVolume.o": {
+    "sha256": "2da98534c1122a00ca6fbf4ef4c8067de1f18ddd9f77bb9da56324cb1b64f442"
+  },
+  "@work@/target-remaining/sharing-objects/WebDavProperties.o": {
+    "sha256": "0cf2050a5a0e00db9352d07b38fe8a458478f466c2807658e90bad9feb202f26"
+  },
+  "@work@/target-remaining/sharing-objects/WebDavSession.o": {
+    "sha256": "e7ba6aa9a52ecef7bd5cddf1a81fe9fda1bf5873fa6c77258155ccec7a500bd0"
+  },
+  "@work@/target-remaining/sharing-objects/WebDavDigest.o": {
+    "sha256": "fc27e240071dad8a1451b19834d87b40748da448df9fbd68940d791fa4aaf46b"
+  },
+  "@work@/target-remaining/sharing-objects/WebDavSharing.o": {
+    "sha256": "5d23a9bc91d890add864ca92407ca03ec3f8d29fcd2fae8bc3263f94b4eee255"
+  },
+  "@work@/target-remaining/sharing-objects/PortableFileSharing.o": {
+    "sha256": "57aa6c22cc68f42919b83f737349aec1fcb0201727d143e75860666c2e622157"
+  },
+  "@work@/target-remaining/sharing-objects/WebDavClient.o": {
+    "sha256": "c5a701565e9b6a8c1edff1c99a776af0c65c0296c20f5bfb76d262d02dcdea2e"
+  },
+  "@work@/target-remaining/sharing-objects/WebDavRemoteVolume.o": {
+    "sha256": "41a31d6006c133626c97a81b8c4e219c49a8e90f8c9c7bc3e9c4dce6447429d8"
+  },
+  "@work@/target-remaining/sharing-objects/PortablePeerFiles.o": {
+    "sha256": "1ce2bd6f6a57f7aba3221316f157733ef7e10055f3d99f2cd8feca03d4860123"
+  },
+  "@work@/target-remaining/sharing-objects/sha2.o": {
+    "sha256": "4be0f41435d8931956088175d875f13cc5b2ef74b8793c8eb19d439b04fbb45e"
+  },
+  "@work@/target-remaining/wave-fixed/file_browser.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/lib/NativeApps/include/T5SystemUiApi.h": {
+    "sha256": "aea03c2fe4ea5944dbda4ad6cfc499baa69fc2711bb55167a1e10461d500c8d1"
+  },
+  "@r7@/Apps/timecard.c": {
+    "sha256": "c17b0fed28eb44d2397c740ef56c8f07bc51c3f707d3080ec9ad5849e25a31a9"
+  },
+  "@r7@/Apps/timecard_appdata_bridge.h": {
+    "sha256": "0adf349d3aba15dd29575d57c14d6ecf8123d304c939f4a32589d91e0c9ba585"
+  },
+  "@r7@/Apps/timecard_portable.c": {
+    "sha256": "f1a18730f04bbeae5cab829438efe1d3131d46223f84698c66ccc7a8c67b69b4"
+  },
+  "@r7@/Apps/timecard_portable_validation.h": {
+    "sha256": "6f86fb034b96fa3dc15f902182efd6e4a850699dd9be0e944823d9cddfe429e8"
+  },
+  "@r7@/Apps/timecard_shared_data.h": {
+    "sha256": "d18628e77ebeee956dc069c46134967d9f730f1be49c8b80d382284d5e45d4ea"
+  },
+  "@r7@/Apps/timecard_shared_input.inc": {
+    "sha256": "8f393c99b75d95779f6ee6b0fad5706761c9de928b26b1fcd1363d5fa2d7ab9c"
+  },
+  "@r7@/lib/NativeApps/include/T5SystemApi.h": {
+    "sha256": "56179941cac6dac7c71c2fe43013015a2d286620172a4d5945425c9cebc6d2d2"
+  },
+  "@work@/target-remaining/wave-fixed/timecard.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/lib/PortableApps/include/PortablePreferenceRollback.h": {
+    "sha256": "9b2f63ba5752a93a8bb269a77aef29dfe0f0d4dc1a946ab16cfa5b341de7f92a"
+  },
+  "@r2@/Apps/ble_scan_model.h": {
+    "sha256": "9cd2629a08c8f61b168cd42ec41a5a1ef759f3448e202ec6baf7cc2499bedb63"
+  },
+  "@r2@/Apps/ble_scanner.c": {
+    "sha256": "bcd42379097d299ea7c69fac5d6d6eeee400418024284eb26fe54ce1330e5a79"
+  },
+  "@r2@/Apps/ble_scanner_paper.inc": {
+    "sha256": "e449b3873343a197291899160d31e15f091297c0b18f06f477924be7bc72872a"
+  },
+  "@r2@/Apps/ble_sensor_names.h": {
+    "sha256": "31c0397e8507c397b363616ce7cc5834b4ebc23e945b87ffa009fd92923a42cf"
+  },
+  "@r2@/lib/Bluetooth/include/RiscBluetoothSensorsV1.h": {
+    "sha256": "62f21be78604b6c32c47beb8317f1fea059653b407baa73a93ee23ce8d8d050e"
+  },
+  "@r2@/lib/Bluetooth/include/RiscTelemetryV1.h": {
+    "sha256": "8ef64c586e8392c1d7521498c25cfdaccefd53242530e2dda9116e9cc12a5d48"
+  },
+  "@work@/target-remaining/wave-fixed/ble_scanner.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/Apps/wifi_atomic.inc": {
+    "sha256": "0a0b06d269b779216bd2760d127c13d164470aa5038918a2a982409a68204691"
+  },
+  "@r0@/Apps/wifi_settings.c": {
+    "sha256": "c1468a6c8ea559e3b32f6a309bf5a77578550109f0b071a7ec9e0bb95f613205"
+  },
+  "@r0@/Apps/wifi_settings_portable.inc": {
+    "sha256": "021e92730e6263e6a590509d27d9a019ef93df1fc8a57486fe19dc196b7d031c"
+  },
+  "@r0@/lib/PortableApps/include/PortableSettingsAvailability.h": {
+    "sha256": "5c5b9982bce02a532b18644580c4f7ece11bfa0df01ae0c1078bc86183d20be8"
+  },
+  "@r0@/lib/PortableApps/include/PortableWifiAtomic.h": {
+    "sha256": "e3d6f411a9ccae3f19f9b20b3d91fe4e99dc8e4746661210213a0c135abdc9fa"
+  },
+  "@r0@/lib/PortableApps/include/RiscKeyValueAvailabilityV1.h": {
+    "sha256": "7cf7765c26af74813f86a1a041a0a92495840c883f5e231c391294dd928ad976"
+  },
+  "@r0@/lib/PortableApps/src/home_settings_availability.inc": {
+    "sha256": "d6ce3feb09f0ff82efb22ef38c63d7210884ba7b9cd83b28a336f05de2dd80d2"
+  },
+  "@r0@/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c": {
+    "sha256": "1635a91007f60c9bfc8c42dde1ed7d4f6134240bf0289583b51bfd614d49ebc5"
+  },
+  "@r0@/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.h": {
+    "sha256": "a473ab617b9cb37d9b13dfc95e07a1dc3eeecdbe4afe488c5426dac721286c7b"
+  },
+  "@r0@/lib/RemoteFiles/vendor/tinydtls_sha2/tinydtls.h": {
+    "sha256": "20a5f12892ad325dd66c133738a17e832b012326c701109823ff7749b1c2cbcd"
+  },
+  "@work@/target-more/fixed/wifi_settings/exports.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r8@/Apps/points_in_time.c": {
+    "sha256": "7424668149e7c5f2fe06a501302c90397e7fbad22766c92a8c0ef7255f42d2f7"
+  },
+  "@r8@/Apps/points_nova7.inc": {
+    "sha256": "f4b710faf67a006a2558958d20acdf5cfa493233ab99eb6e8107dc50494312f2"
+  },
+  "@r8@/Apps/points_nova7_picker.inc": {
+    "sha256": "1569382e35b1964572d9032cd36a7eb782056647a0049c999f8c487c6b8a2669"
+  },
+  "@r8@/Apps/points_paper.inc": {
+    "sha256": "dbd911cc0411bbbb266f00dfcf3dc0529362e6c5fa0739a62d643bf91244a2a3"
+  },
+  "@r8@/Apps/points_watch_shared_input.h": {
+    "sha256": "dd551439da64e8230018a2ecb0bf375f878e54bbca2a9bf0cfd631cee92815ca"
+  },
+  "@r8@/Apps/points_writer.h": {
+    "sha256": "2d84b9d3738314ef17dbb5b71f3a50a18a5f13f1c5b11430992fbd094a363da8"
+  },
+  "@r8@/test/native_apps/points_policy_profile/empty_catalog.c": {
+    "sha256": "0f00645d5834dc582197aeea4caec4d9a797dfc14dda3c2cfbe2d32d38da3b4b"
+  },
+  "@r8@/test/native_apps/points_policy_profile/watch-alarm-profile.h": {
+    "sha256": "795cf43fd6c123f1eaf10f629c6bec467385622dda79145b633f1b34d8a657e4"
+  },
+  "@r9@/sdk/app/RiscRealtimeV1.h": {
+    "sha256": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d"
+  },
+  "@r9@/sdk/app/RiscResidentShellV1.h": {
+    "sha256": "1a84715c03fcc7fae7f75cb72c0daf875e761567dda5d1b39ec0dc8b14fba8bd"
+  },
+  "@r0@/lib/PortableApps/include/PortableNovaKeyboard.h": {
+    "sha256": "388cdc97e48b6e3378f1cf80b1b5dc3b0e116dd1e30a061697ae56bfb15ec0eb"
+  },
+  "@r10@/Apps/alarm_writer.h": {
+    "sha256": "6a28cd9955cbd099fe778777c63ebcb2c606ee48bab206fece6f45c644138ba0"
+  },
+  "@r10@/lib/Alarm/include/AlarmRecords.h": {
+    "sha256": "e04d9cfa6c32a70125ef618b85d048936afad2204fb97d459cda8c36fd0b2066"
+  },
+  "@r10@/lib/Alarm/include/AlarmServiceV1.h": {
+    "sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5"
+  },
+  "@r10@/lib/Alarm/include/PointsRecords.h": {
+    "sha256": "ee59148062a39b2973e70c9c4816c1109686df0440d0ffd0d56ef0bff8820332"
+  },
+  "@r11@/apps/clock/PortableSleepPolicy.h": {
+    "sha256": "15e94bdeabe34ac8a3e0b836a7cc59b00b9c4b3c22f3b2592919ce347ce3bbb1"
+  },
+  "@r11@/apps/clock/faces/ContextsFaces.h": {
+    "sha256": "e75de6b17b85e1d7fa2ebc4b89514ac7345f671027c3b15dfdbd98f9b06b5ea2"
+  },
+  "@r11@/apps/clock/faces/names.h": {
+    "sha256": "fd911f147817f540b231871f8c5ae03737786c9e6eee9a9aef389caf22630c16"
+  },
+  "@r11@/apps/clock/portable_navigation.c": {
+    "sha256": "b0d1729346d4b808395766c1c7f1800866d02a54a9e3e39baa8dd425854da84e"
+  },
+  "@r11@/apps/clock/portable_sleep.c": {
+    "sha256": "12ffccad27b7739014770a88fc0c8663676e32aec6597a7e614d6a50697406a8"
+  },
+  "@r11@/apps/clock/watch_alarm_sleep.h": {
+    "sha256": "df0e93850176f4c975456a72c2dc518a7215b35662bb4a9a7d9f864a58cec42a"
+  },
+  "@r11@/apps/clock/watch_motion_client.h": {
+    "sha256": "424111031b9e9c8e543cd2b36351cea5825e022e9862d2f93a6e1c57af84ffe9"
+  },
+  "@r11@/apps/clock/watch_sleep.h": {
+    "sha256": "ea1948c880ca2f340b2e63650ef7f52641bce6b1851c6d1992fffa7100e7db91"
+  },
+  "@r11@/include/PortableMotionTap.h": {
+    "sha256": "73fe7e58159860dab4ed1b2bf9a2a5e85b0a94c7bef39718a15e04a5d49cfc50"
+  },
+  "@r11@/include/PortableTapSettings.h": {
+    "sha256": "f6ff75e400224f2285f131d2088bd32985f9d18feefac64aa408f8b63c764132"
+  },
+  "@r11@/include/twatch_caps.h": {
+    "sha256": "88bf36643ca8ae431ef4757debd36c8b2e07212916835c6d7dbf37fca699eade"
+  },
+  "@r11@/include/twatch_power.h": {
+    "sha256": "3e805e4b6b195f0d6ecd32db28a2b41c2b72f8cebd37aad5a2a6a4b024ea3b8d"
+  },
+  "@r11@/sdk/driver/RiscDeepSleepV1.h": {
+    "sha256": "0949cf9591ef0f07b61c1306897287ea2eb1533755b5e569bfe1cb2c9b236161"
+  },
+  "@r11@/sdk/driver/RiscLightSleepV1.h": {
+    "sha256": "43cbd671265959ec2db7904bf6185e97a87c4cde9d389cdccf6fbb7c916f3b94"
+  },
+  "@r11@/sdk/driver/RiscTimedSleepV1.h": {
+    "sha256": "475ba9bfaf6c7497ace7baeb93f2bd9a6abe1e3a91f62eed24862a88d60dbf34"
+  },
+  "@work@/target-more/fixed/points_in_time/exports.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/lib/PortableApps/src/quick_paper.inc": {
+    "sha256": "f3bfacb674b2a0960419a472418e0a18660e0723a3c333d9dfa9b92cb08ee25b"
+  },
+  "@r12@/Apps/alarm_writer.h": {
+    "sha256": "6a28cd9955cbd099fe778777c63ebcb2c606ee48bab206fece6f45c644138ba0"
+  },
+  "@r12@/Apps/battery.c": {
+    "sha256": "7cda56add5ce749138d86cd135e9f6b02042bd81f358b0d9a194aa593165d9c2"
+  },
+  "@r12@/Apps/battery_power.inc": {
+    "sha256": "d955bea31acedaeeb646c0db6c26abf58fb1d0d6fe53963bb6784f0718ae8563"
+  },
+  "@r12@/Apps/utility_frame.h": {
+    "sha256": "14ecb24a5b999024d247decbd3e78499b1fa1c36749bd9bfa8b4b8a087cecbc7"
+  },
+  "@r12@/lib/Alarm/include/AlarmRecords.h": {
+    "sha256": "e04d9cfa6c32a70125ef618b85d048936afad2204fb97d459cda8c36fd0b2066"
+  },
+  "@r12@/lib/Alarm/include/AlarmServiceV1.h": {
+    "sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5"
+  },
+  "@work@/target-twatch-basic/fixed/battery.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r12@/Apps/calculator.c": {
+    "sha256": "40d552fc8ed24f10c0eb8df27e9d0584a8f4a8d41334a5dd831cc4d378254cc7"
+  },
+  "@r12@/Apps/calculator_core.h": {
+    "sha256": "4305637776ed430867b35f88c21f63a330fcc7a641c3efb878a348af12430e7b"
+  },
+  "@r12@/Apps/calculator_nova.inc": {
+    "sha256": "76c27a970c42b323f73c261801ba2f98b0774a56f15d03c7a47704f85289c699"
+  },
+  "@work@/target-twatch-basic/fixed/calculator.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r12@/Apps/daily_draw.h": {
+    "sha256": "756a39ba654efb82eb9a7e66b6c28105d30247143c424f258ded60910104b413"
+  },
+  "@r12@/Apps/stopwatch.c": {
+    "sha256": "033c048f93beb943bba671a79ee23cab678cb1741b614c1edea287621e639ca7"
+  },
+  "@r12@/Apps/stopwatch_core.h": {
+    "sha256": "d6a5172101b5da60ab516c2fd6094d20b50f5309dd3fd70d0e4381284e9b51b3"
+  },
+  "@work@/target-twatch-basic/fixed/stopwatch.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r12@/Apps/frequency_generator.c": {
+    "sha256": "464bd1c9d2765b970f7c86250c34e06ad41da1de2bdcdb9f4511688850fb99ba"
+  },
+  "@r12@/Apps/tone_core.h": {
+    "sha256": "b24e9062523a3d9ac2901d4540f5407403eb598385548a9f81199144f0a1c554"
+  },
+  "@r12@/lib/Alarm/include/AlarmOutputV1.h": {
+    "sha256": "b19cbe20602aa4fd3b184910e781e944c28fe30e72dcf919701d9b8eeab750c2"
+  },
+  "@work@/target-twatch-basic/fixed/frequency_generator.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r12@/Apps/alarm_app_shared.h": {
+    "sha256": "cc85ece58b71448c7480527931978ad12338f67869faf7359a7b88ac02441ee3"
+  },
+  "@r12@/Apps/alarm_nova.inc": {
+    "sha256": "950fe7590109962c025422264e1b16c6bde4cf7c0a5650f1bcdffd3e6b41f729"
+  },
+  "@r12@/Apps/alarms.c": {
+    "sha256": "e2c0218f36c9b9dac6d9e6e826aceb44b79cd101a9124d5f6a334df00a667072"
+  },
+  "@r12@/lib/Alarm/include/AlarmVolume.h": {
+    "sha256": "7010a97ce2b2d21ac35d50e52e1f419e14c46e06fe9c73151efb7c4ae651fdf6"
+  },
+  "@work@/target-twatch-basic/fixed/alarms.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  }
+}

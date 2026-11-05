@@ -49,6 +49,7 @@ with tempfile.TemporaryDirectory(prefix='sparse-adapter-') as directory:
 #include "RiscBatteryGaugeV1.h"
 const t5_app_manifest_t portable_catalog[1]={{.compatible=false}};
 const unsigned portable_catalog_count=0;
+void portable_desk_clock_resumed(void){}
 int portable_desk_clock_mode(void){return 0;}
 bool portable_desk_clock_time(uint8_t*h,uint8_t*m){(void)h;(void)m;return false;}
 int portable_app_alarm_sleep(const risc_runtime_api_v1 *r,const risc_display_output_api_v1 *d,const risc_battery_gauge_api_v1 *g,const alarm_service_v1 *a){(void)r;(void)d;(void)g;(void)a;return 0;}

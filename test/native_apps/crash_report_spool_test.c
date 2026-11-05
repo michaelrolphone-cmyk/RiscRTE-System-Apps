@@ -216,14 +216,14 @@ static void test_reused_capture_and_recovery_reset_variants(void) {
     backend.write_fault = RISC_APP_DATA_COMMIT_UNKNOWN; backend.commit_on_fault = true;
     assert(crash_report_spool_remove(&spool, &id, cold_reuse, sizeof(cold_reuse) - 1) == CRASH_REPORT_SPOOL_REMOVED);
     assert(spool.count == 2); assert_entry(0, 0, first); assert_entry(1, 0, recovery_a);
-    /* Overflow still preserves the first seven variants and records a drop. */
+    /* A full queue preserves every variant and defers the incoming report. */
     for (unsigned i = 0; i < 6; ++i) {
         char text[32]; snprintf(text, sizeof(text), "same capture / variant %u\n", i);
         assert(append(0, text) == CRASH_REPORT_SPOOL_COMMITTED);
     }
     assert(spool.count == 8 && !spool.dropped_count);
-    assert(append(0, recovery_b) == CRASH_REPORT_SPOOL_COMMITTED && spool.count == 8 && spool.dropped_count == 1);
-    assert_entry(0, 0, first); assert_entry(1, 0, recovery_a); assert_entry(7, 0, recovery_b);
+    assert(append(0, recovery_b) == CRASH_REPORT_SPOOL_RETRY && spool.count == 8 && spool.dropped_count == 0);
+    assert_entry(0, 0, first); assert_entry(1, 0, recovery_a); assert_entry(7, 0, "same capture / variant 5\n");
     ++tests;
 }
 static void test_text_bounds(void) {
@@ -250,40 +250,21 @@ static void test_text_bounds(void) {
 static void test_full_queue_drop_and_saturation(void) {
     reset(); memset(maximum_text, 'x', CRASH_REPORT_SPOOL_TEXT_MAX); maximum_text[CRASH_REPORT_SPOOL_TEXT_MAX] = 0;
     for (uint32_t i = 0; i < 8; ++i) assert(append(i, maximum_text) == CRASH_REPORT_SPOOL_COMMITTED);
-    assert(backend.size == CRASH_REPORT_SPOOL_FILE_MAX && backend.size < 65536);
-    assert(spool.count == 8 && !spool.dropped_count);
-    assert(append(8, "newest\n") == CRASH_REPORT_SPOOL_COMMITTED);
-    for (uint32_t i = 0; i < 7; ++i) assert_entry(i, i, maximum_text);
-    assert_entry(7, 8, "newest\n");
-    assert(spool.count == 8 && spool.dropped_count == 1);
-    crash_report_spool_identity dropped = identity(7);
-    assert(!memcmp(spool.last_dropped_identity.firmware_sha256, dropped.firmware_sha256, 32));
-    assert(spool.last_dropped_identity.captured_boot == dropped.captured_boot);
-    assert(spool.last_dropped_identity.captured_sequence == dropped.captured_sequence);
-    unsigned writes = backend.writes;
-    assert(append(8, "newest\n") == CRASH_REPORT_SPOOL_COMMITTED && backend.writes == writes && spool.dropped_count == 1);
-    assert(append(9, maximum_text) == CRASH_REPORT_SPOOL_COMMITTED);
-    assert(spool.dropped_count == 2 && spool.last_dropped_identity.captured_sequence == identity(8).captured_sequence);
     assert(backend.size == CRASH_REPORT_SPOOL_FILE_MAX);
-    /* A discarded report is not a dedupe success. Failed re-add is RETRY. */
-    backend.write_fault = RISC_APP_DATA_NO_SPACE;
-    assert(append(7, maximum_text) == CRASH_REPORT_SPOOL_RETRY && !spool.loaded);
-    assert(crash_report_spool_reload(&spool) == CRASH_REPORT_SPOOL_OK && spool.dropped_count == 2);
-    assert_entry(7, 9, maximum_text);
-    crash_report_spool_put32(backend.bytes + 20, UINT32_MAX - 1); repair_crc();
-    assert(append(10, "ten\n") == CRASH_REPORT_SPOOL_COMMITTED && spool.dropped_count == UINT32_MAX);
-    assert(append(11, "eleven\n") == CRASH_REPORT_SPOOL_COMMITTED && spool.dropped_count == UINT32_MAX);
-    assert(spool.last_dropped_identity.captured_sequence == identity(10).captured_sequence);
-    assert(crash_report_spool_reload(&rebooted) == CRASH_REPORT_SPOOL_OK && rebooted.dropped_count == UINT32_MAX);
-    for (unsigned i = 0; i < 8; ++i) {
-        crash_report_spool_view view;
-        assert(crash_report_spool_peek(&spool, 0, &view) == CRASH_REPORT_SPOOL_OK);
-        assert(crash_report_spool_remove(&spool, &view.identity, view.text, view.text_size) == CRASH_REPORT_SPOOL_REMOVED);
-    }
-    assert(!spool.count && spool.present && spool.dropped_count == UINT32_MAX);
-    assert(backend.size == CRASH_REPORT_SPOOL_HEADER_SIZE);
-    assert(crash_report_spool_reload(&rebooted) == CRASH_REPORT_SPOOL_OK && !rebooted.count && rebooted.dropped_count == UINT32_MAX);
-    assert(rebooted.last_dropped_identity.captured_sequence == identity(10).captured_sequence);
+    unsigned writes = backend.writes;
+    uint32_t crc = crash_report_spool_crc(backend.bytes, backend.size);
+    for (unsigned i=0; i<20; ++i) assert(append(8, "newest\n") == CRASH_REPORT_SPOOL_RETRY);
+    assert(backend.writes == writes && crash_report_spool_crc(backend.bytes, backend.size) == crc);
+    for (uint32_t i=0;i<8;++i) assert_entry(i,i,maximum_text);
+    assert(append(7,maximum_text)==CRASH_REPORT_SPOOL_COMMITTED && backend.writes==writes);
+    assert(crash_report_spool_reload(&rebooted)==CRASH_REPORT_SPOOL_OK && rebooted.count==8);
+    crash_report_spool_view view;
+    assert(crash_report_spool_peek(&spool,0,&view)==CRASH_REPORT_SPOOL_OK);
+    assert(crash_report_spool_remove(&spool,&view.identity,view.text,view.text_size)==CRASH_REPORT_SPOOL_REMOVED);
+    assert(append(8,"newest\n")==CRASH_REPORT_SPOOL_COMMITTED);
+    assert_entry(7,8,"newest\n");
+    assert(crash_report_spool_reload(&rebooted)==CRASH_REPORT_SPOOL_OK && rebooted.count==8);
+    assert(!rebooted.dropped_count);
     ++tests;
 }
 static void test_non_mutating_failures(void) {
@@ -344,14 +325,11 @@ static void test_append_ambiguity_and_restart(void) {
     assert(append(0, "alpha\n") == CRASH_REPORT_SPOOL_CORRUPT && !spool.loaded);
     writes = backend.writes;
     assert(append(1, "beta\n") == CRASH_REPORT_SPOOL_CORRUPT && backend.writes == writes);
-    /* Overflow accounting follows whichever complete file actually survives. */
-    reset(); for (unsigned i = 0; i < 8; ++i) assert(append(i, "report\n") == CRASH_REPORT_SPOOL_COMMITTED);
-    backend.write_fault = RISC_APP_DATA_COMMIT_UNKNOWN;
-    assert(append(8, "new\n") == CRASH_REPORT_SPOOL_RETRY && spool.dropped_count == 0);
-    assert_entry(7, 7, "report\n");
-    backend.write_fault = RISC_APP_DATA_COMMIT_UNKNOWN; backend.commit_on_fault = true;
-    assert(append(8, "new\n") == CRASH_REPORT_SPOOL_COMMITTED && spool.dropped_count == 1);
-    assert(append(8, "new\n") == CRASH_REPORT_SPOOL_COMMITTED && spool.dropped_count == 1);
+    /* Full queues do not begin ambiguous writes or discard evidence. */
+    reset(); for (unsigned i=0;i<8;++i) assert(append(i,"report\n")==CRASH_REPORT_SPOOL_COMMITTED);
+    writes=backend.writes; backend.write_fault=RISC_APP_DATA_COMMIT_UNKNOWN; backend.commit_on_fault=true;
+    assert(append(8,"new\n")==CRASH_REPORT_SPOOL_RETRY && backend.writes==writes);
+    assert_entry(7,7,"report\n");
     ++tests;
 }
 static void test_remove_success_failures_ambiguity(void) {
@@ -513,7 +491,7 @@ int main(void) {
     test_protocol_unsafe();
     test_retained_terminal();
     test_structure_fuzz();
-    printf("Crash report spool: %u groups PASS; canonical LE/CRC, bounded UTF-8, exact dedupe/text variants, oldest-seven/newest overflow, saturation, stale/ambiguous recovery, removal, reboot, corruption, terminal retained; state=%zu file_max=%u\n",
+    printf("Crash report spool: %u groups PASS; canonical LE/CRC, bounded UTF-8, exact dedupe/text variants, lossless full-queue backpressure, stale/ambiguous recovery, removal, reboot, corruption, terminal retained; state=%zu file_max=%u\n",
            tests, sizeof(spool), (unsigned)CRASH_REPORT_SPOOL_FILE_MAX);
     return 0;
 }

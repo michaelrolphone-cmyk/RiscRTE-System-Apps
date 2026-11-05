@@ -1,0 +1,45 @@
+name: X4 Files Reader handoff
+on:
+  push:
+    branches: [fix/x4-reader-regressions-20261012]
+  pull_request:
+    paths:
+      - 'Apps/file_browser*'
+      - 'test/native_apps/file_browser*'
+      - 'scripts/test_file_browser*'
+      - '.github/workflows/x4-files-reader.yml'
+permissions:
+  contents: read
+jobs:
+  handoff-and-mounted-files:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: system
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70
+          path: runtime
+          persist-credentials: false
+      - name: Real Files handoff and mounted operations
+        working-directory: system
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          SANITIZE=1 bash scripts/test_file_browser_peer.sh 2>&1 | tee evidence/handoff.log
+          FILE_SETUP_TEST=1 SANITIZE=1 bash scripts/test_file_browser_sharing.sh 2>&1 | tee evidence/setup-frontend.log
+          SANITIZE=1 bash scripts/test_portable_file_setup.sh 2>&1 | tee evidence/setup-helper.log
+          SANITIZE=1 bash scripts/test_file_browser_mount.sh 2>&1 | tee evidence/mounted.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: x4-files-1532-handoff
+          path: system/evidence/
+          retention-days: 14

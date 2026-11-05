@@ -1,0 +1,1203 @@
+{
+  "source_commit": "fe238022814c89e3c7cafb3df60a3997e34caf7b",
+  "hashes": {
+    "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/adapter.c": "98f705ebcbe3ea7fdcb270354d93108555b0d96b95eb86c54281d5f35318b249",
+    "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/foreground_adapter_open.inc": "19de34d0d9ccb2b92ade6019cae78cff3701e8070b20e075bf5db1b8d6475de7",
+    "/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/shared_initial_brightness_test.c": "6471a807816a93320da2c2220d7cdcf9623f5cd8a2741cfece02ff4ea9948e0a"
+  },
+  "commands": [
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-DPORTABLE_NATIVE_TIME_TOOLBAR",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DTEST_NATIVE_TOOLBAR_QUICK",
+      "-DALARM_SERVICE_TAGGED_V2",
+      "-DPORTABLE_PAPER_PREFERENCES",
+      "-DTOOLBAR_FIXTURE=\"/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/portable_native_toolbar_test.c\"",
+      "-I/tmp/shared-brightness-n_m2npyx/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/lib/NativeApps/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/Apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/lib/Alarm/include",
+      "-DBRIGHTNESS_RGB_WIDTH=240",
+      "-DBRIGHTNESS_RGB_HEIGHT=240",
+      "-DPORTABLE_NOVA_UI",
+      "-DPORTABLE_WATCH_NATIVE_HEIGHT",
+      "-DPORTABLE_WATCH_COLOR_ONLY",
+      "-DPORTABLE_ASYNC_RGB565",
+      "/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/shared_initial_brightness_test.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_actions.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_session.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_render.c",
+      "-Wl,--wrap=free",
+      "-o",
+      "/workspace/shared/watch-launch-brightness-20261015/tests/fixed/rgb240-normal"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-DPORTABLE_NATIVE_TIME_TOOLBAR",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DTEST_NATIVE_TOOLBAR_QUICK",
+      "-DALARM_SERVICE_TAGGED_V2",
+      "-DPORTABLE_PAPER_PREFERENCES",
+      "-DTOOLBAR_FIXTURE=\"/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/portable_native_toolbar_test.c\"",
+      "-I/tmp/shared-brightness-n_m2npyx/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/lib/NativeApps/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/Apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/lib/Alarm/include",
+      "-DBRIGHTNESS_RGB_WIDTH=240",
+      "-DBRIGHTNESS_RGB_HEIGHT=240",
+      "-DPORTABLE_NOVA_UI",
+      "-DPORTABLE_WATCH_NATIVE_HEIGHT",
+      "-DPORTABLE_WATCH_COLOR_ONLY",
+      "-DPORTABLE_ASYNC_RGB565",
+      "-fsanitize=address,undefined",
+      "-fno-sanitize-recover=all",
+      "-fno-omit-frame-pointer",
+      "-no-pie",
+      "/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/shared_initial_brightness_test.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_actions.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_session.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_render.c",
+      "-Wl,--wrap=free",
+      "-o",
+      "/workspace/shared/watch-launch-brightness-20261015/tests/fixed/rgb240-sanitized"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-DPORTABLE_NATIVE_TIME_TOOLBAR",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DTEST_NATIVE_TOOLBAR_QUICK",
+      "-DALARM_SERVICE_TAGGED_V2",
+      "-DPORTABLE_PAPER_PREFERENCES",
+      "-DTOOLBAR_FIXTURE=\"/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/portable_native_toolbar_test.c\"",
+      "-I/tmp/shared-brightness-n_m2npyx/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/lib/NativeApps/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/Apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/lib/Alarm/include",
+      "-DBRIGHTNESS_RGB_WIDTH=410",
+      "-DBRIGHTNESS_RGB_HEIGHT=502",
+      "-DPORTABLE_NOVA_UI",
+      "-DPORTABLE_WATCH_NATIVE_HEIGHT",
+      "-DPORTABLE_WATCH_COLOR_ONLY",
+      "-DPORTABLE_ASYNC_RGB565",
+      "/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/shared_initial_brightness_test.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_actions.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_session.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_render.c",
+      "-Wl,--wrap=free",
+      "-o",
+      "/workspace/shared/watch-launch-brightness-20261015/tests/fixed/rgb410-normal"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-DPORTABLE_NATIVE_TIME_TOOLBAR",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DTEST_NATIVE_TOOLBAR_QUICK",
+      "-DALARM_SERVICE_TAGGED_V2",
+      "-DPORTABLE_PAPER_PREFERENCES",
+      "-DTOOLBAR_FIXTURE=\"/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/portable_native_toolbar_test.c\"",
+      "-I/tmp/shared-brightness-n_m2npyx/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/lib/NativeApps/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/Apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/lib/Alarm/include",
+      "-DBRIGHTNESS_RGB_WIDTH=410",
+      "-DBRIGHTNESS_RGB_HEIGHT=502",
+      "-DPORTABLE_NOVA_UI",
+      "-DPORTABLE_WATCH_NATIVE_HEIGHT",
+      "-DPORTABLE_WATCH_COLOR_ONLY",
+      "-DPORTABLE_ASYNC_RGB565",
+      "-fsanitize=address,undefined",
+      "-fno-sanitize-recover=all",
+      "-fno-omit-frame-pointer",
+      "-no-pie",
+      "/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/shared_initial_brightness_test.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_actions.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_session.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_render.c",
+      "-Wl,--wrap=free",
+      "-o",
+      "/workspace/shared/watch-launch-brightness-20261015/tests/fixed/rgb410-sanitized"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-DPORTABLE_NATIVE_TIME_TOOLBAR",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DTEST_NATIVE_TOOLBAR_QUICK",
+      "-DALARM_SERVICE_TAGGED_V2",
+      "-DPORTABLE_PAPER_PREFERENCES",
+      "-DTOOLBAR_FIXTURE=\"/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/portable_native_toolbar_test.c\"",
+      "-I/tmp/shared-brightness-n_m2npyx/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/lib/NativeApps/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/Apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/lib/Alarm/include",
+      "/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/shared_initial_brightness_test.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_actions.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_session.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_render.c",
+      "-Wl,--wrap=free",
+      "-o",
+      "/workspace/shared/watch-launch-brightness-20261015/tests/fixed/paper-normal"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-DPORTABLE_NATIVE_TIME_TOOLBAR",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DTEST_NATIVE_TOOLBAR_QUICK",
+      "-DALARM_SERVICE_TAGGED_V2",
+      "-DPORTABLE_PAPER_PREFERENCES",
+      "-DTOOLBAR_FIXTURE=\"/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/portable_native_toolbar_test.c\"",
+      "-I/tmp/shared-brightness-n_m2npyx/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/lib/NativeApps/include",
+      "-I/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/Apps",
+      "-I/workspace/shared/watch-shared-app-crashes-20261015/utilities-exact-rgb/lib/Alarm/include",
+      "-fsanitize=address,undefined",
+      "-fno-sanitize-recover=all",
+      "-fno-omit-frame-pointer",
+      "-no-pie",
+      "/workspace/shared/watch-launch-brightness-20261015/system/test/native_apps/shared_initial_brightness_test.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_actions.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_session.c",
+      "/workspace/shared/watch-launch-brightness-20261015/system/lib/PortableApps/src/quick_render.c",
+      "-Wl,--wrap=free",
+      "-o",
+      "/workspace/shared/watch-launch-brightness-20261015/tests/fixed/paper-sanitized"
+    ]
+  ],
+  "results": [
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "rgb240-normal-sync-dark-open.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "retained-lit",
+      "exit": 0,
+      "log": "rgb240-normal-sync-retained-lit.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "saved-level",
+      "exit": 0,
+      "log": "rgb240-normal-sync-saved-level.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "preview-before",
+      "exit": 0,
+      "log": "rgb240-normal-sync-preview-before.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "torch-before",
+      "exit": 0,
+      "log": "rgb240-normal-sync-torch-before.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "unsupported",
+      "exit": 0,
+      "log": "rgb240-normal-sync-unsupported.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "missing-callback",
+      "exit": 0,
+      "log": "rgb240-normal-sync-missing-callback.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "submit-failed",
+      "exit": 0,
+      "log": "rgb240-normal-sync-submit-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "status-failed",
+      "exit": 0,
+      "log": "rgb240-normal-sync-status-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "completion-failed",
+      "exit": 0,
+      "log": "rgb240-normal-sync-completion-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "superseded",
+      "exit": 0,
+      "log": "rgb240-normal-sync-superseded.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "timeout",
+      "exit": 0,
+      "log": "rgb240-normal-sync-timeout.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "status-retained",
+      "exit": 0,
+      "log": "rgb240-normal-sync-status-retained.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "brightness-failed",
+      "exit": 0,
+      "log": "rgb240-normal-sync-brightness-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "brightness-retained",
+      "exit": 0,
+      "log": "rgb240-normal-sync-brightness-retained.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "rgb240-normal-async-dark-open.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "retained-lit",
+      "exit": 0,
+      "log": "rgb240-normal-async-retained-lit.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "saved-level",
+      "exit": 0,
+      "log": "rgb240-normal-async-saved-level.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "preview-before",
+      "exit": 0,
+      "log": "rgb240-normal-async-preview-before.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "torch-before",
+      "exit": 0,
+      "log": "rgb240-normal-async-torch-before.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "unsupported",
+      "exit": 0,
+      "log": "rgb240-normal-async-unsupported.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "missing-callback",
+      "exit": 0,
+      "log": "rgb240-normal-async-missing-callback.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "submit-failed",
+      "exit": 0,
+      "log": "rgb240-normal-async-submit-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "status-failed",
+      "exit": 0,
+      "log": "rgb240-normal-async-status-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "completion-failed",
+      "exit": 0,
+      "log": "rgb240-normal-async-completion-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "superseded",
+      "exit": 0,
+      "log": "rgb240-normal-async-superseded.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "timeout",
+      "exit": 0,
+      "log": "rgb240-normal-async-timeout.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "status-retained",
+      "exit": 0,
+      "log": "rgb240-normal-async-status-retained.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "brightness-failed",
+      "exit": 0,
+      "log": "rgb240-normal-async-brightness-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "normal",
+      "timing": "async",
+      "case": "brightness-retained",
+      "exit": 0,
+      "log": "rgb240-normal-async-brightness-retained.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-dark-open.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "retained-lit",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-retained-lit.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "saved-level",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-saved-level.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "preview-before",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-preview-before.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "torch-before",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-torch-before.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "unsupported",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-unsupported.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "missing-callback",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-missing-callback.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "submit-failed",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-submit-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "status-failed",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-status-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "completion-failed",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-completion-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "superseded",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-superseded.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "timeout",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-timeout.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "status-retained",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-status-retained.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "brightness-failed",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-brightness-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "brightness-retained",
+      "exit": 0,
+      "log": "rgb240-sanitized-sync-brightness-retained.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-dark-open.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "retained-lit",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-retained-lit.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "saved-level",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-saved-level.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "preview-before",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-preview-before.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "torch-before",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-torch-before.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "unsupported",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-unsupported.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "missing-callback",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-missing-callback.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "submit-failed",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-submit-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "status-failed",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-status-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "completion-failed",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-completion-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "superseded",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-superseded.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "timeout",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-timeout.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "status-retained",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-status-retained.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "brightness-failed",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-brightness-failed.log"
+    },
+    {
+      "profile": "rgb240",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "brightness-retained",
+      "exit": 0,
+      "log": "rgb240-sanitized-async-brightness-retained.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "rgb410-normal-sync-dark-open.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "retained-lit",
+      "exit": 0,
+      "log": "rgb410-normal-sync-retained-lit.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "saved-level",
+      "exit": 0,
+      "log": "rgb410-normal-sync-saved-level.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "preview-before",
+      "exit": 0,
+      "log": "rgb410-normal-sync-preview-before.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "torch-before",
+      "exit": 0,
+      "log": "rgb410-normal-sync-torch-before.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "unsupported",
+      "exit": 0,
+      "log": "rgb410-normal-sync-unsupported.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "missing-callback",
+      "exit": 0,
+      "log": "rgb410-normal-sync-missing-callback.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "submit-failed",
+      "exit": 0,
+      "log": "rgb410-normal-sync-submit-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "status-failed",
+      "exit": 0,
+      "log": "rgb410-normal-sync-status-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "completion-failed",
+      "exit": 0,
+      "log": "rgb410-normal-sync-completion-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "superseded",
+      "exit": 0,
+      "log": "rgb410-normal-sync-superseded.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "timeout",
+      "exit": 0,
+      "log": "rgb410-normal-sync-timeout.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "status-retained",
+      "exit": 0,
+      "log": "rgb410-normal-sync-status-retained.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "brightness-failed",
+      "exit": 0,
+      "log": "rgb410-normal-sync-brightness-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "brightness-retained",
+      "exit": 0,
+      "log": "rgb410-normal-sync-brightness-retained.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "rgb410-normal-async-dark-open.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "retained-lit",
+      "exit": 0,
+      "log": "rgb410-normal-async-retained-lit.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "saved-level",
+      "exit": 0,
+      "log": "rgb410-normal-async-saved-level.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "preview-before",
+      "exit": 0,
+      "log": "rgb410-normal-async-preview-before.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "torch-before",
+      "exit": 0,
+      "log": "rgb410-normal-async-torch-before.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "unsupported",
+      "exit": 0,
+      "log": "rgb410-normal-async-unsupported.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "missing-callback",
+      "exit": 0,
+      "log": "rgb410-normal-async-missing-callback.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "submit-failed",
+      "exit": 0,
+      "log": "rgb410-normal-async-submit-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "status-failed",
+      "exit": 0,
+      "log": "rgb410-normal-async-status-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "completion-failed",
+      "exit": 0,
+      "log": "rgb410-normal-async-completion-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "superseded",
+      "exit": 0,
+      "log": "rgb410-normal-async-superseded.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "timeout",
+      "exit": 0,
+      "log": "rgb410-normal-async-timeout.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "status-retained",
+      "exit": 0,
+      "log": "rgb410-normal-async-status-retained.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "brightness-failed",
+      "exit": 0,
+      "log": "rgb410-normal-async-brightness-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "normal",
+      "timing": "async",
+      "case": "brightness-retained",
+      "exit": 0,
+      "log": "rgb410-normal-async-brightness-retained.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-dark-open.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "retained-lit",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-retained-lit.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "saved-level",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-saved-level.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "preview-before",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-preview-before.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "torch-before",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-torch-before.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "unsupported",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-unsupported.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "missing-callback",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-missing-callback.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "submit-failed",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-submit-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "status-failed",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-status-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "completion-failed",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-completion-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "superseded",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-superseded.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "timeout",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-timeout.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "status-retained",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-status-retained.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "brightness-failed",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-brightness-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "brightness-retained",
+      "exit": 0,
+      "log": "rgb410-sanitized-sync-brightness-retained.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-dark-open.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "retained-lit",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-retained-lit.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "saved-level",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-saved-level.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "preview-before",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-preview-before.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "torch-before",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-torch-before.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "unsupported",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-unsupported.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "missing-callback",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-missing-callback.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "submit-failed",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-submit-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "status-failed",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-status-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "completion-failed",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-completion-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "superseded",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-superseded.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "timeout",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-timeout.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "status-retained",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-status-retained.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "brightness-failed",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-brightness-failed.log"
+    },
+    {
+      "profile": "rgb410",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "brightness-retained",
+      "exit": 0,
+      "log": "rgb410-sanitized-async-brightness-retained.log"
+    },
+    {
+      "profile": "paper",
+      "mode": "normal",
+      "timing": "sync",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "paper-normal-sync-dark-open.log"
+    },
+    {
+      "profile": "paper",
+      "mode": "normal",
+      "timing": "async",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "paper-normal-async-dark-open.log"
+    },
+    {
+      "profile": "paper",
+      "mode": "sanitized",
+      "timing": "sync",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "paper-sanitized-sync-dark-open.log"
+    },
+    {
+      "profile": "paper",
+      "mode": "sanitized",
+      "timing": "async",
+      "case": "dark-open",
+      "exit": 0,
+      "log": "paper-sanitized-async-dark-open.log"
+    }
+  ],
+  "hardware_tested": false
+}

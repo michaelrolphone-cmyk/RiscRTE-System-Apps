@@ -1,0 +1,9 @@
+# Files 1.5.30 peer handoff
+
+The deployed X4 Files profile enables the resident client and resident policy. After displayed-number confirmation, Nearby reads the session and private-network offer, closes/releases BLE, then starts its private Wi-Fi JOIN. Its network lives inside PortablePeerFiles, while the adapter's previous ownership query checked only the Share/server network. A normal resident POLL could therefore cross Runtime's exit barrier while the peer still owned a JOIN. Runtime correctly retained the invocation, causing an involuntary application return.
+
+The fix adds a copied-state peer ownership query to the existing Files guard. It covers private startup/JOIN/connected/cancellation until checked close, pending service leases, active TCP requests on borrowed LAN, and terminal retention. It resumes ordinary checkpoints for closed peers and socket-free idle borrowed browsing. No provider calls, cleanup, or relaxed Runtime barriers occur in the query.
+
+Regression: scripts/test_file_browser_peer_resident.sh compiles the actual Files controller, peer/network/WebDAV implementation and resident checkpoint. Radio/transport and the final Runtime dispatch are synthetic; the dispatch models CpuPort::appExitSafe's radio, lease and TCP idle requirement. Original b40 source fails after confirmation with native_busy=1 and server_network=0. Fixed RGB and paper cases cover direct JOIN, borrowed LAN, borrowed service lease, delayed cancel/quiescence, pending service end and retained custody, normal and UBSan.
+
+The companion diagnostics emit relative timestamps, static stage names and numeric status/results only. Stable polls are silent; tests assert 1,000 quiet idle polls and omit credentials, pairing numbers, peer names and paths. Physical transfer and hardware timing still require device testing. The native 3b90 image is unchanged.

@@ -20,6 +20,7 @@ static uint64_t presentation_started;
 static bool held,presenting,subscribed,allow_complete=true,bad_status,bad_snapshot,bad_unsubscribe,bad_poll,queue_gap,driver_fault,held_input;
 static int busy_acquires;
 static bool supersede_frame;
+static void (*submit_observer)(void);
 static unsigned snapshot_contacts,delayed_x,delayed_y;
 static bool delayed_tap;
 static risc_touch_event_v1 events[40];static unsigned event_count,event_at;
@@ -51,7 +52,7 @@ static void check_guards(void){
 }
 static void release(void *c,uint64_t frame){(void)c;io(__func__);assert(frame&&held&&!presenting);check_guards();held=false;++releases;}
 static bool submit(void *c,uint64_t f,const risc_display_rect_v1*d,size_t n,const risc_display_present_options_v1*o,uint64_t*t){
-    (void)c;(void)d;io(__func__);assert(held&&f&&n==0&&o->queue_policy==expected_queue&&o->intent==expected_intent);check_guards();held=false;presenting=true;presentation_started=ms;*t=++submits;return true;
+    (void)c;(void)d;io(__func__);assert(held&&f&&n==0&&o->queue_policy==expected_queue&&o->intent==expected_intent);check_guards();if(submit_observer)submit_observer();held=false;presenting=true;presentation_started=ms;*t=++submits;return true;
 }
 static bool status(void *c,uint64_t t,risc_display_present_status_v1*out){(void)c;io(__func__);assert(!held&&presenting&&t==submits);if(bad_status)return false;bool done=allow_complete&&ms-presentation_started>=presentation_delay;out->state=done?(supersede_frame?RISC_DISPLAY_PRESENT_SUPERSEDED:RISC_DISPLAY_PRESENT_COMPLETE):RISC_DISPLAY_PRESENT_ACTIVE;if(done){presenting=false;supersede_frame=false;}return true;}
 static uint64_t subscribe(void*c){(void)c;io(__func__);assert(!subscribed);subscribed=true;return 42;}

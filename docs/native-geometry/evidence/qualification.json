@@ -1,0 +1,34 @@
+{
+  "baseline": "297c38619a867f6200cc2f605b6193e4394bdfa2",
+  "task": "03546685-4c60-4070-b2db-f9ee5a80d19f",
+  "hardware_tested": false,
+  "profiles_and_versions_changed": false,
+  "checks": {
+    "native_raster_sizes_normal_and_sanitized": 22,
+    "actual_adapter_profile_scenarios_normal_and_sanitized": 108,
+    "extracted_admission_cases": 690,
+    "existing_native_raster_comparisons": 632,
+    "retained_wifi_scenarios": 32,
+    "python_unittests": 129,
+    "paper_flip_cases": 124,
+    "target_object_profiles_identical_imports": 3
+  },
+  "source_sha256": {
+    "lib/PortableApps/include/PortableDisplayGeometry.h": "a90c2163797097dcfe93798c78593236c7f2eb43fbd391704f3880b43abab6e8",
+    "lib/PortableApps/include/WatchLayout.h": "8a1a62346320a0dc76d0976d84e589ffbc5b0cdc064acf32a2d8057da0637aab",
+    "lib/PortableApps/src/adapter.c": "10224555c7b506991bc258fd36ab88f334ac478f4aaeb0b5033cb31d286f7ef9",
+    "lib/PortableApps/src/foreground_adapter_open.inc": "f5accdc954825652adfd8e8bf82e3e00bcef4b66926e38df64af79f5206eaba5",
+    "lib/PortableApps/src/nova_native.inc": "33b17484a41b83fe98f76952d070677cae671c8c94ba3dd827efec18f9ebe2de",
+    "scripts/test_native_geometry.py": "33af7ea679280ecbb66f823dda0d575a8e7b5417c133e7c8a321501d4b57fd08",
+    "scripts/test_native_geometry_target.py": "b5e3088c476eb562143ecc2b55d5ff30671b83bfd571fc2b0e4932d5afe7439d",
+    "scripts/test_watch_color_profile.py": "6969678648895eaace44e92e47025d1f7a7f7c64db9c493046e172d77f73a58b",
+    "test/native_apps/native_geometry_test.c": "1b7ef055b0927140a631bc1a87e6b1306666790f48f595ac0f4d0d915b43a1a1",
+    "test/native_apps/native_geometry_admission_test.c": "9f4144983a75d4cca1563dea7ebd157e8bbf150085b6259bc5fedb0e6fc06f38",
+    ".github/workflows/native-geometry.yml": "e9b1c65068e850cb9ebfaaeee71069649b32cd0a1c47f3ed73e2c0a758bd2036"
+  },
+  "limits": [
+    "Synthetic peripherals; no hardware validation",
+    "No linked firmware or Settings layout qualification",
+    "LeakSanitizer unsupported under local ptrace; explicit resource accounting, ASan and UBSan active"
+  ]
+}

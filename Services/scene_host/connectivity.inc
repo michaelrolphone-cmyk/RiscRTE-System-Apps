@@ -54,3 +54,25 @@ static bool cn_draw(unsigned index,int x,int y,int w,int h){
     }
     return true;
 }
+
+#if !SCENE_HOST_TELEMETRY
+/* Compact connectivity uses existing component fonts, not the plot font set. */
+static void tm_tabs(void){
+ int s=nc_scale(),y=(int)height-36*s;
+ for(unsigned i=0;i<document.node_count;i++){
+  const risc_scene_node_v1*n=&document.nodes[i];
+  if(n->route!=current_route()||n->kind!=RISC_COMPONENT_TAB_BAR||n->flags&RISC_SCENE_HIDDEN)continue;
+  fill(0,y,(int)width,36*s,nc_bg());fill(0,y,(int)width,2*s,nc_fg());
+  unsigned count=(unsigned)n->maximum+1;
+  for(unsigned j=0;j<count;j++){
+   int x=(int)width*(int)j/(int)count,w=(int)width*(int)(j+1)/(int)count-x;
+   bool on=n->value==(int)j;char label[24];nc_choice(document.details[i].choices,j,label,sizeof(label));
+   uint16_t fg=on?nc_bg():nc_fg();if(on)fill(x,y+2*s,w,34*s,nc_fg());
+   int tw=nc_measure(1,label),left=x+(w-tw-16*s)/2;
+   nc_icon(j?RISC_SYMBOL_STAR:RISC_SYMBOL_WIFI,left,y+13*s,12*s,fg);
+   nc_text(left+16*s,y+22*s,w-16*s,label,1,fg);
+   nc_hit(x,y,w,36*s,HIT_VALUE,n,(int)j,true);
+  }
+ }
+}
+#endif

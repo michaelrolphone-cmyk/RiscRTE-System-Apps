@@ -12,7 +12,13 @@ static void stz_back_regions(void) {
   stz_selected=stz_region;stz_visible();sv_switch(SV_TIMEZONE_REGIONS);
 }
 static uint8_t stz_activate(void) {
-  if(!stz_unconfirmed) {
+  if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+     true
+#else
+     !stz_unconfirmed
+#endif
+    ) {
     char id[PORTABLE_TIMEZONE_ID_BYTES];int loaded=portable_timezone_preference_load(settings_store,id);
     stz_choice=(unsigned)portable_timezone_find(id,sizeof(id));stz_status=loaded;
     stz_message=loaded==PORTABLE_TIMEZONE_UNAVAILABLE?"Storage unavailable":
@@ -35,16 +41,39 @@ static uint8_t stz_activate(void) {
     else if(input.buttons&T5_APP_BUTTON_RIGHT)redraw=stz_page_step(true);
     else if(input.buttons&T5_APP_BUTTON_CONFIRM)confirm=true;
     else if(input.tapped) {
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
+      int x=input.touch_x,y=input.touch_y,w=stz_width(),margin=stz_margin();
+      int page_y=stz_page_y(),page_h=stz_page_h(),page_w=stz_page_w();
+      int foot_y=stz_footer_y(),foot_h=stz_footer_h(),gap=stz_gap();
+#else
       int x=input.touch_x,y=input.touch_y,w=stz_width(),h=stz_height(),margin=stz_margin();
       bool paper=pp_enabled();int page_y=paper?h-192:178,page_h=paper?56:24,page_w=paper?112:60;
       int foot_y=paper?h-112:210,foot_h=paper?88:28,gap=paper?12:6;
+#endif
       int columns=cities?3:2,foot_w=(w-2*margin-(columns-1)*gap)/columns;
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
+      if(sn_enabled()) {
+        for(unsigned slot=0;slot<(unsigned)columns;slot++)if(sn_hit(stz_footer_rect(slot,cities),x,y)) {
+          if(slot==(unsigned)columns-1)confirm=true;else if(cities&&slot==0)back=true;else cancel=true;
+        }
+      }
+      if(!back&&!cancel&&!confirm&&x>=margin&&x<w-margin) {
+#else
       if(x>=margin&&x<w-margin) {
+#endif
 #ifdef PORTABLE_TOUCH_SCROLL
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
+        if(pp_enabled()) {
+#else
         if(paper) {
+#endif
           if(portable_scroll_inside(&stz_scroll.view,x,y)) {
             if(stz_touch_row>=0){stz_choose((unsigned)stz_touch_row);if(!cities)confirm=true;}
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
+          } else if(!sn_enabled()&&y>=foot_y&&y<foot_y+foot_h) {
+#else
           } else if(y>=foot_y&&y<foot_y+foot_h) {
+#endif
             int slot=(x-margin)/(foot_w+gap);
             if((x-margin)%(foot_w+gap)<foot_w) {
               if(slot==columns-1)confirm=true;
@@ -60,7 +89,11 @@ static uint8_t stz_activate(void) {
         } else if(y>=page_y&&y<page_y+page_h) {
           if(x<margin+page_w)redraw=stz_page_step(false);
           else if(x>=w-margin-page_w)redraw=stz_page_step(true);
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
+        } else if(!sn_enabled()&&y>=foot_y&&y<foot_y+foot_h) {
+#else
         } else if(y>=foot_y&&y<foot_y+foot_h) {
+#endif
           int slot=(x-margin)/(foot_w+gap);
           if((x-margin)%(foot_w+gap)<foot_w) {
             if(slot==columns-1)confirm=true;
@@ -70,11 +103,28 @@ static uint8_t stz_activate(void) {
         }
       }
     }
-    if(cancel)break;
+    if(cancel) {
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+      if(settings_availability_draft) {
+        t5_app_input_t request={.exit_requested=true};
+        (void)settings_availability_filter(&request);continue;
+      }
+#endif
+      break;
+    }
     if(back){if(!cities)break;stz_back_regions();continue;}
     if(confirm) {
       if(!cities){stz_open_cities();continue;}
       const char *id=portable_timezone_get(stz_choice)->id;
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+      uint8_t bytes[PORTABLE_TIMEZONE_RECORD_BYTES]={'T','Z',1,0};
+      memcpy(bytes+4,id,strlen(id));bytes[3]=0xa5;
+      for(unsigned n=0;n<sizeof(bytes);++n)if(n!=3)bytes[3]^=bytes[n];
+      bool confirmed=settings_atomic_save(PORTABLE_TIMEZONE_KEY,bytes,sizeof(bytes),&stz_message);
+      stz_unconfirmed=!confirmed;
+      if(confirmed){result=T5_APP_SETTING_UPDATED;break;}
+      if(settings_atomic_exit||native_custody_retained)break;
+#else
       int saved=portable_timezone_preference_save(settings_store,id,PORTABLE_TIMEZONE_ID_BYTES);
       if(saved>=0) {
         stz_unconfirmed=false;result=T5_APP_SETTING_UPDATED;
@@ -89,6 +139,7 @@ static uint8_t stz_activate(void) {
       } else if(saved==PORTABLE_TIMEZONE_WRITE_FAILED || saved==PORTABLE_TIMEZONE_VERIFY_FAILED) {
         stz_unconfirmed=true;stz_message="Save unconfirmed - retry";
       } else stz_message="Invalid selection";
+#endif
     }
     if(redraw)settings_view_redraw();
   }

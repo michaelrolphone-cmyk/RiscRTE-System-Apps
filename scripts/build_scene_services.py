@@ -12,21 +12,36 @@ from scene_sdk import stage_sdk
 ROOT=Path(__file__).resolve().parents[1]
 # Scene rotations use logical-to-surface coordinates. Installed X4 adapter90
 # corresponds to scene270: (x,y) -> (y,479-x). GT911 is already portrait.
+HOST_PROFILE_FLAGS = {
+    'full': [],
+    'watch-compact': ['-DSCENE_HOST_TELEMETRY=0','-DSCENE_HOST_WATCH_240=1'],
+    'color-dynamic': ['-DSCENE_HOST_TELEMETRY=0'],
+}
+
+def host_manifest(profile):
+    if profile not in HOST_PROFILE_FLAGS:raise ValueError('Unknown scene host profile: '+profile)
+    name='manifest-watch-compact.json' if profile in ('watch-compact','color-dynamic') else 'manifest.json'
+    host=json.loads((ROOT/'Services/scene_host'/name).read_text())
+    return host
+
 PROFILE_FLAGS = {
     'compact-color': [],
     'portrait-monochrome': ['-DSCENE_PROFILE_PAPER=1', '-DSCENE_DISPLAY_ROTATION=270'],
 }
 
 
-def run(runtime: Path, output: Path) -> None:
+def run(runtime: Path, output: Path, host_profile: str = 'full') -> None:
     if output.exists():
         raise FileExistsError(f'Use a new output directory: {output}')
     output.mkdir(parents=True)
     compiler=compiler_path()
     with tempfile.TemporaryDirectory(prefix='scene-sdk-') as temporary:
         include=stage_sdk(runtime,ROOT,Path(temporary))
-        host=json.loads((ROOT/'Services/scene_host/manifest.json').read_text())
-        rows=[build(compiler,include,output/'scene-host',host,[ROOT/'Services/scene_host/host.c'])]
+        host=host_manifest(host_profile)
+        rows=[build(compiler,include,output/'scene-host',host,[ROOT/'Services/scene_host/host.c'],HOST_PROFILE_FLAGS[host_profile])]
+        rows[0]['host_profile']=host_profile
+        rows[0]['optional_apis']={'telemetry':host_profile=='full','components':True,'page':True,'checkpoint':True,'reading':True,'reading_links':True}
+        json_write(output/'scene-host/build.json',rows[0])
         license_dir=output/'scene-host/licenses';license_dir.mkdir()
         for name in ['LICENSE-Orbitron.txt','LICENSE-Rajdhani.txt','SOURCES.json','COMPONENT-SOURCES.json']:
             shutil.copyfile(ROOT/'Services/scene_host/fonts'/name,license_dir/name)
@@ -48,4 +63,5 @@ def run(runtime: Path, output: Path) -> None:
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
-    a=p.parse_args();run(a.runtime.resolve(),a.output.resolve())
+    p.add_argument('--host-profile',choices=HOST_PROFILE_FLAGS,default='full')
+    a=p.parse_args();run(a.runtime.resolve(),a.output.resolve(),a.host_profile)

@@ -1,0 +1,499 @@
+{
+  "baseline": "a5bd60fc5b7e7b62e3e08531860ce7e8ec855b89",
+  "includes_settings_commits": [
+    "3bb94c296334eb368746db394d0b8e5b595253d3",
+    "5636756db893d682ad42a595625b226f40bbba4d"
+  ],
+  "default_off": {
+    "default.elf": {
+      "base_sha256": "9b42c85959995290831b6ae87a3fdab8583de70fd4e3c5e567517b1d6407fb44",
+      "candidate_sha256": "9b42c85959995290831b6ae87a3fdab8583de70fd4e3c5e567517b1d6407fb44",
+      "equal": true
+    },
+    "default.json": {
+      "base_sha256": "fc16120d123932426974be2f253b4e22e4082745869240dc4065c689e8c7555b",
+      "candidate_sha256": "fc16120d123932426974be2f253b4e22e4082745869240dc4065c689e8c7555b",
+      "equal": true
+    }
+  },
+  "selected_target": {
+    "xtensa_compile": true,
+    "elf_validation": true,
+    "output": "/workspace/shared/x4-quick-qualified-on",
+    "elf_sha256": "a3c0f9708474891ad03938d2453a200e7b9b07772719189c93bbcd5606952de4",
+    "elf_bytes": 565708,
+    "production_input_sha256": {
+      "lib/PortableApps/include/PortablePreferenceAtomic.h": "96182b67e4dad551bc0a36d65dbc2294a2d1dc5b0a353be7ea5bf37a8dd34be2",
+      "lib/PortableApps/include/PortableQuickUserPreference.h": "cef595ee29659622dc8be0f5d841d40fa9ed18f6a082bd0140fde7c67e563f42",
+      "lib/PortableApps/include/PortableQuickSession.h": "bd407bf49ef64615ead02d865d267adc5ed422c9ebb7936384638d20f5a0afde",
+      "lib/PortableApps/include/PortableQuickRadios.h": "32fa2d45a164507d975acb7cd2f1eb41100b01020d7fa91537d0923e244763f5",
+      "lib/PortableApps/src/quick_atomic.inc": "c2de15c9d5b72c220201ed4abed742888c332c86037561c4dc2c71dc47e43289",
+      "lib/PortableApps/src/quick_adapter.inc": "51d61fbf7f14e571b3ee57a653d91154c0d2116002024fba7df48dc20377fa8b",
+      "lib/PortableApps/src/quick_session.c": "2ad92a09a6ebc818fd0e39e4220d8e64c5f6f67509750d65a46394694e9092c9",
+      "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28",
+      "lib/PortableApps/src/adapter.c": "0dd8224a3b0102dadeae16901e525f1b9f5e7b0f88381c5a85fc96e24513ad36",
+      "lib/PortableApps/src/sparse_clock_adapter.inc": "db3ed9fee2b4d54e2c6c4c80a2b84a304f113890d1107eb6d204719abe4d93c3",
+      "lib/PortableApps/src/resident_shell.inc": "183315ed4687d37d2f32a53593417820d63a315644eb89b30a1d0c4df18c7cb6"
+    }
+  },
+  "controller_normal": {
+    "suite": "actual Quick controller staging and session/radio paths",
+    "runtime_provider_double": true,
+    "hardware_tested": false,
+    "sanitized": false,
+    "cases": [
+      {
+        "case": "queued-controls",
+        "result": "quick queued-controls ordered copied reducer actions PASS"
+      },
+      {
+        "case": "queue-overflow",
+        "result": "quick queue-overflow ordered copied reducer actions PASS"
+      },
+      {
+        "case": "raw-brightness",
+        "result": "quick raw-brightness actual input PASS"
+      },
+      {
+        "case": "raw-tone",
+        "result": "quick raw-tone actual input PASS"
+      },
+      {
+        "case": "raw-coalesced",
+        "result": "quick raw-coalesced actual input PASS"
+      },
+      {
+        "case": "raw-stale",
+        "result": "quick raw-stale actual input PASS"
+      },
+      {
+        "case": "raw-cancel",
+        "result": "quick raw-cancel actual input PASS"
+      },
+      {
+        "case": "repeated",
+        "result": "quick repeated independent gestures PASS"
+      },
+      {
+        "case": "brightness",
+        "result": "quick brightness PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "off",
+        "result": "quick off PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "off-already",
+        "result": "quick off-already PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "restore-stale",
+        "result": "quick restore-stale PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "tone",
+        "result": "quick tone PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "dnd",
+        "result": "quick dnd PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "contexts",
+        "result": "quick contexts PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "radio",
+        "result": "quick radio PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "same-value",
+        "result": "quick same-value PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "preview",
+        "result": "quick preview PASS"
+      },
+      {
+        "case": "restore",
+        "result": "quick torch restore PASS"
+      },
+      {
+        "case": "origins",
+        "result": "quick origins PASS"
+      },
+      {
+        "case": "automatic",
+        "result": "quick automatic setters not USER PASS"
+      },
+      {
+        "case": "copy",
+        "result": "quick copy PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "busy",
+        "result": "quick busy PASS: submits=4 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "stale",
+        "result": "quick stale PASS: submits=1 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "display-stale",
+        "result": "quick display-stale PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "cancel",
+        "result": "quick cancel PASS: submits=1 collects=3 cancels=1 legacy-puts=0"
+      },
+      {
+        "case": "cancel-race",
+        "result": "quick cancel-race PASS: submits=1 collects=3 cancels=1 legacy-puts=0"
+      },
+      {
+        "case": "cancel-error",
+        "result": "quick terminal custody PASS"
+      },
+      {
+        "case": "small-group",
+        "result": "quick small-group PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "wrong-namespace",
+        "result": "quick wrong-namespace PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "read-io",
+        "result": "quick read-io PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "missing",
+        "result": "quick missing PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "submit-io",
+        "result": "quick submit-io PASS: submits=1 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "uncertain",
+        "result": "quick uncertain PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "capacity",
+        "result": "quick capacity PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "conflict",
+        "result": "quick conflict PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "dirty-submit",
+        "result": "quick terminal custody PASS"
+      },
+      {
+        "case": "collect-io",
+        "result": "quick terminal custody PASS"
+      },
+      {
+        "case": "bad-receipt",
+        "result": "quick terminal custody PASS"
+      },
+      {
+        "case": "release-failed",
+        "result": "quick terminal custody PASS"
+      },
+      {
+        "case": "close-pending",
+        "result": "quick close pending retains PASS"
+      }
+    ],
+    "compile_command": [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-Wno-misleading-indentation",
+      "-DPORTABLE_QUICK_ATOMIC_PREFERENCES",
+      "-DPORTABLE_FRONTLIGHT_TONE",
+      "-DPORTABLE_PAPER_TRANSITIONS",
+      "-DPORTABLE_RESIDENT_SHELL_HOST",
+      "-I/workspace/shared/x4-system-atomic-quick-tests/final-normal/include",
+      "/workspace/shared/x4-system-atomic-quick-20261012/test/native_apps/quick_atomic_workflow_test.c",
+      "/workspace/shared/x4-system-atomic-quick-20261012/lib/PortableApps/src/quick_session.c",
+      "/workspace/shared/x4-system-atomic-quick-20261012/lib/PortableApps/src/quick_radios.c",
+      "/workspace/shared/x4-system-atomic-quick-20261012/lib/PortableApps/src/quick_actions.c",
+      "-o",
+      "/workspace/shared/x4-system-atomic-quick-tests/final-normal/quick-atomic"
+    ],
+    "sha256": {
+      "test/native_apps/quick_atomic_workflow_test.c": "cca3c1ce918639a03cdfa54477d35cefe44464a470e72e1e687f540536bbfc59",
+      "lib/PortableApps/src/quick_session.c": "2ad92a09a6ebc818fd0e39e4220d8e64c5f6f67509750d65a46394694e9092c9",
+      "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28",
+      "lib/PortableApps/src/quick_actions.c": "5eb885a4940edceefc1d96b8cce977bdfaf7dfaf46a0efca6bf5ea382262f7d8",
+      "lib/PortableApps/src/quick_atomic.inc": "c2de15c9d5b72c220201ed4abed742888c332c86037561c4dc2c71dc47e43289",
+      "lib/PortableApps/include/PortablePreferenceAtomic.h": "96182b67e4dad551bc0a36d65dbc2294a2d1dc5b0a353be7ea5bf37a8dd34be2",
+      "scripts/test_quick_atomic.py": "33d342cdc791214ee5874a3ccf1515544e7e2fac701c6fb53d1e499fc1e699f6"
+    }
+  },
+  "controller_sanitized": {
+    "suite": "actual Quick controller staging and session/radio paths",
+    "runtime_provider_double": true,
+    "hardware_tested": false,
+    "sanitized": true,
+    "cases": [
+      {
+        "case": "queued-controls",
+        "result": "quick queued-controls ordered copied reducer actions PASS"
+      },
+      {
+        "case": "queue-overflow",
+        "result": "quick queue-overflow ordered copied reducer actions PASS"
+      },
+      {
+        "case": "raw-brightness",
+        "result": "quick raw-brightness actual input PASS"
+      },
+      {
+        "case": "raw-tone",
+        "result": "quick raw-tone actual input PASS"
+      },
+      {
+        "case": "raw-coalesced",
+        "result": "quick raw-coalesced actual input PASS"
+      },
+      {
+        "case": "raw-stale",
+        "result": "quick raw-stale actual input PASS"
+      },
+      {
+        "case": "raw-cancel",
+        "result": "quick raw-cancel actual input PASS"
+      },
+      {
+        "case": "repeated",
+        "result": "quick repeated independent gestures PASS"
+      },
+      {
+        "case": "brightness",
+        "result": "quick brightness PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "off",
+        "result": "quick off PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "off-already",
+        "result": "quick off-already PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "restore-stale",
+        "result": "quick restore-stale PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "tone",
+        "result": "quick tone PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "dnd",
+        "result": "quick dnd PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "contexts",
+        "result": "quick contexts PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "radio",
+        "result": "quick radio PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "same-value",
+        "result": "quick same-value PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "preview",
+        "result": "quick preview PASS"
+      },
+      {
+        "case": "restore",
+        "result": "quick torch restore PASS"
+      },
+      {
+        "case": "origins",
+        "result": "quick origins PASS"
+      },
+      {
+        "case": "automatic",
+        "result": "quick automatic setters not USER PASS"
+      },
+      {
+        "case": "copy",
+        "result": "quick copy PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "busy",
+        "result": "quick busy PASS: submits=4 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "stale",
+        "result": "quick stale PASS: submits=1 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "display-stale",
+        "result": "quick display-stale PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "cancel",
+        "result": "quick cancel PASS: submits=1 collects=3 cancels=1 legacy-puts=0"
+      },
+      {
+        "case": "cancel-race",
+        "result": "quick cancel-race PASS: submits=1 collects=3 cancels=1 legacy-puts=0"
+      },
+      {
+        "case": "cancel-error",
+        "result": "quick terminal custody PASS"
+      },
+      {
+        "case": "small-group",
+        "result": "quick small-group PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "wrong-namespace",
+        "result": "quick wrong-namespace PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "read-io",
+        "result": "quick read-io PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "missing",
+        "result": "quick missing PASS: submits=0 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "submit-io",
+        "result": "quick submit-io PASS: submits=1 collects=0 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "uncertain",
+        "result": "quick uncertain PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "capacity",
+        "result": "quick capacity PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "conflict",
+        "result": "quick conflict PASS: submits=1 collects=3 cancels=0 legacy-puts=0"
+      },
+      {
+        "case": "dirty-submit",
+        "result": "quick terminal custody PASS"
+      },
+      {
+        "case": "collect-io",
+        "result": "quick terminal custody PASS"
+      },
+      {
+        "case": "bad-receipt",
+        "result": "quick terminal custody PASS"
+      },
+      {
+        "case": "release-failed",
+        "result": "quick terminal custody PASS"
+      },
+      {
+        "case": "close-pending",
+        "result": "quick close pending retains PASS"
+      }
+    ],
+    "compile_command": [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-Wno-misleading-indentation",
+      "-fsanitize=address,undefined",
+      "-fno-sanitize-recover=all",
+      "-fno-omit-frame-pointer",
+      "-no-pie",
+      "-DPORTABLE_QUICK_ATOMIC_PREFERENCES",
+      "-DPORTABLE_FRONTLIGHT_TONE",
+      "-DPORTABLE_PAPER_TRANSITIONS",
+      "-DPORTABLE_RESIDENT_SHELL_HOST",
+      "-I/workspace/shared/x4-system-atomic-quick-tests/final-sanitized/include",
+      "/workspace/shared/x4-system-atomic-quick-20261012/test/native_apps/quick_atomic_workflow_test.c",
+      "/workspace/shared/x4-system-atomic-quick-20261012/lib/PortableApps/src/quick_session.c",
+      "/workspace/shared/x4-system-atomic-quick-20261012/lib/PortableApps/src/quick_radios.c",
+      "/workspace/shared/x4-system-atomic-quick-20261012/lib/PortableApps/src/quick_actions.c",
+      "-o",
+      "/workspace/shared/x4-system-atomic-quick-tests/final-sanitized/quick-atomic"
+    ],
+    "sha256": {
+      "test/native_apps/quick_atomic_workflow_test.c": "cca3c1ce918639a03cdfa54477d35cefe44464a470e72e1e687f540536bbfc59",
+      "lib/PortableApps/src/quick_session.c": "2ad92a09a6ebc818fd0e39e4220d8e64c5f6f67509750d65a46394694e9092c9",
+      "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28",
+      "lib/PortableApps/src/quick_actions.c": "5eb885a4940edceefc1d96b8cce977bdfaf7dfaf46a0efca6bf5ea382262f7d8",
+      "lib/PortableApps/src/quick_atomic.inc": "c2de15c9d5b72c220201ed4abed742888c332c86037561c4dc2c71dc47e43289",
+      "lib/PortableApps/include/PortablePreferenceAtomic.h": "96182b67e4dad551bc0a36d65dbc2294a2d1dc5b0a353be7ea5bf37a8dd34be2",
+      "scripts/test_quick_atomic.py": "33d342cdc791214ee5874a3ccf1515544e7e2fac701c6fb53d1e499fc1e699f6"
+    }
+  },
+  "sanitizer_note": "ASan and UBSan enabled; LSan disabled because executor ptrace is unsupported.",
+  "production_selected": false,
+  "hardware_tested": false,
+  "source_conflict_policy_defined": false,
+  "automatic_writer_migration_complete": false,
+  "regressions": {
+    "settings_atomic": {
+      "cases": 47,
+      "sanitized": true,
+      "log_sha256": "65d6280ce54a49e7080aa2575f165dcf385686a4832b4b075cc9d8a9c0d983f5"
+    },
+    "quick_actions": {
+      "cases": 108,
+      "normal_and_sanitized": true,
+      "log_sha256": "da6ede5cd68c8a556fdb1c5420f8ccb904aa957a74afb27c5b63dc262ece0cf1"
+    },
+    "quick_radios": {
+      "normal_and_sanitized": true,
+      "log_sha256": "6eb6d78f253a6ff41c52c0a1fcb637ed4391b9769c35b28310ec0536bd654883"
+    },
+    "quick_tone_input": {
+      "normal_and_sanitized": true,
+      "log_sha256": "fdd69e5f1a39592ca010800e085a28262cbef5e48f483e7d2d61496b6431bc10"
+    },
+    "frontlight_session": {
+      "normal_and_sanitized": true,
+      "log_sha256": "ca7d22fff3e414422429490e1adbf24ad47fbab7dc0c6e83ba176d8640d8a656"
+    },
+    "build_selection": {
+      "settings_unittest": 2,
+      "quick_unittest": 1,
+      "quick_invalid_profiles_rejected": 5
+    }
+  },
+  "not_passed": {
+    "sparse_home_tone_startup": {
+      "selected_result": "cold case timed out after 30 seconds",
+      "flag_off_result": "same cold case timed out after 30 seconds",
+      "selected_log_sha256": "ba9934597fdbcaa1ab72b11727ebeca719bf98c1bd026c7e1bdfe236d76ddd34",
+      "flag_off_log_sha256": "1e7ee4b46e665122f01d6b43f3427121eb641a586c1e69b4915df05e978db397",
+      "interpretation": "Not claimed as passed; reproduces on unchanged flag-off profile."
+    },
+    "physical_device": false,
+    "product_selected_runtime_end_to_end": false
+  },
+  "ordered_queue": {
+    "capacity": 32,
+    "copy_at": "each input reducer result before later pending bitmask OR",
+    "coalesce": "adjacent same-contact preview only",
+    "overflow": "reject later events and show save error, preserve prior copied events",
+    "automatic_policy": "not migrated"
+  }
+}

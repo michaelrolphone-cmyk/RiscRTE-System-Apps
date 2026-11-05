@@ -1,0 +1,271 @@
+{
+  "results": [
+    {
+      "name": "wifi_atomic-normal",
+      "command": [
+        "python3",
+        "scripts/test_wifi_atomic.py",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/wifi_atomic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 1.248,
+      "log_sha256": "4671eb1eac4409b60ec57f570ff784e5c323eeb74620a021e4cd8726df7ab2d1"
+    },
+    {
+      "name": "settings_atomic-normal",
+      "command": [
+        "python3",
+        "scripts/test_settings_atomic.py",
+        "--target",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/settings-fixture-target",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/settings_atomic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 4.41,
+      "log_sha256": "0d4b3f87aaf01cc83bffecb977a747be091a4f854cf273715df5cdb5ea07385a"
+    },
+    {
+      "name": "quick_atomic-normal",
+      "command": [
+        "python3",
+        "scripts/test_quick_atomic.py",
+        "--target",
+        "/workspace/shared/x4-home-automatic-target-on",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/quick_atomic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 1.699,
+      "log_sha256": "4c79106cddbb675867038f74f1152866f3c82ac4c09abcb39dced055056de0a0"
+    },
+    {
+      "name": "home_automatic-normal",
+      "command": [
+        "python3",
+        "scripts/test_home_automatic.py",
+        "--target",
+        "/workspace/shared/x4-home-automatic-target-on",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/home_automatic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 2.443,
+      "log_sha256": "7e4a5d380319c4c54507a766cf8b079524c09f77434611cf7c2faffa7a982de1"
+    },
+    {
+      "name": "text_input_host-normal",
+      "command": [
+        "python3",
+        "scripts/test_text_input_host.py",
+        "--runtime",
+        "/workspace/shared/x4-https-099-20261012/runtime",
+        "--decoupled-attention",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/text_input_host-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 1.588,
+      "log_sha256": "385b30e396102984ab665dd9495dad2080d17b3e24f4c52d0d4fa00cc2b65fee"
+    },
+    {
+      "name": "scene-host-normal",
+      "command": [
+        "python3",
+        "scripts/test_scene_host.py",
+        "--runtime",
+        "/workspace/shared/x4-https-099-20261012/runtime"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 35.253,
+      "log_sha256": "d61f2870fd255af891f953af9ceba2a6a3c08aec635e1e77accf443c96ab297e"
+    },
+    {
+      "name": "file_browser_peer-normal",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_peer.sh"
+      ],
+      "environment": {
+        "SANITIZE": "0",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-system-101-evidence-20261012/file_browser_peer-normal"
+      },
+      "exit_code": 0,
+      "seconds": 20.676,
+      "log_sha256": "f3dac660d3b4c9f201916f3019030e5cf353cf265fcdfa916d5852d667fe3de7"
+    },
+    {
+      "name": "file_browser_mount-normal",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_mount.sh"
+      ],
+      "environment": {
+        "SANITIZE": "0",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-system-101-evidence-20261012/file_browser_mount-normal"
+      },
+      "exit_code": 0,
+      "seconds": 18.467,
+      "log_sha256": "b822c51d11175b2be3f8ba280fc41df8f07680fa56da4401e23a7d58cee58276"
+    },
+    {
+      "name": "portable_file_setup-normal",
+      "command": [
+        "bash",
+        "scripts/test_portable_file_setup.sh"
+      ],
+      "environment": {
+        "SANITIZE": "0",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-system-101-evidence-20261012/portable_file_setup-normal"
+      },
+      "exit_code": 0,
+      "seconds": 0.282,
+      "log_sha256": "a0b859e1b5b56a170a658eccc52d143dd9b447700ab67545f2bfe1075f74bcc2"
+    },
+    {
+      "name": "wifi_atomic-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_wifi_atomic.py",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/wifi_atomic-asan-ubsan",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 2.495,
+      "log_sha256": "1786f51433b952ec4bb6001e4456631beca9636b2a3a226a97820896da09539d"
+    },
+    {
+      "name": "settings_atomic-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_settings_atomic.py",
+        "--target",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/settings-fixture-target",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/settings_atomic-asan-ubsan",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 8.099,
+      "log_sha256": "5526e84f13781a58ed54484d568a312366e6b4a71d026066f3ccc7beff86a1fc"
+    },
+    {
+      "name": "quick_atomic-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_quick_atomic.py",
+        "--target",
+        "/workspace/shared/x4-home-automatic-target-on",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/quick_atomic-asan-ubsan",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 2.403,
+      "log_sha256": "1552beef606ae8348f402722a147a1bd39b64825e600450839eaae71c50cb3bf"
+    },
+    {
+      "name": "home_automatic-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_home_automatic.py",
+        "--target",
+        "/workspace/shared/x4-home-automatic-target-on",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/home_automatic-asan-ubsan",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 3.559,
+      "log_sha256": "9948ed301c492ff72d75305bd42dfe4f4461dc53e4baa39a9c3c4fc98563581e"
+    },
+    {
+      "name": "text_input_host-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_text_input_host.py",
+        "--runtime",
+        "/workspace/shared/x4-https-099-20261012/runtime",
+        "--decoupled-attention",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/text_input_host-asan-ubsan",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 3.421,
+      "log_sha256": "be966419edab017461441c684229de01f2e13e2acdbdbc8416a8e571956a82c7"
+    },
+    {
+      "name": "scene-host-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_scene_host.py",
+        "--runtime",
+        "/workspace/shared/x4-https-099-20261012/runtime",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 102.911,
+      "log_sha256": "2ceded08bccfd702df6cefcfd0739b0ba7d0ff9d6090e78d9458111ce2873d64"
+    },
+    {
+      "name": "file_browser_peer-ubsan",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_peer.sh"
+      ],
+      "environment": {
+        "SANITIZE": "1",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-system-101-evidence-20261012/file_browser_peer-ubsan"
+      },
+      "exit_code": 0,
+      "seconds": 38.528,
+      "log_sha256": "d8c57473e3ab8f79080134cab00f9d38eb16d4797501a7a5d7091c1b7b1d908f"
+    },
+    {
+      "name": "file_browser_mount-ubsan",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_mount.sh"
+      ],
+      "environment": {
+        "SANITIZE": "1",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-system-101-evidence-20261012/file_browser_mount-ubsan"
+      },
+      "exit_code": 0,
+      "seconds": 25.842,
+      "log_sha256": "801a97555da9d65cf03d2795f3f844b99a62a14cce0bdda3551110e7a7032ee6"
+    },
+    {
+      "name": "portable_file_setup-ubsan",
+      "command": [
+        "bash",
+        "scripts/test_portable_file_setup.sh"
+      ],
+      "environment": {
+        "SANITIZE": "1",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-system-101-evidence-20261012/portable_file_setup-ubsan"
+      },
+      "exit_code": 0,
+      "seconds": 0.519,
+      "log_sha256": "97c6cf4586695d7bd866542cc4ff5359d2660536610a08d321b92569905898dc"
+    }
+  ],
+  "complete": true,
+  "source_unchanged": true,
+  "hardware_tested": false
+}

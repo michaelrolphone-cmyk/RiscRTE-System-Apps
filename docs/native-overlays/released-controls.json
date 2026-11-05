@@ -1,0 +1,28 @@
+{
+  "settings": {
+    "tag": "native-settings-1.4.1-dev1",
+    "source_commit": "3050182821b7c4352a5f953c38bb1d32369c67be",
+    "release_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/tag/native-settings-1.4.1-dev1",
+    "assets": {
+      "settings-build-record.json": "edfef775cfbfc86c7cb1310e296de70c72463373d998f4782e6bdf7d192ed015",
+      "memory-admission.json": "b54dabc9f51c4596f4dc10341161a7b3c7e5e77c36a454951a6e53ab51c7371e",
+      "command.json": "7952dc87c3a7197903389afc1d1439b66452876a007b0014a2ae4088dc757606",
+      "settings.json": "9cc858d0ab11fe4c878c868f1a06cfc4a008702c445170abc5ef3de159239ffa"
+    },
+    "observed_at": "2026-10-17T22:09:32Z",
+    "verification": "Retained public files rehashed against fresh GitHub release asset digest and size metadata."
+  },
+  "wifi": {
+    "tag": "native-wifi-1.4.0-dev1",
+    "source_commit": "9d2c55b32e88c0b12b1fa16200f399164767f5d1",
+    "release_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/tag/native-wifi-1.4.0-dev1",
+    "assets": {
+      "wifi-build-record.json": "280795394184a14a7b1cb55b8bfe8ad1d892c06590a3462847859d7cdd723a74",
+      "elf-memory-admission.json": "104e9666b30a0a90f3743ba9f5eeb544cf88346bade19221d062d7f19905abc5",
+      "command.json": "2f9eb4c586edf29cdaf67a4bbfe8410de16e875f6fa4b900a0f7ad3509f809e6",
+      "wifi_settings.json": "e18bd21a1f13f6bb5703ff7f0c75d9663277a8600e932b398d1b764e6241af93"
+    },
+    "observed_at": "2026-10-17T22:09:32Z",
+    "verification": "Retained public files rehashed against fresh GitHub release asset digest and size metadata."
+  }
+}

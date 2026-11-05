@@ -1,0 +1,3237 @@
+{
+  "rows": [
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/core-0"
+      ],
+      "sha256": "06ef9b630d83c1ae486d5bf42731b3a0ab751474d00636457407fe1e91293de8",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/core-1"
+      ],
+      "sha256": "70a358ac820e9e4dab6632e320b30d7b2265f566640e806c14bcbc5ddd82883a",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/session-0"
+      ],
+      "sha256": "ebb94283705f8a233cdca5fccf7739c2c3c2c82e6b15f53deb0de855c83b5be1",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/session-1"
+      ],
+      "sha256": "fd0dd2804b716d3c2b981a4b95ac7480f55833ee9fdf23b9485cade85776fcc6",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/render-frame",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/open.ppm",
+        "240"
+      ],
+      "sha256": "3b3fafa7d4f32d3d1cd06bb971bc4404f4379fd6f97a3fac935a2d2bac171c9e",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/open.ppm",
+          "sha256": "4297ffd51a6d48722726fc9f5400f88b23fb1775c3cf59e95ee5305c9f0ae37f"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/render-frame",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/partial.ppm",
+        "160"
+      ],
+      "sha256": "3b3fafa7d4f32d3d1cd06bb971bc4404f4379fd6f97a3fac935a2d2bac171c9e",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/partial.ppm",
+          "sha256": "5b622afa3ae07109dbf8df49a4eb517191cf33b4ab86546e7a51cfc1d1e692ff"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/render-frame",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/silent.ppm",
+        "240",
+        "silent"
+      ],
+      "sha256": "3b3fafa7d4f32d3d1cd06bb971bc4404f4379fd6f97a3fac935a2d2bac171c9e",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/silent.ppm",
+          "sha256": "83b1f5873ae943190c6227ab17b662e6ad4ea9ac77e36080f0fcfccf583d335c"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/render-frame",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/torch.ppm",
+        "240",
+        "silent",
+        "torch"
+      ],
+      "sha256": "3b3fafa7d4f32d3d1cd06bb971bc4404f4379fd6f97a3fac935a2d2bac171c9e",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-0"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-0/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-0/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-1"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-1/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-2"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-2/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-3"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-3/adapter-panel.ppm",
+          "sha256": "ba748399c4e33a984fe79bf20a7f66b801e85aba56db3dab78419835f4b74baa"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-3/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-4"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-4/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-4/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-4/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-5"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-5/adapter-alarm.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-5/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-5/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-5/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-6"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-6/adapter-panel.ppm",
+          "sha256": "9128120e60f5bd5d7b2d29c9dedb9755528e3e0b0fdf44191242ee9a355957f8"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-6/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-7"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-7/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-7/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-8"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-8/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-8/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-9"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-9/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-9/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-9/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-10"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-10/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-10/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-11"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-11/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-0",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-0-12"
+      ],
+      "sha256": "67a8c1fddc0fa363b73ce2925239b7c7636a0edd9c4e37691f957c43b46e5bd2",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-0-12/adapter-panel.ppm",
+          "sha256": "b6f0c57c6db83ccd7c3f00ca3ad88c60413ba8931676b0878e63818694eec35a"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-0-12/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-0"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-0/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-0/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-1"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-1/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-2"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-2/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-3"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-3/adapter-panel.ppm",
+          "sha256": "ba748399c4e33a984fe79bf20a7f66b801e85aba56db3dab78419835f4b74baa"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-3/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-4"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-4/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-4/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-4/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-5"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-5/adapter-alarm.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-5/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-5/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-5/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-6"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-6/adapter-panel.ppm",
+          "sha256": "9128120e60f5bd5d7b2d29c9dedb9755528e3e0b0fdf44191242ee9a355957f8"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-6/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-7"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-7/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-7/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-8"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-8/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-8/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-9"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-9/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-9/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-9/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-10"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-10/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-10/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-11"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-11/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-0",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-0-12"
+      ],
+      "sha256": "2f32f9d509f9d3b3948ca4b62c00d612ae67e4fb1827c253dddc2e0d913b7695",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-0-12/adapter-panel.ppm",
+          "sha256": "b6f0c57c6db83ccd7c3f00ca3ad88c60413ba8931676b0878e63818694eec35a"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-0-12/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-0"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-0/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-0/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-1"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-1/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-2"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-2/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-3"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-3/adapter-panel.ppm",
+          "sha256": "ba748399c4e33a984fe79bf20a7f66b801e85aba56db3dab78419835f4b74baa"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-3/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-4"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-4/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-4/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-4/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-5"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-5/adapter-alarm.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-5/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-5/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-5/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-6"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-6/adapter-panel.ppm",
+          "sha256": "9128120e60f5bd5d7b2d29c9dedb9755528e3e0b0fdf44191242ee9a355957f8"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-6/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-7"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-7/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-7/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-8"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-8/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-8/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-9"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-9/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-9/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-9/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-10"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-10/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-10/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-11"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-11/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-0",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-0-12"
+      ],
+      "sha256": "39fb7896510c99c37ba56bff97375eb2b7512ee85b9010e4de1c17a64a5b13b3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-0-12/adapter-panel.ppm",
+          "sha256": "b6f0c57c6db83ccd7c3f00ca3ad88c60413ba8931676b0878e63818694eec35a"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-0-12/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-0"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-0/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-0/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-1"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-1/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-2"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-2/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-3"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-3/adapter-panel.ppm",
+          "sha256": "ba748399c4e33a984fe79bf20a7f66b801e85aba56db3dab78419835f4b74baa"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-3/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-4"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-4/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-4/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-4/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-5"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-5/adapter-alarm.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-5/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-5/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-5/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-6"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-6/adapter-panel.ppm",
+          "sha256": "9128120e60f5bd5d7b2d29c9dedb9755528e3e0b0fdf44191242ee9a355957f8"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-6/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-7"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-7/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-7/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-8"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-8/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-8/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-9"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-9/adapter-panel.ppm",
+          "sha256": "9a413a5c8bf19bdb69097a6f3e02f9397e614f534f88129a188b4b7d81a0033d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-9/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-9/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-10"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-10/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-10/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-11"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-11/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-0",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-0-12"
+      ],
+      "sha256": "711dde04339ad1d629a31b41ff7d7e40a29991ccd9f384416c14fb60fdbdff4c",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-0-12/adapter-panel.ppm",
+          "sha256": "b6f0c57c6db83ccd7c3f00ca3ad88c60413ba8931676b0878e63818694eec35a"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-0-12/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-0"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-0/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-0/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-1"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-1/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-2"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-2/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-3"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-3/adapter-panel.ppm",
+          "sha256": "d80347baa2cd04ef99794fcffc9130be8e1e994751a14dd197e6a044bc670ad0"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-3/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-4"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-4/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-4/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-4/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-5"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-5/adapter-alarm.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-5/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-5/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-5/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-6"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-6/adapter-panel.ppm",
+          "sha256": "7b0766b8c682be2d2e1742ac8bba843257bf9275a42c08abda8161d5625e9672"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-6/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-7"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-7/adapter-panel.ppm",
+          "sha256": "84d99afa5458b30c95773d6a113c1548d9b05990ea640bdd36258e5909e41187"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-7/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-8"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-8/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-8/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-9"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-9/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-9/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-9/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-10"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-10/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-10/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-11"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-11/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-0-1",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-0-1-12"
+      ],
+      "sha256": "dbbbbceddf74746e7e113651c44bfdeca12f1ccd0a77f2696d759e58c940a36d",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-0-1-12/adapter-panel.ppm",
+          "sha256": "14cc53992d83260f43d3153d0464dd8a7c5dcfb5f121c73fa89cd6828c7adc16"
+        },
+        {
+          "path": "build/quick-actions/frames-0-0-1-12/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-0"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-0/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-0/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-1"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-1/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-2"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-2/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-3"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-3/adapter-panel.ppm",
+          "sha256": "d80347baa2cd04ef99794fcffc9130be8e1e994751a14dd197e6a044bc670ad0"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-3/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-4"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-4/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-4/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-4/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-5"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-5/adapter-alarm.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-5/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-5/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-5/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-6"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-6/adapter-panel.ppm",
+          "sha256": "7b0766b8c682be2d2e1742ac8bba843257bf9275a42c08abda8161d5625e9672"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-6/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-7"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-7/adapter-panel.ppm",
+          "sha256": "84d99afa5458b30c95773d6a113c1548d9b05990ea640bdd36258e5909e41187"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-7/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-8"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-8/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-8/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-9"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-9/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-9/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-9/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-10"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-10/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-10/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-11"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-11/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-0-1",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-0-1-12"
+      ],
+      "sha256": "d9ad7ff5c13a8136bba336e0254769b3a890fd37d89d99febc6d89d30bfd7755",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-0-1-12/adapter-panel.ppm",
+          "sha256": "14cc53992d83260f43d3153d0464dd8a7c5dcfb5f121c73fa89cd6828c7adc16"
+        },
+        {
+          "path": "build/quick-actions/frames-180-0-1-12/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-0"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-0/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-0/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-1"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-1/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-2"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-2/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-3"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-3/adapter-panel.ppm",
+          "sha256": "d80347baa2cd04ef99794fcffc9130be8e1e994751a14dd197e6a044bc670ad0"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-3/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-4"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-4/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-4/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-4/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-5"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-5/adapter-alarm.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-5/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-5/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-5/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-6"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-6/adapter-panel.ppm",
+          "sha256": "7b0766b8c682be2d2e1742ac8bba843257bf9275a42c08abda8161d5625e9672"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-6/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-7"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-7/adapter-panel.ppm",
+          "sha256": "84d99afa5458b30c95773d6a113c1548d9b05990ea640bdd36258e5909e41187"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-7/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-8"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-8/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-8/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-9"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-9/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-9/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-9/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-10"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-10/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-10/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-11"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-11/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-0-1-1",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-0-1-1-12"
+      ],
+      "sha256": "cf8074e4bad0ed95e469063b70478109e94e60159643a50bd36f6db44fa977c3",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-0-1-1-12/adapter-panel.ppm",
+          "sha256": "14cc53992d83260f43d3153d0464dd8a7c5dcfb5f121c73fa89cd6828c7adc16"
+        },
+        {
+          "path": "build/quick-actions/frames-0-1-1-12/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-0"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-0/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-0/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-1"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-1/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-2"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-2/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-3"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-3/adapter-panel.ppm",
+          "sha256": "d80347baa2cd04ef99794fcffc9130be8e1e994751a14dd197e6a044bc670ad0"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-3/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-4"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-4/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-4/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-4/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-5"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-5/adapter-alarm.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-5/adapter-torch.ppm",
+          "sha256": "999562f19f775bfbf4935adc71bdfce1a41c393ffb69b126e4d63dcc8ea9d86d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-5/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-5/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-6"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-6/adapter-panel.ppm",
+          "sha256": "7b0766b8c682be2d2e1742ac8bba843257bf9275a42c08abda8161d5625e9672"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-6/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-7"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-7/adapter-panel.ppm",
+          "sha256": "84d99afa5458b30c95773d6a113c1548d9b05990ea640bdd36258e5909e41187"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-7/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-8"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-8/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-8/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-9"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-9/adapter-panel.ppm",
+          "sha256": "f130cb1082c86cb5c9225bfe51cc16d750fe6968f81097e39547ecd601967e68"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-9/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-9/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-10"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-10/adapter-settings-value.ppm",
+          "sha256": "4ddfc95b93cffd97a7b3f9452ac2be0edf8413d888faa058de2e81a8733e264d"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-10/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-11"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-11/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/adapter-180-1-1",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/quick-actions/frames-180-1-1-12"
+      ],
+      "sha256": "0c864a917c1aaca9aade88de57f7965b7eca2a832c528e8f6156504892fd1e86",
+      "passed": true,
+      "generated_frames": [
+        {
+          "path": "build/quick-actions/frames-180-1-1-12/adapter-panel.ppm",
+          "sha256": "14cc53992d83260f43d3153d0464dd8a7c5dcfb5f121c73fa89cd6828c7adc16"
+        },
+        {
+          "path": "build/quick-actions/frames-180-1-1-12/adapter-background.ppm",
+          "sha256": "64a7a9c86be9f7e2a8babd55d9526688f2a0727d7743ecb945750e05a6efccf3"
+        }
+      ]
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-0"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-1"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-2"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-3"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-4"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-5"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-6"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-7"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-8"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-9"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-10"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-11"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-12"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "13",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-13"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "14",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-14"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "15",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-15"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "16",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-16"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "17",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-17"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "18",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-18"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "30",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-30"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "31",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-31"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "32",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-32"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-0",
+        "33",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-0-33"
+      ],
+      "sha256": "0c091348782c07e10a0abbb0ad683d74a9e03313482422379914405355c547c9",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-1",
+        "20",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-1-20"
+      ],
+      "sha256": "a7b9741b3ab78856081b3cebfb18ede847d51f457e864acb567373244ab7e758",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-1",
+        "21",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-1-21"
+      ],
+      "sha256": "a7b9741b3ab78856081b3cebfb18ede847d51f457e864acb567373244ab7e758",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-1",
+        "22",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-1-22"
+      ],
+      "sha256": "a7b9741b3ab78856081b3cebfb18ede847d51f457e864acb567373244ab7e758",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-1",
+        "23",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-1-23"
+      ],
+      "sha256": "a7b9741b3ab78856081b3cebfb18ede847d51f457e864acb567373244ab7e758",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-1",
+        "24",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-1-24"
+      ],
+      "sha256": "a7b9741b3ab78856081b3cebfb18ede847d51f457e864acb567373244ab7e758",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-1",
+        "25",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-1-25"
+      ],
+      "sha256": "a7b9741b3ab78856081b3cebfb18ede847d51f457e864acb567373244ab7e758",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-1",
+        "26",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-1-26"
+      ],
+      "sha256": "a7b9741b3ab78856081b3cebfb18ede847d51f457e864acb567373244ab7e758",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-0-1",
+        "27",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-0-1-27"
+      ],
+      "sha256": "a7b9741b3ab78856081b3cebfb18ede847d51f457e864acb567373244ab7e758",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-0"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-1"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-2"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-3"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-4"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-5"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-6"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-7"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-8"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-9"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-10"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-11"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-12"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "13",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-13"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "14",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-14"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "15",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-15"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "16",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-16"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "17",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-17"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "18",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-18"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "30",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-30"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "31",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-31"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "32",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-32"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-0",
+        "33",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-0-33"
+      ],
+      "sha256": "0f22e0f54ffc1ad958e1c89de9aa8fab78631cb2723bf7dfcc3509af6644b86e",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-1",
+        "20",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-1-20"
+      ],
+      "sha256": "0f6d6b5f0847d087f2d99ea65f1991a947023186684c742ecf497c14a9cf96ed",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-1",
+        "21",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-1-21"
+      ],
+      "sha256": "0f6d6b5f0847d087f2d99ea65f1991a947023186684c742ecf497c14a9cf96ed",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-1",
+        "22",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-1-22"
+      ],
+      "sha256": "0f6d6b5f0847d087f2d99ea65f1991a947023186684c742ecf497c14a9cf96ed",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-1",
+        "23",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-1-23"
+      ],
+      "sha256": "0f6d6b5f0847d087f2d99ea65f1991a947023186684c742ecf497c14a9cf96ed",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-1",
+        "24",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-1-24"
+      ],
+      "sha256": "0f6d6b5f0847d087f2d99ea65f1991a947023186684c742ecf497c14a9cf96ed",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-1",
+        "25",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-1-25"
+      ],
+      "sha256": "0f6d6b5f0847d087f2d99ea65f1991a947023186684c742ecf497c14a9cf96ed",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-1",
+        "26",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-1-26"
+      ],
+      "sha256": "0f6d6b5f0847d087f2d99ea65f1991a947023186684c742ecf497c14a9cf96ed",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-0-1",
+        "27",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-0-1-27"
+      ],
+      "sha256": "0f6d6b5f0847d087f2d99ea65f1991a947023186684c742ecf497c14a9cf96ed",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-0"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-1"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-2"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-3"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-4"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-5"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-6"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-7"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-8"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-9"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-10"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-11"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-12"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "13",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-13"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "14",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-14"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "15",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-15"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "16",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-16"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "17",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-17"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "18",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-18"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "30",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-30"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "31",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-31"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "32",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-32"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-0",
+        "33",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-0-33"
+      ],
+      "sha256": "1e5344caa09895203b581487f6f56baa11624edec40ea2f6d4e5c88292f5062c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-1",
+        "20",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-1-20"
+      ],
+      "sha256": "0b65d9c83af7f4a26705584220570108d7808670940519389eb3ac71ba58db6c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-1",
+        "21",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-1-21"
+      ],
+      "sha256": "0b65d9c83af7f4a26705584220570108d7808670940519389eb3ac71ba58db6c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-1",
+        "22",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-1-22"
+      ],
+      "sha256": "0b65d9c83af7f4a26705584220570108d7808670940519389eb3ac71ba58db6c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-1",
+        "23",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-1-23"
+      ],
+      "sha256": "0b65d9c83af7f4a26705584220570108d7808670940519389eb3ac71ba58db6c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-1",
+        "24",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-1-24"
+      ],
+      "sha256": "0b65d9c83af7f4a26705584220570108d7808670940519389eb3ac71ba58db6c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-1",
+        "25",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-1-25"
+      ],
+      "sha256": "0b65d9c83af7f4a26705584220570108d7808670940519389eb3ac71ba58db6c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-1",
+        "26",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-1-26"
+      ],
+      "sha256": "0b65d9c83af7f4a26705584220570108d7808670940519389eb3ac71ba58db6c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-0-1-1",
+        "27",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-0-1-1-27"
+      ],
+      "sha256": "0b65d9c83af7f4a26705584220570108d7808670940519389eb3ac71ba58db6c",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "0",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-0"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "1",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-1"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "2",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-2"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "3",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-3"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "4",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-4"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "5",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-5"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "6",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-6"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "7",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-7"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "8",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-8"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "9",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-9"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "10",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-10"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "11",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-11"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "12",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-12"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "13",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-13"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "14",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-14"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "15",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-15"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "16",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-16"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "17",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-17"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "18",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-18"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "30",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-30"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "31",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-31"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "32",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-32"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-0",
+        "33",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-0-33"
+      ],
+      "sha256": "3b10aebcbd70f99f76ec58b4cf8ced61720a98ba3e31571a0d20298660599e34",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-1",
+        "20",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-1-20"
+      ],
+      "sha256": "4bbbf133ed150a1f39aca053a3af153e121c728910c4922086c59d340f0a3ac1",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-1",
+        "21",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-1-21"
+      ],
+      "sha256": "4bbbf133ed150a1f39aca053a3af153e121c728910c4922086c59d340f0a3ac1",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-1",
+        "22",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-1-22"
+      ],
+      "sha256": "4bbbf133ed150a1f39aca053a3af153e121c728910c4922086c59d340f0a3ac1",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-1",
+        "23",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-1-23"
+      ],
+      "sha256": "4bbbf133ed150a1f39aca053a3af153e121c728910c4922086c59d340f0a3ac1",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-1",
+        "24",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-1-24"
+      ],
+      "sha256": "4bbbf133ed150a1f39aca053a3af153e121c728910c4922086c59d340f0a3ac1",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-1",
+        "25",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-1-25"
+      ],
+      "sha256": "4bbbf133ed150a1f39aca053a3af153e121c728910c4922086c59d340f0a3ac1",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-1",
+        "26",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-1-26"
+      ],
+      "sha256": "4bbbf133ed150a1f39aca053a3af153e121c728910c4922086c59d340f0a3ac1",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/paper-1-1-1",
+        "27",
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/frames-1-1-1-27"
+      ],
+      "sha256": "4bbbf133ed150a1f39aca053a3af153e121c728910c4922086c59d340f0a3ac1",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/home-0"
+      ],
+      "sha256": "2a4861cfb7c06c7a771c690db527769370477e09fe0fa13906a2e3feafb314d8",
+      "passed": true
+    },
+    {
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/paper-quick/home-1"
+      ],
+      "sha256": "ff430a00ea1e674b7fba8b27fdc5656f68f76d7648f7fa776e9eddab7441639c",
+      "passed": true
+    }
+  ],
+  "unchanged_scripts": {
+    "test_quick_actions.py": "c0dec944d3176368a6b83caeec555a6af6a4b026308fce5d3fc03dc36176ab53",
+    "test_paper_quick_actions.py": "f4117d63e4c01e6445bbf79d6b69fdeb2dc58c3a27160ccc06124db4505f4e40"
+  }
+}

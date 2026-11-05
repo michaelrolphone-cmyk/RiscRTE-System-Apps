@@ -1,0 +1,17 @@
+name: Watch verified RTC change
+on:
+  push:
+    branches: [fix/watch-rtc-first-attempt-20261012]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  settings-clock-change:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python scripts/test_settings_clock_change.py

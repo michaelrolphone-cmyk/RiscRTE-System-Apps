@@ -1,0 +1,4 @@
+{"command": ["bash", "scripts/test_file_browser_local_scopes.sh"], "cwd": "/workspace/shared/x4-settings-system-101-20261012", "environment": {"SANITIZE": "0", "OUTPUT_DIR": "/workspace/shared/x4-settings-points-union-evidence-20261012/file_browser_local_scopes-normal"}}
+Local service scopes: JOIN/connected reads, preview, rename, copy, delete, handler discovery, busy begin, pending end without replay, and peer Open PASS
+Local service scopes: JOIN/connected reads, preview, rename, copy, delete, handler discovery, busy begin, pending end without replay, and peer Open PASS
+Local service scopes: JOIN/connected reads, preview, rename, copy, delete, handler discovery, busy begin, pending end without replay, and peer Open PASS

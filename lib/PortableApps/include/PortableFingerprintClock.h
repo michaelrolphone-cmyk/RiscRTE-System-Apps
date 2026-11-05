@@ -7,6 +7,7 @@
 #endif
 /* A failed/missing RTC disables aging. Uptime is never persisted as a date. */
 static inline bool portable_fingerprint_clock(const risc_runtime_api_v1*runtime,uint64_t*out){
+    PORTABLE_CONTEXTS_CHECK_LIVE();
     *out=0;risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
 #if defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_X4_IDLE_POLICY)
 #ifdef PORTABLE_X4_IDLE_POLICY
@@ -14,18 +15,20 @@ static inline bool portable_fingerprint_clock(const risc_runtime_api_v1*runtime,
 #else
     const char*capability=RISC_REALTIME_CAPABILITY;
 #endif
-    if(!runtime->acquire(capability,1,0,&grant))return true;
+    if(!portable_contexts_callback(runtime->acquire(capability,1,0,&grant)))return PORTABLE_CONTEXTS_LIVE();
     const risc_realtime_api_v1*clock=grant.api;
     risc_realtime_snapshot_v1 sample={.struct_size=sizeof(sample)};
     bool read=clock&&clock->api_version==1&&clock->struct_size>=sizeof(*clock)&&clock->read&&clock->read(clock->context,&sample)==RISC_REALTIME_OK;
-    if(!runtime->release(&grant))return false;
+    PORTABLE_CONTEXTS_CHECK_LIVE();
+    if(!portable_contexts_callback(runtime->release(&grant)))return false;
     if(read&&sample.validity==RISC_REALTIME_VALID&&sample.epoch_seconds>=946684800&&sample.epoch_seconds<=2147483647)*out=(uint64_t)sample.epoch_seconds;
     return true;
 #else
-    if(!runtime->acquire("rtc.clock",2,0,&grant))return true;
+    if(!portable_contexts_callback(runtime->acquire("rtc.clock",2,0,&grant)))return PORTABLE_CONTEXTS_LIVE();
     const twatch_rtc_api_v1*rtc=grant.api;twatch_rtc_time_v1 t={0};
     bool read=rtc&&rtc->api_version==2&&rtc->struct_size>=sizeof(*rtc)&&rtc->read&&rtc->read(rtc->context,&t);
-    if(!runtime->release(&grant))return false;
+    PORTABLE_CONTEXTS_CHECK_LIVE();
+    if(!portable_contexts_callback(runtime->release(&grant)))return false;
     static const unsigned days[]={31,28,31,30,31,30,31,31,30,31,30,31};
     if(!read||t.year<2000||t.year>2099||t.month<1||t.month>12||!t.day||t.day>days[t.month-1]+(t.month==2&&t.year%4==0)||t.hour>23||t.minute>59||t.second>59)return true;
     uint64_t d=0;for(unsigned y=2000;y<t.year;y++)d+=365+(y%4==0);

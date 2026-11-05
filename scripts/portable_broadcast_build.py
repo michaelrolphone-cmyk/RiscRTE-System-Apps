@@ -75,12 +75,16 @@ def record(args,root,record,manifest,defines):
         expected='1.5.0'
     if getattr(args,'catalog_url',None) and getattr(args,'product',None)=='x4' and manifest['id'] in ('ota_update','app_store'):
         expected='1.2.15' if manifest['id']=='ota_update' else '1.5.1' if getattr(args,'installed_catalog',False) else '1.4.1'
+    if manifest['id']=='app_store' and getattr(args,'native_package_feed',False):
+        expected='1.6.0'
+    if manifest['id']=='wifi_settings':expected='1.1.30'
     if manifest['version']!=expected or manifest['requires'].count(CAPABILITY)!=1:
         raise ValueError('Telemetry manifest/version differs from selected builder')
     if not set(DEFINES)<=set(defines) or '-DPORTABLE_NATIVE_CUSTODY_FENCE' not in defines or '-DALARM_SERVICE_TAGGED_V2' not in defines:
         raise ValueError('Telemetry compilation lacks canonical native custody/alarm flags')
     grants=record.get('required_grants',[])
-    if grants.count({**CAPABILITY,'instance_id':0})!=1 or len(grants)>16:
+    policy_rows=17 if manifest['id']=='file_browser' and getattr(args,'shared_text_input',False) else 16
+    if grants.count({**CAPABILITY,'instance_id':0})!=1 or len(grants)>policy_rows:
         raise ValueError('Telemetry singleton authority is missing or exceeds Runtime capacity')
     if not any(g=={'capability':'storage.key-value','api':1,'instance_id':1} for g in grants):
         raise ValueError('Telemetry shared namespace1 authority is missing')

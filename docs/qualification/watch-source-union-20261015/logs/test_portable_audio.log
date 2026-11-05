@@ -1,0 +1,136 @@
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+uncertain app audio retains without alarm/storage calls passed
+healthy stream survives idle alarm checks; Back stops before return passed
+Non-modal cue reserves outputs, consumes stale input and keeps frame passed
+Non-modal cue timeout performs bounded cleanup without changing frame passed
+uncertain app audio retains without alarm/storage calls passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+uncertain app audio retains without alarm/storage calls passed
+healthy stream survives idle alarm checks; Back stops before return passed
+Non-modal cue reserves outputs, consumes stale input and keeps frame passed
+Non-modal cue timeout performs bounded cleanup without changing frame passed
+uncertain app audio retains without alarm/storage calls passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+uncertain app audio retains without alarm/storage calls passed
+healthy stream survives idle alarm checks; Back stops before return passed
+Non-modal cue reserves outputs, consumes stale input and keeps frame passed
+Non-modal cue timeout performs bounded cleanup without changing frame passed
+uncertain app audio retains without alarm/storage calls passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+uncertain app audio retains without alarm/storage calls passed
+healthy stream survives idle alarm checks; Back stops before return passed
+Non-modal cue reserves outputs, consumes stale input and keeps frame passed
+Non-modal cue timeout performs bounded cleanup without changing frame passed
+uncertain app audio retains without alarm/storage calls passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+uncertain app audio retains without alarm/storage calls passed
+healthy stream survives idle alarm checks; Back stops before return passed
+Non-modal cue reserves outputs, consumes stale input and keeps frame passed
+Non-modal cue timeout performs bounded cleanup without changing frame passed
+uncertain app audio retains without alarm/storage calls passed
+Continuous capture survives twenty idle deadlines; explicit stop restores idle sleep PASS
+Requested capture resumes after settled cue; explicit stop stays stopped PASS
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+uncertain app audio retains without alarm/storage calls passed
+healthy stream survives idle alarm checks; Back stops before return passed
+Non-modal cue reserves outputs, consumes stale input and keeps frame passed
+Non-modal cue timeout performs bounded cleanup without changing frame passed
+uncertain app audio retains without alarm/storage calls passed
+Continuous capture survives twenty idle deadlines; explicit stop restores idle sleep PASS
+Requested capture resumes after settled cue; explicit stop stays stopped PASS
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+uncertain app audio retains without alarm/storage calls passed
+healthy stream survives idle alarm checks; Back stops before return passed
+Non-modal cue reserves outputs, consumes stale input and keeps frame passed
+Non-modal cue timeout performs bounded cleanup without changing frame passed
+uncertain app audio retains without alarm/storage calls passed
+Continuous capture survives twenty idle deadlines; explicit stop restores idle sleep PASS
+Requested capture resumes after settled cue; explicit stop stays stopped PASS
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+uncertain app audio retains without alarm/storage calls passed
+healthy stream survives idle alarm checks; Back stops before return passed
+Non-modal cue reserves outputs, consumes stale input and keeps frame passed
+Non-modal cue timeout performs bounded cleanup without changing frame passed
+uncertain app audio retains without alarm/storage calls passed
+Continuous capture survives twenty idle deadlines; explicit stop restores idle sleep PASS
+Requested capture resumes after settled cue; explicit stop stays stopped PASS

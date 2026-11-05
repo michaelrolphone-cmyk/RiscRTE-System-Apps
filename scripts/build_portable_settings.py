@@ -4,6 +4,7 @@
 Development artifact only. The deployment supplies display.output@1,
 input.touch.raw@1, rtc.clock@2 and namespace-1 storage.key-value@1 grants; no additional runtime exports.
 """
+from native_toolchain import compiler_path as resolve_compiler
 import argparse
 import hashlib
 import json
@@ -62,13 +63,24 @@ def stage_native_time_sdk(out, sdk):
 def build(args,parser=None):
     parser=parser or argparse.ArgumentParser(description=__doc__)
     portable_performance_build.validate(args,parser)
-    cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
-    if not cc:
-        core = Path(os.environ.get('PLATFORMIO_CORE_DIR', Path.home()/'.platformio'))
-        cc = str(core/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
     out = args.output_dir or ROOT/'dist/portable'
     profile=getattr(args,'settings_profile','default')
     native_time=profile=='x4-native-time'
+    native_ui=getattr(args,'native_ui',False)
+    clock_change_control=getattr(args,'clock_change_control',False)
+    if native_ui and profile!='default':
+        parser.error('--native-ui requires --settings-profile default; X4 paper profiles use their own presentation')
+    if clock_change_control and not args.alarm_client:
+        parser.error('--clock-change-control requires --alarm-client')
+    if clock_change_control and native_time:
+        parser.error('--clock-change-control requires the raw RTC Settings controller, not x4-native-time')
+    atomic=getattr(args,'experimental_atomic_settings',False)
+    availability=getattr(args,'experimental_settings_availability',False)
+    if availability and not atomic:
+        parser.error('--experimental-settings-availability requires --experimental-atomic-settings')
+    if atomic and (not native_time or not args.resident_shell_client or not args.resident_policy or
+                   not args.home_desk_lock or args.alarm_settings):
+        parser.error('--experimental-atomic-settings requires X4 native-time resident policy, home-desk-lock and no alarm-settings')
     portable_broadcast_build.validate(args,parser,native_time)
     scrolling=getattr(args,'touch_scrolling',False)
     home_desk_lock=getattr(args,'home_desk_lock',False)
@@ -106,6 +118,8 @@ def build(args,parser=None):
     elif getattr(args,'native_time_runtime_repo',None):
         parser.error('--native-time-runtime-repo requires --settings-profile x4-native-time')
     flags=['-DPORTABLE_SETTINGS_APP','-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation)]
+    if atomic: flags.append('-DPORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL')
+    if availability: flags.append('-DPORTABLE_SETTINGS_AVAILABILITY')
     if args.return_app:
         if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*\.elf',args.return_app):
             raise ValueError('Return app must be a plain .elf filename')
@@ -118,8 +132,10 @@ def build(args,parser=None):
         flags+=['-DPORTABLE_SETTINGS_NATIVE_TIME','-DPORTABLE_SETTINGS_TIME_ZONE',
                 '-DPORTABLE_NATIVE_CUSTODY_FENCE']
     if args.alarm_settings: flags.append('-DPORTABLE_ALARM_SETTINGS')
-    if args.nova_ui: flags.append('-DPORTABLE_NOVA_UI')
+    if args.nova_ui or native_ui: flags.append('-DPORTABLE_NOVA_UI')
+    if native_ui: flags+=['-DPORTABLE_SETTINGS_NATIVE_UI','-DPORTABLE_NATIVE_CANVAS']
     if args.alarm_client: flags.append('-DPORTABLE_ALARM_CLIENT')
+    if clock_change_control: flags.append('-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL')
     if args.denver and args.wall_time:parser.error('Choose one explicit RTC policy')
     if args.denver: flags.append('-DPORTABLE_RTC_UTC8_DENVER')
     if args.wall_time:flags.append('-DPORTABLE_RTC_WALL_TIME')
@@ -127,7 +143,8 @@ def build(args,parser=None):
     if args.full_frames: flags.append('-DPORTABLE_FORCE_FULL_FRAMES')
     if args.navigation: flags.append('-DPORTABLE_INPUT_NAVIGATION')
     flags.append('-DPORTABLE_TOUCH_ROTATION='+str(args.touch_rotation))
-    version_path=('lib/PortableApps/profiles/x4-native-time-settings.json' if native_time else
+    version_path=('lib/PortableApps/profiles/native-settings.json' if native_ui else
+                  'lib/PortableApps/profiles/x4-native-time-settings.json' if native_time else
                   'lib/PortableApps/profiles/x4-desk-clock-settings.json' if desk_clock else 'Apps/settings.json')
     version=json.loads((ROOT/version_path).read_text())['version']
     if getattr(args,'tagged_alarm_utilities',None):version='1.3.9'
@@ -146,7 +163,9 @@ def build(args,parser=None):
         flags.append('-DPORTABLE_SETTINGS_LIST_SCROLL')
         version='1.3.18'
     version=portable_quick_build.version(args,'settings',version)
+    if native_ui: version=json.loads((ROOT/version_path).read_text())['version']
     flags.append('-DPORTABLE_SETTINGS_VERSION=\"'+version+'\"')
+    cc = resolve_compiler()
     out.mkdir(parents=True, exist_ok=True)
     if performance_source:
         includes,performance=portable_performance_build.stage(ROOT,out,performance_source,
@@ -193,6 +212,8 @@ def build(args,parser=None):
             {'capability':'rtc.clock','api':2}]}
     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':2 if tagged_alarm else 1})
     manifest['requires'].append({'capability':'storage.key-value','api':1})
+    if atomic: manifest['requires'].append({'capability':'storage.key-value.atomic','api':1})
+    if availability: manifest['requires'].append({'capability':'storage.key-value.availability','api':1})
     if native_time: manifest['requires'] += [{'capability':'runtime.realtime-control','api':1},
                                               {'capability':'board.battery','api':1}]
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
@@ -243,12 +264,16 @@ def build(args,parser=None):
         'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
         'imports':sorted(imports),'exports':sorted(exports),
-        'settings_profile':profile,'sleep_modes':(['light','deep'] if desk_clock else ['light','deep','hybrid']) if args.sleep_settings or desk_clock else [],
+        'settings_profile':'native-settings' if native_ui else profile,'native_ui':native_ui,'clock_change_control':clock_change_control,
+        'sleep_modes':(['light','deep'] if desk_clock else ['light','deep','hybrid']) if args.sleep_settings or desk_clock else [],
         'sleep_fallback':'light' if desk_clock else 'hybrid','desk_clock_faces':['Segments','Sans','Serif','Minimal','Railway','Deco'] if desk_clock else [],
         'preferences':{'instance':1,'sleep_key':'sleep_mode','face_key':'desk_clock_face' if desk_clock else None},
         'build_defines':flags,'time_policy':'rtc-utc8-to-America-Denver' if args.denver else 'identity-raw',
         'home_app':args.home_app,'quick_actions':args.quick_actions,'quick_radios':args.quick_radios,'return_app':args.return_app,'display_rotation':args.display_rotation,'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
+    if native_ui:
+        record['native_ui_contract']={'default_selected':False,'geometry':'capability-sized-native-pixels',
+            'version_profile':version_path,'version_identity':'standalone-development-only','hardware_verified':False}
     if tagged_alarm:record['tagged_alarm_sdk']=tagged_alarm
     if performance:record['performance_trace']=performance
     if args.paper_transitions:record['paper_motion']=portable_paper_build.motion_receipt(ROOT)
@@ -267,7 +292,7 @@ def build(args,parser=None):
             native_time_control_instance=0,rtc_access='explicit-save-only',
             grant_count=len(manifest['requires']),
             required_grants=[dict(requirement,instance_id={'storage.key-value':1,'net.wifi':15,
-                'bluetooth.hci':16}.get(requirement['capability'],0)) for requirement in manifest['requires']],
+                'bluetooth.hci':16,'storage.key-value.atomic':1,'storage.key-value.availability':1}.get(requirement['capability'],0)) for requirement in manifest['requires']],
             mode_capabilities={'foreground_settings':True,'native_realtime_read':True,
                 'explicit_checked_set_time':True,'timezone_preference_only':True,
                 'sleep_preference_modes':['light','deep'],'sleep_backend':False,
@@ -292,15 +317,32 @@ def build(args,parser=None):
                            'readonly':True,'activation':'no-change','sleep_preference':'preserved; not read or written by this row'})
         record['mode_capabilities']['sleep_preference_modes']=[]
         record['mode_capabilities']['sleep_preference_editable']=False
+    if atomic:
+        record['atomic_settings']={'experimental':True,'capability':'storage.key-value.atomic@1',
+            'namespace':1,'intent_format':'PFI0001','origin':'explicit-user',
+            'keys':['time_format','time_zone','desk_clock_face','desk_direction','reader_flip_ui',
+                    'reader_language','sleep_idle','rtc_basis'],
+            'revision_capture':'editor-entry before draft reads','legacy_put_fallback':False,
+            'native_map_and_intent_atomic':True,'physical_clocks_atomic':False,
+            'sd_checkpoint_confirmed':False,'production_activation':False}
     portable_broadcast_build.record(args,ROOT,record,manifest,flags)
     portable_idle_build.record(args,record,flags)
     portable_quick_build.record(args,record)
+    if availability:
+        record['settings_availability']={'experimental':True,'default_selected':False,'namespace':1,
+            'capability':'storage.key-value.availability@1','temporary_defaults_only':True,
+            'reconciliation':'explicit no-draft reload; boot-pinned providers require clean Runtime restart',
+            'draft_policy':'explicit save or discard; no automatic merge',
+            'sdk_sha256':hashlib.sha256((includes/'RiscKeyValueAvailabilityV1.h').read_bytes()).hexdigest()}
+        record.setdefault('grant_bindings',{})['storage.key-value.availability']=[1]
     (out/'settings-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
     portable_broadcast_build.write_settings_admission(args,ROOT,out,includes,manifest,record)
     print('Portable Settings: target layout, ELF validator, import/export checks passed')
 
 def argument_parser():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--experimental-settings-availability',action='store_true',help='Default-off unavailable-state UI; requires explicit X4 atomic Settings')
+    parser.add_argument('--experimental-atomic-settings',action='store_true',help='Default-off X4 Settings explicit namespace-1 atomic preference intents; no production activation')
     parser.add_argument('--settings-profile',choices=['default','x4-desk-clock','x4-native-time'],default='default',help='Opt-in paper Settings profiles; do not qualify a sleep backend')
     parser.add_argument('--native-time-runtime-repo',type=Path,help='Local Runtime Git checkout containing canonical '+NATIVE_TIME_RUNTIME_COMMIT+' SDK; x4-native-time only')
     parser.add_argument('--display-rotation',type=int,choices=[0,90],default=None,help='Default: 90 for x4-native-time, otherwise 0')
@@ -308,7 +350,9 @@ def argument_parser():
     parser.add_argument('--settings-list-scrolling',action='store_true',help='Select Settings 1.3.18 smooth root and Time/Date lists; requires --touch-scrolling')
     parser.add_argument('--home-desk-lock',action='store_true',help='Select Settings 1.3.14 with readonly Top-right key / Desk clock row; requires native paper motion and touch scrolling')
     parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
+    parser.add_argument('--native-ui',action='store_true',help='Default-off capability-sized Settings 1.4.1 development profile with shared native canvas and Nova; default profile only')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')
+    parser.add_argument('--clock-change-control',action='store_true',help='Explicit tagged alarm clock-change boundary after verified raw RTC Save; requires --alarm-client, excludes x4-native-time')
     parser.add_argument('--alarm-settings',action='store_true',help='Explicit namespace-1 alert mode choice')
     parser.add_argument('--sleep-settings',action='store_true',help='Enable explicit namespace-1 sleep choice; requires storage.key-value@1 grant')
     parser.add_argument('--denver',action='store_true',help='Explicit deployment policy: RTC fixed UTC+08, display America/Denver')

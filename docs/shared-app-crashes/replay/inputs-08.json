@@ -1,0 +1,383 @@
+{
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscRetainedWakeV1.h": {
+    "sha256": "7c7b6f0d56631f3aab521a43499d2ea840d075084536e4afa654a74c52e1e511",
+    "copy": "@r6@/sdk/app/RiscRetainedWakeV1.h"
+  },
+  "@r0@/lib/PortableApps/include/CrashReportSd.h": {
+    "sha256": "779e02c23c190439a7683b0cc827012e3fbe781085a118e2722ec22604d5f6ba"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/CrashReportSd.h": {
+    "sha256": "779e02c23c190439a7683b0cc827012e3fbe781085a118e2722ec22604d5f6ba",
+    "copy": "@r0@/lib/PortableApps/include/CrashReportSd.h"
+  },
+  "@r0@/sdk/app/RiscSceneReadingV1.h": {
+    "sha256": "1e9c17ed25224014d33e2acca2595f642196436ac7f67a6aa0d7903c3ff73c13"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscSceneReadingV1.h": {
+    "sha256": "1e9c17ed25224014d33e2acca2595f642196436ac7f67a6aa0d7903c3ff73c13",
+    "copy": "@r0@/sdk/app/RiscSceneReadingV1.h"
+  },
+  "@r0@/lib/PortableApps/include/PortableDeskPointsSnapshot.h": {
+    "sha256": "7d3a6816c86d029b9900e7af56e878cea814ed94d637a031031cc8fe928157eb"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableDeskPointsSnapshot.h": {
+    "sha256": "7d3a6816c86d029b9900e7af56e878cea814ed94d637a031031cc8fe928157eb",
+    "copy": "@r0@/lib/PortableApps/include/PortableDeskPointsSnapshot.h"
+  },
+  "@r0@/lib/PortableApps/include/PortableDeskClockApp.h": {
+    "sha256": "cdf7fdbacf6fd1ff8e8f080936082aafbe01af1c81cc7710d7d362fb69870b6c"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableDeskClockApp.h": {
+    "sha256": "cdf7fdbacf6fd1ff8e8f080936082aafbe01af1c81cc7710d7d362fb69870b6c",
+    "copy": "@r0@/lib/PortableApps/include/PortableDeskClockApp.h"
+  },
+  "@r0@/sdk/app/RiscSceneLifecycleV1.h": {
+    "sha256": "52a3d5dcfc6a9be8d598e0c93bf9bf6c6f824674280ef03ee0c0043a01eb31f5"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscSceneLifecycleV1.h": {
+    "sha256": "52a3d5dcfc6a9be8d598e0c93bf9bf6c6f824674280ef03ee0c0043a01eb31f5",
+    "copy": "@r0@/sdk/app/RiscSceneLifecycleV1.h"
+  },
+  "@r6@/sdk/driver/RiscI2sStandardV1.h": {
+    "sha256": "22b2624c25f07085bb768d49e295f3a7e4ebf2891f5fb9948b12ead826cd35c0"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscI2sStandardV1.h": {
+    "sha256": "22b2624c25f07085bb768d49e295f3a7e4ebf2891f5fb9948b12ead826cd35c0",
+    "copy": "@r6@/sdk/driver/RiscI2sStandardV1.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/WatchViewLayout.h": {
+    "sha256": "3585c799dc39eeb451e6669d6b07cc86fe6633456935407cb81dd29e0534ded2",
+    "copy": "@r0@/lib/PortableApps/include/WatchViewLayout.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableWifiCredentials.h": {
+    "sha256": "a6fd61ac64d3607de04b01185633fe9653678df73a467c22e458f9cc43393d29",
+    "copy": "@r0@/lib/PortableApps/include/PortableWifiCredentials.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscTelemetryV1.h": {
+    "sha256": "8ef64c586e8392c1d7521498c25cfdaccefd53242530e2dda9116e9cc12a5d48",
+    "copy": "@r0@/lib/PortableApps/include/RiscTelemetryV1.h"
+  },
+  "@r0@/lib/PortableApps/include/PortableUsbTransfer.h": {
+    "sha256": "f1351bb4ca5d5af029f6427e814e77c2eca4baa410ca00e9be51a5bce794a2b3"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableUsbTransfer.h": {
+    "sha256": "f1351bb4ca5d5af029f6427e814e77c2eca4baa410ca00e9be51a5bce794a2b3",
+    "copy": "@r0@/lib/PortableApps/include/PortableUsbTransfer.h"
+  },
+  "@r5@/lib/Alarm/include/PointsRecords.h": {
+    "sha256": "ee59148062a39b2973e70c9c4816c1109686df0440d0ffd0d56ef0bff8820332"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PointsRecords.h": {
+    "sha256": "ee59148062a39b2973e70c9c4816c1109686df0440d0ffd0d56ef0bff8820332",
+    "copy": "@r5@/lib/Alarm/include/PointsRecords.h"
+  },
+  "@r0@/lib/PortableApps/include/CrashReportSpool.h": {
+    "sha256": "73937a89c3b6000ceb3db51664d3677be5fa13886b3deb8898baff85732b78ec"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/CrashReportSpool.h": {
+    "sha256": "73937a89c3b6000ceb3db51664d3677be5fa13886b3deb8898baff85732b78ec",
+    "copy": "@r0@/lib/PortableApps/include/CrashReportSpool.h"
+  },
+  "@r6@/sdk/driver/RiscStorageWorkerAdmissionV1.h": {
+    "sha256": "013322a0db332ee9e7b124399ac12dfe050c53fd4b018feb7c278edd2ef8d8bd"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscStorageWorkerAdmissionV1.h": {
+    "sha256": "013322a0db332ee9e7b124399ac12dfe050c53fd4b018feb7c278edd2ef8d8bd",
+    "copy": "@r6@/sdk/driver/RiscStorageWorkerAdmissionV1.h"
+  },
+  "@r0@/lib/PortableApps/include/PortableRasterLayer.h": {
+    "sha256": "6bfac32a8582a41d447bd8121dc76fdd147c2761f3d75ff458b556339c4f2ff9"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableRasterLayer.h": {
+    "sha256": "6bfac32a8582a41d447bd8121dc76fdd147c2761f3d75ff458b556339c4f2ff9",
+    "copy": "@r0@/lib/PortableApps/include/PortableRasterLayer.h"
+  },
+  "@r6@/sdk/driver/RiscStorageVolumeAsyncV1.h": {
+    "sha256": "e395dccfa5c89e1585acaed0e5c8932d8487940261759741e3e60b483aafcaec"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscStorageVolumeAsyncV1.h": {
+    "sha256": "e395dccfa5c89e1585acaed0e5c8932d8487940261759741e3e60b483aafcaec",
+    "copy": "@r6@/sdk/driver/RiscStorageVolumeAsyncV1.h"
+  },
+  "@r6@/sdk/driver/RiscStorageWorkerV1.h": {
+    "sha256": "9e859235403292a0108fd10b8122218d72c1c2d1dd460d94304d919f77b83b6f"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscStorageWorkerV1.h": {
+    "sha256": "9e859235403292a0108fd10b8122218d72c1c2d1dd460d94304d919f77b83b6f",
+    "copy": "@r6@/sdk/driver/RiscStorageWorkerV1.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableAppCustody.h": {
+    "sha256": "82f6fd94881499646be4bfa491fec9338bf99ad0d50adfaadbe876db7da9600c",
+    "copy": "@r0@/lib/PortableApps/include/PortableAppCustody.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableContextsClient.h": {
+    "sha256": "85ea82215f8d0ac73cfc0263ac0c06d2de59931332806af0b9cddf425e2f1e8b",
+    "copy": "@r0@/lib/PortableApps/include/PortableContextsClient.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortablePowerStatus.h": {
+    "sha256": "957925504f2032963d1f2411bc676f2f6b493b41db3f9317182c2cca1a3067e4",
+    "copy": "@r0@/lib/PortableApps/include/PortablePowerStatus.h"
+  },
+  "@r0@/lib/PortableApps/include/PortableTextInputResidentCheckpoint.h": {
+    "sha256": "827ef461207082700ef01dba563bd46e69394f7749d3694031016cf478fb390a"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableTextInputResidentCheckpoint.h": {
+    "sha256": "827ef461207082700ef01dba563bd46e69394f7749d3694031016cf478fb390a",
+    "copy": "@r0@/lib/PortableApps/include/PortableTextInputResidentCheckpoint.h"
+  },
+  "@r0@/lib/PortableApps/include/RiscTcpConnectionV1.h": {
+    "sha256": "484ca863b82b44b7a26c4915a240be95b12a92817eb497def3c0d99eb68179c3"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscTcpConnectionV1.h": {
+    "sha256": "484ca863b82b44b7a26c4915a240be95b12a92817eb497def3c0d99eb68179c3",
+    "copy": "@r0@/lib/PortableApps/include/RiscTcpConnectionV1.h"
+  },
+  "@r6@/sdk/app/RiscStreamClientV1.h": {
+    "sha256": "ef5deb9a3bf8d20c0af9859a83977b93acfb8e480a851d0dcf96caf2795babcb"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscStreamClientV1.h": {
+    "sha256": "ef5deb9a3bf8d20c0af9859a83977b93acfb8e480a851d0dcf96caf2795babcb",
+    "copy": "@r6@/sdk/app/RiscStreamClientV1.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/SoftwareUpdateV1.h": {
+    "sha256": "25c1851c3c61f7d699d166c230cc561961c7e6f0fb5dcad5db8e24eb6bcf93ca",
+    "copy": "@r0@/lib/PortableApps/include/SoftwareUpdateV1.h"
+  },
+  "@r0@/sdk/app/RiscSceneComponentsV1.h": {
+    "sha256": "95d63e4054144958f7a238b883df72c21efce1e6fdcd3f6218c0cacf025ed553"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscSceneComponentsV1.h": {
+    "sha256": "95d63e4054144958f7a238b883df72c21efce1e6fdcd3f6218c0cacf025ed553",
+    "copy": "@r0@/sdk/app/RiscSceneComponentsV1.h"
+  },
+  "@r6@/sdk/driver/RiscHttpClientV1.h": {
+    "sha256": "e966177d426d3fadcb420f5fa9dd7226d3450a208f7ed333808d6466ba7bf8d6"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscHttpClientV1.h": {
+    "sha256": "e966177d426d3fadcb420f5fa9dd7226d3450a208f7ed333808d6466ba7bf8d6",
+    "copy": "@r6@/sdk/driver/RiscHttpClientV1.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableTextInputExtendedClient.h": {
+    "sha256": "c466d3143c160ec19ece4b1b073070cb0f953ab3820e8ebe6f12be813025f4cc",
+    "copy": "@r0@/lib/PortableApps/include/PortableTextInputExtendedClient.h"
+  },
+  "@r3@/sdk/driver/RiscHardwareConfigV1.h": {
+    "sha256": "47fa4cd7d4f09f571a5aedc87376d2f57520ad7873f5556af0a932011633e240"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscHardwareConfigV1.h": {
+    "sha256": "47fa4cd7d4f09f571a5aedc87376d2f57520ad7873f5556af0a932011633e240",
+    "copy": "@r3@/sdk/driver/RiscHardwareConfigV1.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableQuickActions.h": {
+    "sha256": "04a53b71f7d50dd34771475e0ae6996e273743fe5a0ceb41822ad79f6abef0dd",
+    "copy": "@r0@/lib/PortableApps/include/PortableQuickActions.h"
+  },
+  "@r6@/sdk/app/RiscPerformanceV1.h": {
+    "sha256": "c1e52e2e257a057dbbbc371fb8d83d9262bcea674f28f6ce9c56725b0d6dd14d"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscPerformanceV1.h": {
+    "sha256": "c1e52e2e257a057dbbbc371fb8d83d9262bcea674f28f6ce9c56725b0d6dd14d",
+    "copy": "@r6@/sdk/app/RiscPerformanceV1.h"
+  },
+  "@r6@/sdk/app/RiscProviderPromotionV1.h": {
+    "sha256": "751585fed0336bf068cdde488d65b2e0191f113184e48eecbfb4f80861512c51"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscProviderPromotionV1.h": {
+    "sha256": "751585fed0336bf068cdde488d65b2e0191f113184e48eecbfb4f80861512c51",
+    "copy": "@r6@/sdk/app/RiscProviderPromotionV1.h"
+  },
+  "@r0@/lib/PortableApps/include/PortableTimeZone.h": {
+    "sha256": "3cfb6687d8f3675beb020a059b8cd3b3d8beffd42c11c6fd61d14b48af729c54"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableTimeZone.h": {
+    "sha256": "3cfb6687d8f3675beb020a059b8cd3b3d8beffd42c11c6fd61d14b48af729c54",
+    "copy": "@r0@/lib/PortableApps/include/PortableTimeZone.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableUpdate.h": {
+    "sha256": "344344762bfc0430285ecf8a781b64fb3789949cca7a517ad0b0684bf7fa6b76",
+    "copy": "@r0@/lib/PortableApps/include/PortableUpdate.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableAppCatalog.h": {
+    "sha256": "9328b640d09910d58cd83cfc3b14872a3a77133f1d50c15e4053bfaf2a3529e2",
+    "copy": "@r0@/lib/PortableApps/include/PortableAppCatalog.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/ContextsServiceV1.h": {
+    "sha256": "ade2f40d01c7c384c6a71b4ee2a3b077c140ac6af06d7cc69350f02f7be6643d",
+    "copy": "@r0@/lib/PortableApps/include/ContextsServiceV1.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscDisplayPowerV1.h": {
+    "sha256": "4ba5303d82c1b9a97ba1abada14456f882e449331bc04bf9caa70ded23d1560b",
+    "copy": "@r3@/sdk/driver/RiscDisplayPowerV1.h"
+  },
+  "@r6@/sdk/driver/RiscBoundAppDataAsyncV1.h": {
+    "sha256": "3bdc04e0b27ba119139fe8ac81bcc59e3c979ca83847425ccff98f147242f7be"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscBoundAppDataAsyncV1.h": {
+    "sha256": "3bdc04e0b27ba119139fe8ac81bcc59e3c979ca83847425ccff98f147242f7be",
+    "copy": "@r6@/sdk/driver/RiscBoundAppDataAsyncV1.h"
+  },
+  "@r0@/lib/PortableApps/include/PortableTimeZonePreference.h": {
+    "sha256": "0674f99eebc20d8665dc63915019c39b0dd7171e0ea8b6a284150b2eb473d7b0"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableTimeZonePreference.h": {
+    "sha256": "0674f99eebc20d8665dc63915019c39b0dd7171e0ea8b6a284150b2eb473d7b0",
+    "copy": "@r0@/lib/PortableApps/include/PortableTimeZonePreference.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableSleepPolicy.h": {
+    "sha256": "70fa8ff8f63270b2a04d591bdbc61cd7e16d6483421121a96fe22f2855966d9d",
+    "copy": "@r0@/lib/PortableApps/include/PortableSleepPolicy.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/PortableNavigation.h": {
+    "sha256": "f3b9623d1e97d6a18df565aef0d9c934f18a1b97b701fbbc208de3bf0a344e6d",
+    "copy": "@r0@/lib/PortableApps/include/PortableNavigation.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/WifiApi.h": {
+    "sha256": "eddb48c2e4284a592f32a540e10e02572bf251e3145783e9083278afd1aa0159",
+    "copy": "@r0@/lib/PortableApps/include/WifiApi.h"
+  },
+  "@r6@/sdk/driver/RiscGpioSdmmcV1.h": {
+    "sha256": "00d7788c381be557deec18a959b55d474bad7edc0331ae8331b878a618b9818f"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscGpioSdmmcV1.h": {
+    "sha256": "00d7788c381be557deec18a959b55d474bad7edc0331ae8331b878a618b9818f",
+    "copy": "@r6@/sdk/driver/RiscGpioSdmmcV1.h"
+  },
+  "@r0@/sdk/app/RiscSceneCheckpointV1.h": {
+    "sha256": "478ca88a15aeeb5a906623fb67482b29a0b5fa37dd933a5c9ca3a856ec967e44"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscSceneCheckpointV1.h": {
+    "sha256": "478ca88a15aeeb5a906623fb67482b29a0b5fa37dd933a5c9ca3a856ec967e44",
+    "copy": "@r0@/sdk/app/RiscSceneCheckpointV1.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscInputNavigationV1.h": {
+    "sha256": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26",
+    "copy": "@r3@/sdk/driver/RiscInputNavigationV1.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscRadioScanV1.h": {
+    "sha256": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b",
+    "copy": "@r3@/sdk/driver/RiscRadioScanV1.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/include/RiscTouchV1.h": {
+    "sha256": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
+    "copy": "@r3@/sdk/driver/RiscTouchV1.h"
+  },
+  "@r0@/lib/PortableApps/time/TIMEZONE_PROVENANCE.json": {
+    "sha256": "4dda9d416b6ca815155dbf3ecac6452789564ff1312bba2d28a6d5a9b7eaab1b"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/time/TIMEZONE_PROVENANCE.json": {
+    "sha256": "4dda9d416b6ca815155dbf3ecac6452789564ff1312bba2d28a6d5a9b7eaab1b",
+    "copy": "@r0@/lib/PortableApps/time/TIMEZONE_PROVENANCE.json"
+  },
+  "@r0@/lib/PortableApps/time/SOURCES.json": {
+    "sha256": "4e7f30ef9414cc625484bd693ff5cbf8a00adc7571f55feae36f9cdf0b2bc5b3"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/time/SOURCES.json": {
+    "sha256": "4e7f30ef9414cc625484bd693ff5cbf8a00adc7571f55feae36f9cdf0b2bc5b3",
+    "copy": "@r0@/lib/PortableApps/time/SOURCES.json"
+  },
+  "@work@/target-spectrum/sdk/include/RiscBatteryGaugeV1.h": {
+    "sha256": "03d2f2b78e8f261cfb10f5c44bcabc1495bfecb17d7953586a58c27dce151b86",
+    "copy": "@r3@/sdk/driver/RiscBatteryGaugeV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscBluetoothHciV1.h": {
+    "sha256": "191a5d8509cd6122bed4eccd510fac8037b8fbb03bf9801633dd2e0ca155b9a7",
+    "copy": "@r3@/sdk/driver/RiscBluetoothHciV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscDeepSleepV1.h": {
+    "sha256": "0949cf9591ef0f07b61c1306897287ea2eb1533755b5e569bfe1cb2c9b236161",
+    "copy": "@r3@/sdk/driver/RiscDeepSleepV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscDisplayOutputV1.h": {
+    "sha256": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726",
+    "copy": "@r3@/sdk/driver/RiscDisplayOutputV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscDisplayPowerV1.h": {
+    "sha256": "4ba5303d82c1b9a97ba1abada14456f882e449331bc04bf9caa70ded23d1560b",
+    "copy": "@r3@/sdk/driver/RiscDisplayPowerV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscDisplaySpiV2.h": {
+    "sha256": "362c056e5512fc99d500451f7758dba023cf7d096536959e3fab8b05cd1001ce",
+    "copy": "@r3@/sdk/driver/RiscDisplaySpiV2.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscGpioBankV1.h": {
+    "sha256": "58cb736872a689413f6ffcf24cc5cc1bce5187e7d7cfb6fcffe10ad854e7a35c",
+    "copy": "@r3@/sdk/driver/RiscGpioBankV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscHardwareConfigV1.h": {
+    "sha256": "47fa4cd7d4f09f571a5aedc87376d2f57520ad7873f5556af0a932011633e240",
+    "copy": "@r3@/sdk/driver/RiscHardwareConfigV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscI2cBusV1.h": {
+    "sha256": "a6b769efbbf7f3837a6a348689b0aee84bf687ae8e18a31d0296f3bfa6ac2004",
+    "copy": "@r3@/sdk/driver/RiscI2cBusV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscInputNavigationV1.h": {
+    "sha256": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26",
+    "copy": "@r3@/sdk/driver/RiscInputNavigationV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscLightSleepV1.h": {
+    "sha256": "43cbd671265959ec2db7904bf6185e97a87c4cde9d389cdccf6fbb7c916f3b94",
+    "copy": "@r3@/sdk/driver/RiscLightSleepV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscPlatformClockV1.h": {
+    "sha256": "41a12f6529f38731ee874f8bc166e1cf89fe376a1448fe5a4dd4c9abac90e5e2",
+    "copy": "@r3@/sdk/driver/RiscPlatformClockV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscPowerKeyV1.h": {
+    "sha256": "65acb08b7527a7597ea24a6adae6d70e7182413705b957cdb88e27e2a985e75f",
+    "copy": "@r3@/sdk/driver/RiscPowerKeyV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscPowerSleepV1.h": {
+    "sha256": "2ca96de4ddb76b511c2b9d23571a060e19efff3ebf793714324c5ac012c5179c",
+    "copy": "@r3@/sdk/driver/RiscPowerSleepV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscRadioScanV1.h": {
+    "sha256": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b",
+    "copy": "@r3@/sdk/driver/RiscRadioScanV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscStreamProviderV1.h": {
+    "sha256": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+    "copy": "@r3@/sdk/driver/RiscStreamProviderV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscTimedSleepV1.h": {
+    "sha256": "475ba9bfaf6c7497ace7baeb93f2bd9a6abe1e3a91f62eed24862a88d60dbf34",
+    "copy": "@r3@/sdk/driver/RiscTimedSleepV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscTouchV1.h": {
+    "sha256": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
+    "copy": "@r3@/sdk/driver/RiscTouchV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/RiscWakeSetV1.h": {
+    "sha256": "0b5a4914ac67d37b420e1ea19b591a71440f6e4c20149ca4324e1049517ba375",
+    "copy": "@r3@/sdk/driver/RiscWakeSetV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/TWatchHardwareV1.h": {
+    "sha256": "ca48ca21a944565ae185f7c4e8cc0e73bcc18871d79b966f7e7da916e7ab2c99",
+    "copy": "@r3@/sdk/driver/TWatchHardwareV1.h",
+    "symlink": true
+  },
+  "@work@/target-spectrum/sdk/include/TWatchPlatformV1.h": {
+    "sha256": "88457c6cd36a8d2550c964ede1060b4006b72be5d290cff7cd108087bacc16dd",
+    "copy": "@r3@/sdk/driver/TWatchPlatformV1.h",
+    "symlink": true
+  }
+}

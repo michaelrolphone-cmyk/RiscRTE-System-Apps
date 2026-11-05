@@ -1,0 +1,29 @@
+name: Files modal lifecycle policy
+on:
+  push:
+    branches: ['work/files-input-policy-*']
+  workflow_dispatch:
+jobs:
+  probes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: system
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 64c8e52e46fd91e8fdafd636db04eed88f0c51a9
+          path: runtime
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 4cfe21248f1f81339072c39eba44dbaea3a444b6
+          path: utilities
+      - run: python3 scripts/test_file_browser_policy.py --utilities ../utilities --output ../evidence --legacy
+        working-directory: system
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: files-modal-policy
+          path: evidence/*.json

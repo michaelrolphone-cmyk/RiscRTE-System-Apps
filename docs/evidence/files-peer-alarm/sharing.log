@@ -1,0 +1,24 @@
+Files sharing back-off: actual controller/adapter/network/HTTP client PASS
+Files sharing cancel-prepare: actual controller/adapter/network/HTTP client PASS
+Files sharing policy-off: actual controller/adapter/network/HTTP client PASS
+Files sharing policy-busy: actual controller/adapter/network/HTTP client PASS
+Files sharing policy terminal fence PASS
+Files sharing empty: actual controller/adapter/network/HTTP client PASS
+Files sharing borrowed: actual controller/adapter/network/HTTP client PASS
+Files sharing owned: actual controller/adapter/network/HTTP client PASS
+Files sharing end-pending: actual controller/adapter/network/HTTP client PASS
+Files sharing lease-busy: actual controller/adapter/network/HTTP client PASS
+Files sharing TCP terminal fence PASS
+Files sharing expiry: actual controller/adapter/network/HTTP client PASS
+Files sharing back-off: actual controller/adapter/network/HTTP client PASS
+Files sharing cancel-prepare: actual controller/adapter/network/HTTP client PASS
+Files sharing policy-off: actual controller/adapter/network/HTTP client PASS
+Files sharing policy-busy: actual controller/adapter/network/HTTP client PASS
+Files sharing policy terminal fence PASS
+Files sharing empty: actual controller/adapter/network/HTTP client PASS
+Files sharing borrowed: actual controller/adapter/network/HTTP client PASS
+Files sharing owned: actual controller/adapter/network/HTTP client PASS
+Files sharing end-pending: actual controller/adapter/network/HTTP client PASS
+Files sharing lease-busy: actual controller/adapter/network/HTTP client PASS
+Files sharing TCP terminal fence PASS
+Files sharing expiry: actual controller/adapter/network/HTTP client PASS

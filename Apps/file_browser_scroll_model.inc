@@ -16,12 +16,19 @@ static void fbs_reset(void) {
  memset(&fbs_scroll,0,sizeof(fbs_scroll));fbs_generation=1;fbs_mode=UINT32_MAX;
  fbs_origin=fbs_cache_start=fbs_selected=fbs_directory_selected=0;fbs_hit_ready=fbs_inventory_valid=false;
 }
+/* Raw UP ends contact before kinetic motion ends. Resident policy must keep
+ * this logical owner live until the bounded coast settles or is interrupted. */
+bool portable_file_browser_scroll_active(void) {
+ return fbs_scroll.contact||fbs_scroll.velocity_q8!=0;
+}
 void portable_file_browser_scroll_interrupt(void) {
  portable_scroll_cancel(&fbs_scroll);fbs_hit_ready=false;
 }
 static bool fbs_directory_mode(void){return fb_mode==FB_LIST||fb_mode==FB_DESTINATION;}
 static bool fbs_list_mode(void){return fbs_directory_mode()||fb_mode==FB_OPTIONS||fb_mode==FB_ACTIONS||fb_mode==FB_HANDLERS;}
-static bool fbs_read(int direction,const risc_storage_dirent_v1 *cursor,unsigned anchor) {
+static bool fbs_read(int direction,const risc_storage_dirent_v1 *cursor,unsigned anchor);
+static bool fbs_read_scoped(int direction,const risc_storage_dirent_v1 *cursor,unsigned anchor) {
+ if(risc_protected_settings_path(fb_path)){fb_count=0;fb_loaded=false;portable_file_browser_scroll_interrupt();fb_message("Protected system settings");return false;}
  fb_count=0;fb_matched=0;fb_more=false;fb_loaded=false;
  if(!fb_ready()){portable_file_browser_scroll_interrupt();++fbs_generation;return false;}
  risc_storage_dir_t directory=fb_volume->dir_open(fb_volume->context,fb_path);
@@ -30,6 +37,7 @@ static bool fbs_read(int direction,const risc_storage_dirent_v1 *cursor,unsigned
  while(fb_volume->dir_next(fb_volume->context,directory,&item)) {
   if((++examined&63u)==0)fb_runtime->yield_ms(1);
   if(!fb_name_valid(item.name,sizeof(item.name))||item.is_directory>1){invalid=true;break;}
+  if(risc_protected_settings_path(item.name))continue;
   if(fb_mode==FB_DESTINATION&&!item.is_directory)continue;
   if((!fb_hidden&&item.name[0]=='.')||!fb_contains(item.name,fb_query))continue;
   if(fb_matched<UINT32_MAX)++fb_matched;
@@ -62,8 +70,17 @@ static bool fbs_read(int direction,const risc_storage_dirent_v1 *cursor,unsigned
  fbs_cache_start=direction<0?(anchor>fb_count?anchor-fb_count:0):anchor;
  fb_page=0;fb_more=fbs_cache_start+fb_count<fb_matched;fb_loaded=true;
  fb_choice=fbs_selected>=fbs_cache_start&&fbs_selected<fbs_cache_start+fb_count?fbs_selected-fbs_cache_start:UINT32_MAX;
- fb_manage=fb_volume->remove||fb_volume->file_open_write||(ext&&ext->rename);
+ fb_manage=
+#ifdef PORTABLE_FILE_PEER
+ fb_storage_index==FB_REMOTE_ROOT||
+#endif
+ fb_volume->remove||fb_volume->file_open_write||(ext&&ext->rename);
  return true;
+}
+static bool fbs_read(int direction,const risc_storage_dirent_v1 *cursor,unsigned anchor) {
+ bool scope=fb_service_local();if(scope&&!fb_service_begin())return false;
+ bool result=fbs_read_scoped(direction,cursor,anchor);
+ return (!scope||fb_service_end())&&result;
 }
 static bool fbs_cache_for(unsigned first) {
  if(!fb_loaded)return false;

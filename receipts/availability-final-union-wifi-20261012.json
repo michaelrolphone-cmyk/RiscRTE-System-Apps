@@ -1,0 +1,245 @@
+{
+  "source_commit": "24c695092636383ac0038095825876a5637c232b",
+  "source_tree": "035e1a5206d2425ffecfded6850c92e44d548343",
+  "runs": [
+    {
+      "name": "availability-normal",
+      "command": [
+        "python",
+        "scripts/test_wifi_availability.py",
+        "--output",
+        "/tmp/availability-final-union-wifi-20261012/availability-normal"
+      ],
+      "cases": 17,
+      "return_code": 0,
+      "elapsed_seconds": 1.04,
+      "log": "/tmp/availability-final-union-wifi-20261012/availability-normal.log",
+      "log_sha256": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285"
+    },
+    {
+      "name": "availability-sanitized",
+      "command": [
+        "python",
+        "scripts/test_wifi_availability.py",
+        "--sanitize",
+        "--output",
+        "/tmp/availability-final-union-wifi-20261012/availability-sanitized"
+      ],
+      "cases": 17,
+      "return_code": 0,
+      "elapsed_seconds": 2.6,
+      "log": "/tmp/availability-final-union-wifi-20261012/availability-sanitized.log",
+      "log_sha256": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285"
+    },
+    {
+      "name": "availability-paper",
+      "command": [
+        "python",
+        "scripts/test_wifi_availability.py",
+        "--paper",
+        "--output",
+        "/tmp/availability-final-union-wifi-20261012/availability-paper"
+      ],
+      "cases": 17,
+      "return_code": 0,
+      "elapsed_seconds": 1.51,
+      "log": "/tmp/availability-final-union-wifi-20261012/availability-paper.log",
+      "log_sha256": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285"
+    },
+    {
+      "name": "availability-paper-sanitized",
+      "command": [
+        "python",
+        "scripts/test_wifi_availability.py",
+        "--paper",
+        "--sanitize",
+        "--output",
+        "/tmp/availability-final-union-wifi-20261012/availability-paper-sanitized"
+      ],
+      "cases": 17,
+      "return_code": 0,
+      "elapsed_seconds": 2.99,
+      "log": "/tmp/availability-final-union-wifi-20261012/availability-paper-sanitized.log",
+      "log_sha256": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285"
+    },
+    {
+      "name": "atomic-normal",
+      "command": [
+        "python",
+        "scripts/test_wifi_atomic.py",
+        "--output",
+        "/tmp/availability-final-union-wifi-20261012/atomic-normal"
+      ],
+      "cases": 23,
+      "return_code": 0,
+      "elapsed_seconds": 0.98,
+      "log": "/tmp/availability-final-union-wifi-20261012/atomic-normal.log",
+      "log_sha256": "fc84bb76000878c9e10352982254f38a043b0f775244fcfd33d9a75fd393d59a"
+    },
+    {
+      "name": "atomic-sanitized",
+      "command": [
+        "python",
+        "scripts/test_wifi_atomic.py",
+        "--sanitize",
+        "--output",
+        "/tmp/availability-final-union-wifi-20261012/atomic-sanitized"
+      ],
+      "cases": 23,
+      "return_code": 0,
+      "elapsed_seconds": 2.43,
+      "log": "/tmp/availability-final-union-wifi-20261012/atomic-sanitized.log",
+      "log_sha256": "fc84bb76000878c9e10352982254f38a043b0f775244fcfd33d9a75fd393d59a"
+    },
+    {
+      "name": "workflow-normal",
+      "command": [
+        "python",
+        "scripts/test_wifi_workflow.py",
+        "--output",
+        "/tmp/availability-final-union-wifi-20261012/workflow-normal"
+      ],
+      "cases": 56,
+      "return_code": 0,
+      "elapsed_seconds": 2.41,
+      "log": "/tmp/availability-final-union-wifi-20261012/workflow-normal.log",
+      "log_sha256": "e4f6c87562e78ff90e013c564bc9efe36d59be2dd88041f521e6ca48e74d999f"
+    },
+    {
+      "name": "workflow-sanitized",
+      "command": [
+        "python",
+        "scripts/test_wifi_workflow.py",
+        "--sanitize",
+        "--output",
+        "/tmp/availability-final-union-wifi-20261012/workflow-sanitized"
+      ],
+      "cases": 56,
+      "return_code": 0,
+      "elapsed_seconds": 7.0,
+      "log": "/tmp/availability-final-union-wifi-20261012/workflow-sanitized.log",
+      "log_sha256": "e4f6c87562e78ff90e013c564bc9efe36d59be2dd88041f521e6ca48e74d999f"
+    },
+    {
+      "name": "contract",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "*wifi*",
+        "-v"
+      ],
+      "cases": 9,
+      "return_code": 0,
+      "elapsed_seconds": 0.45,
+      "log": "/tmp/availability-final-union-wifi-20261012/contract.log",
+      "log_sha256": "c319561fada3a9d235e76370a60ab46fb9d5b7cb35a34d9ce86626e0fee02993"
+    }
+  ],
+  "environment": {
+    "ASAN_OPTIONS": "detect_leaks=0",
+    "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+  },
+  "text_header_dependencies": [
+    {
+      "fixture": "wifi_availability_test",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-DTEST_IDLE_ELIGIBILITY",
+        "-M",
+        "-I/workspace/shared/x4-settings-availability-union-20261012/lib/PortableApps/include",
+        "-I/workspace/shared/x4-settings-availability-union-20261012/lib/NativeApps/include",
+        "-I/workspace/shared/x4-settings-availability-union-20261012/lib/RemoteFiles/vendor/tinydtls_sha2",
+        "/workspace/shared/x4-settings-availability-union-20261012/test/native_apps/wifi_availability_test.c"
+      ],
+      "resolved_text_header": "/workspace/shared/x4-settings-availability-union-20261012/lib/PortableApps/include/RiscTextEntryV1.h",
+      "header_sha256": "371e779aea3501999dc9ec2ffed1a3d31306a35b880a5089a037798a1a37284b",
+      "dependency_file": "/tmp/availability-final-union-wifi-20261012/wifi_availability_test.dependencies",
+      "dependency_sha256": "5001309dfc56caac3314cdd172ed19142489e8ac05dd610a7958b9e0f5dd4d3a"
+    },
+    {
+      "fixture": "wifi_atomic_workflow_test",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-DTEST_IDLE_ELIGIBILITY",
+        "-M",
+        "-I/workspace/shared/x4-settings-availability-union-20261012/lib/PortableApps/include",
+        "-I/workspace/shared/x4-settings-availability-union-20261012/lib/NativeApps/include",
+        "-I/workspace/shared/x4-settings-availability-union-20261012/lib/RemoteFiles/vendor/tinydtls_sha2",
+        "/workspace/shared/x4-settings-availability-union-20261012/test/native_apps/wifi_atomic_workflow_test.c"
+      ],
+      "resolved_text_header": "/workspace/shared/x4-settings-availability-union-20261012/lib/PortableApps/include/RiscTextEntryV1.h",
+      "header_sha256": "371e779aea3501999dc9ec2ffed1a3d31306a35b880a5089a037798a1a37284b",
+      "dependency_file": "/tmp/availability-final-union-wifi-20261012/wifi_atomic_workflow_test.dependencies",
+      "dependency_sha256": "3075fb1a59d0808de2f0322bb9e2d5eeacf42ed2761413a7e4562c194c347c38"
+    },
+    {
+      "fixture": "wifi_workflow_test",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-DTEST_IDLE_ELIGIBILITY",
+        "-M",
+        "-I/workspace/shared/x4-settings-availability-union-20261012/lib/PortableApps/include",
+        "-I/workspace/shared/x4-settings-availability-union-20261012/lib/NativeApps/include",
+        "-I/workspace/shared/x4-settings-availability-union-20261012/lib/RemoteFiles/vendor/tinydtls_sha2",
+        "/workspace/shared/x4-settings-availability-union-20261012/test/native_apps/wifi_workflow_test.c"
+      ],
+      "resolved_text_header": "/workspace/shared/x4-settings-availability-union-20261012/lib/PortableApps/include/RiscTextEntryV1.h",
+      "header_sha256": "371e779aea3501999dc9ec2ffed1a3d31306a35b880a5089a037798a1a37284b",
+      "dependency_file": "/tmp/availability-final-union-wifi-20261012/wifi_workflow_test.dependencies",
+      "dependency_sha256": "e36ac1f62ad7b957729da55cf2839656cc6e4fe7b0941eaac1162632d05b83c0"
+    }
+  ],
+  "purpose": "final-frozen-files-text-system-union-wifi-validation",
+  "date_utc": "2026-10-12",
+  "source_unchanged_after_tests": true,
+  "source_edits": false,
+  "target_rebuilds": false,
+  "publication": "none",
+  "hardware_qualified": false,
+  "source_sha256": {
+    "Apps/wifi_settings.c": "c1468a6c8ea559e3b32f6a309bf5a77578550109f0b071a7ec9e0bb95f613205",
+    "Apps/wifi_settings_portable.inc": "74b9e748c1689ba9dd1c4cf3ad33df393e1c72b125cf5dcfa695fb81c559c3e8",
+    "Apps/wifi_atomic.inc": "0a0b06d269b779216bd2760d127c13d164470aa5038918a2a982409a68204691",
+    "lib/PortableApps/src/adapter.c": "7f3b8f65024dd1ed29b96af0691196fe0e58594484e8665a4c23a5a447a594bb",
+    "lib/PortableApps/include/RiscTextEntryV1.h": "371e779aea3501999dc9ec2ffed1a3d31306a35b880a5089a037798a1a37284b",
+    "lib/PortableApps/include/PortableTextInputClient.h": "f98564291d4b3685c429cdb96fd6edd0a4b5226b6bbde6ab3ea197a832f5746f",
+    "lib/PortableApps/include/PortableSettingsAvailability.h": "5c5b9982bce02a532b18644580c4f7ece11bfa0df01ae0c1078bc86183d20be8",
+    "lib/PortableApps/include/RiscKeyValueAvailabilityV1.h": "7cf7765c26af74813f86a1a041a0a92495840c883f5e231c391294dd928ad976",
+    "lib/PortableApps/include/PortableWifiAtomic.h": "e3d6f411a9ccae3f19f9b20b3d91fe4e99dc8e4746661210213a0c135abdc9fa",
+    "lib/PortableApps/include/PortableWifiCredentials.h": "a6fd61ac64d3607de04b01185633fe9653678df73a467c22e458f9cc43393d29",
+    "lib/PortableApps/include/PortableWifiProfiles.h": "3201c58bfb48fee81b05a27d7199c1cf6f6f49d4fa83422d0c0098c842de92d5",
+    "scripts/test_wifi_availability.py": "06f31d02345534a22f08da91c7d00f8a1a99e9db5544d63b7a26dbfb355b9993",
+    "scripts/test_wifi_atomic.py": "1eebe5a17f62a8d859fe22dd52ee55d5369e6a4d77bdc195d0b66bbb5ccaf00b",
+    "scripts/test_wifi_workflow.py": "89ae4d2e3b8ab59521f19aed8bd379927e47180ee1b05a05a3a26129c1efa9f8",
+    "test/native_apps/wifi_availability_test.c": "a0fa2f6b4dbe3b5266931a27e62db2b50a1645d63e76af60dc6f8ec2babee3f0",
+    "test/native_apps/wifi_atomic_workflow_test.c": "e68023f6e0f2e6110d01c4a31158c69bdda27a4d792748bc2ee6611ccd9945ca",
+    "test/native_apps/wifi_workflow_test.c": "675f02b202b1321af1bdaf9339fb1a5e377a8890436179faacc9f85ae7215bf7",
+    "test/native_apps/portable_wifi_test.c": "4db3b814397ae68b42f3f4ba1b56ed93c25a0db263da682caa06453d4fb8e64a",
+    "tests/test_portable_wifi_contract.py": "81ae413cd325d78f4de2dcc09818428feb07aa64030605f952074877aa562a38"
+  },
+  "prior_evidence": {
+    "path": "receipts/availability-union-wifi-20261012.json",
+    "sha256": "ac3b9541686f9e178001ce43ec40ab2436bbaf8792ceb4036a05c66b8d019bd5",
+    "preserved": true
+  },
+  "findings": [
+    "All 17 availability cases passed in normal, ASan+UBSan, paper normal, and paper ASan+UBSan modes.",
+    "All 23 atomic cases and 56 keyboard/profile/async cases passed in both normal and ASan+UBSan modes; profile collection fixtures also passed.",
+    "All 9 Wi-Fi contract/default-off/compile-rejection tests passed.",
+    "Compiler dependency output proves each of the three Wi-Fi fixture families uses the current final-union RiscTextEntryV1.h, including the integrated scene suffix.",
+    "No Files/text regression observed in these Wi-Fi fixtures."
+  ],
+  "limits": [
+    "LeakSanitizer disabled under ptrace; AddressSanitizer and UndefinedBehaviorSanitizer enabled.",
+    "No source edits, staged target copies, target rebuilds, hardware, SD, live radio, or publication performed.",
+    "Full default controller and target builds were validated on the earlier frozen union, not repeated in this focused final run."
+  ]
+}

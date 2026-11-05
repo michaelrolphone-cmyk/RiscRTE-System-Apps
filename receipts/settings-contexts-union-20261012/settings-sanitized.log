@@ -1,0 +1,17 @@
+Settings availability zone-touch-cancel passed
+Settings availability date-discard passed
+Settings availability storage-unavailable passed
+Settings availability storage-pending passed
+Settings availability storage-conflict passed
+Settings availability reload-modal passed
+Settings availability unavailable passed
+Settings availability unavailable-modal passed
+Settings availability failed-save-draft passed
+Settings availability conflict passed
+Settings availability draft-pending passed
+Settings availability reload passed
+Settings availability provider-pending passed
+Settings availability available-save passed
+malformed
+status-release-fails
+invalid-publication

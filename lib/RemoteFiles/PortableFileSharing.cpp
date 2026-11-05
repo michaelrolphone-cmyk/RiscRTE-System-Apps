@@ -7,7 +7,7 @@
 using namespace RiscWebDav;
 namespace {
 void wipe(void *value,size_t size){auto*p=static_cast<volatile unsigned char*>(value);while(size--)*p++=0;}
-enum class Step { Off,Files,Tcp,Entropy,Random,EntropyRelease,Prepare,Run,Stop,Release,Error,Retained };
+enum class Step { Off,Files,Tcp,Entropy,Random,EntropyRelease,Prepare,WaitNetwork,Listen,Run,Stop,Release,Error,Retained };
 constexpr int32_t BadConfig=-100,MissingCapability=-101,InvalidContract=-102,ClockChanged=-103;
 }
 struct portable_file_sharing {
@@ -19,7 +19,7 @@ struct portable_file_sharing {
  const risc_entropy_source_v1 *entropy=nullptr;
  DigestSession auth{};Sharing sharing{};Step step=Step::Off;
  unsigned char random[32]{};char password[17]{};
- uint64_t now=0;
+ uint64_t now=0;bool deferred=false;
  bool owned(){if(step==Step::Retained)return false;if(!hooks.owner(hooks.context)){retain(ClockChanged);return false;}return true;}
  void clearSecrets(){wipe(random,sizeof(random));wipe(password,sizeof(password));wipe(view.password,sizeof(view.password));auth.clear();}
  void retain(int32_t error){clearSecrets();view.error=error;step=Step::Retained;view.state=PORTABLE_FILE_SHARING_RETAINED;view.active_work=true;}
@@ -41,6 +41,14 @@ extern "C" bool portable_file_sharing_start(portable_file_sharing*p,const portab
 extern "C" void portable_file_sharing_stop(portable_file_sharing*p){
  if(!p||p->step==Step::Off||p->step==Step::Error||!p->owned())return;
  p->stop();
+}
+extern "C" bool portable_file_sharing_defer_network(portable_file_sharing*p,bool defer){
+ if(!p||!p->owned())return false;
+ if(defer){if(p->step!=Step::Off)return false;p->deferred=true;return true;}
+ if(p->step!=Step::WaitNetwork)return false;
+ p->deferred=false;
+ p->step=Step::Listen;
+ return true;
 }
 extern "C" void portable_file_sharing_tick(portable_file_sharing*p,uint64_t now){
  if(!p||p->step==Step::Off||p->step==Step::Error||!p->owned())return;
@@ -72,9 +80,15 @@ extern "C" void portable_file_sharing_tick(portable_file_sharing*p,uint64_t now)
   p->password[16]=0;
   char temporary[16];std::memcpy(temporary,p->password,sizeof(temporary));
   bool authenticated=p->auth.begin("files",temporary,sizeof(temporary),"RiscRTE files",p->random+16,16,now,p->view.expires_ms);wipe(temporary,sizeof(temporary));wipe(p->random,sizeof(p->random));
+  if(!authenticated){p->stop(InvalidContract);return;}
+  if(p->deferred)memcpy(p->view.password,p->password,sizeof(p->password));
+  p->step=p->deferred?Step::WaitNetwork:Step::Listen;return;
+ }
+ if(p->step==Step::WaitNetwork)return;
+ if(p->step==Step::Listen){
   SharingHooks hooks{p,[](void*context){return static_cast<portable_file_sharing*>(context)->owned();},p->hooks.allocate,p->hooks.deallocate};
   risc_tcp_connection_listen_v1 bind{sizeof(bind),{},p->config.port,0};std::memcpy(bind.address,p->config.address,sizeof(bind.address));
-  if(!authenticated||!p->sharing.begin(p->files,p->tcp,&p->auth,hooks,bind,now,p->view.expires_ms)){if(p->step!=Step::Retained)p->stop(InvalidContract);return;}
+  if(!p->sharing.begin(p->files,p->tcp,&p->auth,hooks,bind,now,p->view.expires_ms)){if(p->step!=Step::Retained)p->stop(InvalidContract);return;}
   p->step=Step::Run;return;
  }
  if(p->step==Step::Run){

@@ -200,7 +200,7 @@ void policy_fixture_verify(bool was_retained){
   else assert(model_checks&&child_nav>=3);
   assert(opens[1]==closes[1]&&opens[2]==closes[2]);
   if(is("eject")){assert(!overlay_copies&&!host_nav);}
-  else if(is("poll")||is("capture")||is("policy-busy"))assert(!overlay_copies);
+  else if(is("poll")||is("capture")||is("policy-busy")||is("scroll-policy"))assert(!overlay_copies);
   else assert(overlay_copies==(is("file-open")?2u:1u)&&host_nav>=3);
   if(is("file-open"))assert(file_requests==1&&file_receives==1&&file_returns==1);
   assert(usb_begins==usb_ends);

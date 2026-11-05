@@ -1,0 +1,5 @@
+--- frozen-pre-alarm/alarm.inc
++++ normalized-pre-alarm/alarm.inc
+@@
+-if(info.width){sample.x=(uint32_t)sample.x*240u/info.width;sample.y=(uint32_t)sample.y*240u/info.width;}
++if(!pp_enabled() && info.width){sample.x=(uint32_t)sample.x*240u/info.width;sample.y=(uint32_t)sample.y*240u/info.width;}

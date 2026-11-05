@@ -1,0 +1,174 @@
+name: Shared text input checkpoint
+on:
+  push:
+    branches: [work/lists-shared-input-20261012]
+  pull_request:
+    paths:
+      - 'Services/text_input/**'
+      - 'Services/scene_host/**'
+      - 'sdk/app/RiscScene*'
+      - 'sdk/app/RiscTextEntryV1.h'
+      - 'lib/PortableApps/include/RiscTextEntryV1.h'
+      - 'lib/PortableApps/include/PortableTextInput*'
+      - 'lib/PortableApps/include/PortableResidentPolicyInput.h'
+      - 'lib/PortableApps/include/PortableContext*'
+      - 'lib/PortableApps/include/PortableFingerprintClock.h'
+      - 'scripts/test_contexts_backend_liveness.py'
+      - 'test/contexts/backend*'
+      - 'lib/PortableApps/src/resident*'
+      - 'scripts/test_resident*'
+      - 'test/native_apps/resident*'
+      - 'scripts/test_text_input*'
+      - 'scripts/test_scene*'
+      - 'test/scene/**'
+      - 'test/text_input/**'
+      - '.github/workflows/text-input-checkpoint.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-regressions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70
+          path: .dependencies/runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reproduce the selected full-profile telemetry font
+        run: |
+          python -m pip install Pillow==12.3.0
+          python scripts/generate_telemetry_fonts.py
+          echo '2d7501e42d6223ebbc191817715431182c435fea944a1a02166a0748a577eaf1  Services/scene_host/fonts/telemetry.inc' | sha256sum --check
+      - name: Checkpoint host/client normal and ASan/UBSan, default leak detection
+        run: >-
+          python scripts/test_text_input_review_checkpoint.py
+          --runtime .dependencies/runtime --output build/checkpoint --sanitize
+      - name: Same-focus touch/navigation continuity and real-focus neutralization
+        run: >-
+          python scripts/test_text_input_handoff_continuity.py
+          --runtime .dependencies/runtime --output build/continuity --sanitize
+      - name: Existing scene lifecycle, keyboard, layout, reading and checkpoint regressions
+        run: |
+          python scripts/test_scene_host.py --runtime .dependencies/runtime
+          python scripts/test_scene_host.py --runtime .dependencies/runtime --sanitize
+          python scripts/test_scene_components.py --runtime .dependencies/runtime
+          python scripts/test_scene_telemetry.py --runtime .dependencies/runtime
+      - name: All existing copied ABI, plain, masked, long, USB and custody regressions
+        run: |
+          python scripts/test_text_input_host.py --runtime .dependencies/runtime --output build/legacy-normal --decoupled-attention
+          python scripts/test_text_input_host.py --runtime .dependencies/runtime --output build/legacy-sanitized --sanitize --decoupled-attention
+      - name: Real Runtime/provider unload and coexistence regressions
+        run: |
+          python scripts/test_text_input_runtime.py --runtime .dependencies/runtime --output build/runtime-normal --scene-compact
+          python scripts/test_text_input_runtime.py --runtime .dependencies/runtime --output build/runtime-sanitized --scene-compact --sanitize
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-text-checkpoint-evidence
+          path: |
+            build/checkpoint/*results.json
+            build/continuity/*results.json
+          if-no-files-found: error
+  native-owner-regressions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70
+          path: .dependencies/runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO
+          ref: e59b4d682738fa5d287c198846f631cf990f6b1c
+          path: .dependencies/product
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Drivers
+          ref: 281609a0d2ae514f107d2ef67b6e8b4d25c72fb8
+          path: .dependencies/drivers
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: 45cf61ac013fb618e8d7fed63217a35350484d52
+          path: .dependencies/reader
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 2a06ff127e6f7c7d687b1361bed05da97aa05b2d
+          path: .dependencies/utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: 7fb13b09b4dac275a8111b224784f8a472f39264
+          path: .dependencies/old-system
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 64c8e52e46fd91e8fdafd636db04eed88f0c51a9
+          path: .dependencies/watch-runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Stage exact typed provider suffixes
+        run: |
+          python -m pip install Pillow==12.3.0
+          mkdir -p build/native-driver-sdk
+          cp .dependencies/drivers/sdk/driver/*.h build/native-driver-sdk/
+          for header in RiscDisplayOutputV1.h RiscDisplayOutputPowerV1.h RiscStorageVolumeV1.h RiscTouchPowerV1.h; do
+            cp .dependencies/reader/sdk/driver/$header build/native-driver-sdk/
+          done
+      - name: Native policy promise, deadline race, real Light and cleanup tests
+        run: >-
+          python scripts/test_resident_idle.py
+          --runtime .dependencies/runtime --product .dependencies/product
+          --driver-sdk build/native-driver-sdk
+          --alarm-sdk .dependencies/utilities/lib/Alarm/include
+          --settled-sdk .dependencies/product/minimal/interfaces
+          --tone-sdk .dependencies/product/minimal/interfaces --async-display
+          --output-dir build/native-policy
+      - name: Frozen old-owner fallback still admits actual sleep
+        run: >-
+          python scripts/test_resident_idle.py
+          --runtime .dependencies/runtime --product .dependencies/product
+          --driver-sdk build/native-driver-sdk
+          --alarm-sdk .dependencies/utilities/lib/Alarm/include
+          --settled-sdk .dependencies/product/minimal/interfaces
+          --tone-sdk .dependencies/product/minimal/interfaces --async-display
+          --legacy-policy-root .dependencies/old-system
+          --output-dir build/old-native-policy
+      - name: Opt-in Contexts backend fences and unchanged default object code
+        run: >-
+          python scripts/test_contexts_backend_liveness.py
+          --runtime .dependencies/watch-runtime --x4-runtime .dependencies/runtime
+          --utilities .dependencies/utilities --baseline-system .dependencies/old-system
+          --sanitize --output build/contexts-fences
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-policy-checkpoint-evidence
+          path: |
+            build/native-policy/evidence.json
+            build/old-native-policy/evidence.json
+            build/contexts-fences/results.json
+          if-no-files-found: error

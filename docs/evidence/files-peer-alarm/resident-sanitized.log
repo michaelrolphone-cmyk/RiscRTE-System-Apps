@@ -1,0 +1,12 @@
+Peer direct native ownership and resident checkpoints PASS
+Peer borrowed native ownership and resident checkpoints PASS
+Peer borrowed-lease native ownership and resident checkpoints PASS
+Peer cancellation suppresses checkpoints until quiescent PASS
+Peer lease native ownership and resident checkpoints PASS
+Peer retained custody blocks dispatch PASS
+Peer direct native ownership and resident checkpoints PASS
+Peer borrowed native ownership and resident checkpoints PASS
+Peer borrowed-lease native ownership and resident checkpoints PASS
+Peer cancellation suppresses checkpoints until quiescent PASS
+Peer lease native ownership and resident checkpoints PASS
+Peer retained custody blocks dispatch PASS

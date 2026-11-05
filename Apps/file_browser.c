@@ -9,6 +9,7 @@
 #include "T5StorageApi.h"
 #include "T5SystemUiApi.h"
 #include "RiscStorageVolumeV1.h"
+#include "RiscProtectedSettingsPath.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -236,6 +237,7 @@ static int32_t find_entry(const char *name) {
 }
 
 static bool load_usb_files(void) {
+    if (risc_protected_settings_path(base_path)) { entry_count = 0; return false; }
     if (!refresh_usb()) {
         entry_count = 0;
         rebuild_ui_entries();
@@ -255,7 +257,7 @@ static bool load_usb_files(void) {
     risc_storage_dirent_v1 item;
     entry_count = 0;
     while (entry_count < MAX_ENTRIES && usb_volume->dir_next(usb_volume->context, directory, &item)) {
-        if ((!show_hidden && item.name[0] == '.') || strcmp(item.name, "System Volume Information") == 0) continue;
+        if (!memchr(item.name, 0, sizeof(item.name)) || risc_protected_settings_path(item.name) || (!show_hidden && item.name[0] == '.') || strcmp(item.name, "System Volume Information") == 0) continue;
         copy_text(entries[entry_count].name, sizeof(entries[entry_count].name), item.name);
         entries[entry_count].is_directory = item.is_directory != 0;
         entries[entry_count].usb_root = false;
@@ -266,6 +268,7 @@ static bool load_usb_files(void) {
 }
 
 static bool load_sd_files(void) {
+    if (risc_protected_settings_path(base_path)) { entry_count = 0; return false; }
     char dir[PATH_CAP + 4];
     t5_app_dirent_t item;
     const bool show_hidden = browser->show_hidden_files();
@@ -273,7 +276,7 @@ static bool load_sd_files(void) {
     entry_count = 0;
     if (!app->dir_open(dir)) return false;
     while (entry_count < MAX_ENTRIES && app->dir_next(&item)) {
-        if ((!show_hidden && item.name[0] == '.') || strcmp(item.name, "System Volume Information") == 0) continue;
+        if (!memchr(item.name, 0, sizeof(item.name)) || risc_protected_settings_path(item.name) || (!show_hidden && item.name[0] == '.') || strcmp(item.name, "System Volume Information") == 0) continue;
         copy_text(entries[entry_count].name, sizeof(entries[entry_count].name), item.name);
         entries[entry_count].is_directory = item.is_directory != 0;
         entries[entry_count].usb_root = false;
@@ -335,8 +338,8 @@ static void load_session(void) {
         if (end) *end = 0;
         pending_delete_usb = line4[0] == 'U';
     }
-    if (line1[0] == '/') copy_text(base_path, sizeof(base_path), line1);
-    copy_text(pending_delete_path, sizeof(pending_delete_path), line3);
+    if (line1[0] == '/' && !risc_protected_settings_path(line1)) copy_text(base_path, sizeof(base_path), line1);
+    if (!risc_protected_settings_path(line3)) copy_text(pending_delete_path, sizeof(pending_delete_path), line3);
     load_files(line2);
     selection_active = line2[0] != 0 && entry_count > 0;
 }
@@ -409,6 +412,7 @@ static int32_t run_menu(const char *title, const char *subtitle,
 
 static uint32_t list_picker_directories(bool usb, const char *path, uint32_t offset) {
     uint32_t count = offset;
+    if (risc_protected_settings_path(path)) return count;
     const bool show_hidden = browser->show_hidden_files();
     if (usb) {
         if (!refresh_usb()) return count;
@@ -416,7 +420,7 @@ static uint32_t list_picker_directories(bool usb, const char *path, uint32_t off
         if (!directory) return count;
         risc_storage_dirent_v1 item;
         while (count < PICKER_ENTRIES + 2u && usb_volume->dir_next(usb_volume->context, directory, &item)) {
-            if (!item.is_directory || (!show_hidden && item.name[0] == '.') ||
+            if (!memchr(item.name, 0, sizeof(item.name)) || risc_protected_settings_path(item.name) || !item.is_directory || (!show_hidden && item.name[0] == '.') ||
                 strcmp(item.name, "System Volume Information") == 0) continue;
             copy_text(picker_names[count - offset], sizeof(picker_names[0]), item.name);
             picker_rows[count] = (t5_ui_list_row_t){picker_names[count - offset], "Folder", "", 0};
@@ -429,7 +433,7 @@ static uint32_t list_picker_directories(bool usb, const char *path, uint32_t off
         if (!app->dir_open(vfs)) return count;
         t5_app_dirent_t item;
         while (count < PICKER_ENTRIES + 2u && app->dir_next(&item)) {
-            if (!item.is_directory || (!show_hidden && item.name[0] == '.') ||
+            if (!memchr(item.name, 0, sizeof(item.name)) || risc_protected_settings_path(item.name) || !item.is_directory || (!show_hidden && item.name[0] == '.') ||
                 strcmp(item.name, "System Volume Information") == 0) continue;
             copy_text(picker_names[count - offset], sizeof(picker_names[0]), item.name);
             picker_rows[count] = (t5_ui_list_row_t){picker_names[count - offset], "Folder", "", 0};
@@ -515,6 +519,7 @@ static bool storage_write_stream_available(void) {
 }
 
 static bool copy_sd_to_usb(const char *source_vfs, const char *destination) {
+    if (risc_protected_settings_path(source_vfs) || risc_protected_settings_path(destination)) return false;
     if (!storage_write_stream_available() || !refresh_usb()) return false;
     size_t source_size = 0;
     t5_storage_stream_t source = storage->stream_open(source_vfs, &source_size);
@@ -547,6 +552,7 @@ static bool copy_sd_to_usb(const char *source_vfs, const char *destination) {
 }
 
 static bool copy_usb_to_sd(const char *source, const char *destination_vfs) {
+    if (risc_protected_settings_path(source) || risc_protected_settings_path(destination_vfs)) return false;
     if (!storage_write_stream_available() || !refresh_usb()) return false;
     uint64_t source_size = 0;
     risc_storage_file_t input = usb_volume->file_open_read(usb_volume->context, source, &source_size);
@@ -653,6 +659,7 @@ static int32_t choose_handler(const char *vfs_path, t5_file_handler_t *handlers,
 }
 
 static bool open_with_handler(const char *name, const t5_file_handler_t *handler) {
+    if (risc_protected_settings_path(base_path) || risc_protected_settings_path(name)) return false;
     char vfs_path[PATH_CAP + 4];
     char storage_path[PATH_CAP];
     make_vfs_path(name, vfs_path, sizeof(vfs_path));
@@ -675,6 +682,7 @@ static bool open_with_handler(const char *name, const t5_file_handler_t *handler
 static bool open_selected(void) {
     if (!entry_count || selected_index < 0 || selected_index >= (int32_t)entry_count) return false;
     browser_entry_t *entry = &entries[selected_index];
+    if (risc_protected_settings_path(base_path) || risc_protected_settings_path(entry->name)) return false;
     if (entry->is_directory) {
         if (entry->usb_root) copy_text(base_path, sizeof(base_path), USB_ROOT);
         else if (strcmp(base_path, "/") == 0) {
@@ -730,6 +738,7 @@ static bool storage_rename_available(void) {
 }
 
 static bool valid_entry_name(const char *name) {
+    if (risc_protected_settings_path(name)) return false;
     if (!name || !name[0] || !strcmp(name, ".") || !strcmp(name, "..")) return false;
     for (const char *p = name; *p; ++p)
         if (*p == '/' || *p == '\\' || (unsigned char)*p < 0x20u) return false;
@@ -740,6 +749,40 @@ static bool path_same_or_child(const char *candidate, const char *parent) {
     const size_t n = parent ? strlen(parent) : 0;
     if (!candidate || !parent || !n || strncmp(candidate, parent, n) != 0) return false;
     return candidate[n] == 0 || candidate[n] == '/';
+}
+
+/* A folder rename/delete must not move or remove a reserved descendant.
+ * Legacy app directories have one iterator, so close before descending. */
+static bool legacy_tree_allowed(const char *root) {
+    if (!root || risc_protected_settings_path(root) || strlen(root) >= PATH_CAP) return false;
+    char path[PATH_CAP]; copy_text(path, sizeof(path), root);
+    unsigned position[32] = {0}, depth = 0;
+    for (;;) {
+        char vfs[PATH_CAP + 4]; make_sd_vfs_dir(path, vfs, sizeof(vfs));
+        if (!app->dir_open(vfs)) return false;
+        t5_app_dirent_t item = {0}; unsigned index = 0; bool got = false, invalid = false;
+        while ((got = app->dir_next(&item))) {
+            if (!memchr(item.name, 0, sizeof(item.name)) || !item.name[0] ||
+                strchr(item.name, '/') || strchr(item.name, '\\') ||
+                !strcmp(item.name, ".") || !strcmp(item.name, "..") ||
+                risc_protected_settings_path(item.name)) { invalid = true; break; }
+            if (index++ >= position[depth]) break;
+        }
+        app->dir_close();
+        if (invalid) return false;
+        if (got) {
+            position[depth] = index;
+            if (item.is_directory) {
+                if (depth == 31 || strlen(path) + strlen(item.name) + 2 >= sizeof(path)) return false;
+                char next[PATH_CAP]; join_relative_path(path, item.name, next, sizeof(next));
+                copy_text(path, sizeof(path), next); position[++depth] = 0;
+            }
+        } else {
+            if (!depth) return true;
+            --depth; char *slash = strrchr(path, '/'); if (!slash) return false;
+            if (slash == path) path[1] = 0; else *slash = 0;
+        }
+    }
 }
 
 static bool request_rename(void) {
@@ -783,6 +826,8 @@ static bool move_selected(void) {
     char destination_vfs[PATH_CAP + 4];
     make_sd_vfs_dir(source_relative, source_vfs, sizeof(source_vfs));
     make_sd_vfs_dir(destination_relative, destination_vfs, sizeof(destination_vfs));
+    if (risc_protected_settings_path(source_vfs) || risc_protected_settings_path(destination_vfs) ||
+        (entries[selected_index].is_directory && !legacy_tree_allowed(source_relative))) return false;
     if (storage->exists(destination_vfs)) {
         copy_text(status_text, sizeof(status_text), "Destination already exists");
         return false;
@@ -809,6 +854,8 @@ static bool request_delete(void) {
     }
     if (pending_delete_usb) make_usb_path(entries[selected_index].name, pending_delete_path, sizeof(pending_delete_path));
     else make_storage_path(entries[selected_index].name, pending_delete_path, sizeof(pending_delete_path));
+    if (risc_protected_settings_path(pending_delete_path) ||
+        (!pending_delete_usb && entries[selected_index].is_directory && !legacy_tree_allowed(pending_delete_path))) { pending_delete_path[0] = 0; return false; }
     save_session();
     if (browser->confirm_delete_request(entries[selected_index].name, HANDOFF_COOKIE)) return true;
     clear_session();
@@ -909,7 +956,10 @@ static void consume_handoff_results(void) {
                 join_relative_path(base_path, renamed, destination_relative, sizeof(destination_relative));
                 make_sd_vfs_dir(source_relative, source_vfs, sizeof(source_vfs));
                 make_sd_vfs_dir(destination_relative, destination_vfs, sizeof(destination_vfs));
-                if (storage->exists(destination_vfs)) {
+                if (risc_protected_settings_path(source_vfs) || risc_protected_settings_path(destination_vfs) ||
+                    (selected_index >= 0 && selected_index < (int32_t)entry_count && entries[selected_index].is_directory && !legacy_tree_allowed(source_relative))) {
+                    copy_text(status_text, sizeof(status_text), "Protected system settings");
+                } else if (storage->exists(destination_vfs)) {
                     copy_text(status_text, sizeof(status_text), "That name already exists");
                 } else if (!storage->rename_file(source_vfs, destination_vfs)) {
                     copy_text(status_text, sizeof(status_text), "Rename failed");
@@ -923,13 +973,14 @@ static void consume_handoff_results(void) {
     }
     if (browser->confirm_delete_take_result(&confirmed, &cookie)) {
         const int32_t old_index = selected_index;
-        if (confirmed && pending_delete_path[0]) {
+        if (confirmed && pending_delete_path[0] && !risc_protected_settings_path(pending_delete_path)) {
             bool deleted = false;
             if (pending_delete_usb) {
                 deleted = refresh_usb() && usb_volume->remove(usb_volume->context, pending_delete_path);
                 if (!deleted) usb_error("Failed to delete USB file");
             } else {
-                deleted = browser->delete_document(pending_delete_path);
+                bool directory = selected_index >= 0 && selected_index < (int32_t)entry_count && entries[selected_index].is_directory;
+                deleted = (!directory || legacy_tree_allowed(pending_delete_path)) && browser->delete_document(pending_delete_path);
                 if (!deleted) copy_text(status_text, sizeof(status_text), "Failed to delete file");
             }
             if (deleted) status_text[0] = 0;

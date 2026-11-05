@@ -1,0 +1,119 @@
+{
+  "head": "118c7c27f3b143e34849f70c4a30f2fdbf886e86",
+  "tree": "c55e0dac6e2d5a64f42a92bff251f71ae4498d2b",
+  "branch": "paper-coordinate-reproduction-20261017",
+  "tracked_diff": "",
+  "source_sha256": {
+    "lib/PortableApps/src/adapter.c": "bed7258524633f61de34bac5b2a454e704b9c30e7bf95363d9c6472ea5ff360e",
+    "lib/PortableApps/src/quick_paper.inc": "8406e17234ccbd516572e935fdbc4a48849fb4daac6534f454c42b040f0cac48",
+    "lib/PortableApps/src/quick_reference.inc": "e1482082ea2f03082f49fbd416590f6f22370fa93e3a6e4de5a542b3eb3efdbe",
+    "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+    "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+    "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+    "lib/PortableApps/src/foreground_adapter_open.inc": "85d276cfb2dc6fb6b105e0676b81d636f8198e4ba8d421a527dc2f5341e432c4",
+    "lib/PortableApps/src/resident_adapter.inc": "db0c5d2b2423a7cd0f948af816234b51db489ea73cf43ca050e7ef1b7ec5a514",
+    "lib/PortableApps/src/resident_shell.inc": "8ae9ae7483ee06dce74983cad92ee3199050b4045ad732c25d4dbd211fda3fad",
+    "lib/PortableApps/include/PortableTouch.h": "ac620d1725beec57df1eeb31474644180099305ee132b605d264af6ce98a01c6",
+    "lib/PortableApps/include/PortableDisplayGeometry.h": "a90c2163797097dcfe93798c78593236c7f2eb43fbd391704f3880b43abab6e8",
+    "scripts/test_paper_quick_actions.py": "f4117d63e4c01e6445bbf79d6b69fdeb2dc58c3a27160ccc06124db4505f4e40",
+    "scripts/test_resident_shell.py": "24f11e06eeaf71c8dfc8fdac91262a9ef32c3fb84f4292eeea77130acfe02d57",
+    "test/native_apps/paper_clock_test.c": "2c5d1c4893e76808a1ed360fc3826e9a0ad6b5b48bde7858083eb69e271cbb47",
+    "test/native_apps/paper_quick_test.c": "c03185c3ebcd939188bc02f52dc1860e2c1fe8b5fc9d109a43d2e1260bd02f03",
+    "test/native_apps/resident_shell_test.c": "fc8a86264e124b6ab1d3c2c6226d42fdb3d85aa98397edd59c620f13ba47e956",
+    "test/native_apps/resident_shell_app.c": "b49fd52f55b4e6ab26dedf4cfc70272de688d2db6d70d6f59ccd9afe7a272f7f",
+    "build/paper-external/runtime/RiscFailureEvidenceV1.h": "f2b024c21780155bacf78bd67a279d8959365c1d25ff1ba421449dd5d3b35265",
+    "build/paper-external/runtime/RiscRuntimeHostControlV1.h": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815",
+    "build/paper-external/runtime/RiscRuntimeV1.h": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387",
+    "build/paper-external/runtime/RiscResidentShellV1.h": "1a84715c03fcc7fae7f75cb72c0daf875e761567dda5d1b39ec0dc8b14fba8bd",
+    "build/paper-external/display/RiscDisplayOutputSnapshotV1.h": "b835fd1a3600551d54efb2806cbe8dd3ecc512a538572dc853aaf11f4e2490b6",
+    "build/paper-external/display/RiscDisplayOutputMetricsV1.h": "5be17adbae2ec26a855894e0d6443ac29572002c21efe53b2a913a5a0f0c642d",
+    "build/paper-external/display/RiscDisplayOutputPowerV1.h": "e9c7d3bd3ddf9bce128503aafb5669734db09424149f45b3a6f735cd5a7c8667",
+    "build/paper-external/display/RiscDisplayOutputV1.h": "99b682ba34f07e7868dec8e78dfb816c067fdc184e647033bc6ed8d489b9c9a2"
+  },
+  "capture_comparisons": {
+    "rotate480": true,
+    "flip480": true,
+    "snapshot410": true,
+    "sanitized410": true,
+    "rotate410": true,
+    "flip410": true,
+    "rawrotate410": true,
+    "legacy410-delayed": true,
+    "snapshot410-delayed": true,
+    "sanitized410-delayed": true,
+    "resident480-rotate-mode0": true,
+    "resident480-flip-mode0": true,
+    "resident640-snapshot-mode0": true,
+    "resident640-sanitize-mode0": true,
+    "resident480-rotate-mode7": true,
+    "resident480-flip-mode7": true,
+    "resident640-snapshot-mode7": true,
+    "resident640-sanitize-mode7": true,
+    "unchanged-original480": true
+  },
+  "resident_pixels": {
+    "resident480": {
+      "0": {
+        "black_pixels": 57912,
+        "regions": {
+          "title": 2401,
+          "slider": 9654,
+          "tiles": 37986,
+          "footer": 4959
+        }
+      },
+      "7": {
+        "black_pixels": 71276,
+        "regions": {
+          "title": 2401,
+          "slider": 9654,
+          "tiles": 47763,
+          "footer": 4959
+        }
+      }
+    },
+    "resident640": {
+      "0": {
+        "black_pixels": 2080,
+        "regions": {
+          "title": 0,
+          "slider": 0,
+          "tiles": 0,
+          "footer": 0
+        }
+      },
+      "7": {
+        "black_pixels": 2080,
+        "regions": {
+          "title": 0,
+          "slider": 0,
+          "tiles": 832,
+          "footer": 0
+        }
+      }
+    }
+  },
+  "nonresident410": {
+    "paint_rect": [
+      27,
+      264,
+      201,
+      344
+    ],
+    "hit_rect": [
+      28,
+      265,
+      202,
+      345
+    ],
+    "edge_probes": "nonresident-results.json"
+  },
+  "case_counts": {
+    "nonresident": 108,
+    "resident": 36,
+    "original": 31
+  },
+  "hardware_run": false,
+  "production_edits": false,
+  "excluded_harness_attempts": "harness-attempts.md"
+}

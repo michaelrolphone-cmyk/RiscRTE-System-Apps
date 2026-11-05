@@ -1,0 +1,12 @@
+Peer guarded defers real alarm storage; clean retry and directory listing PASS
+Peer connected defers real alarm storage; clean retry and directory listing PASS
+Peer borrowed defers real alarm storage; clean retry and directory listing PASS
+Peer lease-end defers real alarm storage; clean retry and directory listing PASS
+Peer retained-begin fences real alarm provider PASS
+Peer retained-end fences real alarm provider PASS
+Peer guarded defers real alarm storage; clean retry and directory listing PASS
+Peer connected defers real alarm storage; clean retry and directory listing PASS
+Peer borrowed defers real alarm storage; clean retry and directory listing PASS
+Peer lease-end defers real alarm storage; clean retry and directory listing PASS
+Peer retained-begin fences real alarm provider PASS
+Peer retained-end fences real alarm provider PASS

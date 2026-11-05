@@ -1,0 +1,79 @@
+{
+  "results": [
+    {
+      "name": "wifi_atomic-normal",
+      "command": [
+        "python3",
+        "scripts/test_wifi_atomic.py",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/wifi_atomic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 1.248,
+      "log_sha256": "4671eb1eac4409b60ec57f570ff784e5c323eeb74620a021e4cd8726df7ab2d1"
+    },
+    {
+      "name": "settings_atomic-normal",
+      "command": [
+        "python3",
+        "scripts/test_settings_atomic.py",
+        "--target",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/settings-fixture-target",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/settings_atomic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 4.41,
+      "log_sha256": "0d4b3f87aaf01cc83bffecb977a747be091a4f854cf273715df5cdb5ea07385a"
+    },
+    {
+      "name": "quick_atomic-normal",
+      "command": [
+        "python3",
+        "scripts/test_quick_atomic.py",
+        "--target",
+        "/workspace/shared/x4-home-automatic-target-on",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/quick_atomic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 1.699,
+      "log_sha256": "4c79106cddbb675867038f74f1152866f3c82ac4c09abcb39dced055056de0a0"
+    },
+    {
+      "name": "home_automatic-normal",
+      "command": [
+        "python3",
+        "scripts/test_home_automatic.py",
+        "--target",
+        "/workspace/shared/x4-home-automatic-target-on",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/home_automatic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 2.443,
+      "log_sha256": "7e4a5d380319c4c54507a766cf8b079524c09f77434611cf7c2faffa7a982de1"
+    },
+    {
+      "name": "text_input_host-normal",
+      "command": [
+        "python3",
+        "scripts/test_text_input_host.py",
+        "--runtime",
+        "/workspace/shared/x4-https-099-20261012/runtime",
+        "--output",
+        "/workspace/shared/x4-settings-system-101-evidence-20261012/text_input_host-normal"
+      ],
+      "environment": {},
+      "exit_code": 1,
+      "seconds": 2.036,
+      "log_sha256": "39e792a7f811c16a4f4b7d10e97cde2d2ffdbc8fa4432bd3bf845dc0b1167355"
+    }
+  ],
+  "complete": false,
+  "hardware_tested": false
+}

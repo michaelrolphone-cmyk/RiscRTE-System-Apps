@@ -1,0 +1,63 @@
+USB transfer case 0: 3553 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 1: 6649 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 2: 18805 owner polls, 3 end calls, 1 cable confirmations, clean Home
+USB transfer case 3: 13217 owner polls, 3 end calls, 1 cable confirmations, clean Home
+USB transfer case 4: 12472 owner polls, 4 end calls, 2 cable confirmations, clean Home
+USB transfer case 5: 6649 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 6: 3953 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 7: 6649 owner polls, 1 end calls, 0 cable confirmations, clean Home
+Retained tokenless begin: app and grant remain mapped, no navigation or cleanup
+USB transfer case 9: 6643 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 10: 4412 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 11: 3993 owner polls, 2 end calls, 0 cable confirmations, clean Home
+USB transfer case 12: 7529 owner polls, 2 end calls, 0 cable confirmations, clean Home
+USB transfer case 13: 0 owner polls, 0 end calls, 0 cable confirmations, clean Home
+USB transfer case 14: 0 owner polls, 0 end calls, 0 cable confirmations, clean Home
+USB transfer case 15: 0 owner polls, 0 end calls, 0 cable confirmations, clean Home
+USB transfer case 16: 0 owner polls, 0 end calls, 0 cable confirmations, clean Home
+USB transfer case 17: 30 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 18: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 19: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 20: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 21: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 22: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 23: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 24: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 25: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 26: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 27: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 28: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 29: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+Pre-release checkpoint survives simulated Runtime authority revocation; no provider recallback or navigation
+USB transfer case 0: 3553 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 1: 6649 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 2: 18805 owner polls, 3 end calls, 1 cable confirmations, clean Home
+USB transfer case 3: 13217 owner polls, 3 end calls, 1 cable confirmations, clean Home
+USB transfer case 4: 12472 owner polls, 4 end calls, 2 cable confirmations, clean Home
+USB transfer case 5: 6649 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 6: 3953 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 7: 6649 owner polls, 1 end calls, 0 cable confirmations, clean Home
+Retained tokenless begin: app and grant remain mapped, no navigation or cleanup
+USB transfer case 9: 6643 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 10: 4412 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 11: 3993 owner polls, 2 end calls, 0 cable confirmations, clean Home
+USB transfer case 12: 7529 owner polls, 2 end calls, 0 cable confirmations, clean Home
+USB transfer case 13: 0 owner polls, 0 end calls, 0 cable confirmations, clean Home
+USB transfer case 14: 0 owner polls, 0 end calls, 0 cable confirmations, clean Home
+USB transfer case 15: 0 owner polls, 0 end calls, 0 cable confirmations, clean Home
+USB transfer case 16: 0 owner polls, 0 end calls, 0 cable confirmations, clean Home
+USB transfer case 17: 30 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 18: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 19: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 20: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 21: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 22: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 23: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 24: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 25: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 26: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 27: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 28: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+USB transfer case 29: 6571 owner polls, 1 end calls, 0 cable confirmations, clean Home
+Pre-release checkpoint survives simulated Runtime authority revocation; no provider recallback or navigation
+Normal/ASan/UBSan production app + adapter USB lifecycle and protocol diagnostic cases passed

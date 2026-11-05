@@ -2,6 +2,8 @@
 
 Independent source repository for foundational RiscRTE system applications migrated from `michaelrolphone-cmyk/T5S3-Reader`.
 
+Shared builders also support the Arduino-free [native SDK 6.1 toolchain](docs/NATIVE_SDK61_BUILDS.md), with legacy release replay kept separate.
+
 ## Scope and classification
 
 This repository contains applications required for basic operation and first-use system workflows: launching installed apps, installing/updating/managing software and packages, configuring the runtime, foundational file browsing/dispatch, runtime driver-package management, and device firmware maintenance. Optional hardware utilities, productivity tools, MCU-development/debug tools, games, ROM/catalog apps, LLM-specific apps, KOReader-specific tools, and other domain-specific applications belong elsewhere.

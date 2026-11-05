@@ -88,6 +88,18 @@ int portable_realtime_read(portable_realtime_client *,risc_realtime_snapshot_v1 
  * A local-calendar gap/unchosen fold never silently falls back to UTC. */
 int portable_realtime_recover_rtc(portable_realtime_client *,
  const portable_realtime_recovery_policy *,portable_realtime_recovery_result *);
+/* Opt-in foreground reconciliation. Caller-owned state is invocation-local,
+ * never retained across deep boots. Clear checked after a confirmed sleep
+ * return or settings change. Attempts are limited to one/minute of monotonic
+ * time; timer-only/read-only clients are denied. Native phase is preserved
+ * within two whole seconds of RTC. A <=250ms RTC acquisition/read/release
+ * bracket is required before a checked seed. RTC false/uncertain ownership
+ * remains sticky; malformed calendar or slow samples close cleanly and may
+ * be retried at the next interval. No external RTC writes, waits or yields. */
+typedef struct { uint64_t checked_at_us; bool checked; } portable_realtime_reconcile_state;
+int portable_realtime_reconcile_rtc(portable_realtime_client *,
+ const portable_realtime_recovery_policy *,portable_realtime_reconcile_state *,
+ portable_realtime_recovery_result *);
 /* Idempotent clean close. A failed release is never retried. */
 int portable_realtime_close(portable_realtime_client *);
 /* Pure sticky stop: call before holds/retention; does not attempt cleanup.

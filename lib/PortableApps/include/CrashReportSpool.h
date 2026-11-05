@@ -28,10 +28,10 @@
  * AND exact text bytes. Boot/sequence may recur after cold boot, and recovery
  * reset metadata may differ when pending evidence is reread on another boot.
  * Same-identity/different-text reports remain distinct pending entries; only
- * an exact identity AND byte match deduplicates. When full, the
- * first seven oldest pending entries stay, entry eight becomes the newest,
- * and the displaced identity is recorded with a saturating dropped count.
- * COMMITTED proves only the requested report, not an evicted report, persists.
+ * an exact identity AND byte match deduplicates. A full queue returns RETRY
+ * without writing or evicting any pending report. The owner must leave new
+ * native evidence unacknowledged until space becomes available. Legacy drop
+ * counters remain readable for existing v1 files.
  */
 #define CRASH_REPORT_SPOOL_FILE "crash-spool.bin"
 #define CRASH_REPORT_SPOOL_MAX_REPORTS 8u
@@ -331,14 +331,8 @@ static inline crash_report_spool_result crash_report_spool_append(crash_report_s
     int found = crash_report_spool_find(spool, &copied_identity, spool->operation_text, text_size);
     if (found >= 0) return CRASH_REPORT_SPOOL_COMMITTED;
     uint32_t offset = spool->size;
-    if (spool->count == CRASH_REPORT_SPOOL_MAX_REPORTS) {
-        offset = spool->offsets[CRASH_REPORT_SPOOL_MAX_REPORTS - 1];
-        memcpy(spool->bytes + 24, spool->bytes + offset, 40);
-        if (spool->dropped_count != UINT32_MAX)
-            crash_report_spool_put32(spool->bytes + 20, spool->dropped_count + 1);
-    } else {
-        crash_report_spool_put32(spool->bytes + 16, spool->count + 1);
-    }
+    if (spool->count == CRASH_REPORT_SPOOL_MAX_REPORTS) return CRASH_REPORT_SPOOL_RETRY;
+    crash_report_spool_put32(spool->bytes + 16, spool->count + 1);
     crash_report_spool_put_identity(spool->bytes + offset, &copied_identity);
     crash_report_spool_put32(spool->bytes + offset + 40, text_size);
     crash_report_spool_put32(spool->bytes + offset + 44, 0);

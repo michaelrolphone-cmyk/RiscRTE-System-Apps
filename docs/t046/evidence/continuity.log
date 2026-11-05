@@ -1,0 +1,53 @@
+continuity watch configure-continuity PASS (draft=draftA claims=2 resets=3 unsubs=1)
+continuity watch before-pause PASS (draft=draftA claims=2 resets=3 unsubs=1)
+continuity watch queued PASS (draft=draftA claims=2 resets=3 unsubs=1)
+continuity watch repeat PASS (draft=draftAA claims=2 resets=3 unsubs=1)
+continuity watch held PASS (draft=draftA claims=2 resets=3 unsubs=1)
+continuity watch home PASS (draft=draft claims=2 resets=3 unsubs=1)
+continuity watch back PASS (draft=draft claims=2 resets=3 unsubs=1)
+continuity watch focus-changed PASS (draft=draftA claims=3 resets=4 unsubs=1)
+continuity watch gap PASS (draft=draftA claims=2 resets=3 unsubs=1)
+continuity watch pause-again PASS (draft=draftAAA claims=2 resets=3 unsubs=1)
+continuity watch presenting-input PASS (draft=draftABC claims=2 resets=3 unsubs=1)
+continuity watch close-paused PASS (draft= claims=2 resets=3 unsubs=1)
+continuity watch overflow PASS (bounded overflow fence)
+continuity watch loss-focus-snapshot PASS (retention fence)
+continuity watch loss-focus-foreground PASS (retention fence)
+continuity watch loss-focus-reset PASS (retention fence)
+continuity watch fault-focus-snapshot PASS (retention fence)
+continuity watch loss-close-unsubscribe PASS (retention fence)
+continuity watch loss-close-foreground PASS (retention fence)
+continuity watch loss-close-reset PASS (retention fence)
+continuity watch fault-close-unsubscribe PASS (retention fence)
+continuity paper configure-continuity PASS (draft=draftA claims=2 resets=3 unsubs=1)
+continuity paper before-pause PASS (draft=draftA claims=2 resets=3 unsubs=1)
+continuity paper queued PASS (draft=draftA claims=2 resets=3 unsubs=1)
+continuity paper repeat PASS (draft=draftAA claims=2 resets=3 unsubs=1)
+continuity paper held PASS (draft=draftA claims=2 resets=3 unsubs=1)
+continuity paper home PASS (draft=draft claims=2 resets=3 unsubs=1)
+continuity paper back PASS (draft=draft claims=2 resets=3 unsubs=1)
+continuity paper focus-changed PASS (draft=draftA claims=3 resets=4 unsubs=1)
+continuity paper gap PASS (draft=draftA claims=2 resets=3 unsubs=1)
+continuity paper pause-again PASS (draft=draftAAA claims=2 resets=3 unsubs=1)
+continuity paper presenting-input PASS (draft=draftABC claims=2 resets=3 unsubs=1)
+continuity paper close-paused PASS (draft= claims=2 resets=3 unsubs=1)
+continuity paper overflow PASS (bounded overflow fence)
+continuity paper loss-focus-snapshot PASS (retention fence)
+continuity paper loss-focus-foreground PASS (retention fence)
+continuity paper loss-focus-reset PASS (retention fence)
+continuity paper fault-focus-snapshot PASS (retention fence)
+continuity paper loss-close-unsubscribe PASS (retention fence)
+continuity paper loss-close-foreground PASS (retention fence)
+continuity paper loss-close-reset PASS (retention fence)
+continuity paper fault-close-unsubscribe PASS (retention fence)
+Scene checkpoint static PASS
+Scene checkpoint external PASS
+Scene checkpoint raster PASS
+Scene checkpoint pending PASS
+Paused scene close PASS
+Scene checkpoint unsubscribe-fault retention fence PASS
+Scene checkpoint subscribe retention fence PASS
+Scene checkpoint snapshot retention fence PASS
+Scene checkpoint foreground retention fence PASS
+Scene checkpoint reset retention fence PASS
+52 handoff continuity cases PASS

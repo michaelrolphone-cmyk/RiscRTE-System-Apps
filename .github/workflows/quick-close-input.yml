@@ -1,0 +1,51 @@
+name: Quick Controls asynchronous close
+on:
+  push:
+    branches: [fix/quick-controls-async-close]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  queued-input:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: system
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: d2b8cd0eab8ba08bdf5818b1ff275aa4cf3d5f57
+          path: utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 67dfd32fb95b7f51bdcf2deb091b79eb178efc70
+          path: baseline
+          persist-credentials: false
+      - name: Prove the original close drops the queued Save
+        run: |
+          mkdir -p evidence
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          result=subprocess.run(['python3','utilities/scripts/test_hid_renderer.py','--system-apps','baseline','--paper','--scene','quick-edit'],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+          Path('evidence/original.log').write_text(result.stdout)
+          assert result.returncode!=0 and 'save_attempts==' in result.stdout and 'Assertion' in result.stdout, result.stdout[-12000:]
+          print('Original production close fails the required fast queued-Save assertion.')
+          PY
+      - name: Require live state before panel completion and preserve all HID lifecycle cases
+        run: |
+          set -o pipefail
+          python3 utilities/scripts/test_hid_renderer.py --system-apps system --paper 2>&1 | tee evidence/fixed-paper.log
+          python3 utilities/scripts/test_hid_renderer.py --system-apps system 2>&1 | tee evidence/fixed-watch.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quick-close-input-${{ github.event.pull_request.head.sha || github.sha }}
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 14

@@ -1,4 +1,9 @@
+#ifdef TEST_LEGACY_TEXT_ENTRY_HEADER
+/* Frozen before the long suffix, from System 52ad3d545b7da6c71048b89f8b3c33ecfa1bce22. */
+#include "fixtures/RiscTextEntryV1_128.h"
+#else
 #include "RiscTextEntryV1.h"
+#endif
 #include "RiscRuntimeV1.h"
 #include "RiscSceneV1.h"
 #include "SceneKeyboardV1.h"
@@ -39,7 +44,14 @@ static void open_text(const char*text,unsigned cap){
  assert(api->open(NULL,&r,&session)==0&&session);memset(&r,0xa5,sizeof(r));
  assert(!driver->quiesce());assert(!strcmp(tick().text,text));
 }
-static void finish(void){assert(api->close(NULL,session)==0);assert(driver->quiesce());assert(!scene_active&&!kb_active);driver->stop();}
+#ifdef TEST_TEXT_PRIVACY_PROBE
+extern int text_private_storage_cleared(void);
+#endif
+static void finish(void){assert(api->close(NULL,session)==0);assert(driver->quiesce());assert(!scene_active&&!kb_active);driver->stop();
+#ifdef TEST_TEXT_PRIVACY_PROBE
+ assert(text_private_storage_cleared());
+#endif
+}
 int main(int argc,char**argv){
  assert(argc==2);const char*mode=argv[1];driver=t5_driver_get(2);assert(driver&&driver->abi_version==2);api=driver->capability;
  bool usb=strcmp(mode,"plain")&&strcmp(mode,"invalid")&&strcmp(mode,"scene-fault");
@@ -84,6 +96,61 @@ int main(int argc,char**argv){
   scene_key(RISC_SCENE_KEY_BACKSPACE);tick();assert(!strcmp(doc.nodes[0].text,"**************"));
   scene_key(RISC_SCENE_KEY_DONE);assert(tick().state==RISC_TEXT_ENTRY_ACCEPTED);finish();
   assert(driver->start(deps,1));open_text("visible",8);assert(!strcmp(doc.nodes[0].text,"visible"));finish();
+ }else if(!strncmp(mode,"visibility-",11)){
+  requested_flags=RISC_TEXT_ENTRY_REQUEST_MASKED|RISC_TEXT_ENTRY_REQUEST_HOME_REASON;
+  open_text("Fixture-a9!",64);
+  assert(doc.nodes[0].flags==RISC_SCENE_KEYBOARD_PASSWORD);
+  assert(!strcmp(doc.nodes[0].text,"***********"));
+  uint32_t revision=doc.revision;
+  scene_key(RISC_SCENE_KEY_VISIBILITY);risc_text_entry_state_v1 result=tick();
+  assert(result.state==RISC_TEXT_ENTRY_EDITING&&result.revision>revision);
+  assert(!strcmp(result.text,"Fixture-a9!")&&!strcmp(doc.nodes[0].text,result.text));
+  assert(doc.nodes[0].flags&RISC_SCENE_KEYBOARD_REVEALED);
+  if(!strcmp(mode,"visibility-edit")){
+   scene_key('X');assert(!strcmp(tick().text,"Fixture-a9!X"));assert(!strcmp(doc.nodes[0].text,"Fixture-a9!X"));
+   scene_key(RISC_SCENE_KEY_BACKSPACE);assert(!strcmp(tick().text,"Fixture-a9!"));
+   scene_key(RISC_SCENE_KEY_LAYER);tick();assert(doc.nodes[0].value==1&&!strcmp(doc.nodes[0].text,"Fixture-a9!"));
+   scene_key(RISC_SCENE_KEY_VISIBILITY);tick();assert(!strcmp(doc.nodes[0].text,"***********"));
+   assert(!(doc.nodes[0].flags&RISC_SCENE_KEYBOARD_REVEALED));
+   scene_key('y');assert(!strcmp(tick().text,"Fixture-a9!y"));assert(!strcmp(doc.nodes[0].text,"************"));
+   scene_key(RISC_SCENE_KEY_VISIBILITY);tick();assert(!strcmp(doc.nodes[0].text,"Fixture-a9!y"));
+   scene_key(RISC_SCENE_KEY_CLEAR);assert(!tick().text[0]&&!doc.nodes[0].text[0]);
+   scene_key(RISC_SCENE_KEY_VISIBILITY);tick();assert(!(doc.nodes[0].flags&RISC_SCENE_KEYBOARD_REVEALED));
+   scene_key(RISC_SCENE_KEY_VISIBILITY);tick();assert(doc.nodes[0].flags&RISC_SCENE_KEYBOARD_REVEALED);
+   scene_key('z');tick();assert(!strcmp(doc.nodes[0].text,"z"));
+  }else if(!strcmp(mode,"visibility-hardware")){
+   attached=true;tick();assert(doc.nodes[0].flags&RISC_SCENE_DISABLED);
+   key(4,0);assert(!strcmp(tick().text,"Fixture-a9!a"));flush();
+   scene_key(RISC_SCENE_KEY_VISIBILITY);tick();assert(!strcmp(doc.nodes[0].text,"************"));
+   scene_key('Q');assert(!strcmp(tick().text,"Fixture-a9!a"));
+   scene_key(RISC_SCENE_KEY_VISIBILITY);tick();assert(!strcmp(doc.nodes[0].text,"Fixture-a9!a"));
+   attached=false;tick();assert(!(doc.nodes[0].flags&RISC_SCENE_DISABLED));
+  }else if(!strcmp(mode,"visibility-stale")){
+   scene_key(RISC_SCENE_KEY_VISIBILITY);--event.document_revision;tick();
+   assert(doc.nodes[0].flags&RISC_SCENE_KEYBOARD_REVEALED);
+  }
+  if(strcmp(mode,"visibility-close")){
+  bool home=!strcmp(mode,"visibility-home"),back=!strcmp(mode,"visibility-back");
+  if(home)event=(risc_scene_event_v1){.struct_size=sizeof(event),.kind=RISC_SCENE_SUSPEND_EVENT,.document_revision=doc.revision};
+  else if(back)event=(risc_scene_event_v1){.struct_size=sizeof(event),.kind=RISC_SCENE_ACTION_EVENT,.document_revision=doc.revision,.action=2};
+  else scene_key(RISC_SCENE_KEY_DONE);
+  result=tick();assert(result.state==(home||back?RISC_TEXT_ENTRY_CANCELLED:RISC_TEXT_ENTRY_ACCEPTED));
+  assert(!(doc.nodes[0].flags&RISC_SCENE_KEYBOARD_REVEALED));
+  for(unsigned i=0;doc.nodes[0].text[i];i++)assert(doc.nodes[0].text[i]=='*');
+  assert(!!(result.flags&RISC_TEXT_ENTRY_HOME_CANCEL)==home);
+  scene_key(RISC_SCENE_KEY_VISIBILITY);assert(tick().revision==result.revision);
+  }
+  pending=true;assert(api->close(NULL,session)==RISC_TEXT_ENTRY_AGAIN);pending=false;finish();
+  assert(driver->start(deps,1));open_text("Fresh-b8?",64);
+  assert(doc.nodes[0].flags==RISC_SCENE_KEYBOARD_PASSWORD&&!strcmp(doc.nodes[0].text,"*********"));finish();
+  assert(driver->start(deps,1));requested_flags=0;open_text("plain",16);
+  scene_key(RISC_SCENE_KEY_VISIBILITY);tick();assert(!doc.nodes[0].flags&&!strcmp(doc.nodes[0].text,"plain"));finish();
+ }else if(!strcmp(mode,"full-batch")){
+  attached=true;open_text("",65);pending=true;
+  for(unsigned i=0;i<16;i++){key(4,0);keys[key_count++]=(risc_usb_keyboard_event_v1){++sequence,7,4,4,0,0};}
+  assert(key_count==RISC_USB_INPUT_QUEUE_LENGTH);
+  risc_text_entry_state_v1 value=tick();assert(!strcmp(value.text,"aaaaaaaaaaaaaaaa"));
+  flush();key(4,0);assert(!strcmp(tick().text,"aaaaaaaaaaaaaaaaa"));pending=false;finish();
  }else if(!strcmp(mode,"plain")){
   open_text("old",8);scene_key('a');assert(!strcmp(tick().text,"olda"));scene_key(129);assert(!strcmp(tick().text,"old"));scene_key(128);tick();assert(doc.nodes[0].value==1);
   scene_key('!');assert(!strcmp(tick().text,"old!"));scene_key(133);assert(!strcmp(tick().text,""));scene_key(133);assert(!strcmp(tick().text,""));scene_key(132);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);
@@ -102,7 +169,7 @@ int main(int argc,char**argv){
    attached=true;keys[key_count++]=(risc_usb_keyboard_event_v1){++sequence,7,1,0,0,0};key(4,0);assert((tick().flags&RISC_TEXT_ENTRY_HARDWARE)&&!tick().text[0]);flush();assert(doc.nodes[0].flags&RISC_SCENE_DISABLED);
    if(!strcmp(mode,"attach-detach")){key(4,0);assert(!strcmp(tick().text,"a"));flush();scene_key('Q');assert(!strcmp(tick().text,"a"));attached=false;keys[key_count++]=(risc_usb_keyboard_event_v1){++sequence,7,2,0,0,0};key(5,0);assert(!(tick().flags&RISC_TEXT_ENTRY_HARDWARE));flush();scene_key('Q');assert(!strcmp(tick().text,"aQ"));}
    else if(!strcmp(mode,"gap")||!strcmp(mode,"transient")){key(4,0);if(!strcmp(mode,"gap"))keys[key_count++]=(risc_usb_keyboard_event_v1){.kind=98};else bad_poll=true;assert(!tick().text[0]);flush();bad_poll=false;key(5,0);assert(!strcmp(tick().text,"b"));}
-   else if(!strcmp(mode,"drain")){for(unsigned i=0;i<34;i++)key(4,0);assert(!tick().text[0]);assert(!tick().text[0]);flush();key(5,0);assert(!strcmp(tick().text,"b"));}
+   else if(!strcmp(mode,"drain")){keys[key_count++]=(risc_usb_keyboard_event_v1){.kind=98};for(unsigned i=0;i<34;i++)key(4,0);assert(!tick().text[0]);assert(!tick().text[0]);flush();key(5,0);assert(!strcmp(tick().text,"b"));}
    else if(!strcmp(mode,"ascii")){key(4,0);key(5,2);key(30,2);key(31,0);key(32,0);assert(!strcmp(tick().text,"aB!2"));flush();key(0x2a,0);assert(!strcmp(tick().text,"aB!"));flush();key(0x39,0);key(6,0);assert(!strcmp(tick().text,"aB!C"));flush();key(0x28,0);assert(tick().state==RISC_TEXT_ENTRY_ACCEPTED);}
    else if(!strcmp(mode,"shortcuts")){key(4,1);key(0x28,1);assert(!tick().text[0]&&tick().state==RISC_TEXT_ENTRY_EDITING);flush();key(0x29,0);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);}
    else assert(0);

@@ -7,6 +7,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--runtime',type=Path,required=True);p.add_argument('--product',type=Path,required=True)
 p.add_argument('--driver-sdk',type=Path,required=True);p.add_argument('--tone-sdk',type=Path);p.add_argument('--settled-sdk',type=Path)
 p.add_argument('--alarm-sdk',type=Path,required=True);p.add_argument('--output-dir',type=Path,required=True)
+p.add_argument('--legacy-policy-root',type=Path,help='Compile the frozen resident policy and shell includes for an old-host compatibility witness')
 p.add_argument('--case',action='append',help='Run only named cases from this matrix')
 p.add_argument('--async-display',action='store_true',help='Use deployed sliced rendering and delayed frame completion')
 a=p.parse_args();out=a.output_dir.resolve();inc=out/'include';inc.mkdir(parents=True,exist_ok=True)
@@ -25,13 +26,31 @@ if a.settled_sdk:
  for name in ('RiscDisplayOutputFrontlightV1.h','RiscDisplayOutputSettledV1.h'):shutil.copyfile(a.settled_sdk/name,inc/name)
  flags+=['-DPORTABLE_DISPLAY_SETTLED']
 sources=[r/'test/native_apps/resident_idle_app.c',r/'test/native_apps/resident_idle_adapter.c',*[r/'lib/PortableApps/src'/n for n in ('quick_actions.c','quick_session.c','quick_render.c','quick_radios.c')],a.product/'minimal/apps/portable_idle_sleep.c']
+if a.legacy_policy_root:
+ owner=out/'legacy-owner';staged=owner/'lib/PortableApps/src';shutil.copytree(r/'lib/PortableApps/src',staged,dirs_exist_ok=True)
+ if not (owner/'Apps').exists():(owner/'Apps').symlink_to(r/'Apps',target_is_directory=True)
+ for folder in (r/'lib/PortableApps').iterdir():
+  if folder.is_dir() and folder.name!='src' and not (staged.parent/folder.name).exists():(staged.parent/folder.name).symlink_to(folder,target_is_directory=True)
+ for name in ('resident_policy.inc','resident_shell.inc'):
+  shutil.copyfile(a.legacy_policy_root/'lib/PortableApps/src'/name,staged/name)
+ wrapper=out/'legacy-owner-adapter.c'
+ wrapper.write_text((r/'test/native_apps/resident_idle_adapter.c').read_text().replace('../../lib/PortableApps/src/adapter.c',str(staged/'adapter.c')))
+ sources[1]=wrapper
+frozen_scene=r/'sdk/app/RiscSceneResidentV1.h'
+assert hashlib.sha256(frozen_scene.read_bytes()).hexdigest()=='145ef678f3330e4fab85430395b5799dde8dd05ce056f7b2f02ad5a9f58d0414','7fb13b09 scene resident helper changed'
+shutil.copyfile(frozen_scene,inc/'review_frozen_scene_resident.h')
+for name in ('RiscSceneV1.h','RiscSceneLifecycleV1.h'):shutil.copyfile(r/'sdk/app'/name,inc/name)
 cases='ok slow repeat flip-on flip-off known-failed known-retained native-refused panel-refused cancel-prepared alarm-cancel snapshot-refused acquire-retained wifi-retained alarm-retained panel-retained native-retained frame-retained submit-retained present-retained restore-frame-retained restore-submit-retained restore-present-retained'.split()
+cases+='continuity-low-battery continuity-deadline continuity-preferences continuity-inhibit continuity-full-detach continuity-old-scene-client continuity-legacy-host'.split()
 if a.tone_sdk:cases+=['tone-ok','tone-repeat','tone-get-retained','tone-set-retained']
 if a.settled_sdk:cases+='settled-request-retained settled-request-refused settled-ok settled-short settled-repeat settled-cancel settled-late-touch settled-late-home settled-home settled-home-held settled-refused settled-retained settled-newer settled-timeout settled-stalled settled-backward settled-touch-retained settled-close-retained settled-malformed settled-cancel-prepared'.split()
+if not a.legacy_policy_root:cases.remove('continuity-legacy-host')
+else:cases=['continuity-legacy-host']
 if a.case:
  if any(case not in cases for case in a.case):p.error('Unknown or unselected case')
  cases=a.case
 inputs=set(sources)
+if a.legacy_policy_root:inputs.update(path for path in staged.rglob('*') if path.is_file())
 for directory in (r/'lib/PortableApps',r/'lib/NativeApps/include',r/'test/native_apps',inc,out/'time',a.product/'minimal/drivers/x4pro_power'):
  inputs.update(path for path in directory.rglob('*') if path.is_file())
 inputs.update(path for path in (r/'Apps').glob('*') if path.is_file())

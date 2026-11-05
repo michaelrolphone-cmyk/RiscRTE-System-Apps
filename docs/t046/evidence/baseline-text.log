@@ -1,0 +1,7 @@
+Assertion failed: (!strcmp(value.text,"aaaaaaaaaaaaaaaa")), function main, file host_test.c, line 152.
+Traceback (most recent call last):
+  File "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/scripts/test_text_input_host.py", line 16, in <module>
+    subprocess.run([str(exe),mode],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+  File "/Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['t046-build/baseline-text/test', 'full-batch']' died with <Signals.SIGABRT: 6>.

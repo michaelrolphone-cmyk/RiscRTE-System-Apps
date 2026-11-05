@@ -171,9 +171,10 @@ static bool release(risc_runtime_capability_v1 *g) {
   g->api = NULL;
   return true;
 }
-static const risc_runtime_api_v1 rt = {.api_version=1,.struct_size=sizeof(rt),.health=health,.yield_ms=yield,.diagnostic=log_line,.request_launch=launch,.acquire=acquire,.release=release};
+static bool native_exit(void){return scenario==8;}
+static const struct {risc_runtime_api_v1 base;bool(*clock)(uint32_t*);bool(*exit)(void);} rt = {.base={.api_version=1,.struct_size=sizeof(rt),.health=health,.yield_ms=yield,.diagnostic=log_line,.request_launch=launch,.acquire=acquire,.release=release},.exit=native_exit};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v) {
-  return v == 1 ? &rt : NULL;
+  return v == 1 ? &rt.base : NULL;
 }
 int main(int argc, char **argv) {
   assert(argc == 2);
@@ -185,7 +186,7 @@ int main(int argc, char **argv) {
   }
   assert(init == 0);
 #ifdef BATTERY_TEST
-  if (scenario >= 5) {
+  if (scenario >= 5 && scenario <= 7) {
     t5_battery_state_t state;
     const t5_battery_api_v1 *api = t5_battery_get_api(1);
     assert(api && api->read(&state));
@@ -196,6 +197,7 @@ int main(int argc, char **argv) {
 #endif
   app_main();
   app_module_fini();
+  if(scenario==8){assert(!frames&&!grants&&!subs&&!launched[0]);puts("Production adapter native exit: orderly cleanup, no queued launch PASS");return 0;}
   assert(!frames && !grants && !subs);
 #ifdef BATTERY_TEST
   assert(reads >= 1);

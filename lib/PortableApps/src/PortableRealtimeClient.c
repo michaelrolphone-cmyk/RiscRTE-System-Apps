@@ -155,14 +155,9 @@ static int interpretation(const portable_realtime_recovery_policy *p,
  if(r->interpretation.mode_changed && !p->allow_basis_change)return PORTABLE_REALTIME_BASIS_CHOICE;
  return PORTABLE_REALTIME_OK;
 }
-int portable_realtime_recover_rtc(portable_realtime_client *c,
+static int read_external_rtc(portable_realtime_client *c,
  const portable_realtime_recovery_policy *p,portable_realtime_recovery_result *out) {
- if(!out)return PORTABLE_REALTIME_INVALID;
- *out=(portable_realtime_recovery_result){0};
- int rc=portable_realtime_read(c,&out->snapshot);out->reason=rc;
- if(rc!=PORTABLE_REALTIME_UNSET)return rc;
- if(c->access!=PORTABLE_REALTIME_CONTROL || c->startup!=PORTABLE_REALTIME_NORMAL_START)
-  return out->reason=PORTABLE_REALTIME_DENIED;
+ int rc;
  portable_timezone_civil check;
  if(!p || !portable_rtc_basis_valid(&p->basis) || p->fold_choice< -1 || p->fold_choice>1 ||
     portable_timezone_utc_to_local(&p->rule,PORTABLE_TIMEZONE_VALID_EPOCH,&check,0)!=PORTABLE_TIMEZONE_OK)
@@ -200,6 +195,17 @@ int portable_realtime_recover_rtc(portable_realtime_client *c,
  int cleanup=release(c,&c->rtc_grant);out->cleanup=cleanup;
  if(cleanup)return cleanup;
  if(rc)return rc;
+ return PORTABLE_REALTIME_OK;
+}
+int portable_realtime_recover_rtc(portable_realtime_client *c,
+ const portable_realtime_recovery_policy *p,portable_realtime_recovery_result *out) {
+ if(!out)return PORTABLE_REALTIME_INVALID;
+ *out=(portable_realtime_recovery_result){0};
+ int rc=portable_realtime_read(c,&out->snapshot);out->reason=rc;
+ if(rc!=PORTABLE_REALTIME_UNSET)return rc;
+ if(c->access!=PORTABLE_REALTIME_CONTROL || c->startup!=PORTABLE_REALTIME_NORMAL_START)
+  return out->reason=PORTABLE_REALTIME_DENIED;
+ rc=read_external_rtc(c,p,out);if(rc)return rc;
  rc=live(c);if(rc)return out->reason=rc;
  rc=native_status(c,c->native_seed(c->native_context,out->interpretation.epoch,0));
  if(rc)return out->reason=rc;
@@ -207,6 +213,40 @@ int portable_realtime_recover_rtc(portable_realtime_client *c,
  rc=portable_realtime_read(c,&out->snapshot);
  if(rc==PORTABLE_REALTIME_OK)rc=PORTABLE_REALTIME_RECOVERED;
  else if(rc==PORTABLE_REALTIME_UNSET)rc=PORTABLE_REALTIME_IO;
+ return out->reason=rc;
+}
+int portable_realtime_reconcile_rtc(portable_realtime_client *c,
+ const portable_realtime_recovery_policy *p,portable_realtime_reconcile_state *state,
+ portable_realtime_recovery_result *out) {
+ if(!state || !out)return PORTABLE_REALTIME_INVALID;
+ *out=(portable_realtime_recovery_result){0};
+ int rc=portable_realtime_read(c,&out->snapshot);out->reason=rc;
+ if(rc!=PORTABLE_REALTIME_OK && rc!=PORTABLE_REALTIME_UNSET)return rc;
+ if(c->access!=PORTABLE_REALTIME_CONTROL || c->startup!=PORTABLE_REALTIME_NORMAL_START)
+  return out->reason=PORTABLE_REALTIME_DENIED;
+ uint64_t before=out->snapshot.monotonic_before_us;
+ uint64_t now=out->snapshot.monotonic_after_us;
+ if(state->checked && now>=state->checked_at_us &&
+    now-state->checked_at_us<UINT64_C(60000000))return rc;
+ /* Rate-limit attempts, including safely closed bad-calendar/slow samples.
+  * The counter schedules I/O only; it never increments displayed wall time. */
+ state->checked=true;state->checked_at_us=now;
+ if(rc==PORTABLE_REALTIME_UNSET)return portable_realtime_recover_rtc(c,p,out);
+ rc=read_external_rtc(c,p,out);if(rc)return rc;
+ risc_realtime_snapshot_v1 after;
+ rc=portable_realtime_read(c,&after);if(rc)return out->reason=rc;
+ if(after.monotonic_after_us<before || after.monotonic_after_us-before>250000u)
+  return out->reason=PORTABLE_REALTIME_RANGE;
+ out->snapshot=after;
+ /* Whole-second RTC quantization and bounded acquisition latency are not
+  * drift. Leave sub-second native phase intact until the discrepancy exceeds
+  * two whole seconds. Repeated matching reads never seed or add duration. */
+ int64_t delta=after.epoch_seconds-out->interpretation.epoch;
+ if(delta>=-2 && delta<=2)return out->reason=PORTABLE_REALTIME_OK;
+ portable_realtime_seed_result seeded;
+ rc=portable_realtime_seed_confirmed(c,out->interpretation.epoch,250000u,&seeded);
+ out->seeded=seeded.seeded;
+ if(!rc){out->snapshot=seeded.snapshot;rc=PORTABLE_REALTIME_RECOVERED;}
  return out->reason=rc;
 }
 int portable_realtime_close(portable_realtime_client *c) {

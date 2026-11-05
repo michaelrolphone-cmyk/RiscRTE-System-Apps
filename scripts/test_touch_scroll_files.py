@@ -4,7 +4,7 @@ import argparse, hashlib, json, os, shutil, subprocess
 from pathlib import Path
 import portable_native_toolbar_build as native
 ROOT=Path(__file__).resolve().parents[1]
-CASES='drag select busy-hit stop-tap reverse bounds back home horizontal replaced cancelled touch-retained footer-drag modal queued-up cleanup actions destination handlers directory-change handler-change confirm-hidden cache-reverse options reentry empty read-error coordinates inventory-change keyboard keyboard-busy rename-keyboard'.split()
+CASES='protected drag select busy-hit stop-tap reverse bounds back home horizontal replaced cancelled touch-retained footer-drag modal queued-up cleanup actions destination handlers directory-change handler-change confirm-hidden cache-reverse options reentry empty read-error coordinates inventory-change keyboard keyboard-busy rename-keyboard'.split()
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--flip',action='store_true');p.add_argument('--ble-broadcast',action='store_true');p.add_argument('--sdk',type=Path,required=True);p.add_argument('--output-dir',type=Path,default=ROOT/'build/touch-scroll-files');p.add_argument('--case',action='append',choices=CASES);p.add_argument('--normal-only',action='store_true');a=p.parse_args()
  out=a.output_dir.resolve();out.mkdir(parents=True,exist_ok=True);include=out/'sdk/include';shutil.copytree(ROOT/'lib/PortableApps/include',include,dirs_exist_ok=True);shutil.copytree(ROOT/'lib/PortableApps/time',include.parent/'time',dirs_exist_ok=True)

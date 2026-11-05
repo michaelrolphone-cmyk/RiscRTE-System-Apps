@@ -1,0 +1,59 @@
+{
+  "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "checked_at_utc": "2026-10-17T12:59:37Z",
+  "tag_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/git/matching-refs/tags/",
+  "release_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/releases?per_page=100&page=1",
+  "tag_count": 18,
+  "tags": [
+    "refs/tags/app-app_store-v1.1.1",
+    "refs/tags/app-app_store-v1.1.2",
+    "refs/tags/app-file_browser-v1.4.0",
+    "refs/tags/app-ota_update-v1.1.1",
+    "refs/tags/app-ota_update-v1.1.2",
+    "refs/tags/app-settings-v1.2.4",
+    "refs/tags/app-settings-v1.2.5",
+    "refs/tags/app-springboard-v1.4.6",
+    "refs/tags/app-springboard-v1.4.9",
+    "refs/tags/app-wifi_settings-v1.1.2",
+    "refs/tags/app-wifi_settings-v1.1.3",
+    "refs/tags/service-software-update-apps-v0.1.0",
+    "refs/tags/service-software-update-apps-v0.1.3",
+    "refs/tags/service-software-update-firmware-v0.1.0",
+    "refs/tags/service-software-update-firmware-v0.1.3",
+    "refs/tags/source-v2026.10.11",
+    "refs/tags/test-t046-keyboard-0.4.8",
+    "refs/tags/watch-v1.0.12"
+  ],
+  "releases": [
+    {
+      "tag": "test-t046-keyboard-0.4.8",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/tag/test-t046-keyboard-0.4.8",
+      "name": "T046 shared keyboard components 0.4.8 / 0.1.8",
+      "assets": [
+        "SHA256SUMS",
+        "T046-Shared-Keyboard-Components.zip"
+      ]
+    },
+    {
+      "tag": "source-v2026.10.11",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/tag/source-v2026.10.11",
+      "name": "System Apps source checkpoint 2026-10-11",
+      "assets": [
+        "RiscRTE-System-Apps-source-v2026.10.11.tar.gz",
+        "SHA256SUMS",
+        "system-source-catalog.json"
+      ]
+    },
+    {
+      "tag": "watch-v1.0.12",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/tag/watch-v1.0.12",
+      "name": "Watch 1.0.12 source snapshot",
+      "assets": [
+        "watch-v1.0.12-source-provenance.json"
+      ]
+    }
+  ],
+  "settings_1_4_0_found": false,
+  "native_settings_1_4_0_dev1_found": false,
+  "scope": "Current System-Apps refs and release records plus current repository Settings manifests and version-history search. Other components may use 1.4.0 independently."
+}

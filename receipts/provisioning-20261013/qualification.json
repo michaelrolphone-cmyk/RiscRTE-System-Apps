@@ -1,0 +1,25 @@
+{
+  "selected_catalog_sha256": "2bcd4948f7823d89ad8148d09c91d0dad54f5daabd3b6d4385051da897a98987",
+  "selected_version": "0.9.0",
+  "baseline_reproduction_differences": [
+    ".debug_info",
+    ".debug_line",
+    ".debug_str"
+  ],
+  "all_other_elf_sections_identical": true,
+  "difference_reason": "Host distribution libgcc contains different build-path DWARF strings; loaded code and relocations match.",
+  "system_checkpoint": "92ae8380b7e25bac6cc20b2f5c8ec0db8cb6e896",
+  "runtime_pin": "a91edf3fada6a559ec107186dd163d0c8da10d29",
+  "runtime_planner_checkpoint": "770fcc9fb414ff9b7c58c6dece58448723b4401e",
+  "linux_run": 38485326676,
+  "linux_conclusion": "success",
+  "target_sha256": "129bf4409e504be7159d1f2c750a6d89e00015678c430c50d92495ebdeb181bb",
+  "target_bytes": 143104,
+  "hardware_tested": false,
+  "full_automatic_provisioning_complete": false,
+  "remaining": [
+    "Configured native core-package feed",
+    "Live capability-scoped internal executable storage, durable media selection and admission",
+    "Combined product activation and hardware qualification"
+  ]
+}

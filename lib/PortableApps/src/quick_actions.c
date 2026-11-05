@@ -1,4 +1,5 @@
 #include "PortableQuickActions.h"
+#include "PortableQuickLayout.h"
 #include <string.h>
 
 static int clampi(int v, int lo, int hi) { return v < lo ? lo : v > hi ? hi : v; }
@@ -44,6 +45,16 @@ void pqa_init(pqa_state *s) {
     s->volume = 50;
     s->last_nonzero_volume = 50;
     s->pressed_tile = -1;
+}
+bool pqa_set_height(pqa_state *s,unsigned logical_height) {
+    if(!s || logical_height<240 || logical_height>2048 || pqa_visible(s) ||
+       s->gesture!=PQA_IDLE)return false;
+    s->logical_height=(uint16_t)logical_height;s->native_width=0;return true;
+}
+bool pqa_set_dimensions(pqa_state *s,unsigned width,unsigned height) {
+    if(!s || !width || !height || width>2048 || height>2048 || s->paper ||
+       pqa_visible(s) || s->gesture!=PQA_IDLE)return false;
+    s->native_width=(uint16_t)width;s->logical_height=(uint16_t)height;return true;
 }
 void pqa_set_levels(pqa_state *s, bool bv, unsigned b, bool vv, unsigned v) {
     if (!s) return;
@@ -145,6 +156,12 @@ bool pqa_paper_tile(const pqa_state *s,unsigned tile,int *x,int *y) {
 }
 #endif
 static int tile_at(const pqa_state *s,int x, int y) {
+    if(s->native_width) {
+        pqa_layout l=pqa_layout_for(s);
+        if(s->contexts_controls&&pqa_rect_contains(l.contexts,x,y))return 9;
+        for(int i=0;i<6;++i)if(pqa_rect_contains(l.tiles[i],x,y))return i;
+        return -1;
+    }
     if(s->paper) {
 #ifdef PORTABLE_QUICK_USB_TRANSFER
 #ifndef PORTABLE_RESIDENT_SHELL_HOST
@@ -179,6 +196,12 @@ static unsigned slider_value(int x, unsigned minimum) {
     int value = ((clampi(x, 44, 182) - 44) * 10 + 69) / 138;
     return (unsigned)clampi(value * 10, (int)minimum, 100);
 }
+static unsigned native_slider_value(const pqa_state *s,int x,unsigned minimum) {
+    pqa_layout l=pqa_layout_for(s);int span=l.slider_right-l.slider_left;
+    if(span<1)return minimum;
+    int value=((clampi(x,l.slider_left,l.slider_right)-l.slider_left)*10+span/2)/span;
+    return (unsigned)clampi(value*10,(int)minimum,100);
+}
 static void slide(pqa_state *s, int x) {
 #ifdef PORTABLE_FRONTLIGHT_TONE
     if(s->gesture==PQA_TONE_DRAG){
@@ -188,10 +211,10 @@ static void slide(pqa_state *s, int x) {
     }
 #endif
     if (s->gesture == PQA_BRIGHTNESS_DRAG) {
-        unsigned b = slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 10);
+        unsigned b = s->native_width?native_slider_value(s,x,10):slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 10);
         if (b != s->brightness) { s->brightness = (uint8_t)b; emit_brightness(s, false); }
     } else {
-        s->volume = (uint8_t)slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 0);
+        s->volume = (uint8_t)(s->native_width?native_slider_value(s,x,0):slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 0));
     }
 }
 static void begin_contact(pqa_state *s, uint32_t now, uint32_t id, int x, int y) {
@@ -220,25 +243,27 @@ static void release_panel(pqa_state *s, uint32_t now) {
 #ifdef PORTABLE_PAPER_TRANSITIONS
         const int distance=s->last_y-s->start_y;
         const bool open=s->start_position_q8==0?distance>=32:distance>-64;
-        s->target_q8=open?PQA_OPEN_Q8:0;s->velocity_q8=0;
+        s->target_q8=open?pqa_open_q8(s):0;s->velocity_q8=0;
 #else
         s->position_q8=s->target_q8;
 #endif
         return;
     }
     int velocity = (now - s->last_ms > 100u) ? 0 : s->release_velocity_q8;
-    bool open = s->position_q8 > PQA_OPEN_Q8 / 2 ? velocity > -384 : velocity > 512;
-    s->target_q8 = open ? PQA_OPEN_Q8 : 0;
+    bool open = s->position_q8 > pqa_open_q8(s) / 2 ? velocity > -384 : velocity > 512;
+    s->target_q8 = open ? pqa_open_q8(s) : 0;
     s->velocity_q8 = velocity / 2;
 }
 bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                uint32_t id, int x, int y, bool allow_open) {
     if (!s) return false;
     /* Bound hostile/raw coordinates before subtraction or Q8 conversion. */
-    x = clampi(x, -1024, 1024); y = clampi(y, -1024, 1024);
+    x = clampi(x, -2048, 2048); y = clampi(y, -2048, 2048);
+    pqa_layout native={0};if(s->native_width)native=pqa_layout_for(s);
+    int threshold=s->native_width?pqa_layout_size(&native,6):6;
     if (!valid || count > 1u) {
         if (s->gesture == PQA_PANEL_DRAG)
-            s->target_q8 = s->position_q8 >= PQA_OPEN_Q8 / 2 ? PQA_OPEN_Q8 : 0;
+            s->target_q8 = s->position_q8 >= pqa_open_q8(s) / 2 ? pqa_open_q8(s) : 0;
         pqa_cancel_input(s);
         return route(s, PQA_CONSUMED);
     }
@@ -320,20 +345,20 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
         begin_contact(s, now, id, x, y);
         if (s->torch) s->gesture = PQA_TORCH_TAP;
         else if (!pqa_visible(s)) {
-            if (allow_open && y >= 0 && y < (s->paper?72:PQA_TOP_EDGE) && x >= 0 && x < (s->paper?480:240))
+            if (allow_open && y >= 0 && y < (s->paper?72:s->native_width?pqa_layout_size(&native,PQA_TOP_EDGE):PQA_TOP_EDGE) && x >= 0 && x < (s->paper?480:(int)pqa_width(s)))
                 s->gesture = PQA_TOP_PENDING;
             else s->gesture = PQA_PASS_THROUGH;
         } else {
             /* Moving panels are draggable but never activate controls. */
-            int local_y = y + (PQA_OPEN_Q8 - s->position_q8) / 256;
-            bool settled = s->position_q8 == PQA_OPEN_Q8 && s->target_q8 == PQA_OPEN_Q8;
+            int local_y = y + (pqa_open_q8(s) - s->position_q8) / 256;
+            bool settled = s->position_q8 == pqa_open_q8(s) && s->target_q8 == pqa_open_q8(s);
             if (settled && s->brightness_valid && (s->paper ?
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
                 paper_slider_at(s,0,x,y)
 #else
                 x>=32 && x<448 && y>=120 && y<180
 #endif
-                : x>=16 && x<224 && local_y>=(s->contexts_controls?24:48) && local_y<(s->contexts_controls?53:77)))
+                : s->native_width?pqa_rect_contains(native.slider_hit[0],x,local_y):x>=16 && x<224 && local_y>=(s->contexts_controls?24:48) && local_y<(s->contexts_controls?53:77)))
                 s->gesture = PQA_BRIGHTNESS_DRAG;
 #ifdef PORTABLE_FRONTLIGHT_TONE
             else if(settled && s->paper && s->tone_controls && s->tone_valid && paper_slider_at(s,2,x,y))
@@ -349,7 +374,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
 #else
                 x>=32 && x<448 && y>=214 && y<274
 #endif
-                : x>=16 && x<224 && local_y>=(s->contexts_controls?54:78) && local_y<(s->contexts_controls?83:107)))
+                : s->native_width?pqa_rect_contains(native.slider_hit[1],x,local_y):x>=16 && x<224 && local_y>=(s->contexts_controls?54:78) && local_y<(s->contexts_controls?83:107)))
                 s->gesture = PQA_VOLUME_DRAG;
             else {
                 s->gesture = PQA_PANEL_PENDING;
@@ -365,7 +390,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                         y>=640 && y<714
 #endif
 #endif
-                        : x>=76 && x<164 && local_y>=(s->contexts_controls?222:207) && local_y<239;
+                        : s->native_width?pqa_rect_contains(native.handle,x,local_y):x>=76 && x<164 && local_y>=(int)pqa_height(s)-(s->contexts_controls?18:33) && local_y<(int)pqa_height(s)-1;
                 }
             }
         }
@@ -374,25 +399,25 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                        s->gesture == PQA_TOP_PENDING ? PQA_RESERVED : PQA_CONSUMED);
     }
     int dx = x - s->start_x, dy = y - s->start_y;
-    if (absi(dx) > 6 || absi(dy) > 6) s->moved = true;
+    if (absi(dx) > threshold || absi(dy) > threshold) s->moved = true;
     if (s->gesture == PQA_TOP_PENDING) {
-        if (dy > (s->paper?24:6) && dy > absi(dx)) {
+        if (dy > (s->paper?24:threshold) && dy > absi(dx)) {
             s->gesture = PQA_PANEL_DRAG;
 #ifndef PORTABLE_PAPER_TRANSITIONS
-            if(s->paper)s->position_q8=s->target_q8=PQA_OPEN_Q8;
+            if(s->paper)s->position_q8=s->target_q8=pqa_open_q8(s);
 #endif
         }
-        else if (absi(dx) > (s->paper?24:6) || dy < -(s->paper?24:6)) {
+        else if (absi(dx) > (s->paper?24:threshold) || dy < -(s->paper?24:threshold)) {
             s->gesture = PQA_PASS_THROUGH;
             return route(s, PQA_REPLAY);
         } else return route(s, PQA_RESERVED);
-    } else if (s->gesture == PQA_PANEL_PENDING && absi(dy) > 6 && absi(dy) > absi(dx)) {
+    } else if (s->gesture == PQA_PANEL_PENDING && absi(dy) > threshold && absi(dy) > absi(dx)) {
         s->gesture = PQA_PANEL_DRAG;
     }
     if (s->gesture == PQA_PANEL_DRAG) {
         if(s->paper) {
 #ifdef PORTABLE_PAPER_TRANSITIONS
-            s->position_q8=clampi(s->start_position_q8+(int32_t)dy*PQA_OPEN_Q8/800,0,PQA_OPEN_Q8);
+            s->position_q8=clampi(s->start_position_q8+(int32_t)dy*pqa_open_q8(s)/800,0,pqa_open_q8(s));
             s->target_q8=s->position_q8;s->velocity_q8=0;
 #else
             if(s->start_position_q8 && dy < -32)s->position_q8=s->target_q8=0;
@@ -400,7 +425,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
             s->last_x=(int16_t)x;s->last_y=(int16_t)y;s->last_ms=now;
             return route(s,PQA_CONSUMED);
         }
-        s->position_q8 = clampi(s->start_position_q8 + dy * 256, 0, PQA_OPEN_Q8);
+        s->position_q8 = clampi(s->start_position_q8 + dy * 256, 0, pqa_open_q8(s));
         uint32_t elapsed = now - s->last_ms;
         if (elapsed) s->release_velocity_q8 = clampi((y - s->last_y) * 2048 / (int)(elapsed > 1000u ? 1000u : elapsed), -8192, 8192);
         s->velocity_q8 = 0;
@@ -430,12 +455,12 @@ bool pqa_animate(pqa_state *s, uint32_t now) {
     while (steps--) {
         int delta = s->target_q8 - s->position_q8;
         s->velocity_q8 = (s->velocity_q8 + delta / 18) * 3 / 4;
-        s->position_q8 = clampi(s->position_q8 + s->velocity_q8, 0, PQA_OPEN_Q8);
+        s->position_q8 = clampi(s->position_q8 + s->velocity_q8, 0, pqa_open_q8(s));
         if (absi(delta) < 64 && absi(s->velocity_q8) < 64) {
             s->position_q8 = s->target_q8; s->velocity_q8 = 0;
         }
         if ((s->position_q8 == 0 && s->velocity_q8 < 0) ||
-            (s->position_q8 == PQA_OPEN_Q8 && s->velocity_q8 > 0)) s->velocity_q8 = 0;
+            (s->position_q8 == pqa_open_q8(s) && s->velocity_q8 > 0)) s->velocity_q8 = 0;
     }
     return s->position_q8 != before;
 }

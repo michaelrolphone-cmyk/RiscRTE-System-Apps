@@ -30,13 +30,20 @@ static bool desk_radios_off,desk_held,desk_promoted,desk_promotion_attempted,des
 static const portable_desk_sleep_ops *desk_ops;
 static unsigned desk_rectangles,desk_sleep_mode;
 static uint32_t desk_started_at;
+static bool desk_config_pending;
+static portable_realtime_reconcile_state desk_rtc_check;
+static uint32_t desk_config_retry_at;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+static uint64_t desk_settings_generation,desk_settings_observed;
+static uint32_t desk_settings_poll_at;
+#endif
 #ifdef PORTABLE_DESK_LOCK_HOME
 static bool desk_lock_requested,desk_direction_known;
 static unsigned desk_foreground_flip;
 bool portable_desk_clock_lock_requested(void){return desk_lock_requested;}
 bool portable_desk_clock_request_lock(bool enabled) {
  if(desk_retained || desk_held)return false;
- if(enabled && !desk_direction_known){desk_returned=true;return false;}
+ if(enabled && (desk_config_pending || !desk_direction_known)){desk_returned=true;return false;}
  desk_lock_requested=enabled;
  return enabled || portable_desk_adapter_landscape(false,desk_foreground_flip);
 }
@@ -74,11 +81,16 @@ static int desk_sample(bool recover,risc_realtime_snapshot_v1 *out) {
      desk_phase_guard,NULL);
  if(desk_halted(status))return desk_fence();
  if(status!=PORTABLE_REALTIME_OK)return status;
- if(recover && desk_promoted && desk_zone_known && desk_basis_known) {
+ if(recover)desk_rtc_check.checked=false;
+ if(desk_promoted && desk_zone_known && desk_basis_known && paper_frame_idle()) {
   portable_realtime_recovery_policy policy={.rtc_instance=0,.rule=desk_rule,
       .basis=desk_basis,.fold_choice=-1,.allow_basis_change=false};
   portable_realtime_recovery_result result;
-  status=portable_realtime_recover_rtc(&client,&policy,&result);
+  status=portable_realtime_reconcile_rtc(&client,&policy,&desk_rtc_check,&result);
+  /* A safely rejected RTC sample does not erase an already valid native
+   * display. Uncertain ownership still fences below; no retry in this frame. */
+  if(status<0 && !desk_halted(status) && !result.seeded)
+   status=portable_realtime_read(&client,&result.snapshot);
   if(status==PORTABLE_REALTIME_OK || status==PORTABLE_REALTIME_RECOVERED)*out=result.snapshot;
  } else status=portable_realtime_read(&client,out);
  if(desk_halted(status))return desk_fence();
@@ -119,7 +131,8 @@ static void close_clock(void) { /* No persistent clock/battery grants. */
 #endif
 }
 static void open_clock(void) { /* Each read takes and closes one native grant. */ }
-void portable_desk_clock_refused(void) {desk_returned=true;desk_radios_off=false;}
+void portable_desk_clock_resumed(void) {desk_rtc_check.checked=false;}
+void portable_desk_clock_refused(void) {desk_returned=true;desk_radios_off=false;desk_rtc_check.checked=false;}
 void portable_desk_clock_radios_off(void) {desk_radios_off=true;}
 static const char *desk_notice(void) {
  return desk_radios_off?"DESK CLOCK STOPPED; RADIOS OFF":"DESK CLOCK DID NOT SLEEP";
@@ -135,26 +148,40 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
  risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
  if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&grant)){desk_fence();return false;}
  if(!grant.api || !grant.slot || !grant.generation){desk_fence();return false;}
- unsigned face,time_format,language,flip;
+ unsigned face,time_format,language,flip,sleep_mode;
+ portable_rtc_basis next_basis;
  portable_perf_count(PORTABLE_PERF_KV_READS);
- (void)portable_time_format_load(grant.api,&time_format);
+ int time_status=portable_time_format_load(grant.api,&time_format);
  portable_perf_count(PORTABLE_PERF_KV_READS);
- (void)portable_desk_face_load(grant.api,&face);
+ int face_status=portable_desk_face_load(grant.api,&face);
  portable_perf_count(PORTABLE_PERF_KV_READS);
- (void)portable_reader_preference_load(grant.api,true,&language);
+ int language_status=portable_reader_preference_load(grant.api,true,&language);
  portable_perf_count(PORTABLE_PERF_KV_READS);
- (void)portable_reader_preference_load(grant.api,false,&flip);
+ int flip_status=portable_reader_preference_load(grant.api,false,&flip);
  portable_perf_count(PORTABLE_PERF_KV_READS);
- (void)portable_sleep_load_profile(grant.api,3u,PORTABLE_SLEEP_LIGHT,mode);
+ int sleep_status=portable_sleep_load_profile(grant.api,3u,PORTABLE_SLEEP_LIGHT,&sleep_mode);
  portable_perf_count(PORTABLE_PERF_KV_READS);
  int zone=portable_timezone_preference_load(grant.api,config.time_zone);
  portable_perf_count(PORTABLE_PERF_KV_READS);
- int basis=portable_rtc_basis_load(grant.api,&desk_basis);
+ int basis=portable_rtc_basis_load(grant.api,&next_basis);
 #ifdef PORTABLE_DESK_LOCK_HOME
  unsigned direction=0;portable_perf_count(PORTABLE_PERF_KV_READS);
  int direction_status=portable_desk_direction_load(grant.api,&direction);
 #endif
  if(!rt->release(&grant) || grant.api || grant.slot || grant.generation){desk_fence();return false;}
+ /* Publish a complete read only after BUSY/unavailable has cleared. Keep the
+  * prior confirmed configuration intact while SD restore progresses. */
+ desk_config_pending=time_status==PORTABLE_TIME_FORMAT_UNAVAILABLE ||
+     face_status==PORTABLE_DESK_FACE_UNAVAILABLE || language_status==PORTABLE_READER_UNAVAILABLE ||
+     flip_status==PORTABLE_READER_UNAVAILABLE || sleep_status==PORTABLE_SLEEP_UNAVAILABLE ||
+     zone==PORTABLE_TIMEZONE_UNAVAILABLE || basis==PORTABLE_RTC_BASIS_UNAVAILABLE
+#ifdef PORTABLE_DESK_LOCK_HOME
+     || direction_status==PORTABLE_DESK_FACE_UNAVAILABLE
+#endif
+     ;
+ portable_desk_adapter_settings_pending(desk_config_pending);
+ if(desk_config_pending){desk_config_retry_at=app->millis()+250u;return false;}
+ desk_basis=next_basis;*mode=sleep_mode;
  desk_zone_known=(zone==PORTABLE_TIMEZONE_LOADED || zone==PORTABLE_TIMEZONE_MISSING) &&
      portable_timezone_resolve(config.time_zone,sizeof(config.time_zone),&desk_rule)==PORTABLE_TIMEZONE_OK;
  desk_basis_known=basis==PORTABLE_RTC_BASIS_LOADED || basis==PORTABLE_RTC_BASIS_MISSING;
@@ -173,7 +200,7 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
 int portable_desk_clock_mode(void) {
  /* TIMER adapter bypasses this function. No promotion attempt can re-admit it. */
  if(!desk_promoted)return PORTABLE_SLEEP_LIGHT;
- return desk_config(&desk_configuration,&desk_sleep_mode)?(int)desk_sleep_mode:-2;
+ return desk_config(&desk_configuration,&desk_sleep_mode)?(int)desk_sleep_mode:desk_config_pending?-3:-2;
 }
 static bool desk_cancelled(void) {
  if(desk_retained || !portable_desk_adapter_ready() || !desk_ops)return true;
@@ -210,7 +237,7 @@ static bool desk_scene(const portable_desk_config *config,int64_t minute) {
 static int desk_restore(void) {
  if(desk_retained)return -2;
  if(desk_ops->resume(desk_ops->context)!=1)return desk_fence();
- desk_held=false;portable_desk_adapter_invalidate();return 0;
+ desk_held=false;desk_rtc_check.checked=false;portable_desk_adapter_invalidate();return 0;
 }
 /* Pinned Runtime health uses the same esp_timer boot domain as realtime,
  * rounded down to milliseconds. Use its upper microsecond endpoint; at most
@@ -352,6 +379,44 @@ static bool desk_boot_logo(void) {
     !portable_desk_adapter_present(true)){desk_fence();return false;}
  return true;
 }
+/* Called only by the ordinary foreground loop, after catalog progress. The
+ * retained TIMER path uses its record exclusively and never reaches here. */
+static bool desk_hydrate(void) {
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ bool status_changed=false;
+ if(!desk_boot_timer&&desk_promoted&&!desk_held&&!desk_retained&&
+    (int32_t)(app->millis()-desk_settings_poll_at)>=0) {
+  desk_settings_poll_at=app->millis()+1000u;
+  if(!portable_home_settings_poll())return false;
+  status_changed=desk_settings_observed!=portable_home_settings_generation();
+  desk_settings_observed=portable_home_settings_generation();
+  if(portable_home_settings_available()&&desk_settings_generation!=portable_home_settings_generation()) {
+   desk_config_pending=true;desk_config_retry_at=app->millis();
+  }
+ }
+#endif
+ if(!desk_config_pending || desk_boot_timer || !desk_promoted || desk_held || desk_retained ||
+    (int32_t)(app->millis()-desk_config_retry_at)<0)return
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  status_changed
+#else
+  false
+#endif
+  ;
+ if(!desk_config(&desk_configuration,&desk_sleep_mode))return false;
+#ifdef PORTABLE_DESK_LOCK_HOME
+ bool applied=portable_desk_adapter_landscape(false,desk_foreground_flip);
+#else
+ bool applied=portable_desk_adapter_flip(desk_configuration.flip_ui);
+#endif
+ if(!applied){desk_config_pending=true;desk_config_retry_at=app->millis()+250u;return false;}
+ format=desk_configuration.time_format;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ desk_settings_generation=portable_home_settings_generation();
+#endif
+ risc_realtime_snapshot_v1 sample;(void)desk_sample(true,&sample);
+ return !desk_retained;
+}
 static bool sparse_boot(void) {
  rt=risc_runtime_get_api(1);
  if(!rt || rt->api_version!=1 || rt->struct_size<RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE || !rt->retain_invocation ||
@@ -386,8 +451,12 @@ static bool sparse_boot(void) {
  portable_perf_span(PORTABLE_PERF_SPAN_PROMOTION,true);
  if(desk_promote()!=1 || !desk_bind())return false;
  portable_perf_span(PORTABLE_PERF_SPAN_PROMOTION,false);
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!portable_home_settings_poll())return false;
+ desk_settings_generation=portable_home_settings_generation();
+#endif
  portable_perf_span(PORTABLE_PERF_SPAN_CONFIG,true);
- if(!desk_config(&desk_configuration,&desk_sleep_mode))return false;
+ if(!desk_config(&desk_configuration,&desk_sleep_mode) && !desk_config_pending)return false;
  portable_perf_span(PORTABLE_PERF_SPAN_CONFIG,false);
  format=desk_configuration.time_format;
 #ifdef PORTABLE_DESK_LOCK_HOME

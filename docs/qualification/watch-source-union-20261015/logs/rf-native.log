@@ -1,0 +1,8 @@
+native raster 160x160: comparisons=79 glyph-band-max=15 direct-pixels=44526 replay-pixels=25420 host-cpu-ms=3.329 PASS
+native raster 160x160: comparisons=79 glyph-band-max=15 direct-pixels=44526 replay-pixels=25420 host-cpu-ms=14.098 PASS
+native raster 240x240: comparisons=79 glyph-band-max=15 direct-pixels=60210 replay-pixels=34364 host-cpu-ms=5.536 PASS
+native raster 240x240: comparisons=79 glyph-band-max=15 direct-pixels=60210 replay-pixels=34364 host-cpu-ms=26.545 PASS
+native raster 410x502: comparisons=79 glyph-band-max=15 direct-pixels=96072 replay-pixels=54952 host-cpu-ms=10.360 PASS
+native raster 410x502: comparisons=79 glyph-band-max=15 direct-pixels=96072 replay-pixels=54952 host-cpu-ms=54.041 PASS
+native raster 640x240: comparisons=79 glyph-band-max=15 direct-pixels=133884 replay-pixels=76098 host-cpu-ms=18.013 PASS
+native raster 640x240: comparisons=79 glyph-band-max=15 direct-pixels=133884 replay-pixels=76098 host-cpu-ms=35.064 PASS
