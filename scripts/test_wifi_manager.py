@@ -23,11 +23,11 @@ def run(runtime, output, sanitize=False):
     cc=os.environ.get('CC','cc');obj=output/'text.o'
     broadcast=output/'foreground-broadcast-test'
     subprocess.run([cc,*flags,str(ROOT/'test/wifi_manager/foreground_broadcast_test.c'),'-o',str(broadcast)],check=True)
-    subprocess.run([cc,*flags,'-Dt5_driver_get=text_driver_get','-c',str(ROOT/'Services/text_input/host.c'),'-o',str(obj)],check=True)
+    subprocess.run([cc,*flags,'-Dt5_driver_get=text_driver_get','-c',str(ROOT/'test/wifi_manager/text_trace.c'),'-o',str(obj)],check=True)
     alarm_obj=output/'alarm.o'
     subprocess.run([cc,*flags,'-Dt5_driver_get=alarm_driver_get','-c',str(ROOT/'Services/alarm_foreground/host.c'),'-o',str(alarm_obj)],check=True)
     exe=output/'test'
-    subprocess.run([cc,*flags,str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/wifi_manager/app_test.c'),str(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c'),str(obj),str(alarm_obj),'-o',str(exe)],check=True)
+    subprocess.run([cc,*flags,str(ROOT/'test/wifi_manager/scene_trace.c'),str(ROOT/'test/wifi_manager/app_test.c'),str(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c'),str(obj),str(alarm_obj),'-o',str(exe)],check=True)
     failures=[];passed=0
     def exercise(label, command):
         nonlocal passed

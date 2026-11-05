@@ -1,3 +1,5 @@
+extern void wifi_scene_trace_enable(void);
+extern void wifi_text_trace(void);
 static void alarm_test_due(void){
  fixture_alarm.state=ALARM_STATE_ALERT;
  fixture_alarm.occurrence=(alarm_token_v1){ALARM_KIND_ALARM,7,1234,9};
@@ -37,8 +39,11 @@ static void alarm_test_run(const char*mode){
   assert(!strcmp(value.text,"preserved-secret"));wipe(&value,sizeof(value));
   /* Focus restore schedules repaint; input is deliberately gated until the
    * restored keyboard is current. Do not inject a stale pre-paint Back. */
-  capture(NULL,NULL);nav_pressed=RISC_NAV_BACK;
-  for(unsigned n=0;wm.editor_session;n++){assert(n<3000&&native_alive&&!wm.retained);pump(1);}
+  capture(NULL,NULL);wifi_scene_trace_enable();wifi_text_trace();nav_pressed=RISC_NAV_BACK;
+  for(unsigned n=0;wm.editor_session;n++){
+   if(n<8||n==2999){fprintf(stderr,"WIFI_APP_TRACE step=%u nav_pressed=%u editor_done=%u keyboard_pending=%u alarm_requested=%u alarm_paused=%u\n",n,nav_pressed,wm.editor_done,wm.keyboard_pending,wm.alarm_requested,wm.alarm_paused);wifi_text_trace();}
+   assert(n<3000&&native_alive&&!wm.retained);pump(1);
+  }
  }
  if(radio)assert(radio_id==radio&&!cancels);
  assert(alarm_driver->quiesce());exit_app();alarm_driver->stop();
