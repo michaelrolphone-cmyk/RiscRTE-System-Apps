@@ -20,5 +20,10 @@ def run(runtime):
     profiles=((240,240,5,0),) if compact else ((240,240,5,0),(410,502,5,0),(480,800,3,0),(800,480,1,270))
     for profile in profiles:
      subprocess.run([str(exe),*map(str,profile)],check=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'),timeout=60)
+    subprocess.run([os.environ.get('CC','cc'),*flags,*extra,str(ROOT/'test/scene/modal_probe.c'),str(ROOT/'test/scene/modal_test.c'),'-o',str(exe)],check=True)
+    for profile in profiles:
+     for continuity in (0,1):
+      for mode in ('success','retained-open','retained-close'):
+       subprocess.run([str(exe),*map(str,profile),str(continuity),mode],check=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'),timeout=60)
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--runtime',required=True,type=Path);a=p.parse_args();run(a.runtime.resolve())

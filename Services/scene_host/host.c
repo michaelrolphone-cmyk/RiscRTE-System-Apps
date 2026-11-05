@@ -1,5 +1,5 @@
 /* Shared semantic presenter. No application/domain code or product IDs. */
-#include "RiscSceneConnectivityV1.h"
+#include "RiscSceneModalV1.h"
 /* Explicit source profile: the default remains the complete presenter. */
 #ifndef SCENE_HOST_WATCH_240
 #define SCENE_HOST_WATCH_240 0
@@ -103,6 +103,21 @@ static bool paused,pausing;
 static bool neutral,keyboard_waiting;
 static bool lifecycle_enabled,activity_pending,input_unsynchronized,top_pending,handoff_waiting;
 static uint32_t lifecycle_features,navigation_buttons;
+/* One bounded foreground modal. Only quiescent logical state is checkpointed;
+ * native display tokens and input subscriptions never cross the switch. */
+typedef struct {
+    scene_model logical;
+    uint8_t *live,*frozen;
+    size_t capacity;
+    risc_display_info_v1 display_info;
+    unsigned w,h,display_rotation,touch_rotation;
+    uint64_t token,event_sequence;
+    uint32_t view_epoch,features;
+    bool lifecycle;
+} modal_checkpoint;
+static modal_checkpoint *modal_parent;
+static bool modal_focus_changed;
+
 static uint8_t contact_id;
 static uint32_t down_revision,down_epoch;
 static uint64_t down_at;
@@ -171,6 +186,7 @@ static bool alive(void){
 }
 static int32_t check(uint64_t s){
     if(!alive())return RISC_SCENE_RETAINED;
+    if(modal_parent&&s==modal_parent->token)return RISC_SCENE_BUSY;
     return started&&active&&s&&s==session?RISC_SCENE_OK:RISC_SCENE_STALE;
 }
 static uint32_t current_route(void){return path.routes[path.depth-1];}
@@ -906,7 +922,7 @@ static int32_t scene_resume(void *c,uint64_t s,uint32_t flags){
     if(flags&~(RISC_SCENE_RESUME_REDRAW|RISC_SCENE_RESUME_CLEAN|RISC_SCENE_RESUME_FOCUS_CHANGED) ||
        ((flags&RISC_SCENE_RESUME_CLEAN)&&(!(flags&RISC_SCENE_RESUME_REDRAW)||!model->page_view)))return RISC_SCENE_INVALID;
     if(closing||pausing||!paused)return RISC_SCENE_BUSY;
-    bool continuity=lifecycle_enabled&&(lifecycle_features&RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY);
+    bool continuity=!modal_focus_changed&&lifecycle_enabled&&(lifecycle_features&RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY);
     bool neutralize=!continuity||(flags&RISC_SCENE_RESUME_FOCUS_CHANGED);
     if(!continuity){subscription=touch->subscribe(touch->context);if(!alive()||!subscription)return fail_retained();}
     else if(!subscription)return fail_retained();
@@ -920,7 +936,7 @@ static int32_t scene_resume(void *c,uint64_t s,uint32_t flags){
         activity_pending=false;input_unsynchronized=true;navigation_buttons=0;
         have_event=false;handoff_waiting=false;key_head=key_count=0;key_barrier=keyboard_waiting=false;
     }
-    paused=false;
+    paused=false;modal_focus_changed=false;
     if(flags&RISC_SCENE_RESUME_REDRAW){dirty=true;if(flags&RISC_SCENE_RESUME_CLEAN)model->page_clean=true;}
     return RISC_SCENE_OK;
 }
@@ -1096,7 +1112,27 @@ static int32_t scene_snapshot(void *c,uint64_t s,risc_scene_navigation_v1 *p,uin
     }
     return RISC_SCENE_OK;
 }
-static int32_t scene_close(void *c,uint64_t s){(void)c;int32_t r=check(s);return r?r:close_owned();}
+static void modal_restore(void){
+    modal_checkpoint *saved=modal_parent;
+    logical_model=saved->logical;model=&logical_model;
+    page_live=saved->live;page_frozen=saved->frozen;page_capacity=saved->capacity;
+    info=saved->display_info;width=saved->w;height=saved->h;
+    session_display_rotation=saved->display_rotation;session_touch_rotation=saved->touch_rotation;
+    session=saved->token;event_serial=saved->event_sequence;epoch=saved->view_epoch;
+    lifecycle_features=saved->features;lifecycle_enabled=saved->lifecycle;
+    active=paused=dirty=true;closing=pausing=pending=rasterizing=false;
+    subscription=0;nav_claimed=false;have_event=activity_pending=top_pending=handoff_waiting=false;
+    input_unsynchronized=true;navigation_buttons=0;key_head=key_count=raw_count=0;
+    key_barrier=keyboard_waiting=false;visible=(hit_map){0};upload=(hit_map){0};
+    surface=(risc_display_surface_v1){0};present_token=(risc_display_present_token_v1){0};
+    memset(&frame_model,0,sizeof(frame_model));
+    modal_parent=NULL;modal_focus_changed=true;
+    memset(saved,0,sizeof(*saved));free(saved);
+}
+static int32_t scene_close(void *c,uint64_t s){
+    (void)c;int32_t r=check(s);if(r)return r;
+    r=close_owned();if(!r&&modal_parent)modal_restore();return r;
+}
 static int32_t scene_configure(void *c,uint64_t s,uint32_t features){
     (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;
     if(features&~(RISC_SCENE_FEATURE_SHARED_CONTROLS|RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY))return RISC_SCENE_INVALID;
@@ -1129,6 +1165,7 @@ static int32_t scene_open(void *c,const risc_scene_document_v1 *d,const risc_sce
     model->components=false;return open_document(c,&legacy_copy,p,out);
 }
 static int32_t scene_update(void *c,uint64_t s,const risc_scene_document_v1 *d){
+    int32_t checked=check(s);if(checked)return checked;
     if(model->components||!copy_legacy(d))return RISC_SCENE_INVALID;
     return update_document(c,s,&legacy_copy);
 }
@@ -1139,11 +1176,44 @@ static int32_t components_open(void *c,const risc_components_document_v1 *d,cons
     model->telemetry.count=0;model->components=true;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;return open_document(c,d,p,out);
 }
 static int32_t components_update(void *c,uint64_t s,const risc_components_document_v1 *d){
+    int32_t checked=check(s);if(checked)return checked;
     if(!model->components)return RISC_SCENE_INVALID;
     int32_t rc=update_document(c,s,d);if(!rc){model->telemetry.count=0;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;dirty=true;rebuild_hits();}return rc;
 }
+static int32_t modal_open(void *c,const risc_components_document_v1 *d,uint64_t *out){
+    if(!alive())return RISC_SCENE_RETAINED;
+    if(!started||!out||!valid_document(d,true))return RISC_SCENE_INVALID;
+    if(modal_parent||!active||!paused||closing)return RISC_SCENE_BUSY;
+    if(serial==UINT64_MAX)return RISC_SCENE_UNAVAILABLE;
+    modal_checkpoint *saved=malloc(sizeof(*saved));if(!saved)return RISC_SCENE_UNAVAILABLE;
+    /* A policy pause can preserve input continuity. A real foreground change
+     * cannot: release those claims and neutralize contacts before child open. */
+    int32_t rc=detach_owned(false);
+    if(rc){free(saved);return rc;}
+    *saved=(modal_checkpoint){.logical=logical_model,.live=page_live,.frozen=page_frozen,
+        .capacity=page_capacity,.display_info=info,.w=width,.h=height,
+        .display_rotation=session_display_rotation,.touch_rotation=session_touch_rotation,
+        .token=session,.event_sequence=event_serial,.view_epoch=epoch,
+        .features=lifecycle_features,.lifecycle=lifecycle_enabled};
+    modal_parent=saved;page_live=page_frozen=NULL;page_capacity=0;
+    memset(&logical_model,0,sizeof(logical_model));memset(&frame_model,0,sizeof(frame_model));
+    active=paused=pausing=closing=false;modal_focus_changed=false;
+    rc=components_open(c,d,NULL,out);
+    if(rc&&!retained){
+        /* open_document cleans failed claims before returning ordinary failure. */
+        if(active){int32_t closed=close_owned();if(closed)return closed;}
+        modal_restore();
+    }
+    return rc;
+}
+static int32_t modal_close(void *c,uint64_t token){
+    if(!alive())return RISC_SCENE_RETAINED;
+    if(!modal_parent)return RISC_SCENE_STALE;
+    return scene_close(c,token);
+}
+
 /* Keep all existing prefixes. Compact connectivity advertises no telemetry. */
-static const risc_scene_connectivity_api_v1 api={{{{{ { { {
+static const risc_scene_modal_api_v1 api={{{{{{ { { {
     {{1,sizeof(api),NULL,scene_open,scene_update,scene_next,scene_navigate,scene_snapshot,scene_close},scene_configure},
     RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present},
     RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present},RISC_SCENE_READING_LINKS_TAG,1,reading_present_linked},
@@ -1152,7 +1222,7 @@ static const risc_scene_connectivity_api_v1 api={{{{{ { { {
 #else
     0,0,NULL
 #endif
-},RISC_SCENE_CONNECTIVITY_TAG,1};
+},RISC_SCENE_CONNECTIVITY_TAG,1},RISC_SCENE_MODAL_TAG,1,modal_open,modal_close};
 
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||count<4||count>5||!deps)return false;
@@ -1178,7 +1248,7 @@ static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(navigation&&(navigation->api_version!=1||navigation->struct_size<sizeof(*navigation)||!navigation->poll||!navigation->foreground||!navigation->reset))return false;
     started=true;return true;
 }
-static bool quiesce(void){return !retained&&!active&&!pending&&!rasterizing&&!subscription&&!nav_claimed;}
+static bool quiesce(void){return !retained&&!active&&!modal_parent&&!pending&&!rasterizing&&!subscription&&!nav_claimed;}
 static void stop(void){if(!quiesce())return;started=false;display=NULL;touch=NULL;navigation=NULL;clock_api=NULL;profile=NULL;}
 static const risc_driver_v2 driver={2,sizeof(driver),"scene-host",RISC_SCENE_CAPABILITY,1,&api,start,stop,quiesce};
 __attribute__((visibility("default"))) const risc_driver_v2 *t5_driver_get(uint32_t abi){return abi==2?&driver:NULL;}

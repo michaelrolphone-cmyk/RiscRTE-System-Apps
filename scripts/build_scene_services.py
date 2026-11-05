@@ -46,7 +46,7 @@ def run(runtime: Path, output: Path, host_profile: str = 'full') -> None:
         host=host_manifest(host_profile)
         rows=[build(compiler,include,output/'scene-host',host,[ROOT/'Services/scene_host/host.c'],HOST_PROFILE_FLAGS[host_profile])]
         rows[0]['host_profile']=host_profile
-        rows[0]['optional_apis']={'telemetry':host_profile=='full','components':True,'page':True,'checkpoint':True,'reading':True,'reading_links':True,'connectivity':True}
+        rows[0]['optional_apis']={'telemetry':host_profile=='full','components':True,'page':True,'checkpoint':True,'reading':True,'reading_links':True,'connectivity':True,'modal':True}
         json_write(output/'scene-host/build.json',rows[0])
         license_dir=output/'scene-host/licenses';license_dir.mkdir()
         for name in ['LICENSE-Orbitron.txt','LICENSE-Rajdhani.txt','SOURCES.json','COMPONENT-SOURCES.json']:
