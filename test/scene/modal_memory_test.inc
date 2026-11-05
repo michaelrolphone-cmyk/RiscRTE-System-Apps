@@ -8,7 +8,12 @@ static int modal_memory_page(uint64_t token){
  const risc_scene_page_api_v1 *pages=risc_scene_page_get_v1(api);assert(pages);
  risc_scene_page_geometry_v1 g={.struct_size=sizeof(g)};assert(!pages->geometry(NULL,&g));
  static uint8_t pixels[1024*1024/8];size_t length=(size_t)g.stride*g.height;
- assert(length<=sizeof(pixels));memset(pixels,0xff,length);
+ /* Public geometry describes copied pixels, not retained allocation capacity.
+  * page.inc allocates floor(logical_width*logical_height/8); profile rotations
+  * only swap those dimensions, preserving w*h. Wave's 410-wide surface has
+  * a 408-wide byte-aligned viewport and separately retained 25727-byte blocks. */
+ assert(!(g.width&7u)&&g.stride==g.width/8u);
+ assert(length<=sizeof(pixels)&&length<=(size_t)w*h/8u);memset(pixels,0xff,length);
  risc_scene_page_document_v1 p={.struct_size=sizeof(p),.revision=2,
      .previous_action=11,.menu_action=12,.next_action=13,.back_action=14};
  return pages->present_page(NULL,token,&p,pixels,length);

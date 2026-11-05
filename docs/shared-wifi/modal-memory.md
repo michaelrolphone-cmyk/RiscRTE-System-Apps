@@ -28,7 +28,11 @@ text document requests page pixels. Text-input-host has no dynamic allocation.
 
 For the reusable scene API, page/reading/preview allocate two pixel blocks
 of `A = floor(logical_width * logical_height / 8)` bytes. These persist until
-scene close, even after a later component/keyboard update. A modal child may
+scene close, even after a later component/keyboard update. This allocation
+capacity differs from the copied bitmap length: public page geometry rounds
+width down to a multiple of eight and subtracts chrome height. Wave's 410-wide
+surface therefore has viewport stride 51 but retains 25,727-byte blocks.
+Rotations swap logical dimensions and preserve their product. A modal child may
 also request page pixels. Live request sequences are therefore:
 
 - Fresh keyboard/component parent + text-only alarm: `[29856]`.
@@ -162,14 +166,15 @@ and the static unresolved-call/recursion list. High-water alone is observed
 coverage, not a bound on unexercised paths.
 
 Exact X4 native successor receipt:
-run 42014116122 (reported by the product qualification owner),
-artifact 13409920368, Runtime `fb6d0323b7ab6fa57af8fd5551ce45fdf52c743d`, product `762e5a`.
+[run 42014116122](https://github.com/michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO/actions/runs/42014116122),
+artifact 13409920368, Runtime `fb6d0323b7ab6fa57af8fd5551ce45fdf52c743d`, product `762e5a458d56e9582b839c2fbe30109911f36f92`,
+SDK `fff9895c82d744c7237be8847347bdd1b07c6643`.
 It selects SPIRAM malloc with preferred-internal cutoff 16,384 and internal
 reserve 32,768, poisoning disabled and task tracking disabled. These are
 allocator policy inputs, not modal headroom. The successful link's 16-byte
 margin before the IQ bank is a static-layout constraint, not available heap.
-The product qualification owner must verify the full repository/source
-identities and native receipt before using these abbreviated pins.
+These full pins identify the successful native receipt; a later Runtime pin
+requires its own exact native evidence.
 
 Installed Watch/Wave native-to-store pairing remains unresolved. Do not
 reuse X4 allocator settings, stack configuration or this successful link for
