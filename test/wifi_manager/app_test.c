@@ -88,9 +88,55 @@ static void capture(const char *dir,const char *name){
     for(unsigned yy=0;yy<800;yy++)for(unsigned bx=0;bx<60;bx++){unsigned b=0;for(unsigned k=0;k<8;k++){unsigned x=bx*8+k,px=yy,py=479-x;unsigned bit=(pixels[16+py*100+px/8]>>(7-px%8))&1u;b|=bit<<(7-k);}fputc((int)b,f);}fclose(f);
 }
 static void exit_app(void){wm.exit_requested=true;pump(200);assert(wm.finished&&!wm.retained);cleanup(&wm);assert(!active_grants&&!held&&!presenting&&!subscribed&&!radio_id);assert(driver->quiesce()&&td->quiesce());td->stop();driver->stop();}
+
+/* Profile-independent app transitions run against the real shared presenter.
+ * The original paper-touch/keyboard scenarios below remain unchanged. */
+static void profile_behavior(void){
+    capture(NULL,NULL);assert(wm.saved_rows==2);
+    invoke(SCAN,0);assert(scans==1&&wm.scan.count==4);capture(NULL,NULL);
+    invoke(SELECT_SCAN,0);assert(wm.selected_saved&&!strcmp(wm.draft.password,"password123"));
+    invoke(CONNECT,0);pump(100);
+    assert(joins==1&&wm.link_up&&!strcmp(sent_ssid,"Nova Home"));
+    assert(!strcmp(sent_password,"password123")&&!wm.draft.password[0]);
+    capture(NULL,NULL);invoke(SELECT_CURRENT,0);capture(NULL,NULL);
+    invoke(FORGET_ASK,0);capture(NULL,NULL);invoke(FORGET_YES,0);
+    portable_wifi_credentials value;
+    assert(portable_wifi_profile_load(&kv,0,&value)==PORTABLE_WIFI_CREDENTIALS_EMPTY);
+    assert(!radio_id&&wm.saved_rows==1&&!strcmp(wm.saved_names[0],"Second Network"));
+    invoke(SELECT_SAVED,0);invoke(CONNECT,0);pump(100);
+    assert(joins==2&&wm.link_up&&!strcmp(sent_ssid,"Second Network"));
+    assert(!strcmp(sent_password,"secondpass"));
+    invoke(CANCEL,0);pump(100);assert(!radio_id);
+    invoke(ADD_NETWORK,0);invoke(EDIT_PASSWORD,0);
+    assert(wm.editor_session&&!wm.session);capture(NULL,NULL);
+    nav_pressed=RISC_NAV_BACK;pump(100);
+    assert(!wm.editor_session&&!wm.draft.password[0]&&joins==2);
+    invoke(BACK,0);capture(NULL,NULL);
+    unsigned frames=submits,writes=kv_writes;pump(100);
+    assert(submits==frames&&kv_writes==writes);
+    wipe(&value,sizeof(value));exit_app();
+    printf("Wi-Fi semantic workflow %ux%u format=%u rotation=%u PASS\n",
+           w,h,format,prof.display_rotation);
+}
+
 int main(int argc,char **argv){
     assert(argc>=2);const char *mode=argv[1],*dir=argc>2?argv[2]:NULL;
     w=800;h=480;format=1;prof=(risc_scene_profile_v1){1,sizeof(prof),1,3,88,20,0,0xffff,0,270,0,0};
+    if(!strcmp(mode,"profile")){
+        assert(argc==7);w=(unsigned)strtoul(argv[3],NULL,10);h=(unsigned)strtoul(argv[4],NULL,10);
+        format=(unsigned)strtoul(argv[5],NULL,10);
+        unsigned rotation=(unsigned)strtoul(argv[6],NULL,10);
+        assert(w>=200&&h>=200&&w<=800&&h<=800&&w*h<=800*480);
+        assert(format==1||format==3||format==5);
+        assert(rotation==0||rotation==90||rotation==180||rotation==270);
+        prof=(risc_scene_profile_v1){1,sizeof(prof),format,format==5?2:3,
+            format==5?42:88,format==5?8:20,format==5?0xffff:0,
+            format==5?0x0841:0xffff,format==5?0x05ff:0,rotation,0,0};
+        portable_wifi_credentials first={"Nova Home","password123"},second={"Second Network","secondpass"};
+        assert(!portable_wifi_profile_save(&kv,0,&first));
+        assert(!portable_wifi_profile_save(&kv,1,&second));
+        wipe(&first,sizeof(first));wipe(&second,sizeof(second));dir=NULL;
+    }
     startup();assert(!api->close(NULL,session));expected_intent=RISC_DISPLAY_PRESENT_LOW_LATENCY;
     td=text_driver_get(2);assert(td);text_api=td->capability;risc_provider_dependency_v1 tddeps[]={ {"ui.scene",1,api} };assert(td->start(tddeps,1));
     old_api=*(const risc_scene_telemetry_api_v1*)api;((risc_scene_api_v1*)&old_api)->struct_size=sizeof(old_api);
@@ -99,6 +145,7 @@ int main(int argc,char **argv){
     if(!strcmp(mode,"storage-failure"))io_fail=true;
     if(!strcmp(mode,"busy-storage"))db_busy=5;
     assert(wifi_manager_test_init());pump(20);
+    if(!strcmp(mode,"profile")){profile_behavior();return 0;}
     if(old_scene){assert(wm.upgrade);exit_app();puts("old scene: update message PASS");return 0;}
     if(io_fail){assert(wm.db_fault&&!wm.enabled);exit_app();puts("storage failure: no data overwritten PASS");return 0;}
     assert(wm.enabled);capture(dir,"disconnected");

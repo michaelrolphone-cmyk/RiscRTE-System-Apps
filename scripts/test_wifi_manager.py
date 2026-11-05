@@ -26,6 +26,14 @@ def run(runtime, output, sanitize=False):
     for mode in MODES:
         d=output/'frames'/mode;d.mkdir(parents=True,exist_ok=True)
         subprocess.run([str(exe),mode,str(d)],check=True,timeout=30,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
+    # Geometry belongs to the provider. One executable runs all profiles;
+    # samples exercise size, aspect, format and rotation independently.
+    profiles=((240,240,5,0),(410,502,5,0),(800,480,1,270),
+              (480,800,3,0),(320,240,5,0),(240,320,5,0))
+    for width,height,fmt,rotation in profiles:
+        subprocess.run([str(exe),'profile','-',str(width),str(height),str(fmt),str(rotation)],
+                       check=True,timeout=30,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
+    print(f'{len(profiles)} shared-provider semantic workflows PASS; not device or pixel-layout acceptance')
     print(f'{len(MODES)} actual Wi-Fi app/scene/text service scenarios PASS; physical hardware not tested')
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--runtime',required=True,type=Path);p.add_argument('--output',required=True,type=Path);p.add_argument('--sanitize',action='store_true');a=p.parse_args();run(a.runtime.resolve(),a.output.resolve(),a.sanitize)
