@@ -83,8 +83,12 @@ host translation unit with the native builder's identical flags plus
 shipped ELF. The receipt preserves compiler qualifiers, all emitted functions,
 source/SDK hashes and source pins. Empty entries mean inlined/not emitted,
 never a zero-byte frame. Per-function values are not cumulative call-chain,
-interrupt or task-stack headroom. In particular, the checkpoint aggregate
-assignment must be checked for a compiler-materialized temporary.
+interrupt or task-stack headroom. On System source `9e0a66b2ab85263de2939f5d8cce8d61bb4a9e71`, all three
+profile witnesses are byte-identical to the shipped ELF. `modal_open` is 96
+bytes and `modal_restore` 48 bytes, both static. These measurements rule out
+a checkpoint-sized temporary in those emitted frames, not downstream
+call-chain usage. See [scene job 127203673589](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/42015130536/job/127203673589)
+and [three-profile job 127203674107](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/42015130503/job/127203674107).
 
 To establish product headroom, retain this request vector and exact native
 build/config identity; measure allocator charges/pools, display demand and
@@ -96,3 +100,81 @@ layout witnesses and matching target builds are useful evidence, but do not
 constitute that native execution or physical acceptance.
 
 No limits, allocation policy or product behavior are changed by these receipts.
+
+## Reproducible allocation sequence fixture
+
+The existing modal fixture now has a `memory` mode, run by
+`python scripts/test_scene_telemetry.py --runtime <pinned-runtime>`.
+It invokes the real component/page/modal/checkpoint APIs and instruments only
+the provider translation unit's malloc/free in the test adapter. No allocator
+hook is shipped. The checkout SHA, staged SDK and CI compiler identify this
+host test; target ABI sizes remain the separate target receipts above.
+
+It checks the three request vectors above, including a page-to-components
+transition that retains the parent page pair. Three successful repetitions
+must finish with zero live allocations. Refusal at each ordinal 1 through 5
+of the maximum vector must release every partial page pair; a refused
+checkpoint leaves the paused parent resumable; refused child buffers leave
+the checkpoint and parent pair intact until normal modal close. Closing the
+child must return to the parent's pair, and parent close must return to zero.
+The first failed page allocation still permits the second allocation attempt,
+then both results are freed. Tests record requested payload/peak block count,
+not libc charge, native display memory, or product headroom.
+
+The added mode is a test candidate until its owning CI passes. Its output
+labels checkpoint size as host ABI explicitly. Do not substitute that size for
+the target's 29,856 bytes.
+
+## Required native budget proof
+
+Let `C(pool,n)` be the selected allocator's actual charge for an n-byte request,
+including its exact alignment/metadata/poisoning configuration. For parent
+geometry P and child geometry Q, the maximum live provider payload vector is
+`[A(P), A(P), 29856, A(Q), A(Q)]`, not one contiguous allocation of its sum.
+For each allocator pool, admission must cover the sum of C for simultaneously
+live requests assigned to that pool, plus other live users and required
+reserves. A largest-block condition is also required at every allocation
+ordinal. Pool placement/fallback must be proven from the selected allocator
+and workload; assuming that the checkpoint always lands in PSRAM is invalid.
+Where placement is not reserved, either bound every permitted fallback or
+provide a fail-closed admission mechanism. A free-heap snapshot is neither.
+
+The actual Wi-Fi/alarm path requires one C(pool,29856), beyond its already
+loaded static/ELF and native dependencies. The reusable worst case requires
+all five charges. Pixel count bounds are derived from admitted geometry;
+different parent/child dimensions use separate values. Native display buffers,
+touch/navigation subscriptions, retained RF operation, storage receipts,
+loaded providers, cached images and allocator fragmentation need their own
+bounded coexistence record. This fixture deliberately does not invent them.
+
+Runtime `fb6d0323b7ab6fa57af8fd5551ce45fdf52c743d` runs application entry synchronously on its owner task:
+`src/main.cpp` calls setup from IDF app_main, and
+`src/bootstrap/Runtime.cpp` invokes the loaded entry directly. Therefore the
+required owner stack is the maximum reachable sum across Runtime entry,
+Wi-Fi, alarm/text callbacks, scene modal/layout/raster work and native
+callbacks, with compiler/ABI spill, library/assembly and applicable interrupt
+usage accounted for. The rebuild_hits call during restore is part of this
+chain. Per-function .su records alone, or adding modal_open to modal_restore,
+are not that proof. Include dynamic .su qualifiers and resolve indirect
+callbacks from the exact loaded cohort. Record actual task allocation and
+stack location, high-water under the reachable worst paths, guard results,
+and the static unresolved-call/recursion list. High-water alone is observed
+coverage, not a bound on unexercised paths.
+
+Exact X4 native successor receipt:
+run 42014116122 (reported by the product qualification owner),
+artifact 13409920368, Runtime `fb6d0323b7ab6fa57af8fd5551ce45fdf52c743d`, product `762e5a`.
+It selects SPIRAM malloc with preferred-internal cutoff 16,384 and internal
+reserve 32,768, poisoning disabled and task tracking disabled. These are
+allocator policy inputs, not modal headroom. The successful link's 16-byte
+margin before the IQ bank is a static-layout constraint, not available heap.
+The product qualification owner must verify the full repository/source
+identities and native receipt before using these abbreviated pins.
+
+Installed Watch/Wave native-to-store pairing remains unresolved. Do not
+reuse X4 allocator settings, stack configuration or this successful link for
+those products. A native admission receipt needs full source hashes, firmware
+and provider ELF hashes, selected profile/config, allocator implementation and
+charge/placement evidence, stack composition, exact live request sequence,
+coexisting workload/reserve bounds, failure/recovery observations and the
+explicit scope of what remains unmeasured.

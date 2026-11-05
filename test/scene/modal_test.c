@@ -8,6 +8,7 @@ void modal_test_restored(void);
 void modal_test_allocation_failure(void);
 void modal_test_allocation_unchanged(void);
 uint32_t modal_test_logical_digest(void);
+#include "modal_memory_test.inc"
 int main(int argc,char **argv){
  assert(argc==7);w=(unsigned)strtoul(argv[1],NULL,10);h=(unsigned)strtoul(argv[2],NULL,10);
  format=(unsigned)strtoul(argv[3],NULL,10);unsigned rotation=(unsigned)strtoul(argv[4],NULL,10);
@@ -15,6 +16,7 @@ int main(int argc,char **argv){
  prof=(risc_scene_profile_v1){1,sizeof(prof),format,format==5?2:3,format==5?42:88,
      format==5?8:20,format==5?0xffff:0,format==5?0x0841:0xffff,0x05ff,rotation,0,0};
  startup();
+ if(!strcmp(mode,"memory")){modal_memory_run(continuity);return 0;}
  const risc_scene_modal_api_v1 *modal=risc_scene_modal_get_v1(api);assert(modal);
  const risc_scene_checkpoint_api_v1 *cp=risc_scene_checkpoint_get_v1(api);assert(cp);
  const risc_scene_lifecycle_api_v1 *life=risc_scene_lifecycle_get_v1(api);assert(life);
