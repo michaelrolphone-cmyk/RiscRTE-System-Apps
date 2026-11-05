@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 from assemble_shared_wifi_products import assemble
 from qualify_shared_wifi_products import preservation
-from shared_wifi_products import sha,RUNTIME
+from shared_wifi_products import sha,RUNTIME,elf_receipt
 from shared_wifi_products import encode,grants,parity,safe
 class Contracts(unittest.TestCase):
     def fixture(self):
@@ -50,7 +50,7 @@ class Contracts(unittest.TestCase):
                     before['boot.json']=encode(b);sd[path]=oldscene
                 scene['version']='new';manifest=encode(scene)
                 (root/'driver.elf').write_bytes(newscene);(root/'manifest.json').write_bytes(manifest)
-                (root/'build.json').write_bytes(encode({'bytes':len(newscene),'sha256':sha(newscene),'manifest_sha256':sha(manifest),'source_pins':{'runtime':RUNTIME,'system':'test-commit'},'working_tree_dirty':False,'optional_apis':{'connectivity':True}}))
+                (root/'build.json').write_bytes(encode({'file':'driver.elf','size_bytes':len(newscene),'sha256':sha(newscene),'manifest_sha256':sha(manifest),'source_pins':{'runtime':RUNTIME,'system':'test-commit'},'working_tree_dirty':False,'optional_apis':{'connectivity':True}}))
                 (root/'licenses').mkdir()
                 for name in ('LICENSE-Orbitron.txt','LICENSE-Rajdhani.txt','SOURCES.json','COMPONENT-SOURCES.json'):
                     source=Path(__file__).resolve().parents[1]/'Services/scene_host/fonts'/name
@@ -70,6 +70,14 @@ class Contracts(unittest.TestCase):
                         with self.assertRaises(ValueError):preservation(before,sd,bad,bad_sd,elf,encode(m),root)
                     (root/'licenses/LICENSE-Orbitron.txt').write_bytes(b'wrong')
                     with self.assertRaises(ValueError):assemble(before,sd,elf,encode(m),root)
+    def test_builder_receipt_contract(self):
+        elf=b'target ELF';row={'file':'wifi_settings.elf','size_bytes':len(elf),'sha256':sha(elf)}
+        elf_receipt(row,elf,'wifi_settings.elf')
+        for field,value in (('file','driver.elf'),('size_bytes',len(elf)+1),('sha256','bad')):
+            bad=dict(row);bad[field]=value
+            with self.assertRaises(ValueError):elf_receipt(bad,elf,'wifi_settings.elf')
+        bad=dict(row);bad['bytes']=bad.pop('size_bytes')
+        with self.assertRaises(ValueError):elf_receipt(bad,elf,'wifi_settings.elf')
     def test_paths(self):
         for p in ('../x','/x','a/../b',r'a\\b','a//b',''):
             with self.assertRaises(ValueError):safe(p)

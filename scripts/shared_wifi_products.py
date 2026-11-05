@@ -10,6 +10,8 @@ def check(ok,message):
     if not ok:raise ValueError(message)
 def sha(b):return hashlib.sha256(b).hexdigest()
 def encode(value):return (json.dumps(value,sort_keys=True,indent=2)+'\n').encode()
+def elf_receipt(record,elf,name):
+    check(record.get('file')==name and type(record.get('size_bytes')) is int and record['size_bytes']==len(elf) and record.get('sha256')==sha(elf),'ELF build receipt differs: '+name)
 def safe(name):
     check(isinstance(name,str) and bool(name),'Invalid path')
     p=PurePosixPath(name)
@@ -57,7 +59,7 @@ def load(args):
         check(len(b)==r['bytes'] and sha(b)==r['sha256'],'Baseline identity differs '+r['name'])
     elf=(args.shared/'wifi_settings.elf').read_bytes();manifest=(args.shared/'manifest.json').read_bytes()
     record=json.loads((args.shared/'build.json').read_text());m=json.loads(manifest)
-    check(len(elf)==record['bytes'] and sha(elf)==record['sha256'],'Build ELF receipt differs')
+    elf_receipt(record,elf,'wifi_settings.elf')
     check(sha(manifest)==record['manifest_sha256'] and record['source_pins']['runtime']==RUNTIME,'Build manifest/runtime differs')
     check(m.get('id')=='wifi_settings' and m.get('file_name')=='wifi_settings.elf','Wrong shared app')
     check(record.get('source_pins',{}).get('system')==subprocess.check_output(['git','-C',str(Path(__file__).resolve().parents[1]),'rev-parse','HEAD'],text=True).strip(),'Candidate source receipt differs')
@@ -101,7 +103,7 @@ def provider(before,sd,root):
     row=owners[0];path=safe(row['manifest']);old=json.loads(before[path])
     manifest=(root/'manifest.json').read_bytes();new=json.loads(manifest);elf=(root/'driver.elf').read_bytes()
     receipt=json.loads((root/'build.json').read_text())
-    check(receipt.get('sha256')==sha(elf) and receipt.get('bytes')==len(elf),'Scene ELF receipt differs')
+    elf_receipt(receipt,elf,'driver.elf')
     check(receipt.get('manifest_sha256')==sha(manifest),'Scene manifest receipt differs')
     check(receipt.get('source_pins',{}).get('runtime')==RUNTIME and receipt.get('working_tree_dirty') is False,'Scene source receipt differs')
     source=Path(__file__).resolve().parents[1]
