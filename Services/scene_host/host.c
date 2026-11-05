@@ -943,6 +943,7 @@ static int32_t scene_resume(void *c,uint64_t s,uint32_t flags){
 static int32_t close_owned(void){
     closing=true;int32_t r=detach_owned(false);if(r)return r;
     free(page_live);free(page_frozen);page_live=page_frozen=NULL;page_capacity=0;model->page_view=false;model->reading_view=false;model->preview_view=false;
+    modal_focus_changed=false;
     active=false;closing=paused=pausing=false;session=0;dirty=false;lifecycle_enabled=false;activity_pending=false;input_unsynchronized=false;navigation_buttons=0;lifecycle_features=0;handoff_waiting=false;visible=(hit_map){0};upload=(hit_map){0};
     memset(&document,0,sizeof(document));memset(&path,0,sizeof(path));
     /* A revealed password was copied into the immutable raster model. Detach

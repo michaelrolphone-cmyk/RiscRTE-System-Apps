@@ -31,6 +31,27 @@ PROFILE_FLAGS = {
 }
 
 
+def scene_memory_receipt(compiler, include, temporary, host_profile):
+    """Measure target ABI layouts in a throwaway object, never the shipped ELF."""
+    source=temporary/'scene-memory.c';obj=temporary/'scene-memory.o'
+    source.write_text('#include '+json.dumps(str(ROOT/'Services/scene_host/host.c'))+'\n'
+                      'const unsigned char scene_model_size_probe[sizeof(scene_model)]={0};\n'
+                      'const unsigned char modal_checkpoint_size_probe[sizeof(modal_checkpoint)]={0};\n')
+    subprocess.run([compiler,'-std=c11','-Os','-I'+str(include),*HOST_PROFILE_FLAGS[host_profile],
+                    '-c',str(source),'-o',str(obj)],check=True)
+    symbols=subprocess.check_output([compiler.removesuffix('gcc')+'nm','-S','--defined-only',str(obj)],text=True)
+    sizes={}
+    for line in symbols.splitlines():
+        fields=line.split()
+        if len(fields)==4 and fields[3] in ('scene_model_size_probe','modal_checkpoint_size_probe'):
+            sizes[fields[3]]=int(fields[1],16)
+    if len(sizes)!=2:raise ValueError('Missing target scene memory-size witnesses')
+    return {'target_scene_model_bytes':sizes['scene_model_size_probe'],
+            'modal_additional_heap_bytes':sizes['modal_checkpoint_size_probe'],
+            'modal_max_depth':1,'duplicates_parent_pixel_buffers':False,
+            'allocator_overhead_included':False,'heap_admission':'not established by size witness'}
+
+
 def run(runtime: Path, output: Path, host_profile: str = 'full') -> None:
     source_pins={name:subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip()
                  for name,path in [('runtime',runtime),('system',ROOT)]}
@@ -46,6 +67,7 @@ def run(runtime: Path, output: Path, host_profile: str = 'full') -> None:
         host=host_manifest(host_profile)
         rows=[build(compiler,include,output/'scene-host',host,[ROOT/'Services/scene_host/host.c'],HOST_PROFILE_FLAGS[host_profile])]
         rows[0]['host_profile']=host_profile
+        rows[0]['memory']=scene_memory_receipt(compiler,include,Path(temporary),host_profile)
         rows[0]['optional_apis']={'telemetry':host_profile=='full','components':True,'page':True,'checkpoint':True,'reading':True,'reading_links':True,'connectivity':True,'modal':True}
         json_write(output/'scene-host/build.json',rows[0])
         license_dir=output/'scene-host/licenses';license_dir.mkdir()

@@ -2,9 +2,9 @@ name: Native Wi-Fi Manager
 on:
   push:
     branches: [feat/wifi-scene-manager]
-    paths: ['Apps/wifi_manager/**', 'Apps/native/wifi_settings.json', 'Services/scene_host/**', 'Services/text_input/**', 'sdk/app/**', 'scripts/*wifi_manager*', 'scripts/*shared_wifi*', 'test/shared_wifi/**', 'docs/shared-wifi/**', 'test/wifi_manager/**', '.github/workflows/wifi-manager.yml']
+    paths: ['Apps/wifi_manager/**', 'Apps/native/wifi_settings.json', 'Services/scene_host/**', 'Services/text_input/**', 'Services/alarm_foreground/**', 'scripts/*alarm_foreground*', 'test/alarm_foreground/**', 'sdk/app/**', 'scripts/*wifi_manager*', 'scripts/*shared_wifi*', 'test/shared_wifi/**', 'docs/shared-wifi/**', 'test/wifi_manager/**', '.github/workflows/wifi-manager.yml']
   pull_request:
-    paths: ['Apps/wifi_manager/**', 'Apps/native/wifi_settings.json', 'Services/scene_host/**', 'Services/text_input/**', 'sdk/app/**', 'scripts/*wifi_manager*', 'scripts/*shared_wifi*', 'test/shared_wifi/**', 'docs/shared-wifi/**', 'test/wifi_manager/**', '.github/workflows/wifi-manager.yml']
+    paths: ['Apps/wifi_manager/**', 'Apps/native/wifi_settings.json', 'Services/scene_host/**', 'Services/text_input/**', 'Services/alarm_foreground/**', 'scripts/*alarm_foreground*', 'test/alarm_foreground/**', 'sdk/app/**', 'scripts/*wifi_manager*', 'scripts/*shared_wifi*', 'test/shared_wifi/**', 'docs/shared-wifi/**', 'test/wifi_manager/**', '.github/workflows/wifi-manager.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,6 +33,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir evidence
+          python scripts/test_alarm_foreground.py --runtime Runtime --output build/alarm-tests 2>&1 | tee evidence/alarm.log
+          python scripts/test_alarm_foreground.py --runtime Runtime --output build/alarm-asan --sanitize 2>&1 | tee evidence/alarm-sanitized.log
           python scripts/test_wifi_manager.py --runtime Runtime --output build/wifi-tests 2>&1 | tee evidence/wifi.log
           python scripts/test_wifi_manager.py --runtime Runtime --output build/wifi-asan --sanitize 2>&1 | tee evidence/wifi-sanitized.log
           python scripts/test_scene_components.py --runtime Runtime 2>&1 | tee evidence/components.log
@@ -46,6 +48,8 @@ jobs:
           pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
           python scripts/build_wifi_manager.py --runtime Runtime --output build/wifi-manager 2>&1 | tee evidence/app-build.log
           python scripts/build_text_input_services.py --runtime Runtime --output build/providers 2>&1 | tee evidence/provider-build.log
+          python scripts/build_alarm_foreground.py --runtime Runtime --output build/providers/alarm-foreground 2>&1 | tee evidence/alarm-build.log
+          python scripts/build_alarm_foreground.py --runtime Runtime --output build/providers/alarm-foreground-tagged --tagged 2>&1 | tee evidence/alarm-tagged-build.log
           git rev-parse HEAD > evidence/source.txt
           sha256sum build/wifi-manager/wifi_settings.elf build/providers/presentation/scene-host/driver.elf build/providers/text-input-host/driver.elf > evidence/SHA256SUMS.txt
           git diff --exit-code
@@ -57,6 +61,9 @@ jobs:
             build/wifi-manager/
             build/providers/presentation/scene-host/
             build/providers/text-input-host/
+            build/providers/alarm-foreground/
+            build/providers/alarm-foreground-tagged/
+            build/alarm-tests/
             build/wifi-tests/frames/behavior/
             evidence/
           retention-days: 14
@@ -167,3 +174,38 @@ jobs:
             build/product-qualification/
           if-no-files-found: error
           retention-days: 14
+
+  x4-policy-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: 642f27f0cff0d3586788d0d9da2141efbc0a991d
+          path: X4
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 712ecc3f894dba99d9c9638941778a82f5856b97
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Qualify isolated production policy profile
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/x4-policy
+          git -C X4 rev-parse HEAD > evidence/x4-policy/product-source.txt
+          git -C Runtime rev-parse HEAD > evidence/x4-policy/runtime-source.txt
+          python3 X4/minimal/test/native_wifi_profile_test.py --runtime Runtime --output build/x4-wifi-policy 2>&1 | tee evidence/x4-policy/admission.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: x4-wifi-policy-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            build/x4-wifi-policy/
+            evidence/x4-policy/
+          if-no-files-found: error

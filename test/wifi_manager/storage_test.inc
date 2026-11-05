@@ -21,7 +21,24 @@ static void storage_test_submitted(void){
 }
 static void storage_test_run(const char *mode){
     storage_test_draft();
-    if(!strcmp(mode,"storage-save")){
+    if(!strcmp(mode,"storage-pref-stale-read")||!strcmp(mode,"storage-pref-unavailable")){
+        capture(NULL,NULL);
+        const uint8_t radios[]={0x51,1,3,3^0xa5},enabled[]={0x62,1,1,1^0xa5};
+        assert(!kv_put((void*)1,PORTABLE_RADIO_KEY,radios,sizeof(radios)));
+        assert(!kv_put((void*)1,TELEMETRY_BROADCAST_KEY,enabled,sizeof(enabled)));
+        for(unsigned n=0;!broadcast_live;n++){assert(n<1000);pump(1);}
+        fixture_policy.stale_radio_read=!strcmp(mode,"storage-pref-stale-read");
+        fixture_policy.unavailable=!strcmp(mode,"storage-pref-unavailable");
+        capture(NULL,NULL);wm.now=wm.broadcast_at+1000;
+        assert(background_step(&wm,0)&&!broadcast_live&&!wm.retained);
+        unsigned result=policy_load(&wm);
+        assert(result==(fixture_policy.unavailable?PORTABLE_RADIO_UNAVAILABLE:PORTABLE_RADIO_BUSY));
+        unsigned submitted=fixture_policy.submissions;
+        wifi_manager_test_action(TOGGLE,0);pump(100);
+        assert(fixture_policy.submissions==submitted&&!wm.policy_dirty&&!broadcast_live);
+        assert(!wm.radio_storage.availability.api&&wm.radio_storage.raw==&fixture_policy_atomic);
+        fixture_policy.stale_radio_read=false;fixture_policy.unavailable=false;
+    }else if(!strcmp(mode,"storage-save")){
         invoke(SAVE_DRAFT,0);pump(100);
         assert(fixture_profile.submissions==1&&fixture_profile.collections==1);
         assert(!storage_pending(&wm)&&!wm.draft_dirty);storage_test_record();
@@ -62,6 +79,24 @@ static void storage_test_run(const char *mode){
         assert(wm.db_job==DB_SAVE&&!fixture_profile.submissions);
         wifi_manager_test_action(BACK,0);
         assert(!wm.db_job&&!storage_pending(&wm)&&wm.draft_dirty&&!kv_writes);
+    }else if(!strcmp(mode,"storage-policy-uncertain")||!strcmp(mode,"storage-policy-cancel")||!strcmp(mode,"storage-policy-commit-race")){
+        fixture_policy.collect_delay=1000;
+        fixture_policy.uncertain=!strcmp(mode,"storage-policy-uncertain");
+        fixture_policy.commit_wins=!strcmp(mode,"storage-policy-commit-race");
+        wifi_manager_test_action(TOGGLE,0);pump(1);
+        assert(wm.policy_edit.token&&fixture_policy.token&&wm.enabled);
+        assert(!fixture_profile.submissions&&!kv_writes);
+        if(!fixture_policy.uncertain){
+            wifi_manager_test_action(BACK,0);
+            assert(fixture_policy.cancellations==1&&wm.policy_edit.token);
+        }
+        fixture_policy.collect_delay=0;pump(100);
+        assert(!wm.policy_edit.token&&fixture_policy.collections==1&&!wm.policy_dirty);
+        assert(wm.enabled==!fixture_policy.commit_wins);
+        if(fixture_policy.uncertain){
+            assert(strstr(wm.message,"uncertain"));unsigned submitted=fixture_policy.submissions;
+            pump(100);assert(fixture_policy.submissions==submitted);
+        }
     }else if(!strcmp(mode,"storage-policy-stale")){
         wifi_manager_test_action(TOGGLE,0);assert(wm.policy_dirty);
         ++fixture_policy.revision;pump(100);

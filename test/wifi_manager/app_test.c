@@ -58,14 +58,17 @@ static int32_t lease_begin(void *c,uint32_t *token){(void)c;edge("lease-begin");
 static int32_t lease_end(void *c,uint32_t token){(void)c;edge("lease-end");assert(token==77);return 0;}
 static const wifi_async_v1 rf={.base={.api_version=1,.struct_size=sizeof(rf)},.async_tag=RISC_RADIO_ASYNC_TAG,.async_version=1,.begin=begin_radio,.poll=poll_radio,.cancel=cancel_radio,.service_begin=lease_begin,.service_end=lease_end};
 static risc_scene_telemetry_api_v1 old_api;
+#include "alarm_fixture.inc"
 static bool rt_acquire(const char *cap,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *g){
     edge("acquire");assert(version==1);const void *value=NULL;
     if(!strcmp(cap,"ui.scene"))value=old_scene?(void*)&old_api:(void*)api;
     else if(!strcmp(cap,"ui.text-input")){if(missing_text)return false;value=text_api;}
+    else if(!strcmp(cap,RISC_ALARM_FOREGROUND_CAPABILITY)){if(!alarm_fixture)return false;assert(!instance);value=alarm_driver->capability;}
     else if(!strcmp(cap,TELEMETRY_BROADCAST_CAPABILITY)){assert(instance==0);value=&fixture_broadcast;}
     else if(!strcmp(cap,"net.wifi")){assert(instance==15);value=&rf;}
-    else if(!strcmp(cap,RISC_KEY_VALUE_ATOMIC_CAPABILITY)){assert(instance==6||instance==1);value=instance==6?&fixture_profile_atomic:&fixture_policy_atomic;}
-    else if(!strcmp(cap,RISC_KEY_VALUE_AVAILABILITY_CAPABILITY)){assert(instance==6||instance==1);value=instance==6?&fixture_profile_availability:&fixture_policy_availability;}
+    else if(!strcmp(cap,RISC_KEY_VALUE_ATOMIC_CAPABILITY)){assert(instance==6);value=&fixture_profile_atomic;}
+    else if(!strcmp(cap,PORTABLE_PREFERENCE_CAPABILITY)){assert(instance==1);value=&fixture_policy_atomic;}
+    else if(!strcmp(cap,RISC_KEY_VALUE_AVAILABILITY_CAPABILITY)){assert(instance==6);value=&fixture_profile_availability;}
     else assert(!"unexpected app capability");g->api=value;g->slot=++active_grants;g->generation=1;return true;
 }
 static bool rt_release(risc_runtime_capability_v1 *g){edge("release");assert(active_grants&&g->api);active_grants--;g->api=NULL;g->slot=0;g->generation=0;return true;}
@@ -128,6 +131,7 @@ static void profile_behavior(void){
 
 #include "storage_test.inc"
 #include "broadcast_test.inc"
+#include "alarm_test.inc"
 
 int main(int argc,char **argv){
     assert(argc>=2);const char *mode=argv[1],*dir=argc>2?argv[2]:NULL;
@@ -160,9 +164,11 @@ int main(int argc,char **argv){
         assert(!kv_put((void*)1,PORTABLE_RADIO_KEY,radios,sizeof(radios)));
         assert(!kv_put((void*)1,TELEMETRY_BROADCAST_KEY,enabled,sizeof(enabled)));
     }
+    alarm_fixture=!strncmp(mode,"alarm-",6);if(alarm_fixture)alarm_fixture_start();
     resident_fixture=!strcmp(mode,"resident-owned");
     assert(wifi_manager_test_init());pump(20);
     if(resident_fixture){resident_fixture_run();return 0;}
+    if(alarm_fixture){alarm_test_run(mode);return 0;}
     if(!strcmp(mode,"broadcast-owned")){broadcast_test_run();return 0;}
     if(!strncmp(mode,"storage-",8)&&strcmp(mode,"storage-loss")&&strcmp(mode,"storage-failure")){storage_test_run(mode);return 0;}
     if(!strcmp(mode,"profile")){profile_behavior();return 0;}

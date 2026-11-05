@@ -34,6 +34,14 @@
     {
       "capability": "telemetry.broadcast",
       "api": 1
+    },
+    {
+      "capability": "ui.alarm-foreground",
+      "api": 1
+    },
+    {
+      "capability": "storage.preferences",
+      "api": 1
     }
   ]
 }

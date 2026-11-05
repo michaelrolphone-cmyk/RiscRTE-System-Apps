@@ -2,6 +2,7 @@
 """Synthetic regression controls, not product qualification."""
 import copy,json,unittest,tempfile
 from pathlib import Path
+from test_shared_wifi_storage_authority import Authority
 from unittest.mock import patch
 from assemble_shared_wifi_products import assemble
 from qualify_shared_wifi_products import preservation

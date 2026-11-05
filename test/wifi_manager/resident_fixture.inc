@@ -29,16 +29,23 @@ static bool rt_resident_fixture(risc_resident_client_v1 *out){
         .invocation=1,.role=RISC_RESIDENT_ROLE_FOREGROUND,.checkpoint=resident_checkpoint_fixture};
     return true;
 }
+static void resident_wait_poll(unsigned before){
+    for(unsigned n=0;resident_polls==before;n++){
+        assert(n<1000&&native_alive&&!wm.retained);
+        assert(!radio_id&&!wm.operation&&!wm.service&&!WIFI_MANAGER_STORAGE_PENDING());
+        pump(1);
+    }
+}
 static void resident_fixture_run(void){
     assert(wm.resident.enabled);
     /* Wait for the real presenter safe point, not a fixed startup frame count. */
-    for(unsigned n=0;!resident_polls;n++){assert(n<1000);pump(1);}
+    resident_wait_poll(0);
     unsigned before=resident_polls;
     invoke(SCAN,0);pump(100);assert(radio_id&&wm.operation&&resident_polls==before);
     stop_delay=8;wm.shared_reason=RISC_RESIDENT_CHECKPOINT_CONTROLS;pump(100);
     assert(!radio_id&&!wm.operation&&resident_controls==1&&wm.session);
-    assert(resident_polls>before);
+    resident_wait_poll(before);
     before=resident_polls;invoke(SCAN,0);pump(100);assert(resident_polls==before);
-    invoke(CANCEL,0);pump(100);assert(!radio_id&&resident_polls>before);
+    invoke(CANCEL,0);pump(100);assert(!radio_id&&!wm.operation);resident_wait_poll(before);
     exit_app();puts("resident checkpoints defer owned radio and drain controls handoff PASS");
 }

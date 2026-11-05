@@ -2,6 +2,7 @@
 """Read exact public cumulative Home+Contexts stores; never select an older base."""
 import argparse,hashlib,json,sys,urllib.request,zipfile
 from pathlib import Path
+from shared_wifi_storage_authority import census
 ROOT=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser();p.add_argument('--bootfs-tools',type=Path,required=True)
 p.add_argument('--system',type=Path,required=True)
@@ -38,6 +39,10 @@ for lane in ('watch','wave','x4'):
   if any(x['capability'] in ('ui.scene','ui.presentation-profile','ui.text-input','net.wifi','storage.key-value','storage.key-value.atomic','storage.key-value.availability','storage.preferences','alarm.service','alarm.service.facade','contexts.service','telemetry.broadcast') for x in manifest.get('provides',[])):
    providers.append({'row':row,'manifest':manifest})
  if len(matches)!=1:raise ValueError('Expected one wifi_settings selection in '+lane)
+ authority=census(canonical)
+ (a.output/lane/'storage-authority.json').write_text(json.dumps(authority,indent=2)+'\n')
+ for namespace,rows in authority['namespaces'].items():
+  print('STORAGE AUTHORITY '+lane+' '+namespace+' '+json.dumps(rows),flush=True)
  records[lane]={'store_bytes':len(raw),'apps':matches,'providers':providers,'boot':boot,
  'files':{n:hashlib.sha256(b).hexdigest() for n,b in canonical.items()},
  'sd_files':{n:hashlib.sha256(b).hexdigest() for n,b in sd.items()}}

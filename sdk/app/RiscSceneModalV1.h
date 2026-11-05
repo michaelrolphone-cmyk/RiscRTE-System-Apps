@@ -2,8 +2,9 @@
 #include "RiscSceneConnectivityV1.h"
 /* One semantic foreground modal over a fully paused scene, including a paused
  * text-input scene whose token is private to its owner. Open never pauses an
- * owner implicitly. The caller first drains its native work and checkpoints
- * that owner. Parent tokens return BUSY while the modal is active.
+ * owner implicitly. The caller first drains conflicting display/input work and accepted storage
+ * receipts, then checkpoints that owner. A checked independent RF lease may
+ * remain active; this provider does not perform a Runtime checkpoint. Parent tokens return BUSY while the modal is active.
  *
  * The child uses ordinary scene next/snapshot and components update. Close
  * drains display/input custody before restoring the exact parent still paused.

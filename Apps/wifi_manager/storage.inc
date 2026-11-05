@@ -39,15 +39,16 @@ static int32_t store_deny_put(void*c,const char*k,const void*v,uint32_t n){
  (void)c;(void)k;(void)v;(void)n;return RISC_KEY_VALUE_CONTEXT;
 }
 static bool store_observe(wifi_manager*a,wm_store*s){
+ if(s->namespace_id==1)return s->raw&&s->loaded;
  if(!s->availability.api)return false;
  bool ok=portable_settings_availability_refresh(&s->availability);
  if(!live(a))return false;
  if(!ok){retain(a);return false;}return true;
 }
 static bool store_cached_ready(const wm_store*s){
- return s->raw&&s->loaded&&
+ return s->raw&&s->loaded&&(s->namespace_id==1||(
  portable_settings_availability_available(&s->availability)&&
- s->loaded_generation==s->availability.state.generation;
+ s->loaded_generation==s->availability.state.generation));
 }
 static bool store_ready(wifi_manager*a,wm_store*s){return store_observe(a,s)&&store_cached_ready(s);}
 static const char *store_notice(const wm_store*s){
@@ -69,17 +70,18 @@ static const char *atomic_notice(int rc){
 static bool store_open(wifi_manager*a,wm_store*s,unsigned ns){
  memset(s,0,sizeof(*s));s->namespace_id=ns;
  s->view=(risc_key_value_v1){1,sizeof(s->view),s,store_get,store_deny_put};
- bool ok=portable_settings_availability_open(&s->availability,a->rt,ns);
+ bool ok=true;
+ if(ns!=1)ok=portable_settings_availability_open(&s->availability,a->rt,ns);
  if(!live(a))return false;
  if(!ok&&(s->availability.grant.api||s->availability.grant.slot||s->availability.grant.generation)){retain(a);return false;}
  s->grant=(risc_runtime_capability_v1){.struct_size=sizeof(s->grant)};
- ok=a->rt->acquire(RISC_KEY_VALUE_ATOMIC_CAPABILITY,1,ns,&s->grant);
+ ok=a->rt->acquire(ns==1?PORTABLE_PREFERENCE_CAPABILITY:RISC_KEY_VALUE_ATOMIC_CAPABILITY,1,ns,&s->grant);
  if(!live(a))return false;
  if(!ok){if(s->grant.api||s->grant.slot||s->grant.generation||s->grant.struct_size!=sizeof(s->grant))return retain(a);return true;}
  if(s->grant.struct_size!=sizeof(s->grant)||!s->grant.slot||!s->grant.generation||!portable_wifi_atomic_api_valid(s->grant.api))return retain(a);
  s->raw=s->grant.api;
  s->checked=(risc_key_value_atomic_v1){1,sizeof(s->checked),s,checked_state,checked_read,checked_submit,checked_collect,checked_cancel};
- s->loaded=portable_settings_availability_available(&s->availability);
+ s->loaded=ns==1||portable_settings_availability_available(&s->availability);
  s->loaded_generation=s->availability.state.generation;
  return true;
 }

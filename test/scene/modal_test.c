@@ -2,8 +2,12 @@
 #include "host_test.c"
 #undef main
 #include "RiscSceneModalV1.h"
+#include "SceneKeyboardV1.h"
 void modal_test_capture(void);
 void modal_test_restored(void);
+void modal_test_allocation_failure(void);
+void modal_test_allocation_unchanged(void);
+uint32_t modal_test_logical_digest(void);
 int main(int argc,char **argv){
  assert(argc==7);w=(unsigned)strtoul(argv[1],NULL,10);h=(unsigned)strtoul(argv[2],NULL,10);
  format=(unsigned)strtoul(argv[3],NULL,10);unsigned rotation=(unsigned)strtoul(argv[4],NULL,10);
@@ -32,8 +36,19 @@ int main(int argc,char **argv){
  uint64_t child=0,parent=session;unsigned before=calls;
  assert(modal->open(NULL,&d,&child)==RISC_SCENE_BUSY&&calls==before);
  assert(!cp->pause(NULL,parent));modal_test_capture();
+ modal_test_allocation_failure();before=calls;
+ assert(modal->open(NULL,&d,&child)==RISC_SCENE_UNAVAILABLE&&calls==before);
+ modal_test_allocation_unchanged();
  risc_components_document_v1 bad=d;bad.revision=0;before=calls;
  assert(modal->open(NULL,&bad,&child)==RISC_SCENE_INVALID&&calls==before);
+ /* Ordinary open failure after detach must restore continuity-enabled parents. */
+ if(!strcmp(mode,"success")){
+   unsigned physical_w=w;w=159;
+   assert(modal->open(NULL,&d,&child)==RISC_SCENE_UNAVAILABLE);w=physical_w;
+   modal_test_restored();
+   assert(!cp->resume(NULL,parent,RISC_SCENE_RESUME_REDRAW|RISC_SCENE_RESUME_FOCUS_CHANGED));
+   settle();assert(!cp->pause(NULL,parent));modal_test_capture();
+ }
  if(!strcmp(mode,"retained-open"))loss_callback="subscribe";
  int rc=modal->open(NULL,&d,&child);
  if(!strcmp(mode,"retained-open")){
@@ -44,6 +59,23 @@ int main(int argc,char **argv){
  assert(rc==RISC_SCENE_OK&&child!=parent);session=child;settle();
  risc_scene_event_v1 e={.struct_size=sizeof(e)};
  assert(api->next(NULL,parent,&e)==RISC_SCENE_BUSY);
+ /* Every mutable extension must reject the parent before touching child state. */
+ uint32_t digest=modal_test_logical_digest();before=calls;
+ const risc_scene_components_api_v1 *components=risc_scene_components_get_v1(api);
+ const risc_scene_page_api_v1 *pages=risc_scene_page_get_v1(api);
+ const risc_scene_page_refresh_api_v1 *refresh=risc_scene_page_refresh_get_v1(api);
+ const risc_scene_reading_api_v1 *reading=risc_scene_reading_get_v1(api);
+ const risc_scene_reading_links_api_v1 *links=risc_scene_reading_links_get_v1(api);
+ const risc_scene_telemetry_api_v1 *telemetry=risc_scene_telemetry_get_v1(api);
+ assert(api->update(NULL,parent,NULL)==RISC_SCENE_BUSY);
+ assert(components->update(NULL,parent,NULL)==RISC_SCENE_BUSY);
+ assert(pages->present_page(NULL,parent,NULL,NULL,0)==RISC_SCENE_BUSY);
+ assert(refresh->present_page_with_refresh(NULL,parent,NULL,NULL,0,0)==RISC_SCENE_BUSY);
+ assert(reading->present_reading(NULL,parent,NULL,NULL,0,0)==RISC_SCENE_BUSY);
+ assert(reading->present_preview(NULL,parent,NULL,0,NULL,0)==RISC_SCENE_BUSY);
+ assert(links->present_linked(NULL,parent,NULL,NULL,NULL,0,0)==RISC_SCENE_BUSY);
+ if(telemetry)assert(telemetry->present(NULL,parent,NULL,NULL)==RISC_SCENE_BUSY);
+ assert(modal_test_logical_digest()==digest&&calls==before);
  assert(cp->resume(NULL,parent,RISC_SCENE_RESUME_REDRAW)==RISC_SCENE_BUSY);
  uint64_t nested=0;before=calls;assert(modal->open(NULL,&d,&nested)==RISC_SCENE_BUSY&&calls==before);
  assert(modal->close(NULL,parent)==RISC_SCENE_BUSY);
@@ -62,6 +94,12 @@ int main(int argc,char **argv){
  assert(!api->close(NULL,child)); /* base close also observes modal custody */
  modal_test_restored();session=parent;
  assert(modal->close(NULL,child)==RISC_SCENE_STALE);
+ if(!strcmp(mode,"abandon")){
+   assert(!api->close(NULL,parent));assert(driver->quiesce());
+   assert(!api->open(NULL,&doc,NULL,&session));
+   assert(!life->configure(NULL,session,RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY));settle();
+   assert(!cp->pause(NULL,session));assert(!cp->resume(NULL,session,0));settle();finish();return 0;
+ }
  assert(!cp->resume(NULL,parent,RISC_SCENE_RESUME_REDRAW|RISC_SCENE_RESUME_FOCUS_CHANGED));
  settle();doc.revision++;strcpy(doc.nodes[0].text,"continued draft");assert(!api->update(NULL,parent,&doc));
  settle();finish();

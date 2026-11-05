@@ -4,7 +4,7 @@ import argparse, json, os, subprocess
 from pathlib import Path
 from build_wifi_manager import sdk
 ROOT=Path(__file__).resolve().parents[1]
-MODES=('broadcast-owned','storage-generation-inflight','storage-cancel-before-submit','storage-policy-stale','storage-save','storage-cancel','storage-commit-race','storage-stale-join','storage-generation','storage-malformed','storage-policy','storage-exit-draft','resident-owned','behavior','busy-storage','storage-failure','old-scene','missing-keyboard','unsupported','cancel','loss','failure','forget','hidden-network','keyboard-cancel','storage-loss','bad-progress')
+MODES=('alarm-page','alarm-keyboard','alarm-radio','alarm-storage','storage-pref-stale-read','storage-pref-unavailable','storage-policy-uncertain','storage-policy-cancel','storage-policy-commit-race','broadcast-owned','storage-generation-inflight','storage-cancel-before-submit','storage-policy-stale','storage-save','storage-cancel','storage-commit-race','storage-stale-join','storage-generation','storage-malformed','storage-policy','storage-exit-draft','resident-owned','behavior','busy-storage','storage-failure','old-scene','missing-keyboard','unsupported','cancel','loss','failure','forget','hidden-network','keyboard-cancel','storage-loss','bad-progress')
 def run(runtime, output, sanitize=False):
     manifest=json.loads((ROOT/'Apps/wifi_manager/manifest.json').read_text())
     assert manifest['id']=='wifi_settings' and manifest['file_name']=='wifi_settings.elf', 'Preserve the deployed Wi-Fi settings identity'
@@ -25,8 +25,10 @@ def run(runtime, output, sanitize=False):
     subprocess.run([cc,*flags,str(ROOT/'test/wifi_manager/foreground_broadcast_test.c'),'-o',str(broadcast)],check=True)
     subprocess.run([str(broadcast)],check=True,timeout=30,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
     subprocess.run([cc,*flags,'-Dt5_driver_get=text_driver_get','-c',str(ROOT/'Services/text_input/host.c'),'-o',str(obj)],check=True)
+    alarm_obj=output/'alarm.o'
+    subprocess.run([cc,*flags,'-Dt5_driver_get=alarm_driver_get','-c',str(ROOT/'Services/alarm_foreground/host.c'),'-o',str(alarm_obj)],check=True)
     exe=output/'test'
-    subprocess.run([cc,*flags,str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/wifi_manager/app_test.c'),str(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c'),str(obj),'-o',str(exe)],check=True)
+    subprocess.run([cc,*flags,str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/wifi_manager/app_test.c'),str(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c'),str(obj),str(alarm_obj),'-o',str(exe)],check=True)
     for mode in MODES:
         d=output/'frames'/mode;d.mkdir(parents=True,exist_ok=True)
         subprocess.run([str(exe),mode,str(d)],check=True,timeout=30,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))

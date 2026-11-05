@@ -5,18 +5,18 @@ typedef struct {
     unsigned ns,count,collect_ticks,collect_delay,submissions,collections,cancellations;
     uint64_t availability_generation;
     uint32_t availability;
-    bool cancelled,commit_wins,malformed_receipt;
+    bool cancelled,commit_wins,malformed_receipt,uncertain,unavailable,stale_radio_read;
     portable_wifi_atomic_cell copied[8];
 } fixture_namespace;
 static fixture_namespace fixture_profile={.revision=1,.ns=6,.collect_delay=1,.availability_generation=1};
 static fixture_namespace fixture_policy={.revision=1,.ns=1,.collect_delay=1,.availability_generation=1};
 static int32_t fixture_atomic_state(void *context,risc_key_value_atomic_state_v1 *out){
     fixture_namespace *s=context;assert(!broadcast_live);
-    if(io_fail)return RISC_ATOMIC_IO;
+    if(io_fail||s->unavailable)return RISC_ATOMIC_IO;
     if(db_busy){--db_busy;return RISC_ATOMIC_BUSY;}
     if(s->token)return RISC_ATOMIC_BUSY;
     *out=(risc_key_value_atomic_state_v1){.struct_size=sizeof(*out),
-        .flags=RISC_KEY_VALUE_ATOMIC_NATIVE_DURABLE|RISC_KEY_VALUE_ATOMIC_COPIED_ASYNC,
+        .flags=s->ns==1?RISC_PREFERENCE_STORE_COPIED_INPUT:RISC_KEY_VALUE_ATOMIC_NATIVE_DURABLE|RISC_KEY_VALUE_ATOMIC_COPIED_ASYNC,
         .namespace_id=s->ns,.max_mutations=8,.max_value_bytes=64,
         .max_group_bytes=4096,.max_intent_bytes=1024,.revision=s->revision};
     return RISC_ATOMIC_OK;
@@ -24,6 +24,8 @@ static int32_t fixture_atomic_state(void *context,risc_key_value_atomic_state_v1
 static int32_t fixture_atomic_get(void *context,uint64_t revision,const char *key,
         void *out,uint32_t capacity,uint32_t *size){
     fixture_namespace *s=context;assert(!broadcast_live);
+    if(s->stale_radio_read&&!strcmp(key,PORTABLE_RADIO_KEY))++s->revision;
+    if(s->unavailable)return RISC_ATOMIC_IO;
     if(revision!=s->revision)return RISC_ATOMIC_STALE;
     int rc=kv_get((void*)(uintptr_t)s->ns,key,out,capacity,size);
     return rc==RISC_KEY_VALUE_OK?RISC_ATOMIC_OK:
@@ -55,7 +57,7 @@ static int32_t fixture_atomic_collect(void *context,uint64_t token,
     if(s->collect_ticks++<s->collect_delay)return RISC_ATOMIC_PENDING;
     int rc=s->cancelled&&!s->commit_wins?RISC_ATOMIC_CANCELLED:
         s->submitted_revision!=s->revision?RISC_ATOMIC_STALE:
-        io_fail?RISC_ATOMIC_IO:RISC_ATOMIC_OK;
+        s->uncertain?RISC_ATOMIC_UNCERTAIN:io_fail?RISC_ATOMIC_IO:RISC_ATOMIC_OK;
     if(rc==RISC_ATOMIC_OK){
         for(unsigned i=0;i<s->count;i++)
             assert(!kv_put((void*)(uintptr_t)s->ns,s->copied[i].key,s->copied[i].value,s->copied[i].size));
@@ -82,5 +84,4 @@ static const risc_key_value_atomic_v1 fixture_policy_atomic={1,sizeof(fixture_po
     &fixture_policy,fixture_atomic_state,fixture_atomic_get,fixture_atomic_submit,fixture_atomic_collect,fixture_atomic_cancel};
 static const risc_key_value_availability_v1 fixture_profile_availability={1,sizeof(fixture_profile_availability),
     &fixture_profile,fixture_availability};
-static const risc_key_value_availability_v1 fixture_policy_availability={1,sizeof(fixture_policy_availability),
-    &fixture_policy,fixture_availability};
+

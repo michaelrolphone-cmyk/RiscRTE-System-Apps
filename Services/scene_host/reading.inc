@@ -117,6 +117,7 @@ static int32_t reading_present(void *c,uint64_t s,const risc_scene_reading_docum
  return reading_present_impl(c,s,r,NULL,p,n,f);
 }
 static int32_t reading_present_linked(void *c,uint64_t s,const risc_scene_reading_document_v1 *r,const risc_scene_reading_links_v1 *links,const uint8_t *p,size_t n,uint32_t f){
+ int32_t state=check(s);if(state)return state;
  if(!links)return RISC_SCENE_INVALID;
  return reading_present_impl(c,s,r,links,p,n,f);
 }

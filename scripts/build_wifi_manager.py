@@ -8,7 +8,7 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def sdk(runtime, output):
     inc=stage_sdk(runtime,ROOT,output)
-    for name in ('RiscTextEntryV1.h',):shutil.copyfile(ROOT/'sdk/app'/name,inc/name)
+    for name in ('RiscTextEntryV1.h','RiscAlarmForegroundV1.h','RiscSceneModalV1.h'):shutil.copyfile(ROOT/'sdk/app'/name,inc/name)
     # The deployed net.wifi contract is owned by the portable provider SDK.
     for name in ('WifiApi.h','RiscRadioAsyncV1.h','RiscRadioScanV1.h'):
         source=ROOT/'lib/PortableApps/include'/name

@@ -4,8 +4,11 @@
 #include "RiscSceneConnectivityV1.h"
 #include "RiscSceneResidentV1.h"
 #include "RiscTextEntryV1.h"
+#include "RiscSceneCheckpointV1.h"
+#include "RiscAlarmForegroundV1.h"
 #include "PortableWifiProfiles.h"
 #include "PortableWifiAtomic.h"
+#define PORTABLE_PREFERENCE_STORE 1
 #include "PortablePreferenceAtomic.h"
 #include "PortableSettingsAvailability.h"
 #include "PortableRadioPolicy.h"
@@ -39,6 +42,10 @@ typedef struct {
     const risc_scene_components_api_v1 *components;
     const risc_scene_telemetry_api_v1 *telemetry;
     const risc_text_entry_api_v1 *text;
+    const risc_text_entry_api_v1_checkpoint *text_checkpoint;
+    const risc_scene_checkpoint_api_v1 *checkpoint;
+    const risc_alarm_foreground_v1 *alarm;
+    uint32_t alarm_flags,alarm_owner;bool alarm_requested,alarm_paused,alarm_redraw;
     const wifi_async_v1 *radio;
     const risc_key_value_v1 *store,*policy;
     wm_store network_storage,radio_storage;
@@ -46,7 +53,7 @@ typedef struct {
     portable_preference_atomic policy_edit;
     bool atomic_ready,draft_dirty,storage_cancelling,storage_leave;
     uint8_t policy_proposed;
-    risc_runtime_capability_v1 grants[3];unsigned acquired;
+    risc_runtime_capability_v1 grants[4];unsigned acquired;
     risc_scene_resident_v1 resident;
     portable_foreground_broadcast broadcast;uint32_t broadcast_at;
     risc_components_document_v1 doc,next_doc;
@@ -123,7 +130,7 @@ static void schedule(wifi_manager *a,unsigned kind){
 }
 static void open_editor(wifi_manager *a,unsigned field){
     if(a->atomic_ready){portable_wifi_atomic_clear(&a->atomic_edit);a->atomic_ready=false;a->save_on_connect=false;}
-    if(!a->text||(field&& !risc_text_entry_masked(a->text))){notice(a,"Shared password keyboard unavailable. Update text-input provider.");return;}
+    if(!a->text||(a->alarm&&!a->text_checkpoint)||(field&& !risc_text_entry_masked(a->text))){notice(a,"Shared password keyboard unavailable. Update text-input provider.");return;}
     a->editor_field=field;a->editor_return=a->screen;a->keyboard_pending=true;a->dirty=true;
 }
 static void connect_selected(wifi_manager *a){
@@ -136,9 +143,10 @@ static void connect_selected(wifi_manager *a){
     if(strlen(a->draft.password)<8)open_editor(a,1);else schedule(a,RISC_RADIO_REQUEST_JOIN);
 }
 #include "storage.inc"
+#include "foreground.inc"
 /* The provider owns RF; this bridge borrows the existing atomic read view. */
 static bool background_step(wifi_manager*a,uint32_t flags){
-    if(a->operation||a->queued_kind||a->stopping||storage_pending(a)||a->service||
+    if(a->alarm_flags||a->alarm_requested||a->alarm_paused||a->operation||a->queued_kind||a->stopping||storage_pending(a)||a->service||
        a->exit_requested||a->shared_reason||a->keyboard_pending||a->editor_session||
        (flags&(RISC_SCENE_PRESENTING|RISC_SCENE_INPUT_BUSY|RISC_SCENE_CLOSING))||
        (uint32_t)(a->now-a->broadcast_at)<1000)return true;
@@ -273,12 +281,24 @@ static bool keyboard_step(wifi_manager *a){
         copy_text(q.text,sizeof(q.text),a->editor_field?a->draft.password:a->draft.ssid);
         int rc=a->text->open(a->text->context,&q,&a->editor_session);wipe(&q,sizeof(q));if(!live(a))return false;
         if(rc!=RISC_TEXT_ENTRY_OK){if(rc==RISC_TEXT_ENTRY_RETAINED||a->editor_session)return retain(a);a->keyboard_pending=false;notice(a,"Keyboard unavailable; retry when other input has closed.");return publish(a);}
+        if(a->alarm){
+            int enabled=a->text_checkpoint->checkpoint_enable(a->text->context,a->editor_session);
+            if(!live(a)||enabled!=RISC_TEXT_ENTRY_OK)return retain(a);
+        }
         a->keyboard_pending=false;a->dirty=false;
     }
     if(!a->editor_session)return true;
     if(!a->editor_done){risc_text_entry_state_v1 result={.struct_size=sizeof(result)};
         int rc=a->text->poll(a->text->context,a->editor_session,&result);if(!live(a)){wipe(&result,sizeof(result));return false;}
         if(rc!=RISC_TEXT_ENTRY_OK||result.state>RISC_TEXT_ENTRY_CANCELLED||!memchr(result.text,0,a->editor_field?64:33)){wipe(&result,sizeof(result));return retain(a);}
+        if(a->alarm&&result.state==RISC_TEXT_ENTRY_EDITING&&!a->alarm_requested){
+            risc_text_entry_checkpoint_state_v1 cs={.struct_size=sizeof(cs)};
+            int cr=a->text_checkpoint->checkpoint_snapshot(a->text->context,a->editor_session,&cs);
+            if(!live(a)||cr!=RISC_TEXT_ENTRY_OK){wipe(&result,sizeof(result));return retain(a);}
+            uint32_t sf=(cs.flags&RISC_TEXT_ENTRY_CHECKPOINT_PRESENTING)?RISC_SCENE_PRESENTING:0;
+            if(!alarm_probe(a,sf)){wipe(&result,sizeof(result));return false;}
+            if(a->alarm_requested){wipe(&result,sizeof(result));return true;}
+        }
         if(result.state!=RISC_TEXT_ENTRY_EDITING){a->editor_done=true;a->editor_result=result.state;a->editor_flags=result.flags;
             if(result.state==RISC_TEXT_ENTRY_ACCEPTED){copy_text(a->editor_field?a->draft.password:a->draft.ssid,a->editor_field?64:33,result.text);a->draft_dirty=true;}}
         wipe(&result,sizeof(result));
@@ -297,13 +317,14 @@ static bool init(wifi_manager *a){
     a->rt=risc_runtime_get_api(1);
     if(!a->rt||a->rt->struct_size<RISC_RUNTIME_MONOTONIC_V1_SIZE||!a->rt->monotonic_ms||!a->rt->acquire||!a->rt->release||!a->rt->retain_invocation||!a->rt->yield_ms)return false;
     portable_foreground_broadcast_init(&a->broadcast,a->rt,broadcast_safe,a);
-    const char *caps[]={"ui.scene","ui.text-input","net.wifi"};unsigned instances[]={0,0,15};
-    for(unsigned i=0;i<3;i++){risc_runtime_capability_v1 *g=&a->grants[a->acquired];g->struct_size=sizeof(*g);bool found=a->rt->acquire(caps[i],1,instances[i],g);if(!live(a))return false;if(!found){if(!i)return false;continue;}a->acquired++;
-        if(i==0){a->scene=g->api;a->components=risc_scene_components_get_v1(a->scene);a->telemetry=risc_scene_telemetry_get_v1(a->scene);
+    const char *caps[]={"ui.scene","ui.text-input","net.wifi",RISC_ALARM_FOREGROUND_CAPABILITY};unsigned instances[]={0,0,15,0};
+    for(unsigned i=0;i<4;i++){risc_runtime_capability_v1 *g=&a->grants[a->acquired];g->struct_size=sizeof(*g);bool found=a->rt->acquire(caps[i],1,instances[i],g);if(!live(a))return false;if(!found){if(!i)return false;continue;}a->acquired++;
+        if(i==0){a->scene=g->api;a->components=risc_scene_components_get_v1(a->scene);a->telemetry=risc_scene_telemetry_get_v1(a->scene);a->checkpoint=risc_scene_checkpoint_get_v1(a->scene);
             if(!a->components||!a->components->lifecycle.configure||!a->scene->next||!a->scene->snapshot||!a->scene->close)return false;
             if(!risc_scene_connectivity_get_v1(a->scene)){a->upgrade=true;break;}}
-        else if(i==1){const risc_text_entry_api_v1 *t=g->api;if(risc_text_entry_home_reason(t)&&t->open&&t->poll&&t->close)a->text=t;}
+        else if(i==1){const risc_text_entry_api_v1 *t=g->api;if(risc_text_entry_home_reason(t)&&t->open&&t->poll&&t->close){a->text=t;a->text_checkpoint=risc_text_entry_checkpoint(t);}}
         else if(i==2){if(api_radio(g->api))a->radio=g->api;}
+        else {const risc_alarm_foreground_v1 *p=g->api;if(!p||p->api_version!=1||p->struct_size<sizeof(*p)||!p->advance||!a->checkpoint)return retain(a);a->alarm=p;}
     }
     if(!a->upgrade){
         if(!store_open(a,&a->network_storage,6)||!store_open(a,&a->radio_storage,1))return false;
@@ -321,6 +342,7 @@ static bool init(wifi_manager *a){
 static bool step(wifi_manager *a){
     if(!live(a)||!a->rt->monotonic_ms(&a->now)||!live(a))return false;
     radio_step(a);if(!live(a))return false;
+    if(a->alarm_requested||a->alarm_paused)return alarm_focus_step(a);
     if(a->exit_requested||a->shared_reason){
         if(!storage_exit(a))return live(a);
         a->queued_kind=0;if(a->operation){(void)stop_radio(a);return live(a);}
@@ -337,6 +359,13 @@ static bool step(wifi_manager *a){
     if(!a->session&& !publish(a))return false;
     risc_scene_event_v1 e={.struct_size=sizeof(e)};int rc=a->scene->next(a->scene->context,a->session,&e);
     if(!live(a)||(rc!=RISC_SCENE_OK&&rc!=RISC_SCENE_IDLE&&rc!=RISC_SCENE_AGAIN))return retain(a);
+    if(a->alarm){
+        risc_scene_navigation_v1 an={.struct_size=sizeof(an)};uint32_t af=0;
+        if(!scene_result(a,a->scene->snapshot(a->scene->context,a->session,&an,&af)))return false;
+        if(af&RISC_SCENE_ACTIVITY)a->resident.activity=true;
+        if(!alarm_probe(a,af))return false;
+        if(alarm_consumes(a))return true;
+    }
     if(rc==RISC_SCENE_OK&&e.document_revision==a->revision&&e.sequence>a->sequence){a->sequence=e.sequence;
         if(e.kind==RISC_SCENE_SUSPEND_EVENT)a->exit_requested=true;
         else if(e.kind==RISC_SCENE_CONTROLS_EVENT&&a->resident.enabled)a->shared_reason=RISC_RESIDENT_CHECKPOINT_CONTROLS;
@@ -363,7 +392,7 @@ static bool step(wifi_manager *a){
 }
 static void cleanup(wifi_manager *a){
     if(!live(a))return;
-    if(a->operation||a->session||a->editor_session||storage_pending(a)){retain(a);return;}
+    if(a->alarm_paused||a->alarm_requested||a->alarm_flags||a->operation||a->session||a->editor_session||storage_pending(a)){retain(a);return;}
     if(!background_pause(a))return;
     if(!store_close(a,&a->network_storage)||!store_close(a,&a->radio_storage))return;
     wipe(&a->draft,sizeof(a->draft));
