@@ -91,3 +91,79 @@ jobs:
           name: shared-wifi-product-baseline-${{ github.event.pull_request.head.sha || github.sha }}
           path: build/shared-wifi-baseline/
           if-no-files-found: error
+
+  product-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 712ecc3f894dba99d9c9638941778a82f5856b97
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: 710b200021b983ea55eb86a6fbddbbf5ce10a984
+          path: PinnedSystem
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: ab9ff33975680c5bb8d9a2e7ed346d0300732a4e
+          path: Bootfs
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Record exact source inputs
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/product-qualification
+          for source in . Runtime PinnedSystem Bootfs; do
+            printf '%s ' "$source"
+            git -C "$source" rev-parse HEAD
+            git -C "$source" diff --exit-code HEAD --
+          done | tee evidence/product-qualification/sources.txt
+          python scripts/test_shared_wifi_products.py 2>&1 | tee evidence/product-qualification/gate-tests.log
+      - name: Build canonical Wi-Fi and actual product scene profiles
+        run: |
+          set -euo pipefail
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python scripts/build_wifi_manager.py --runtime Runtime --output build/product-wifi 2>&1 | tee evidence/product-qualification/app-build.log
+          python scripts/build_scene_services.py --runtime Runtime --output build/product-providers/watch --host-profile watch-compact 2>&1 | tee evidence/product-qualification/watch-provider-build.log
+          python scripts/build_scene_services.py --runtime Runtime --output build/product-providers/wave --host-profile color-dynamic 2>&1 | tee evidence/product-qualification/wave-provider-build.log
+          python scripts/build_scene_services.py --runtime Runtime --output build/product-providers/x4 --host-profile full 2>&1 | tee evidence/product-qualification/x4-provider-build.log
+          git diff --exit-code HEAD --
+      - name: Verify published product bytes
+        run: |
+          set -euo pipefail
+          python scripts/inspect_shared_wifi_baseline.py --system PinnedSystem --bootfs-tools Bootfs/scripts --output build/product-baseline 2>&1 | tee evidence/product-qualification/baseline.log
+      - name: Enforce product preservation and selected Runtime admission
+        run: |
+          set -euo pipefail
+          phase=assembly
+          trap 'code=$?; printf "{\"stage\":\"%s\",\"exit_code\":%s,\"physical_testing\":false,\"target_execution\":false}\n" "$phase" "$code" > evidence/product-qualification/gate-status.json' EXIT
+          python scripts/assemble_shared_wifi_products.py --system PinnedSystem --bootfs Bootfs --baseline build/product-baseline --baseline-lock docs/shared-wifi/baseline.json --shared build/product-wifi --providers build/product-providers --output build/product-candidate 2>&1 | tee evidence/product-qualification/assembly.log
+          phase=runtime-admission
+          python scripts/qualify_shared_wifi_products.py --runtime Runtime --system PinnedSystem --bootfs Bootfs --baseline build/product-baseline --baseline-lock docs/shared-wifi/baseline.json --shared build/product-wifi --providers build/product-providers --candidate build/product-candidate --output build/product-qualification 2>&1 | tee evidence/product-qualification/admission.log
+          phase=complete
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-wifi-product-qualification-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            evidence/product-qualification/
+            build/product-wifi/
+            build/product-providers/
+            build/product-baseline/
+            build/product-candidate/
+            build/product-qualification/
+          if-no-files-found: error
+          retention-days: 14
