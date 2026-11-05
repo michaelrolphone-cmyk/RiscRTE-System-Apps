@@ -1,0 +1,408 @@
+/* Wi-Fi Manager: copied semantic documents and network intents only.
+ * Layout, icons, charts, hit maps and keyboard are separately loaded services. */
+#include "RiscRuntimeV1.h"
+#include "RiscSceneConnectivityV1.h"
+#include "RiscSceneResidentV1.h"
+#include "RiscTextEntryV1.h"
+#include "RiscSceneCheckpointV1.h"
+#include "RiscAlarmForegroundV1.h"
+#include "PortableWifiProfiles.h"
+#include "PortableWifiAtomic.h"
+#define PORTABLE_PREFERENCE_STORE 1
+#include "PortablePreferenceAtomic.h"
+#include "PortableSettingsAvailability.h"
+#include "PortableRadioPolicy.h"
+#include "PortableForegroundBroadcast.h"
+#include "WifiApi.h"
+#include <string.h>
+#include <stdio.h>
+#include <limits.h>
+
+enum { MAIN, SAVED, DETAIL, ADD, JOINING, FAILURE, FORGET, NOTICE, STORAGE };
+enum { BACK=1, TAB, TOGGLE, SCAN, SELECT_CURRENT, CONNECT, DISCONNECT, PASSWORD,
+       ADD_NETWORK, EDIT_SSID, EDIT_PASSWORD, SECURITY, SAVE_CONNECT, CANCEL,
+       FORGET_ASK, FORGET_YES, SAVED_PREV, SAVED_NEXT, RETRY, INFORMATION,
+       SAVE_DRAFT, STORAGE_RELOAD, KEEP_DRAFT, DISCARD_RELOAD, DISCARD_EXIT,
+       SELECT_SCAN=100, SELECT_SAVED=200 };
+enum { DB_NONE, DB_LIST, DB_FIND, DB_SAVE, DB_FORGET, DB_PREPARE_CONNECT, DB_PREPARE_FORGET };
+enum { AFTER_DETAIL, AFTER_CONNECT };
+typedef struct {
+    risc_runtime_capability_v1 grant;
+    PortableSettingsAvailability availability;
+    const risc_key_value_atomic_v1 *raw;
+    risc_key_value_atomic_v1 checked;
+    risc_key_value_v1 view;
+    uint64_t loaded_generation,read_revision;
+    uint32_t namespace_id;
+    bool loaded;
+} wm_store;
+typedef struct {
+    const risc_runtime_api_v1 *rt;
+    const risc_scene_api_v1 *scene;
+    const risc_scene_components_api_v1 *components;
+    const risc_scene_telemetry_api_v1 *telemetry;
+    const risc_text_entry_api_v1 *text;
+    const risc_text_entry_api_v1_checkpoint *text_checkpoint;
+    const risc_scene_checkpoint_api_v1 *checkpoint;
+    const risc_alarm_foreground_v1 *alarm;
+    uint32_t alarm_flags,alarm_owner;bool alarm_requested,alarm_paused,alarm_redraw;
+    const wifi_async_v1 *radio;
+    const risc_key_value_v1 *store,*policy;
+    wm_store network_storage,radio_storage;
+    portable_wifi_atomic atomic_edit;
+    portable_preference_atomic policy_edit;
+    bool atomic_ready,draft_dirty,storage_cancelling,storage_leave;
+    uint8_t policy_proposed;
+    risc_runtime_capability_v1 grants[4];unsigned acquired;
+    risc_scene_resident_v1 resident;
+    portable_foreground_broadcast broadcast;uint32_t broadcast_at;
+    risc_components_document_v1 doc,next_doc;
+    risc_scene_telemetry_v1 plot,last_plot;
+    uint64_t session,editor_session,sequence;
+    uint32_t now,revision,screen_key,last_view,started_at,connected_at,last_sample,policy_at;
+    uint32_t operation,operation_kind,queued_kind,service,shared_reason;
+    risc_radio_progress_v1 progress;
+    garden_radio_scan_result_v1 scan;
+    garden_radio_scan_entry_v1 selected,connected;
+    portable_wifi_credentials draft;
+    portable_wifi_profile_search search;
+    uint32_t db_count,db_next,saved_base,saved_slots[8],selected_slot;
+    char saved_names[8][33];unsigned saved_rows,db_job,after_find;
+    uint16_t history[60];unsigned history_pos,history_count;
+    unsigned screen,parent,editor_field,editor_return,security;
+    int8_t connected_rssi;
+    uint8_t radio_flags;
+    bool retained,exit_requested,finished,upgrade,enabled,connected_known,link_up;
+    bool stopping,scanning,dirty,keyboard_pending,editor_done,policy_dirty;
+    bool selected_saved,save_on_connect,db_fault,have_scan,selected_live,policy_loading,view_settled,drawing;
+    uint32_t editor_result,editor_flags;
+    char error[72],message[72],feedback[40];uint32_t toast;
+} wifi_manager;
+static wifi_manager wm;
+static void copy_text(char *to,size_t size,const char *from){size_t n=0;if(from)while(n+1<size&&from[n])++n;memcpy(to,from?from:"",n);to[n]=0;}
+static void wipe(void *p,size_t n){volatile unsigned char *b=p;while(n--)*b++=0;}
+static bool live(wifi_manager *a){if(a->retained)return false;if(!risc_runtime_get_api(1)){a->retained=true;return false;}return true;}
+static bool retain(wifi_manager *a){if(!a->retained&&live(a))a->rt->retain_invocation();a->retained=true;return false;}
+static bool broadcast_safe(void *context){wifi_manager*a=context;return live(a)&&risc_runtime_get_api(1)==a->rt;}
+static bool background_pause(wifi_manager*a){
+    return portable_foreground_broadcast_pause(&a->broadcast,a->operation!=0)?true:retain(a);
+}
+static bool scene_result(wifi_manager *a,int rc){return live(a)&&rc==RISC_SCENE_OK?true:retain(a);}
+static void route(wifi_manager *a,unsigned page){if(a->screen!=page){a->screen=page;++a->screen_key;}a->dirty=true;}
+static void notice(wifi_manager *a,const char *s){copy_text(a->message,sizeof(a->message),s);a->parent=a->screen;route(a,NOTICE);}
+static void toast(wifi_manager *a,const char *s){copy_text(a->feedback,sizeof(a->feedback),s);++a->toast;a->dirty=true;}
+static unsigned strength(int r){return r>-55?4:r>-65?3:r>-75?2:r>-85?1:0;}
+static const char *auth_name(unsigned auth){switch(auth){case 0:return "OPEN";case 1:return "WPA";case 2:return "WPA2";case 3:return "WPA/WPA2";case 4:return "WPA3";case 5:return "WPA2/WPA3";default:return "UNSUPPORTED";}}
+static bool api_radio(const wifi_async_v1 *w){return w&&w->base.api_version==1&&w->base.struct_size>=sizeof(*w)&&w->async_tag==RISC_RADIO_ASYNC_TAG&&w->async_version==1&&w->begin&&w->poll&&w->cancel&&w->service_begin&&w->service_end;}
+/* Pair storage access with the existing radio provider's PHY-safe lease.
+ * Busy is a clean deferral. No app-private storage gate or duplicated codec. */
+static bool storage_begin(wifi_manager *a){
+    if(!live(a)||!background_pause(a))return false;if(!a->operation)return true;
+    uint32_t token=0;int rc=a->radio->service_begin(a->radio->base.context,&token);
+    if(!live(a))return false;
+    if((rc==RISC_RADIO_AGAIN||rc==RISC_RADIO_BUSY)&&!token)return false;
+    if(rc!=RISC_RADIO_ACCEPTED||!token)return retain(a);a->service=token;return true;
+}
+static bool storage_end(wifi_manager *a){
+    if(!live(a))return false;if(!a->service)return true;
+    int rc=a->radio->service_end(a->radio->base.context,a->service);if(!live(a)||rc!=RISC_RADIO_ACCEPTED)return retain(a);a->service=0;return true;
+}
+static void list_start(wifi_manager *a){a->db_job=DB_LIST;a->db_next=0;a->db_count=0;a->saved_rows=0;a->db_fault=false;memset(a->saved_names,0,sizeof(a->saved_names));a->dirty=true;}
+static void find_start(wifi_manager *a,unsigned after){
+    memset(&a->search,0,sizeof(a->search));a->search.empty=UINT32_MAX;
+    copy_text(a->search.ssid,sizeof(a->search.ssid),a->selected.ssid);
+    a->db_job=DB_FIND;a->after_find=after;a->selected_saved=false;a->selected_slot=UINT32_MAX;a->db_fault=false;a->dirty=true;
+}
+static bool stop_radio(wifi_manager *a){
+    if(!a->operation)return true;if(a->stopping)return false;
+    int rc=a->radio->cancel(a->radio->base.context,a->operation);if(!live(a))return false;
+    if(rc!=RISC_RADIO_PENDING&&rc!=RISC_RADIO_AGAIN&&rc!=RISC_RADIO_QUIESCENT)return retain(a);
+    a->stopping=true;a->link_up=false;a->scanning=false;a->dirty=true;return false;
+}
+static void storage_connect(wifi_manager *a);
+static void schedule(wifi_manager *a,unsigned kind){
+    if(kind==RISC_RADIO_REQUEST_JOIN&&!a->atomic_ready){storage_connect(a);return;}
+    if(kind==RISC_RADIO_REQUEST_JOIN&&a->atomic_edit.operation!=PORTABLE_WIFI_ATOMIC_SAVE){notice(a,"Finish the saved-network action first");return;}
+    if(!a->enabled){notice(a,"Turn on Wi-Fi before scanning or joining.");return;}
+    if(!a->radio){notice(a,"The asynchronous Wi-Fi provider is unavailable.");return;}
+    a->queued_kind=kind;if(a->operation)(void)stop_radio(a);
+    if(kind==RISC_RADIO_REQUEST_JOIN){a->save_on_connect=true;route(a,JOINING);}else{a->scanning=true;route(a,MAIN);}
+}
+static void open_editor(wifi_manager *a,unsigned field){
+    if(a->atomic_ready){portable_wifi_atomic_clear(&a->atomic_edit);a->atomic_ready=false;a->save_on_connect=false;}
+    if(!a->text||(a->alarm&&!a->text_checkpoint)||(field&& !risc_text_entry_masked(a->text))){notice(a,"Shared password keyboard unavailable. Update text-input provider.");return;}
+    a->editor_field=field;a->editor_return=a->screen;a->keyboard_pending=true;a->dirty=true;
+}
+static void connect_selected(wifi_manager *a){
+    if(a->db_job||a->db_fault){toast(a,"Wait for saved-network lookup");return;}
+    if(a->selected.auth==GARDEN_RADIO_AUTH_UNSUPPORTED){notice(a,"Enterprise or unsupported security. This provider cannot join it.");return;}
+    if(a->selected.auth==GARDEN_RADIO_AUTH_OPEN){
+        if(a->draft.password[0]){notice(a,"Security changed: saved secured network now appears open. Forget it first.");return;}
+        schedule(a,RISC_RADIO_REQUEST_JOIN);return;
+    }
+    if(strlen(a->draft.password)<8)open_editor(a,1);else schedule(a,RISC_RADIO_REQUEST_JOIN);
+}
+#include "storage.inc"
+#include "foreground.inc"
+/* The provider owns RF; this bridge borrows the existing atomic read view. */
+static bool background_step(wifi_manager*a,uint32_t flags){
+    if(a->alarm_flags||a->alarm_requested||a->alarm_paused||a->operation||a->queued_kind||a->stopping||storage_pending(a)||a->service||
+       a->exit_requested||a->shared_reason||a->keyboard_pending||a->editor_session||
+       (flags&(RISC_SCENE_PRESENTING|RISC_SCENE_INPUT_BUSY|RISC_SCENE_CLOSING))||
+       (uint32_t)(a->now-a->broadcast_at)<1000)return true;
+    if(!background_pause(a))return false;
+    telemetry_broadcast_policy_v1 policy={.struct_size=sizeof(policy)};
+    int rc=store_read_begin(a,&a->radio_storage);
+    if(!live(a))return false;
+    if(rc==RISC_ATOMIC_BUSY)return true;
+    if(rc==RISC_ATOMIC_OK){
+        uint8_t radios=0;
+        bool enabled=false;
+        bool valid=portable_broadcast_control_load(a->policy,&enabled);
+        if(!live(a))return false;
+        unsigned loaded=portable_radio_load_result(a->policy,&radios);
+        if(!live(a))return false;
+        policy.settings_valid=valid&&loaded<=PORTABLE_RADIO_DEFAULT;
+        policy.enabled=enabled;
+        policy.radios_allowed=(radios&(PORTABLE_RADIO_BLUETOOTH|PORTABLE_RADIO_AIRPLANE))==PORTABLE_RADIO_BLUETOOTH;
+    }
+    a->broadcast_at=a->now;
+    return portable_foreground_broadcast_step(&a->broadcast,false,true,&policy)?true:retain(a);
+}
+static bool scan_valid(const garden_radio_scan_result_v1 *s){
+    if(s->struct_size!=sizeof(*s)||s->count>GARDEN_RADIO_SCAN_MAX||s->state>GARDEN_RADIO_SCAN_FAILED||s->reserved)return false;
+    for(unsigned i=0;i<s->count;i++){const garden_radio_scan_entry_v1 *e=&s->entries[i];if(!memchr(e->ssid,0,sizeof(e->ssid))||e->reserved||e->channel>14||(e->auth>5&&e->auth!=255))return false;}return true;
+}
+static void radio_step(wifi_manager *a){
+    if(!a->radio||!live(a))return;
+    if(!a->operation&&a->queued_kind){
+        if(a->exit_requested||a->shared_reason||!a->enabled){a->queued_kind=0;return;}
+        unsigned policy=policy_load(a);if(!live(a))return;
+        if(policy==PORTABLE_RADIO_BUSY)return;
+        if(policy>PORTABLE_RADIO_DEFAULT||!(a->radio_flags&PORTABLE_RADIO_WIFI)){
+            a->queued_kind=0;a->enabled=false;a->save_on_connect=false;
+            (void)storage_cancel(a);notice(a,"Wi-Fi radio policy is off or unavailable");return;
+        }
+        if(!background_pause(a))return;
+        risc_radio_request_v1 req={.struct_size=sizeof(req),.kind=a->queued_kind};
+        if(req.kind==RISC_RADIO_REQUEST_JOIN){copy_text(req.ssid,sizeof(req.ssid),a->draft.ssid);copy_text(req.password,sizeof(req.password),a->draft.password);}
+        uint32_t token=0;int rc=a->radio->begin(a->radio->base.context,&req,&token);wipe(&req,sizeof(req));
+        if(!live(a))return;if(rc==RISC_RADIO_AGAIN&&!token)return;
+        if(rc==RISC_RADIO_RETAINED||(rc==RISC_RADIO_ACCEPTED&&!token)||(rc!=RISC_RADIO_ACCEPTED&&token)){retain(a);return;}
+        if(rc!=RISC_RADIO_ACCEPTED){a->queued_kind=0;a->scanning=false;notice(a,"Wi-Fi is busy or unavailable. Stop other radio apps and retry.");return;}
+        a->operation=token;a->operation_kind=a->queued_kind;a->queued_kind=0;a->started_at=a->now;a->stopping=false;
+        memset(&a->progress,0,sizeof(a->progress));a->dirty=true;
+    }
+    if(!a->operation)return;
+    risc_radio_progress_v1 p={.struct_size=sizeof(p)};int rc=a->radio->poll(a->radio->base.context,a->operation,&p);
+    if(!live(a))return;if(rc==RISC_RADIO_AGAIN)return;
+    if((rc!=RISC_RADIO_PENDING&&rc!=RISC_RADIO_QUIESCENT)||p.struct_size!=sizeof(p)||p.operation_id!=a->operation||p.phase<1||p.phase>RISC_RADIO_IDLE||p.failure>5||p.owned>1||p.quiescent>1||p.station_state>2||p.owned==p.quiescent||((rc==RISC_RADIO_QUIESCENT)!=(p.quiescent!=0))||!scan_valid(&p.scan)||p.reserved[0]||p.reserved[1]||p.reserved[2]||p.reserved[3]||((p.phase==RISC_RADIO_IDLE)!=(p.quiescent!=0))||(p.phase==RISC_RADIO_CONNECTED&&(a->operation_kind!=RISC_RADIO_REQUEST_JOIN||p.station_state!=2))||(p.phase==RISC_RADIO_RESULTS&&a->operation_kind!=RISC_RADIO_REQUEST_SCAN)){retain(a);return;}
+    if(p.phase!=a->progress.phase||p.failure!=a->progress.failure)a->dirty=true;
+    a->progress=p;
+    if(p.quiescent){bool failed=!a->stopping&&p.failure;a->operation=0;a->stopping=false;a->scanning=false;a->link_up=false;a->dirty=true;
+        if(failed){copy_text(a->error,sizeof(a->error),"Connection failed. Check password, signal and access point.");route(a,FAILURE);}return;}
+    if(a->stopping)return;
+    if(p.phase==RISC_RADIO_RESULTS){
+        if(a->scanning){a->scan=p.scan;a->have_scan=true;a->scanning=false;
+            for(unsigned i=0;i<a->scan.count;i++)for(unsigned j=i+1;j<a->scan.count;j++)if(a->scan.entries[j].rssi>a->scan.entries[i].rssi){garden_radio_scan_entry_v1 t=a->scan.entries[i];a->scan.entries[i]=a->scan.entries[j];a->scan.entries[j]=t;}
+            a->dirty=true;}
+    }else if(p.phase==RISC_RADIO_CONNECTED){
+        if(!a->link_up){a->link_up=true;a->connected_known=true;a->connected=a->selected;a->connected_at=a->now;a->history_count=0;a->history_pos=0;
+            if(a->save_on_connect){a->save_on_connect=false;if(a->atomic_ready&&a->atomic_edit.operation==PORTABLE_WIFI_ATOMIC_SAVE)a->db_job=DB_SAVE;else toast(a,"Connected; network could not be saved");}route(a,MAIN);}
+        a->connected_rssi=p.rssi;
+        if((uint32_t)(a->now-a->last_sample)>=1000){a->last_sample=a->now;int r=(int)p.rssi+95;if(r<0)r=0;if(r>50)r=50;a->history[a->history_pos]=(uint16_t)(r*200);a->history_pos=(a->history_pos+1)%60;if(a->history_count<60)a->history_count++;}
+    }
+    if((a->operation_kind==1&&p.phase!=RISC_RADIO_RESULTS&&(uint32_t)(a->now-a->started_at)>=15000)||(a->operation_kind==2&&p.phase!=RISC_RADIO_CONNECTED&&(uint32_t)(a->now-a->started_at)>=30000)){
+        copy_text(a->error,sizeof(a->error),"Timed out. Check signal and password, then retry.");(void)stop_radio(a);route(a,FAILURE);
+    }
+}
+static void select_network(wifi_manager *a,const garden_radio_scan_entry_v1 *entry){
+    a->selected=*entry;wipe(&a->draft,sizeof(a->draft));a->draft_dirty=true;copy_text(a->draft.ssid,sizeof(a->draft.ssid),entry->ssid);
+    a->selected_live=a->link_up&&a->connected_known&&!strcmp(entry->ssid,a->connected.ssid);
+    a->parent=a->screen;route(a,DETAIL);find_start(a,AFTER_DETAIL);
+}
+static void action(wifi_manager *a,unsigned intent,int value){
+    if(a->upgrade){a->exit_requested=true;return;}
+    if(!storage_action(a,intent))return;
+    if(intent>=SELECT_SCAN&&intent<SELECT_SCAN+GARDEN_RADIO_SCAN_MAX){unsigned i=intent-SELECT_SCAN;if(i<a->scan.count)select_network(a,&a->scan.entries[i]);return;}
+    if(intent>=SELECT_SAVED&&intent<SELECT_SAVED+8){unsigned i=intent-SELECT_SAVED;if(i<a->saved_rows){garden_radio_scan_entry_v1 e={.auth=GARDEN_RADIO_AUTH_WPA2_PSK,.rssi=-127};copy_text(e.ssid,sizeof(e.ssid),a->saved_names[i]);for(unsigned j=0;j<a->scan.count;j++)if(!strcmp(a->scan.entries[j].ssid,e.ssid)){e=a->scan.entries[j];break;}select_network(a,&e);}return;}
+    switch(intent){
+    case BACK:if(a->screen==JOINING){a->queued_kind=0;a->save_on_connect=false;(void)stop_radio(a);route(a,MAIN);}else if(a->screen==MAIN||a->screen==SAVED)a->exit_requested=true;else if(a->screen==FORGET)route(a,DETAIL);else route(a,MAIN);break;
+    case TAB:route(a,value?SAVED:MAIN);if(value){a->saved_base=0;list_start(a);}break;
+    case TOGGLE:policy_toggle(a);break;
+    case SCAN:schedule(a,RISC_RADIO_REQUEST_SCAN);break;
+    case SELECT_CURRENT:if(a->link_up)select_network(a,&a->connected);break;
+    case CONNECT:connect_selected(a);break;
+    case PASSWORD:open_editor(a,1);break;
+    case DISCONNECT:a->queued_kind=0;(void)stop_radio(a);route(a,MAIN);break;
+    case CANCEL:a->queued_kind=0;a->save_on_connect=false;(void)stop_radio(a);route(a,MAIN);break;
+    case RETRY:connect_selected(a);break;
+    case ADD_NETWORK:wipe(&a->draft,sizeof(a->draft));a->draft_dirty=false;memset(&a->selected,0,sizeof(a->selected));a->selected.auth=2;a->selected.rssi=-127;a->security=1;a->selected_saved=false;a->selected_slot=UINT32_MAX;a->db_job=DB_NONE;route(a,ADD);break;
+    case EDIT_SSID:open_editor(a,0);break;
+    case EDIT_PASSWORD:open_editor(a,2);break;
+    case SECURITY:a->draft_dirty=true;a->security=(unsigned)value;a->selected.auth=value==0?0:value==2?4:2;if(!value)wipe(a->draft.password,sizeof(a->draft.password));a->dirty=true;break;
+    case SAVE_CONNECT:if(portable_wifi_credentials_validate(&a->draft)){copy_text(a->selected.ssid,sizeof(a->selected.ssid),a->draft.ssid);find_start(a,AFTER_CONNECT);}else toast(a,"Name required; password 8 to 63 characters");break;
+    case FORGET_ASK:storage_forget(a);break;
+    case FORGET_YES:if(a->atomic_ready&&a->atomic_edit.operation==PORTABLE_WIFI_ATOMIC_FORGET){
+        if(a->selected_live)(void)stop_radio(a);a->db_job=DB_FORGET;}break;
+    case SAVE_DRAFT:storage_save(a);break;
+    case STORAGE_RELOAD:a->parent=a->screen;route(a,STORAGE);break;
+    case KEEP_DRAFT:route(a,a->parent);break;
+    case DISCARD_RELOAD:storage_discard(a);route(a,MAIN);storage_reload(a);break;
+    case DISCARD_EXIT:storage_discard(a);a->storage_leave=true;a->exit_requested=true;break;
+    case SAVED_PREV:a->saved_base=a->saved_base>=8?a->saved_base-8:0;list_start(a);break;
+    case SAVED_NEXT:if(a->saved_rows==8){a->saved_base=a->saved_slots[7]+1;list_start(a);}break;
+    case INFORMATION:notice(a,"This Wi-Fi provider does not expose static IP, DNS or internet tests.");break;
+    default:break;
+    }
+}
+#include "view.inc"
+static bool publish(wifi_manager *a){
+    declare(a);if(!live(a))return false;
+    /* Do not restart a completed static e-ink page with identical data. */
+    if(a->session&&!memcmp(&a->next_doc,&a->doc,sizeof(a->doc))&&!memcmp(&a->plot,&a->last_plot,sizeof(a->plot))){a->dirty=false;return true;}
+    if(a->revision==UINT32_MAX)return retain(a);
+    a->next_doc.revision=++a->revision;
+    bool opening=a->session==0;
+    int rc=a->session?((a->telemetry&&(a->next_doc.flags&RISC_COMPONENTS_TELEMETRY))?a->telemetry->present(a->scene->context,a->session,&a->next_doc,&a->plot):a->components->update(a->scene->context,a->session,&a->next_doc)):a->components->open(a->scene->context,&a->next_doc,NULL,&a->session);
+    if(!scene_result(a,rc))return false;a->doc=a->next_doc;a->doc.revision=0;a->last_plot=a->plot;a->view_settled=false;a->dirty=false;a->last_view=a->now;
+    return !opening||scene_result(a,a->components->lifecycle.configure(a->scene->context,a->session,a->resident.enabled?RISC_SCENE_FEATURE_SHARED_CONTROLS:0));
+}
+static bool close_scene(wifi_manager *a){
+    if(!a->session)return true;int rc=a->scene->close(a->scene->context,a->session);if(!live(a))return false;
+    if(rc==RISC_SCENE_AGAIN)return false;if(rc!=RISC_SCENE_OK)return retain(a);a->session=0;a->sequence=0;return true;
+}
+static bool keyboard_step(wifi_manager *a){
+    if(a->keyboard_pending){
+        if(!close_scene(a))return true;
+        risc_text_entry_request_v1 q={.api_version=1,.struct_size=sizeof(q),.capacity=a->editor_field?64:33};
+        q.reserved=RISC_TEXT_ENTRY_REQUEST_HOME_REASON|(a->editor_field?RISC_TEXT_ENTRY_REQUEST_MASKED:0);
+        copy_text(q.label,sizeof(q.label),a->editor_field?"PASSWORD":"NETWORK NAME");
+        copy_text(q.text,sizeof(q.text),a->editor_field?a->draft.password:a->draft.ssid);
+        int rc=a->text->open(a->text->context,&q,&a->editor_session);wipe(&q,sizeof(q));if(!live(a))return false;
+        if(rc!=RISC_TEXT_ENTRY_OK){if(rc==RISC_TEXT_ENTRY_RETAINED||a->editor_session)return retain(a);a->keyboard_pending=false;notice(a,"Keyboard unavailable; retry when other input has closed.");return publish(a);}
+        if(a->alarm){
+            int enabled=a->text_checkpoint->checkpoint_enable(a->text->context,a->editor_session);
+            if(!live(a)||enabled!=RISC_TEXT_ENTRY_OK)return retain(a);
+        }
+        a->keyboard_pending=false;a->dirty=false;
+    }
+    if(!a->editor_session)return true;
+    if(!a->editor_done){risc_text_entry_state_v1 result={.struct_size=sizeof(result)};
+        int rc=a->text->poll(a->text->context,a->editor_session,&result);if(!live(a)){wipe(&result,sizeof(result));return false;}
+        if(rc!=RISC_TEXT_ENTRY_OK||result.state>RISC_TEXT_ENTRY_CANCELLED||!memchr(result.text,0,a->editor_field?64:33)){wipe(&result,sizeof(result));return retain(a);}
+        if(a->alarm&&result.state==RISC_TEXT_ENTRY_EDITING&&!a->alarm_requested){
+            risc_text_entry_checkpoint_state_v1 cs={.struct_size=sizeof(cs)};
+            int cr=a->text_checkpoint->checkpoint_snapshot(a->text->context,a->editor_session,&cs);
+            if(!live(a)||cr!=RISC_TEXT_ENTRY_OK){wipe(&result,sizeof(result));return retain(a);}
+            uint32_t sf=(cs.flags&RISC_TEXT_ENTRY_CHECKPOINT_PRESENTING)?RISC_SCENE_PRESENTING:0;
+            if(!alarm_probe(a,sf)){wipe(&result,sizeof(result));return false;}
+            if(a->alarm_requested){wipe(&result,sizeof(result));return true;}
+        }
+        if(result.state!=RISC_TEXT_ENTRY_EDITING){a->editor_done=true;a->editor_result=result.state;a->editor_flags=result.flags;
+            if(result.state==RISC_TEXT_ENTRY_ACCEPTED){copy_text(a->editor_field?a->draft.password:a->draft.ssid,a->editor_field?64:33,result.text);a->draft_dirty=true;}}
+        wipe(&result,sizeof(result));
+    }
+    if(a->editor_done){int rc=a->text->close(a->text->context,a->editor_session);if(!live(a))return false;if(rc==RISC_TEXT_ENTRY_AGAIN)return true;if(rc!=RISC_TEXT_ENTRY_OK)return retain(a);
+        a->editor_session=0;a->editor_done=false;
+        if(a->editor_flags&RISC_TEXT_ENTRY_HOME_CANCEL){a->exit_requested=true;return true;}
+        route(a,a->editor_return);
+        if(a->editor_result==RISC_TEXT_ENTRY_ACCEPTED&&a->editor_field==1){if(strlen(a->draft.password)>=8)schedule(a,RISC_RADIO_REQUEST_JOIN);else toast(a,"Password needs 8 to 63 characters");}
+        return publish(a);
+    }
+    return true;
+}
+static bool init(wifi_manager *a){
+    memset(a,0,sizeof(*a));a->screen_key=1;a->selected_slot=UINT32_MAX;a->selected.rssi=-127;a->dirty=true;
+    a->rt=risc_runtime_get_api(1);
+    if(!a->rt||a->rt->struct_size<RISC_RUNTIME_MONOTONIC_V1_SIZE||!a->rt->monotonic_ms||!a->rt->acquire||!a->rt->release||!a->rt->retain_invocation||!a->rt->yield_ms)return false;
+    portable_foreground_broadcast_init(&a->broadcast,a->rt,broadcast_safe,a);
+    const char *caps[]={"ui.scene","ui.text-input","net.wifi",RISC_ALARM_FOREGROUND_CAPABILITY};unsigned instances[]={0,0,15,0};
+    for(unsigned i=0;i<4;i++){risc_runtime_capability_v1 *g=&a->grants[a->acquired];g->struct_size=sizeof(*g);bool found=a->rt->acquire(caps[i],1,instances[i],g);if(!live(a))return false;if(!found){if(!i)return false;continue;}a->acquired++;
+        if(i==0){a->scene=g->api;a->components=risc_scene_components_get_v1(a->scene);a->telemetry=risc_scene_telemetry_get_v1(a->scene);a->checkpoint=risc_scene_checkpoint_get_v1(a->scene);
+            if(!a->components||!a->components->lifecycle.configure||!a->scene->next||!a->scene->snapshot||!a->scene->close)return false;
+            if(!risc_scene_connectivity_get_v1(a->scene)){a->upgrade=true;break;}}
+        else if(i==1){const risc_text_entry_api_v1 *t=g->api;if(risc_text_entry_home_reason(t)&&t->open&&t->poll&&t->close){a->text=t;a->text_checkpoint=risc_text_entry_checkpoint(t);}}
+        else if(i==2){if(api_radio(g->api))a->radio=g->api;}
+        else {const risc_alarm_foreground_v1 *p=g->api;if(!p||p->api_version!=1||p->struct_size<sizeof(*p)||!p->advance||!a->checkpoint)return retain(a);a->alarm=p;}
+    }
+    if(!a->upgrade){
+        if(!store_open(a,&a->network_storage,6)||!store_open(a,&a->radio_storage,1))return false;
+        a->store=&a->network_storage.view;a->policy=&a->radio_storage.view;
+    }
+    if(!risc_scene_resident_bind_v1(a->rt,&a->resident))return false;
+    if(!a->rt->monotonic_ms(&a->now)||!live(a))return false;
+    unsigned loaded=policy_load(a);if(!live(a))return false;
+    a->enabled=loaded<=PORTABLE_RADIO_DEFAULT&&(a->radio_flags&PORTABLE_RADIO_WIFI);a->policy_loading=loaded==PORTABLE_RADIO_BUSY;
+    if(loaded>PORTABLE_RADIO_DEFAULT)copy_text(a->message,sizeof(a->message),"Radio settings unavailable");
+    if(a->rt->diagnostic)a->rt->diagnostic("Wi-Fi Manager 2.0.0 scene-only shared-password-keyboard");
+    if(!live(a))return false;list_start(a);
+    return publish(a);
+}
+static bool step(wifi_manager *a){
+    if(!live(a)||!a->rt->monotonic_ms(&a->now)||!live(a))return false;
+    radio_step(a);if(!live(a))return false;
+    if(a->alarm_requested||a->alarm_paused)return alarm_focus_step(a);
+    if(a->exit_requested||a->shared_reason){
+        if(!storage_exit(a))return live(a);
+        a->queued_kind=0;if(a->operation){(void)stop_radio(a);return live(a);}
+        if(!background_pause(a)||!close_scene(a))return live(a);
+        if(a->shared_reason){int rc=risc_scene_resident_dispatch_v1(&a->resident,a->shared_reason);a->shared_reason=0;
+            if(!live(a)||rc==RISC_RESIDENT_RETAINED)return retain(a);
+            if(rc!=RISC_RESIDENT_OK&&rc!=RISC_RESIDENT_BUSY){a->exit_requested=true;return true;}
+            portable_foreground_broadcast_invalidate(&a->broadcast);
+            unsigned loaded=policy_load(a);if(!live(a))return false;a->enabled=loaded<=PORTABLE_RADIO_DEFAULT&&(a->radio_flags&PORTABLE_RADIO_WIFI);a->policy_loading=loaded==PORTABLE_RADIO_BUSY;a->dirty=true;return publish(a);}
+        a->finished=true;return false;
+    }
+    storage_observe(a);db_step(a);if(!live(a)||!policy_step(a))return false;
+    if(a->keyboard_pending||a->editor_session)return keyboard_step(a);
+    if(!a->session&& !publish(a))return false;
+    risc_scene_event_v1 e={.struct_size=sizeof(e)};int rc=a->scene->next(a->scene->context,a->session,&e);
+    if(!live(a)||(rc!=RISC_SCENE_OK&&rc!=RISC_SCENE_IDLE&&rc!=RISC_SCENE_AGAIN))return retain(a);
+    if(a->alarm){
+        risc_scene_navigation_v1 an={.struct_size=sizeof(an)};uint32_t af=0;
+        if(!scene_result(a,a->scene->snapshot(a->scene->context,a->session,&an,&af)))return false;
+        if(af&RISC_SCENE_ACTIVITY)a->resident.activity=true;
+        if(!alarm_probe(a,af))return false;
+        if(alarm_consumes(a))return true;
+    }
+    if(rc==RISC_SCENE_OK&&e.document_revision==a->revision&&e.sequence>a->sequence){a->sequence=e.sequence;
+        if(e.kind==RISC_SCENE_SUSPEND_EVENT)a->exit_requested=true;
+        else if(e.kind==RISC_SCENE_CONTROLS_EVENT&&a->resident.enabled)a->shared_reason=RISC_RESIDENT_CHECKPOINT_CONTROLS;
+        else if(!e.node&&e.action==BACK&&e.kind==RISC_SCENE_ACTION_EVENT)action(a,BACK,0);
+        else if(e.node&&e.node<=a->doc.node_count){const risc_scene_node_v1 *n=&a->doc.nodes[e.node-1];
+            bool values=n->kind==RISC_COMPONENT_SWITCH||n->kind==RISC_COMPONENT_TAB_BAR||n->kind==RISC_COMPONENT_SEGMENTS;
+            if(n->action==e.action&&!(n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_HIDDEN))&&((values&&e.kind==2&&e.value>=n->minimum&&e.value<=n->maximum)||(!values&&e.kind==1)))action(a,e.action,e.value);}
+    }
+    if(a->exit_requested||a->shared_reason||a->keyboard_pending)return true;
+    risc_scene_navigation_v1 nav={.struct_size=sizeof(nav)};uint32_t flags=0;
+    if(!scene_result(a,a->scene->snapshot(a->scene->context,a->session,&nav,&flags)))return false;
+    if(flags&RISC_SCENE_ACTIVITY)a->resident.activity=true;
+    if((uint32_t)(a->now-a->policy_at)>=100&&!a->operation&&!a->queued_kind&&!a->stopping&&!storage_pending(a)){a->policy_at=a->now;
+        int r=risc_scene_resident_poll_work_v1(&a->resident,flags,storage_idle(a)?0:RISC_RESIDENT_POLL_INHIBIT_IDLE|RISC_RESIDENT_POLL_INHIBIT_POLICY);
+        if(r==RISC_RESIDENT_RETAINED||!live(a))return retain(a);
+        if(r==RISC_RESIDENT_EXIT)a->exit_requested=true;
+        if(a->resident.policy&&!a->operation&&storage_idle(a))a->shared_reason=RISC_RESIDENT_CHECKPOINT_POLICY;
+    }
+    if(!background_step(a,flags))return false;
+    a->drawing=(flags&RISC_SCENE_PRESENTING)!=0;
+    if(!a->drawing&&!a->view_settled){a->view_settled=true;a->last_view=a->now;}
+    if(!(flags&(RISC_SCENE_PRESENTING|RISC_SCENE_INPUT_BUSY))&&(a->dirty||((a->link_up||a->scanning||a->screen==JOINING)&&(uint32_t)(a->now-a->last_view)>=2000)))return publish(a);
+    return true;
+}
+static void cleanup(wifi_manager *a){
+    if(!live(a))return;
+    if(a->alarm_paused||a->alarm_requested||a->alarm_flags||a->operation||a->session||a->editor_session||storage_pending(a)){retain(a);return;}
+    if(!background_pause(a))return;
+    if(!store_close(a,&a->network_storage)||!store_close(a,&a->radio_storage))return;
+    wipe(&a->draft,sizeof(a->draft));
+    while(a->acquired){if(!live(a))return;bool ok=a->rt->release(&a->grants[a->acquired-1]);if(!live(a)||!ok){retain(a);return;}a->acquired--;}
+}
+__attribute__((visibility("default"))) const risc_resident_app_descriptor_v1_t risc_resident_app_descriptor_v1={1,sizeof(risc_resident_app_descriptor_v1_t),RISC_RESIDENT_ROLE_FOREGROUND,0};
+__attribute__((visibility("default"))) void app_main(void){wifi_manager *a=&wm;if(init(a)){while(step(a))a->rt->yield_ms(a->drawing||a->editor_session?1:10);}cleanup(a);}
+#ifdef WIFI_MANAGER_TEST
+bool wifi_manager_test_init(void){return init(&wm);}
+bool wifi_manager_test_step(void){return step(&wm);}
+void wifi_manager_test_action(unsigned id,int v){action(&wm,id,v);}
+const wifi_manager *wifi_manager_test_state(void){return &wm;}
+#endif

@@ -32,3 +32,5 @@ void telemetry_test_orientation(unsigned expected_w,unsigned expected_h,unsigned
   int tx,ty;assert(touch_point((uint16_t)px,(uint16_t)py,&tx,&ty));assert(tx==(int)x&&ty==(int)y);
  }
 }
+
+void connectivity_test_dimensions(unsigned expected_w,unsigned expected_h){assert(width==expected_w&&height==expected_h);}
