@@ -81,7 +81,7 @@ static bool declare(void){
  .flags=RISC_COMPONENTS_ALERT,.cancel_action=DISMISS};
  document.routes[0]=(risc_scene_route_v1){.id=1,.back_action=DISMISS};
  text(document.routes[0].title,sizeof(document.routes[0].title),title());
- node(RISC_COMPONENT_CARD,0,title(),state.state==ALARM_STATE_BLOCKED?
+ node(RISC_SCENE_TEXT_NODE,0,title(),state.state==ALARM_STATE_BLOCKED?
  (state.error==ALARM_RTC?"RTC error":"Service error"):
  state.state==ALARM_STATE_DISMISSING?"Stopping / saving":"Time is up");
  node(RISC_SCENE_ACTION,DISMISS,state.occurrence.generation?"DISMISS":"BACK","");
