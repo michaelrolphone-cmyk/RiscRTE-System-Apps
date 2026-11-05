@@ -1,8 +1,5 @@
 name: Native Wi-Fi Manager
 on:
-  push:
-    branches: [feat/wifi-scene-manager]
-    paths: ['Apps/wifi_manager/**', 'Apps/native/wifi_settings.json', 'Services/scene_host/**', 'Services/text_input/**', 'Services/alarm_foreground/**', 'scripts/*alarm_foreground*', 'test/alarm_foreground/**', 'sdk/app/**', 'scripts/*wifi_manager*', 'scripts/*shared_wifi*', 'test/shared_wifi/**', 'docs/shared-wifi/**', 'test/wifi_manager/**', '.github/workflows/wifi-manager.yml']
   pull_request:
     paths: ['Apps/wifi_manager/**', 'Apps/native/wifi_settings.json', 'Services/scene_host/**', 'Services/text_input/**', 'Services/alarm_foreground/**', 'scripts/*alarm_foreground*', 'test/alarm_foreground/**', 'sdk/app/**', 'scripts/*wifi_manager*', 'scripts/*shared_wifi*', 'test/shared_wifi/**', 'docs/shared-wifi/**', 'test/wifi_manager/**', '.github/workflows/wifi-manager.yml']
   workflow_dispatch:

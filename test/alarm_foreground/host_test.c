@@ -79,6 +79,7 @@ int main(int argc,char**argv){
  if(!strcmp(mode,"blocked")){alarm_view.state=ALARM_STATE_BLOCKED;alarm_view.error=ALARM_STORAGE;alarm_view.snapshot=42;memset(&alarm_view.occurrence,0,sizeof(alarm_view.occurrence));}
  assert(!advance_alarm(0)&&(report.flags&RISC_ALARM_FOREGROUND_NEEDS_FOCUS)&&!(report.flags&RISC_ALARM_FOREGROUND_HAS_FOCUS));
  assert(!cp->pause(NULL,session));assert(!held&&!presenting&&!subscribed);
+ expected_intent=RISC_DISPLAY_PRESENT_LOW_LATENCY;
  assert(!advance_alarm(RISC_ALARM_FOREGROUND_FOCUS_AVAILABLE)&&(report.flags&RISC_ALARM_FOREGROUND_HAS_FOCUS));
  risc_scene_event_v1 e={.struct_size=sizeof(e)};assert(api->next(NULL,session,&e)==RISC_SCENE_BUSY);
  if(!strcmp(mode,"pending"))allow_complete=false;
@@ -98,6 +99,7 @@ int main(int argc,char**argv){
  for(unsigned n=0;report.flags&(RISC_ALARM_FOREGROUND_NEEDS_FOCUS|RISC_ALARM_FOREGROUND_HAS_FOCUS);n++){
   assert(n<2000);assert(advance_alarm(1)>=0);
  }
+ expected_intent=0; /* The restored parent is the legacy fixture document. */
  assert(!cp->resume(NULL,session,RISC_SCENE_RESUME_REDRAW|RISC_SCENE_RESUME_FOCUS_CHANGED));settle();
  assert(tick(&e)==RISC_SCENE_IDLE);assert(ad->quiesce());ad->stop();finish();
  printf("Shared alarm %s exact ACK, durable wait and parent focus restoration PASS\n",mode);return 0;
