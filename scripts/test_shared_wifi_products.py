@@ -7,7 +7,7 @@ from unittest.mock import patch
 from assemble_shared_wifi_products import assemble
 from qualify_shared_wifi_products import preservation
 from shared_wifi_products import sha,RUNTIME,elf_receipt
-from shared_wifi_products import encode,grants,parity,safe
+from shared_wifi_products import encode,grants,parity,safe,native_cohort
 class Contracts(unittest.TestCase):
     def fixture(self):
         m={'id':'wifi_settings','file_name':'wifi_settings.elf','entry':'app_main','architecture':'xtensa-esp32s3','display_name':'Wi-Fi','icon':'solid:f1eb','requires':[{'capability':c,'api':1} for c in ('ui.scene','storage.key-value','net.wifi')]}
@@ -79,6 +79,56 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):elf_receipt(bad,elf,'wifi_settings.elf')
         bad=dict(row);bad['bytes']=bad.pop('size_bytes')
         with self.assertRaises(ValueError):elf_receipt(bad,elf,'wifi_settings.elf')
+
+    def test_native_identity_requires_reviewed_lock(self):
+        with tempfile.TemporaryDirectory() as temp:
+            for lane in ('watch','wave','x4'):
+                with self.assertRaisesRegex(ValueError,'Native product receipt absent'):
+                    native_cohort({'assets':[]},Path(temp),lane)
+    def native_fixture(self,root,lane='watch'):
+        # Synthetic verifier fixture only; never installed/native build evidence.
+        stores={f'product-{lane}-{s}':sha(s.encode()) for s in ('store.bin','sd-apps.zip')}
+        blobs={k:('synthetic '+k).encode() for k in ('firmware','map','profile','settings_header','compile_commands','link_log')}
+        blobs['elf']=b'\x7fELFsynthetic'
+        r={'schema':1,'product':lane,'runtime_commit':RUNTIME,'product_commit':'1'*40,'working_tree_dirty':False,'scope':'linked-product-firmware','full_firmware_linked':True,'baseline_assets':stores}
+        q={'product':lane,'runtime_commit':RUNTIME,'product_commit':r['product_commit'],'baseline_assets':stores,'firmware_sha256':sha(blobs['firmware']),'elf_sha256':sha(blobs['elf']),'capability_admission':'passed','persistent_storage_preservation':'passed','resource_budget':'passed'}
+        lock={'assets':[{'name':n,'sha256':s} for n,s in stores.items()]}
+        def seal():
+            blobs['qualification']=encode(q)
+            files={}
+            for k,b in blobs.items():
+                name=k+'.dat';(root/name).write_bytes(b)
+                files[k]={'file':name,'size_bytes':len(b),'sha256':sha(b)}
+            r['artifacts']=files
+            data=encode(r);(root/'receipt.json').write_bytes(data)
+            lock['native_cohorts']={lane:{'receipt':{'file':'receipt.json','size_bytes':len(data),'sha256':sha(data)},'runtime_commit':RUNTIME,'product_commit':'1'*40,'artifacts':copy.deepcopy(files)}}
+        seal()
+        return lock,r,q,blobs,seal
+    def test_native_identity_rejects_source_only_and_mismatched_evidence(self):
+        for lane in ('watch','wave','x4'):
+            with tempfile.TemporaryDirectory() as temp:
+                root=Path(temp);lock,r,q,blobs,seal=self.native_fixture(root,lane)
+                self.assertEqual(native_cohort(lock,root,lane)['runtime_commit'],RUNTIME)
+                original=copy.deepcopy(r)
+                for field,value in (('runtime_commit','2'*40),('product_commit','2'*40),('product','other'),('working_tree_dirty',True),('scope','host-only'),('full_firmware_linked',False),('baseline_assets',{})):
+                    r.clear();r.update(copy.deepcopy(original));r[field]=value;seal()
+                    with self.subTest(lane=lane,field=field),self.assertRaises(ValueError):native_cohort(lock,root,lane)
+                r.clear();r.update(original);seal()
+                for field in ('capability_admission','persistent_storage_preservation','resource_budget'):
+                    q[field]='not measured';seal()
+                    with self.assertRaises(ValueError):native_cohort(lock,root,lane)
+                    q[field]='passed'
+                q['firmware_sha256']='0'*64;seal()
+                with self.assertRaises(ValueError):native_cohort(lock,root,lane)
+    def test_native_identity_binds_every_evidence_byte(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);lock,r,q,blobs,seal=self.native_fixture(root)
+            for name in ('receipt.json',*[k+'.dat' for k in blobs]):
+                seal();(root/name).write_bytes(b'changed')
+                with self.subTest(name=name),self.assertRaises(ValueError):native_cohort(lock,root,'watch')
+            seal();lock['native_cohorts']['watch']['receipt']['file']='../outside'
+            with self.assertRaises(ValueError):native_cohort(lock,root,'watch')
+
     def test_paths(self):
         for p in ('../x','/x','a/../b',r'a\\b','a//b',''):
             with self.assertRaises(ValueError):safe(p)

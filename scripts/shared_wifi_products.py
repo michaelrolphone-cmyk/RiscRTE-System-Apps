@@ -109,6 +109,11 @@ def provider(before,sd,root):
     source=Path(__file__).resolve().parents[1]
     check(receipt.get('source_pins',{}).get('system')==subprocess.check_output(['git','-C',str(source),'rev-parse','HEAD'],text=True).strip(),'Scene source commit differs')
     check(receipt.get('optional_apis',{}).get('connectivity') is True,'Connectivity suffix missing')
+    memory=receipt.get('memory')
+    if memory is not None:
+        check(type(memory.get('target_scene_model_bytes')) is int and memory['target_scene_model_bytes']>0 and type(memory.get('modal_additional_heap_bytes')) is int and memory['modal_additional_heap_bytes']>=memory['target_scene_model_bytes'],'Invalid target memory witness')
+        check(memory.get('modal_max_depth')==1 and memory.get('duplicates_parent_pixel_buffers') is False and memory.get('allocator_overhead_included') is False,'Unexpected modal memory contract')
+        print('SHARED WIFI SCENE MEMORY '+json.dumps({'profile_path':str(root),'measurement':memory,'product_heap_admission':False},sort_keys=True),flush=True)
     for field in ('id','file_name','driver_abi','architecture','provides','requires'):
         check(old.get(field)==new.get(field),'Scene contract changed '+field)
     licenses={}
@@ -143,6 +148,46 @@ def pack(after,stored,changed,size,build,read_image,magic,decode,encode_image):
     check(len(image)==size and read_image(image,size)==packed,'SPIFFS roundtrip differs')
     check({n:decode(b) for n,b in packed.items()}==after,'Canonical envelope roundtrip differs')
     return packed,image,receipt
+
+def native_cohort(lock,root,lane):
+    """Require reviewed, hash-locked *linked product* evidence, not SDK similarity."""
+    import re
+    expected=lock.get('native_cohorts',{}).get(lane)
+    check(isinstance(expected,dict),'Native product receipt absent: '+lane+'; host admission does not identify installed firmware')
+    def digest(value):
+        return isinstance(value,str) and re.fullmatch(r'[0-9a-f]{64}',value) is not None
+    def artifact(row):
+        check(isinstance(row,dict),'Native artifact entry absent: '+lane)
+        name=safe(row.get('file'))
+        path=root/name
+        check(root.resolve() in path.resolve().parents and not path.is_symlink() and path.is_file(),'Native artifact absent or outside evidence root: '+name)
+        b=path.read_bytes()
+        check(type(row.get('size_bytes')) is int and len(b)==row['size_bytes'] and digest(row.get('sha256')) and sha(b)==row['sha256'],'Native artifact identity differs: '+name)
+        return b
+    receipt_bytes=artifact(expected.get('receipt'))
+    r=json.loads(receipt_bytes)
+    check(r.get('schema')==1 and r.get('product')==lane,'Native receipt product/schema differs')
+    check(r.get('runtime_commit')==RUNTIME and r.get('runtime_commit')==expected.get('runtime_commit'),'Native Runtime differs from admission Runtime: '+lane)
+    check(r.get('product_commit')==expected.get('product_commit') and isinstance(r.get('product_commit'),str) and re.fullmatch(r'[0-9a-f]{40}',r['product_commit']) is not None,'Native product source identity absent')
+    check(r.get('working_tree_dirty') is False,'Native build source dirty')
+    check(r.get('scope')=='linked-product-firmware' and r.get('full_firmware_linked') is True,'Native receipt is not linked product firmware')
+    roles={'firmware','elf','map','profile','settings_header','compile_commands','link_log','qualification'}
+    files=r.get('artifacts',{})
+    check(isinstance(files,dict) and set(files)==roles and files==expected.get('artifacts'),'Native source/build evidence set differs')
+    check(len({safe(row.get('file')) for row in files.values()})==len(roles),'Native artifact paths overlap')
+    contents={role:artifact(files[role]) for role in sorted(roles)}
+    check(contents['elf'].startswith(b'\x7fELF'),'Native ELF missing')
+    q=json.loads(contents['qualification'])
+    check(q.get('product')==lane and q.get('runtime_commit')==RUNTIME and q.get('product_commit')==r['product_commit'],'Native qualification source identity differs')
+    check(q.get('firmware_sha256')==files['firmware']['sha256'] and q.get('elf_sha256')==files['elf']['sha256'],'Native qualification binary identity differs')
+    # These are measured, reviewed product results, never inferred from a feature define.
+    for result in ('capability_admission','persistent_storage_preservation','resource_budget'):
+        check(q.get(result)=='passed','Native product qualification missing '+result+': '+lane)
+    expected_stores={x['name']:x['sha256'] for x in lock['assets'] if x['name'].startswith('product-'+lane+'-')}
+    check(r.get('baseline_assets')==expected_stores and len(expected_stores)==2,'Native receipt belongs to different companion stores')
+    check(q.get('baseline_assets')==expected_stores,'Native qualification companion stores differ')
+    return {'receipt_sha256':sha(receipt_bytes),'runtime_commit':r['runtime_commit'],'product_commit':r['product_commit'],'artifacts':files,'scope':'linked-product-firmware; installation and hardware operation not established'}
+
 def arguments(description,extra=()):
     import argparse
     p=argparse.ArgumentParser(description=description)

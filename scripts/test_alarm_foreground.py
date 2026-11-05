@@ -18,7 +18,7 @@ def run(runtime,output,sanitize=False):
     obj=output/'alarm.o';exe=output/'test'
     subprocess.run([cc,*flags,'-Dt5_driver_get=alarm_driver_get','-c',str(ROOT/'Services/alarm_foreground/host.c'),'-o',str(obj)],check=True)
     subprocess.run([cc,*flags,str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/alarm_foreground/host_test.c'),str(obj),'-o',str(exe)],check=True)
-    for mode in ('alert','pending','cue','loss','output'):
+    for mode in ('alert','pending','cue','blocked','tagged','malformed-tagged','old-scene','bad-status','uncertain-output','loss','output'):
         subprocess.run([str(exe),mode],check=True,timeout=30,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
     print('Shared alarm controller with real modal scene PASS; installed products not qualified')
 if __name__=='__main__':

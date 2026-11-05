@@ -4,6 +4,7 @@
 #undef main
 #include "RiscSceneModalV1.h"
 #include "RiscAlarmForegroundV1.h"
+#include "AlarmServiceV2.h"
 extern const risc_driver_v2 *alarm_driver_get(uint32_t);
 static alarm_status_v1 alarm_view={.api_version=1,.struct_size=sizeof(alarm_view),.state=ALARM_STATE_READY};
 static unsigned alarm_steps,alarm_statuses,alarm_acks,alarm_stops,alarm_refreshes,ack_delay;
@@ -42,7 +43,24 @@ int main(int argc,char**argv){
  startup();settle();const risc_scene_checkpoint_api_v1*cp=risc_scene_checkpoint_get_v1(api);assert(cp);
  const risc_driver_v2*ad=alarm_driver_get(2);assert(ad);alarm_ui=ad->capability;
  risc_provider_dependency_v1 deps[]={{"ui.scene",1,api},{"alarm.service",1,&scheduler}};
+ alarm_service_descriptor_v2 tagged={.base=scheduler,.tag=ALARM_SERVICE_DESCRIPTOR_TAG,.descriptor_version=1};
+ if(!strcmp(mode,"tagged")||!strcmp(mode,"malformed-tagged")){
+  tagged.base.api_version=2;tagged.base.struct_size=sizeof(tagged);
+  if(!strcmp(mode,"malformed-tagged"))tagged.tag=0;
+  deps[1].api_version=2;deps[1].api=&tagged;
+ }
+ risc_scene_api_v1 old=*api;
+ if(!strcmp(mode,"old-scene")){old.struct_size=sizeof(old);deps[0].api=&old;}
+ if(!strcmp(mode,"malformed-tagged")||!strcmp(mode,"old-scene")){
+  assert(!ad->start(deps,2));finish();puts("Alarm clean incompatible dependency refusal PASS");return 0;
+ }
  assert(ad->start(deps,2));assert(advance_alarm(0)==RISC_ALARM_FOREGROUND_OK&&!report.flags);
+ if(!strcmp(mode,"bad-status")||!strcmp(mode,"uncertain-output")){
+  if(!strcmp(mode,"bad-status"))alarm_view.api_version=0;else alarm_view.output_uncertain=1;
+  assert(advance_alarm(0)==RISC_ALARM_FOREGROUND_RETAINED&&!ad->quiesce());
+  unsigned before=alarm_statuses;assert(advance_alarm(0)==RISC_ALARM_FOREGROUND_RETAINED&&alarm_statuses==before);
+  puts("Alarm malformed/uncertain copied status retention PASS");return 0;
+ }
  if(!strcmp(mode,"cue")){
   alarm_view.state=ALARM_STATE_CUE;alarm_view.occurrence.generation=9;
   assert(advance_alarm(0)==0&&(report.flags&RISC_ALARM_FOREGROUND_CUE)&&!(report.flags&RISC_ALARM_FOREGROUND_NEEDS_FOCUS));
@@ -58,6 +76,7 @@ int main(int argc,char**argv){
  }
  alarm_view.state=ALARM_STATE_ALERT;
  alarm_view.occurrence=(alarm_token_v1){ALARM_KIND_ALARM,7,1234,9};strcpy(alarm_view.label,"Test alarm");
+ if(!strcmp(mode,"blocked")){alarm_view.state=ALARM_STATE_BLOCKED;alarm_view.error=ALARM_STORAGE;alarm_view.snapshot=42;memset(&alarm_view.occurrence,0,sizeof(alarm_view.occurrence));}
  assert(!advance_alarm(0)&&(report.flags&RISC_ALARM_FOREGROUND_NEEDS_FOCUS)&&!(report.flags&RISC_ALARM_FOREGROUND_HAS_FOCUS));
  assert(!cp->pause(NULL,session));assert(!held&&!presenting&&!subscribed);
  assert(!advance_alarm(RISC_ALARM_FOREGROUND_FOCUS_AVAILABLE)&&(report.flags&RISC_ALARM_FOREGROUND_HAS_FOCUS));
@@ -72,8 +91,10 @@ int main(int argc,char**argv){
  for(unsigned n=0;held||presenting;n++){assert(n<2000);assert(advance_alarm(1)>=0);}
  /* Back belongs to the modal, and ACK forwards its exact displayed token. */
  nav_pressed=RISC_NAV_BACK;
- for(unsigned n=0;!alarm_acks;n++){assert(n<2000);assert(advance_alarm(1)>=0);}
- assert(acknowledged.kind==ALARM_KIND_ALARM&&acknowledged.revision==7&&acknowledged.deadline==1234&&acknowledged.generation==9);
+ if(strcmp(mode,"blocked")){
+  for(unsigned n=0;!alarm_acks;n++){assert(n<2000);assert(advance_alarm(1)>=0);}
+  assert(acknowledged.kind==ALARM_KIND_ALARM&&acknowledged.revision==7&&acknowledged.deadline==1234&&acknowledged.generation==9);
+ }
  for(unsigned n=0;report.flags&(RISC_ALARM_FOREGROUND_NEEDS_FOCUS|RISC_ALARM_FOREGROUND_HAS_FOCUS);n++){
   assert(n<2000);assert(advance_alarm(1)>=0);
  }

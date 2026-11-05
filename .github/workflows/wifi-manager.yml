@@ -147,6 +147,7 @@ jobs:
           python scripts/build_scene_services.py --runtime Runtime --output build/product-providers/watch --host-profile watch-compact 2>&1 | tee evidence/product-qualification/watch-provider-build.log
           python scripts/build_scene_services.py --runtime Runtime --output build/product-providers/wave --host-profile color-dynamic 2>&1 | tee evidence/product-qualification/wave-provider-build.log
           python scripts/build_scene_services.py --runtime Runtime --output build/product-providers/x4 --host-profile full 2>&1 | tee evidence/product-qualification/x4-provider-build.log
+          python -c 'import json,pathlib; [print(str(p), json.dumps(json.loads(p.read_text()).get("memory", {}), sort_keys=True)) for p in sorted(pathlib.Path("build/product-providers").glob("*/scene-host/build.json"))]' | tee evidence/product-qualification/provider-memory.log
           git diff --exit-code HEAD --
       - name: Verify published product bytes
         run: |

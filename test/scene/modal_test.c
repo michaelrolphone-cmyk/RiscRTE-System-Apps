@@ -30,7 +30,7 @@ int main(int argc,char **argv){
  expected_intent=RISC_DISPLAY_PRESENT_LOW_LATENCY;
  assert(!api->update(NULL,session,&doc));
  assert(!life->configure(NULL,session,continuity?RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY:0));settle();
- risc_components_document_v1 d={.api_version=1,.struct_size=sizeof(d),.revision=1,.root=1,.route_count=1,.node_count=1};
+ risc_components_document_v1 d={.api_version=1,.struct_size=sizeof(d),.revision=1,.root=1,.route_count=1,.node_count=1,.screen_key=1};
  d.routes[0]=(risc_scene_route_v1){1,77,"NOTICE"};
  d.nodes[0]=(risc_scene_node_v1){.id=1,.route=1,.kind=RISC_SCENE_ACTION,.action=77,.label="ACKNOWLEDGE"};
  uint64_t child=0,parent=session;unsigned before=calls;

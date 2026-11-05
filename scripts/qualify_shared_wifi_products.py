@@ -59,6 +59,14 @@ def main():
             print('SHARED WIFI ADMISSION '+json.dumps({'product':lane,'mode':mode,'result':r},sort_keys=True),flush=True)
             (a.output/'qualification.json').write_bytes(encode(receipt))
     pin(a.runtime,RUNTIME);pin(a.system,SYSTEM);pin(a.bootfs,BOOTFS)
+    # Keep host graph/ELF evidence separate from the real native firmware cohort.
+    lock=json.loads(a.baseline_lock.read_text())
+    receipt['status']='native_identity_pending'
+    (a.output/'qualification.json').write_bytes(encode(receipt))
+    for lane in LANES:
+        receipt['products'][lane]['native_cohort']=native_cohort(lock,a.baseline,lane)
+        (a.output/'qualification.json').write_bytes(encode(receipt))
+    receipt['native_cohort_qualified']=True
     receipt['status']='passed';(a.output/'qualification.json').write_bytes(encode(receipt))
-    print('PASS: shared Wi-Fi product preservation, roundtrips, selected Runtime admission (internal Wi-Fi selection)')
+    print('PASS: shared Wi-Fi product preservation, roundtrips, host Runtime admission and hash-locked native cohort (not installed/hardware qualification)')
 if __name__=='__main__':main()

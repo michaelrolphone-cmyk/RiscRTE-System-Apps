@@ -1,6 +1,7 @@
 /* Shared alarm foreground controller. All geometry belongs to ui.scene;
  * scheduler persistence, RTC and output policy remain with alarm.service. */
 #include "RiscAlarmForegroundV1.h"
+#include <stddef.h>
 #include "AlarmServiceV2.h"
 #include "RiscRuntimeV1.h"
 #include "RiscProviderV2.h"
@@ -120,7 +121,8 @@ static int32_t advance_impl(uint32_t flags,risc_alarm_foreground_status_v1*out){
    if(e.kind==RISC_SCENE_ACTION_EVENT&&e.action==DISMISS){
     if(published.occurrence.generation){if(!ack_pending){ack_token=published.occurrence;ack_pending=true;}}
     else if(published.state==ALARM_STATE_BLOCKED){
-     error_seen=true;seen_error=published.error;seen_snapshot=published.snapshot;
+     error_seen=true;seen_error=state.error;seen_snapshot=state.snapshot;
+     return close_modal(out);
     }
    }else if(e.kind==RISC_SCENE_ACTION_EVENT&&e.action==RETRY&&published.state==ALARM_STATE_BLOCKED)refresh_pending=true;
   }
@@ -149,7 +151,11 @@ static int32_t advance_impl(uint32_t flags,risc_alarm_foreground_status_v1*out){
   if((rc==RISC_SCENE_BUSY||rc==RISC_SCENE_AGAIN)&&!token)return snapshot_reply(out,RISC_ALARM_FOREGROUND_AGAIN);
   if(rc==RISC_SCENE_RETAINED||(token&&rc!=RISC_SCENE_OK))return retain();
   if(rc!=RISC_SCENE_OK||!token)return presentation_failure();
-  session=token;published=state;
+  session=token;
+  rc=components->lifecycle.configure(scene->context,session,0);
+  if(!live()||rc==RISC_SCENE_RETAINED)return retain();
+  if(rc!=RISC_SCENE_OK)return presentation_failure();
+  published=state;
  }else if(session&&changed()){
   if(!declare())return retain();
   rc=components->update(scene->context,session,&document);
@@ -178,7 +184,7 @@ static bool start(const risc_provider_dependency_v1*deps,size_t count){
  }
  if(!scene||!scheduler)return false;
  components=risc_scene_components_get_v1(scene);modal=risc_scene_modal_get_v1(scene);
- if(!components||!modal||!scene->next||!scene->snapshot)return false;
+ if(!components||!components->lifecycle.configure||!modal||!scene->next||!scene->snapshot)return false;
  memset(&state,0,sizeof(state));memset(&published,0,sizeof(published));
  state.struct_size=sizeof(state);state.api_version=1;state.state=ALARM_STATE_LOADING;
  session=sequence=0;revision=0;closing=ack_pending=refresh_pending=error_seen=false;
