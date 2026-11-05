@@ -101,7 +101,13 @@ int main(int argc,char **argv){
    assert(!cp->pause(NULL,session));assert(!cp->resume(NULL,session,0));settle();finish();return 0;
  }
  assert(!cp->resume(NULL,parent,RISC_SCENE_RESUME_REDRAW|RISC_SCENE_RESUME_FOCUS_CHANGED));
- settle();doc.revision++;strcpy(doc.nodes[0].text,"continued draft");assert(!api->update(NULL,parent,&doc));
+ settle();
+ /* No intervening update may be required to restore editor input. */
+ nav_pressed=RISC_NAV_BACK;e=(risc_scene_event_v1){.struct_size=sizeof(e)};
+ assert(api->next(NULL,parent,&e)==RISC_SCENE_OK);
+ assert(e.kind==RISC_SCENE_VALUE_EVENT&&e.document_revision==doc.revision&&
+        e.node==1&&e.action==40&&e.value==RISC_SCENE_KEY_CANCEL);
+ doc.revision++;strcpy(doc.nodes[0].text,"continued draft");assert(!api->update(NULL,parent,&doc));
  settle();finish();
  printf("Modal parent editor/custody %ux%u format=%u continuity=%u PASS\n",w,h,format,continuity);return 0;
 }

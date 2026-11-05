@@ -1128,6 +1128,9 @@ static void modal_restore(void){
     surface=(risc_display_surface_v1){0};present_token=(risc_display_present_token_v1){0};
     memset(&frame_model,0,sizeof(frame_model));
     modal_parent=NULL;modal_focus_changed=true;
+    /* Restored input topology belongs to logical state. Raster completion
+     * never publishes hit maps, so repaint alone cannot re-enable input. */
+    rebuild_hits();
     memset(saved,0,sizeof(*saved));free(saved);
 }
 static int32_t scene_close(void *c,uint64_t s){

@@ -28,6 +28,7 @@ void modal_test_restored(void){
  assert(page_live==modal_test_live&&page_frozen==modal_test_frozen&&page_capacity==32);
  for(unsigned i=0;i<32;i++){assert(page_live[i]==0x73);assert(page_frozen[i]==0x28);}
  assert(modal_focus_changed);
+ assert(view_current()); /* Includes ordinary child-open rollback. */
  memset(&modal_test_expected,0,sizeof(modal_test_expected));
 }
 

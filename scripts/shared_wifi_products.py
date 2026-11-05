@@ -1,7 +1,7 @@
 """Pinned inputs and preservation checks for offline shared Wi-Fi candidates."""
 import hashlib,json,subprocess,sys,zipfile
 from pathlib import Path,PurePosixPath
-RUNTIME='712ecc3f894dba99d9c9638941778a82f5856b97'
+RUNTIME='fb6d0323b7ab6fa57af8fd5551ce45fdf52c743d'
 SYSTEM='710b200021b983ea55eb86a6fbddbbf5ce10a984'
 BOOTFS='ab9ff33975680c5bb8d9a2e7ed346d0300732a4e'
 LANES=('watch','wave','x4')
