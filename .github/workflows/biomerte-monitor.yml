@@ -1,0 +1,43 @@
+name: BiomeRTE Monitor ESP32-C6
+on:
+  push:
+    branches: ['native/biomerte-monitor-wifi']
+    paths: ['profiles/esp32c6-epaper/**', '.github/workflows/biomerte-monitor.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.4.2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Host regression checks
+        shell: bash
+        run: |
+          cd profiles/esp32c6-epaper
+          python3 -m unittest discover -s tests -v
+          gcc -std=c11 -Wall -Wextra -Werror -Wno-misleading-indentation -DBM_CANONICAL_ONLY -I main -I "$IDF_PATH/components/json/cJSON" main/bm_protocol.c "$IDF_PATH/components/json/cJSON/cJSON.c" tests/bm_protocol_test.c -lm -o /tmp/bm-protocol-test
+          /tmp/bm-protocol-test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -I main main/frame.c tests/frame_test.c -o /tmp/frame-test
+          /tmp/frame-test
+          gcc -std=c11 -Wall -Wextra -Werror -I tests/stubs -I main main/panel.c tests/panel_test.c -o /tmp/panel-test
+          /tmp/panel-test
+      - name: Build native BiomeRTE provider
+        shell: bash
+        run: |
+          . /opt/esp/idf/export.sh
+          cd profiles/esp32c6-epaper
+          idf.py set-target esp32c6
+          idf.py build
+          mkdir -p dist/debug
+          cp build/biome_monitor.bin dist/firmware.bin
+          cp build/biome_monitor.elf build/biome_monitor.map dist/debug/
+          cp build/bootloader/bootloader.bin build/partition_table/partition-table.bin dist/
+          sha256sum dist/*.bin dist/debug/* > dist/SHA256SUMS
+          printf '%s\n' "$GITHUB_SHA" > dist/SOURCE_COMMIT
+      - uses: actions/upload-artifact@v4
+        with:
+          name: biomerte-monitor-esp32c6-v2.0.0
+          path: profiles/esp32c6-epaper/dist/
+          if-no-files-found: error
