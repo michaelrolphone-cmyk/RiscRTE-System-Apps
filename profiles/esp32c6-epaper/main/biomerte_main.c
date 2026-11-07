@@ -27,6 +27,7 @@
 #include "mbedtls/sha256.h"
 #include "mbedtls/base64.h"
 #include "cJSON.h"
+#include "driver/gpio.h"
 #include "panel.h"
 #include "idle_guard.h"
 #include "diagnostics.h"
@@ -39,11 +40,11 @@
 #define RESPONSE_MAX 90000
 #define FRAME_SIZE 48000
 static const char *TAG = "biome-monitor";
-static nvs_handle_t config_nv, meta_nv, records_nv;
+static nvs_handle_t config_nv, meta_nv;
 static cJSON *config, *meta;
 static EventGroupHandle_t wifi_events;
 static uint8_t *frame;
-static bool panel_ok, blocked, splash_shown, diagnostic_visible;
+static bool panel_ok, panel_configured, blocked, splash_shown, diagnostic_visible;
 static diagnostic_display diagnostic;
 static int64_t last_panel_try, last_wifi_try, frame_expiry, last_success;
 static unsigned failures;
@@ -98,18 +99,26 @@ static cJSON *load(nvs_handle_t nv,const char *key) {
     return v;
 }
 static void save_meta(void) {persist(meta_nv,"state",meta);}
-static void record_key(const char *id,char key[16]) {char h[65];hash_bytes(id,strlen(id),h);key[0]='o';memcpy(key+1,h,14);key[15]=0;}
+/* A single serialized effect may be unresolved. Completed controller receipts
+ * prevent old IDs from becoming claimed again; keep only current local evidence. */
 static cJSON *read_record(const char *id) {
-    char key[16];record_key(id,key);cJSON *r=load(records_nv,key);
-    if(r&&!eq(r,"id",id))halt("Operation key collision");
-    return r;
+    cJSON *r=get(meta,"current_record");
+    return r&&eq(r,"id",id)?cJSON_Duplicate(r,true):NULL;
 }
 static void save_record(cJSON *r) {
-    char key[16];record_key(str(r,"id"),key);persist(records_nv,key,r);
+    const cJSON *prior=get(meta,"current_record");
+    if(prior&&(eq(prior,"state","uncertain")||!cJSON_IsTrue(get(prior,"controller_settled")))&&!eq(prior,"id",str(r,"id")))
+        halt("Cannot replace unresolved effect");
+    set(meta,"current_record",cJSON_Duplicate(r,true));
     ps(meta,"last_operation",str(r,"id"));save_meta();
 }
 static void fallback(void) {
     if(blocked)return;
+    if(!panel_configured) {
+        panel_pins pins={2,6,3,7,4,5};
+        if(panel_init(pins)!=ESP_OK)halt("Panel initialization failed");
+        panel_configured=true;panel_ok=panel_probe()==ESP_OK;last_panel_try=ms();
+    }
     if(!panel_ok&&ms()-last_panel_try>=60000) {
         last_panel_try=ms();panel_ok=panel_probe()==ESP_OK;
     }
@@ -158,8 +167,8 @@ static void network_start(void) {
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT,ESP_EVENT_ANY_ID,network_event,NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT,ESP_EVENT_ANY_ID,network_event,NULL));
     wifi_config_t w={0};
-    snprintf((char*)w.sta.ssid,sizeof w.sta.ssid,"%s",str(config,"ssid"));
-    snprintf((char*)w.sta.password,sizeof w.sta.password,"%s",str(config,"password"));
+    memcpy(w.sta.ssid,str(config,"ssid"),strlen(str(config,"ssid")));
+    memcpy(w.sta.password,str(config,"password"),strlen(str(config,"password")));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA,&w));
     ESP_ERROR_CHECK(esp_wifi_start());ESP_ERROR_CHECK(esp_wifi_connect());
@@ -218,7 +227,9 @@ static cJSON *transport(const cJSON *body,const char *path,int *http_status) {
     }
     esp_http_client_close(h);esp_http_client_cleanup(h);
     if(!out){if(*http_status!=202)fail("Gateway response unavailable");return NULL;}
-    last_success=ms();failures=0;error_text[0]=0;return out;
+    if(*http_status==200){last_success=ms();failures=0;error_text[0]=0;}
+    else if(*http_status!=202){snprintf(error_text,sizeof error_text,"Gateway HTTP %d",*http_status);failures++;}
+    return out;
 }
 /* Persist ACK ownership before dropping a pending native request. Recovery may
  * discard a read result and issue a fresh read, but never replays its old ID. */
@@ -306,12 +317,17 @@ static bool report(cJSON *record) {
     cJSON *a=provider_args();ps(a,"operation",str(record,"id"));
     pn(a,"generation",number(record,"generation"));ps(a,"state",str(record,"state"));
     set(a,"result",cJSON_Duplicate(get(record,"result"),true));
-    cJSON *r=rpc("provider.result",a,true);bool ok=r&&eq(r,"state",str(record,"state"));cJSON_Delete(r);return ok;
+    cJSON *r=rpc("provider.result",a,true);bool ok=r&&eq(r,"state",str(record,"state"));cJSON_Delete(r);
+    if(ok&&!eq(record,"state","uncertain")){set(record,"controller_settled",cJSON_CreateBool(true));save_record(record);}
+    return ok;
 }
 static bool reconcile(void) {
     const char *id=str(meta,"last_operation");if(!*id){blocked=false;return true;}
     cJSON *r=read_record(id);if(!r){halt("Missing operation journal");}
-    if(!eq(r,"state","uncertain")){blocked=false;cJSON_Delete(r);return true;}
+    if(!eq(r,"state","uncertain")){
+        blocked=false;bool settled=cJSON_IsTrue(get(r,"controller_settled"))||report(r);
+        cJSON_Delete(r);return settled;
+    }
     blocked=true;cJSON *a=cJSON_CreateObject();ps(a,"operation",id);
     cJSON *current=rpc("cap.status",a,false);
     if(current&&identity(current)) {
@@ -321,7 +337,7 @@ static bool reconcile(void) {
         bool quiescent=cJSON_IsTrue(get(get(result,"evidence"),"quiescent"))||
                        cJSON_IsTrue(get(get(result,"reconciliation"),"quiescent"));
         if(sig&&eq(r,"signature",sig)&&settled&&quiescent) {
-            ps(r,"state",str(current,"state"));set(r,"result",cJSON_Duplicate(result,true));save_record(r);blocked=false;
+            ps(r,"state",str(current,"state"));set(r,"result",cJSON_Duplicate(result,true));set(r,"controller_settled",cJSON_CreateBool(true));save_record(r);blocked=false;
         }
         free(sig);
     }
@@ -420,13 +436,15 @@ static void perform(cJSON *action) {
         cJSON_AddBoolToObject(evidence,"controller_refresh_completed",true);
         cJSON_AddBoolToObject(evidence,"optical_readback",false);set(result,"evidence",evidence);
         ps(record,"state","succeeded");set(record,"result",result);save_record(record);
-        blocked=false;splash_shown=false;
+        blocked=false;splash_shown=false;diagnostic_visible=false;
         frame_expiry=ms()+(int64_t)(expiry-(double)time(NULL)*1000);
         ESP_LOGW(TAG,"BiomeRTE frame rendered sha256=%s",sha);
     } else {panel_ok=false;fail("Panel outcome uncertain");}
     report(record);cJSON_Delete(record);
 }
 void app_main(void) {
+    /* Seengreat v1.4 D2 user LED is active-low on GPIO8. Leave charge LEDs alone. */
+    gpio_reset_pin(GPIO_NUM_8);gpio_set_level(GPIO_NUM_8,1);gpio_set_direction(GPIO_NUM_8,GPIO_MODE_OUTPUT);
     ESP_ERROR_CHECK(biome_idle_guard_install());
     vTaskDelay(pdMS_TO_TICKS(esp_reset_reason()==ESP_RST_BROWNOUT?5000:2000));
     ESP_ERROR_CHECK(nvs_flash_init());ESP_ERROR_CHECK(nvs_open("biomerte",NVS_READONLY,&config_nv));
@@ -436,19 +454,17 @@ void app_main(void) {
        strchr(origin,'@')||strchr(origin,'?')||strchr(origin,'#')||
        !valid_sha(str(config,"provider"))||strlen(str(config,"resource"))>150||
        !*str(config,"site")||!*str(config,"resource")||!*str(config,"private_key")||!*str(config,"public_key")||
-       !*str(config,"ssid")||strlen(str(config,"ssid"))>32||strlen(str(config,"password"))>63)
+       !*str(config,"ssid")||strlen(str(config,"ssid"))>32||strlen(str(config,"password"))>64)
         halt("Invalid BiomeRTE configuration");
     ESP_ERROR_CHECK(nvs_flash_init_partition("runtime"));
     ESP_ERROR_CHECK(nvs_open_from_partition("runtime","biomerte_meta",NVS_READWRITE,&meta_nv));
-    ESP_ERROR_CHECK(nvs_open_from_partition("runtime","biomerte_ops",NVS_READWRITE,&records_nv));
     meta=load(meta_nv,"state");if(!meta)meta=cJSON_CreateObject();
     char authority[400];snprintf(authority,sizeof authority,"%s/site/%s/%s",str(config,"site"),str(config,"provider"),str(config,"resource"));
     if(*str(meta,"authority")&&!eq(meta,"authority",authority))halt("Journal authority mismatch");
     ps(meta,"authority",authority);save_meta();nonce(boot_id);
     cJSON *last=*str(meta,"last_operation")?read_record(str(meta,"last_operation")):NULL;
     blocked=last&&eq(last,"state","uncertain");cJSON_Delete(last);
-    panel_pins pins={2,6,3,7,4,5};ESP_ERROR_CHECK(panel_init(pins));
-    panel_ok=panel_probe()==ESP_OK;frame=malloc(FRAME_SIZE);if(!frame)halt("Frame allocation failed");
+    frame=malloc(FRAME_SIZE);if(!frame)halt("Frame allocation failed");
     fallback();network_start();
     ESP_LOGW(TAG,"%s provider=%s resource=%s",VERSION,str(config,"provider"),str(config,"resource"));
     int64_t advertised=0;

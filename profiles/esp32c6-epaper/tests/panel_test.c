@@ -28,5 +28,9 @@ int main(void){panel_pins p={2,6,3,7,4,5};assert(panel_init(p)==ESP_OK);uint8_t 
  reset();busy_mode=1;assert(panel_render(frame)==ESP_ERR_INVALID_RESPONSE);assert(!refresh&&new_size==0);
  reset();busy_mode=2;assert(panel_render(frame)==ESP_ERR_TIMEOUT);assert(!refresh);
  reset();fail_command=0x13;assert(panel_render(frame)!=ESP_OK);assert(!refresh);
+ reset();fail_command=0x02;assert(panel_render(frame)!=ESP_OK);assert(refresh);
+ reset();fail_command=0x07;assert(panel_render(frame)!=ESP_OK);assert(refresh);
+ reset();fail_command=0x02;assert(panel_probe()!=ESP_OK);assert(!refresh);
+ reset();fail_command=0x07;assert(panel_probe()!=ESP_OK);assert(!refresh);
  puts("actual panel driver: pins, payload/polarity, BUSY probe, timeout and SPI failure tests passed");
 }

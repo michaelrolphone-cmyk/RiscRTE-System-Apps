@@ -50,8 +50,9 @@ esp_err_t panel_init(panel_pins p) {
  spi_device_interface_config_t d={.mode=3,.clock_speed_hz=4000000,.spics_io_num=p.cs,.queue_size=1};
  return spi_bus_add_device(SPI2_HOST,&d,&spi);
 }
-void panel_stop(void){if(!spi)return;uint8_t v=0xf7;reg(0x50,&v,1);cmd(0x02);idle(3000);v=0xa5;reg(0x07,&v,1);}
-esp_err_t panel_probe(void){esp_err_t e=power();panel_stop();return e;}
+static esp_err_t stop_checked(void){if(!spi)return ESP_ERR_INVALID_ARG;uint8_t v=0xf7;TRY(reg(0x50,&v,1));TRY(cmd(0x02));TRY(idle(3000));v=0xa5;return reg(0x07,&v,1);}
+void panel_stop(void){(void)stop_checked();}
+esp_err_t panel_probe(void){esp_err_t e=power();esp_err_t stopped=stop_checked();return e==ESP_OK?stopped:e;}
 esp_err_t panel_render(const uint8_t *frame) {
  esp_err_t e=power();if(e!=ESP_OK){panel_stop();return e;}
  e=cmd(0x10);uint8_t blank[100]={0};
@@ -60,5 +61,5 @@ esp_err_t panel_render(const uint8_t *frame) {
  if(e==ESP_OK)e=send(frame,FRAME_BYTES,1);
  if(e==ESP_OK)e=cmd(0x12);
  if(e==ESP_OK)e=handshake(20000);
- panel_stop();return e;
+ esp_err_t stopped=stop_checked();return e==ESP_OK?stopped:e;
 }
