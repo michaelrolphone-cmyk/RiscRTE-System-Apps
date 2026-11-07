@@ -6,3 +6,5 @@
 char *bm_canonical(const cJSON *value);
 bool bm_json_integers_only(const cJSON *value);
 bool bm_sign_request(cJSON *envelope,const char *private_pem,const char *provider);
+
+char *bm_sign_value(const cJSON *value,const char *private_pem);

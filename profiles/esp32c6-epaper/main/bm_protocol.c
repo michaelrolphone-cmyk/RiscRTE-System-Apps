@@ -62,9 +62,8 @@ static bool numbers(const cJSON*v,unsigned depth){
 bool bm_json_integers_only(const cJSON*v){return numbers(v,0);}
 #ifndef BM_CANONICAL_ONLY
 static int random_bytes(void *ctx,unsigned char *out,size_t n){(void)ctx;esp_fill_random(out,n);return 0;}
-bool bm_sign_request(cJSON*q,const char*pem,const char*provider){
- if(!q)return false;
- if(cJSON_GetObjectItemCaseSensitive(q,"auth")||!pem||!provider)return false;
+char *bm_sign_value(const cJSON*q,const char*pem){
+ if(!q||!pem)return NULL;
  char *wire=bm_canonical(q);if(!wire)return false;
  unsigned char digest[32],signature[256],base64[345];size_t n=0,encoded=0;
  mbedtls_sha256((const unsigned char*)wire,strlen(wire),digest,0);free(wire);
@@ -75,9 +74,14 @@ bool bm_sign_request(cJSON*q,const char*pem,const char*provider){
   ok=mbedtls_pk_sign(&key,MBEDTLS_MD_SHA256,digest,32,signature,sizeof signature,&n,random_bytes,NULL)==0&&n==256;}
  mbedtls_pk_free(&key);if(!ok)return false;
  if(mbedtls_base64_encode(base64,sizeof base64,&encoded,signature,n)||encoded!=344)return false;
- base64[encoded]=0;cJSON*auth=cJSON_CreateObject();if(!auth)return false;
- if(!cJSON_AddStringToObject(auth,"actor",provider)||!cJSON_AddStringToObject(auth,"signature",(char*)base64)){cJSON_Delete(auth);return false;}
+ base64[encoded]=0;return strdup((char*)base64);
+}
+bool bm_sign_request(cJSON*q,const char*pem,const char*provider){
+ if(!q||!provider||cJSON_GetObjectItemCaseSensitive(q,"auth"))return false;
+ char *signature=bm_sign_value(q,pem);if(!signature)return false;
+ cJSON *auth=cJSON_CreateObject();if(!auth){free(signature);return false;}
+ bool ok=cJSON_AddStringToObject(auth,"actor",provider)&&cJSON_AddStringToObject(auth,"signature",signature);
+ free(signature);if(!ok){cJSON_Delete(auth);return false;}
  if(!cJSON_AddItemToObject(q,"auth",auth)){cJSON_Delete(auth);return false;}return true;
 }
-
 #endif

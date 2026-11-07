@@ -43,8 +43,9 @@ static nvs_handle_t config_nv, meta_nv, records_nv;
 static cJSON *config, *meta;
 static EventGroupHandle_t wifi_events;
 static uint8_t *frame;
-static bool panel_ok, blocked, splash_shown;
-static int64_t last_panel_try, last_wifi_try, frame_expiry;
+static bool panel_ok, blocked, splash_shown, diagnostic_visible;
+static diagnostic_display diagnostic;
+static int64_t last_panel_try, last_wifi_try, frame_expiry, last_success;
 static unsigned failures;
 static char error_text[64] = "Starting";
 static char boot_id[33];
@@ -112,6 +113,27 @@ static void fallback(void) {
     if(!panel_ok&&ms()-last_panel_try>=60000) {
         last_panel_try=ms();panel_ok=panel_probe()==ESP_OK;
     }
+    bool failing=error_text[0]!=0;
+    if(panel_ok&&diagnostic_due(&diagnostic,ms(),failing,false)) {
+        uint8_t *image=malloc(FRAME_SIZE);
+        if(image) {
+            char version[49],error[49],age[49];
+            snprintf(version,sizeof version,"%s",VERSION);
+            snprintf(error,sizeof error,"%.48s",error_text);
+            snprintf(age,sizeof age,"Last sync: %lld seconds ago",(long long)((ms()-last_success)/1000));
+            const char *lines[]={"BIOME - LOCAL DIAGNOSTICS",version,error,
+                "Standalone public gateway over Wi-Fi",age,"Automatic recovery retries continue",
+                "No Pi LAN connection is required"};
+            diagnostic_render(image,lines,7);
+            if(panel_render(image)==ESP_OK){diagnostic_shown(&diagnostic,ms());diagnostic_visible=true;splash_shown=false;}
+            else{panel_ok=false;last_panel_try=ms();}
+            free(image);
+        }
+    }
+    if(diagnostic_visible) {
+        if(failing)return;
+        diagnostic_visible=false;frame_expiry=0;
+    }
     if(panel_ok&&!splash_shown&&(!frame_expiry||ms()>=frame_expiry)) {
         if(panel_render(idle_logo)==ESP_OK){splash_shown=true;frame_expiry=0;}
         else{panel_ok=false;last_panel_try=ms();fail("Panel refresh failed");}
@@ -155,13 +177,12 @@ static bool network_ready(void) {
 /* Gateway accepts the unchanged signed native envelope and returns {result}.
  * Certificate bundle validation stays enabled; redirects are never followed.
  */
-static cJSON *exchange_once(const cJSON *request,bool *pending) {
-    *pending=false;
+static cJSON *transport(const cJSON *body,const char *path,int *http_status) {
+    *http_status=0;
     if(!network_ready())return NULL;
-    cJSON *body=cJSON_CreateObject();ps(body,"site",str(config,"site"));ps(body,"public_key",str(config,"public_key"));set(body,"envelope",cJSON_Duplicate(request,true));
-    char *wire=bm_canonical(body);cJSON_Delete(body);if(!wire){fail("Request encoding failed");return NULL;}
+    char *wire=bm_canonical(body);if(!wire){fail("Request encoding failed");return NULL;}
     const char *origin=str(config,"origin");
-    char url[256];snprintf(url,sizeof url,"%s/api/provider/call",origin);
+    char url[256];snprintf(url,sizeof url,"%s%s",origin,path);
     esp_http_client_config_t hc={.url=url,.crt_bundle_attach=esp_crt_bundle_attach,
         .timeout_ms=45000,.disable_auto_redirect=true,.buffer_size=2048,.buffer_size_tx=2048};
     esp_http_client_handle_t h=esp_http_client_init(&hc);
@@ -177,16 +198,15 @@ static cJSON *exchange_once(const cJSON *request,bool *pending) {
     cJSON *out=NULL;
     if(e==ESP_OK) {
         int64_t length=esp_http_client_fetch_headers(h);int status=esp_http_client_get_status_code(h);
-        if(status==202){*pending=true;}
-        else if(status==200&&length<=RESPONSE_MAX) {
+        *http_status=status;
+        if(status!=202&&length<=RESPONSE_MAX) {
             char *response=malloc(RESPONSE_MAX+1);
             if(response) {
                 size_t used=0;int n=0;
                 while(used<RESPONSE_MAX&&(n=esp_http_client_read(h,response+used,(int)(RESPONSE_MAX-used)))>0)used+=n;
                 if(n>=0&&esp_http_client_is_complete_data_received(h)&&used<RESPONSE_MAX) {
                     response[used]=0;cJSON *root=cJSON_ParseWithLength(response,used+1);
-                    if(root&&get(root,"result"))out=cJSON_DetachItemFromObjectCaseSensitive(root,"result");
-                    cJSON_Delete(root);
+                    out=root;
                 }
                 free(response);
             }
@@ -197,11 +217,52 @@ static cJSON *exchange_once(const cJSON *request,bool *pending) {
         }
     }
     esp_http_client_close(h);esp_http_client_cleanup(h);
-    if(!out){if(!*pending)fail("Gateway response unavailable");return NULL;}
-    error_text[0]=0;return out;
+    if(!out){if(*http_status!=202)fail("Gateway response unavailable");return NULL;}
+    last_success=ms();failures=0;error_text[0]=0;return out;
+}
+/* Persist ACK ownership before dropping a pending native request. Recovery may
+ * discard a read result and issue a fresh read, but never replays its old ID. */
+static bool drain_ack(void) {
+    const char *receipt=str(meta,"relay_ack");if(!*receipt)return true;
+    cJSON *payload=cJSON_CreateObject();
+    ps(payload,"domain","biomerte-provider-relay-ack-v1");ps(payload,"operation","acknowledge");
+    ps(payload,"site",str(config,"site"));ps(payload,"actor",str(config,"provider"));ps(payload,"receipt",receipt);
+    char *signature=bm_sign_value(payload,str(config,"private_key"));
+    cJSON_Delete(payload);if(!signature)halt("ACK signing failed");
+    cJSON *body=cJSON_CreateObject();
+    ps(body,"site",str(config,"site"));ps(body,"actor",str(config,"provider"));ps(body,"receipt",receipt);
+    ps(body,"public_key",str(config,"public_key"));ps(body,"signature",signature);free(signature);
+    int status=0;cJSON *r=transport(body,"/api/provider/ack",&status);cJSON_Delete(body);
+    bool ok=status==200&&r&&cJSON_IsTrue(get(r,"acknowledged"))&&eq(r,"receipt",receipt);
+    cJSON_Delete(r);
+    if(ok){cJSON_DeleteItemFromObjectCaseSensitive(meta,"relay_ack");save_meta();}
+    return ok;
 }
 static cJSON *exchange(const cJSON *request) {
-    for(;;){bool pending=false;cJSON *r=exchange_once(request,&pending);if(!pending)return r;pause_ms(1000);}
+    if(!drain_ack())return NULL;
+    cJSON *body=cJSON_CreateObject();ps(body,"site",str(config,"site"));
+    ps(body,"public_key",str(config,"public_key"));set(body,"envelope",cJSON_Duplicate(request,true));
+    cJSON *out=NULL;
+    for(;;) {
+        int status=0;cJSON *root=transport(body,"/api/provider/call",&status);
+        if(status==202){cJSON_Delete(root);pause_ms(1000);continue;}
+        if(root) {
+            if(status==200&&get(root,"result"))out=cJSON_DetachItemFromObjectCaseSensitive(root,"result");
+            else if(status>=400&&status<500&&status!=408&&status!=429) {
+                out=cJSON_CreateObject();pn(out,"_rpc_error",status);
+            }
+            if(out) {
+                const char *receipt=str(root,"relay_receipt");
+                if(strlen(receipt)==71&&!strncmp(receipt,"native-",7)) {
+                    ps(meta,"relay_ack",receipt);
+                    cJSON_DeleteItemFromObjectCaseSensitive(meta,"pending");save_meta();
+                } else if(status==200) {cJSON_Delete(out);out=NULL;fail("Relay receipt missing");}
+            }
+            cJSON_Delete(root);
+        }
+        break;
+    }
+    cJSON_Delete(body);return out;
 }
 static cJSON *new_request(const char *op,cJSON *args) {
     cJSON *q=cJSON_CreateObject();char id[33];nonce(id);
@@ -213,12 +274,13 @@ static cJSON *new_request(const char *op,cJSON *args) {
 static cJSON *rpc(const char *op,cJSON *args,bool mutation) {
     if(get(meta,"pending")){cJSON_Delete(args);return NULL;}
     cJSON *q=new_request(op,args);
-    if(mutation){set(meta,"pending",cJSON_Duplicate(q,true));save_meta();}
+    (void)mutation;set(meta,"pending",cJSON_Duplicate(q,true));save_meta();
     cJSON *r=exchange(q);cJSON_Delete(q);
-    if(r&&mutation){cJSON_DeleteItemFromObjectCaseSensitive(meta,"pending");save_meta();}
+    if(r){cJSON_DeleteItemFromObjectCaseSensitive(meta,"pending");save_meta();}
     return r;
 }
 static bool replay(void) {
+    if(!drain_ack())return false;
     cJSON *pending=get(meta,"pending");if(!pending)return true;
     cJSON *r=exchange(pending);if(!r)return false;
     cJSON_Delete(r);cJSON_DeleteItemFromObjectCaseSensitive(meta,"pending");save_meta();return true;
