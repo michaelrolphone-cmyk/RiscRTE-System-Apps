@@ -15,10 +15,10 @@ Configuration is JSON in NVS namespace `biomerte`, key `config`:
 - `site`: controller site ID
 - `provider`: SHA-256 fingerprint of RSA SPKI DER
 - `resource`: dedicated display resource ID
-- `public_key`, `private_key`: RSA2048 PEM material
+- `private_key`: device RSA2048 PEM private key
 - `ssid`, `password`: configured Wi-Fi network
 
-The gateway must admit the fingerprint in BIOME_PROVIDER_ACTORS. The controller peer grant is limited to cap.offer, offer:display.epaper.frame:1, resource:<display resource>, cap.fenced, provider.poll, provider.claim, provider.result, cap.status and artifact.get. No terminal or admin permission is needed.
+The public gateway forwards existing native signed calls; device enrollment uses the controller’s existing peer trust and needs no per-device gateway deployment. The controller peer grant is limited to cap.offer, offer:display.epaper.frame:1, resource:<display resource>, cap.fenced, provider.poll, provider.claim, provider.result, cap.status and artifact.get. No terminal or admin permission is needed.
 
 ## Display contract
 
@@ -28,7 +28,7 @@ Native lease/fence and claim checks govern effects. The local journal records un
 
 ## Public transport and recovery
 
-POST /api/provider/call carries the exact RSA-signed native envelope. TLS uses ESP-IDF's certificate bundle; redirects are disabled. Pending 202 responses are polled with the same body. Every request ID is journaled, including reads. Terminal relay receipts replace pending requests atomically. Before the next request, POST /api/provider/ack uses a domain-separated RSA signature and retries the same receipt until acknowledged. Reboot can discard a consumed read result and make a fresh read; it never replays a request after releasing its relay receipt.
+POST /v1/call carries the existing RSA-signed native envelope unchanged. The controller checks enrollment, signature, scopes and revocation on every HTTP attempt. TLS uses ESP-IDF's certificate bundle; redirects are disabled. Every request ID is journaled, including reads. Transport failures and retryable errors retain the exact request and signature for recovery. Native controller receipts deduplicate mutations; no separate gateway acknowledgement protocol is required.
 
 The monitor retries Wi-Fi and public gateway connections, synchronizes network time for TLS and frame expiry, and displays local diagnostics after sustained failures unless an effect is unresolved.
 

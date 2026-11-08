@@ -231,49 +231,18 @@ static cJSON *transport(const cJSON *body,const char *path,int *http_status) {
     else if(*http_status!=202){snprintf(error_text,sizeof error_text,"Gateway HTTP %d",*http_status);failures++;}
     return out;
 }
-/* Persist ACK ownership before dropping a pending native request. Recovery may
- * discard a read result and issue a fresh read, but never replays its old ID. */
-static bool drain_ack(void) {
-    const char *receipt=str(meta,"relay_ack");if(!*receipt)return true;
-    cJSON *payload=cJSON_CreateObject();
-    ps(payload,"domain","biomerte-provider-relay-ack-v1");ps(payload,"operation","acknowledge");
-    ps(payload,"site",str(config,"site"));ps(payload,"actor",str(config,"provider"));ps(payload,"receipt",receipt);
-    char *signature=bm_sign_value(payload,str(config,"private_key"));
-    cJSON_Delete(payload);if(!signature)halt("ACK signing failed");
-    cJSON *body=cJSON_CreateObject();
-    ps(body,"site",str(config,"site"));ps(body,"actor",str(config,"provider"));ps(body,"receipt",receipt);
-    ps(body,"public_key",str(config,"public_key"));ps(body,"signature",signature);free(signature);
-    int status=0;cJSON *r=transport(body,"/api/provider/ack",&status);cJSON_Delete(body);
-    bool ok=status==200&&r&&cJSON_IsTrue(get(r,"acknowledged"))&&eq(r,"receipt",receipt);
-    cJSON_Delete(r);
-    if(ok){cJSON_DeleteItemFromObjectCaseSensitive(meta,"relay_ack");save_meta();}
-    return ok;
-}
+/* Forward the existing native protocol unchanged. Every retry uses the same
+ * journaled request ID and signature; controller receipts deduplicate writes. */
 static cJSON *exchange(const cJSON *request) {
-    if(!drain_ack())return NULL;
-    cJSON *body=cJSON_CreateObject();ps(body,"site",str(config,"site"));
-    ps(body,"public_key",str(config,"public_key"));set(body,"envelope",cJSON_Duplicate(request,true));
-    cJSON *out=NULL;
-    for(;;) {
-        int status=0;cJSON *root=transport(body,"/api/provider/call",&status);
-        if(status==202){cJSON_Delete(root);pause_ms(1000);continue;}
-        if(root) {
-            if(status==200&&get(root,"result"))out=cJSON_DetachItemFromObjectCaseSensitive(root,"result");
-            else if(status>=400&&status<500&&status!=408&&status!=429) {
-                out=cJSON_CreateObject();pn(out,"_rpc_error",status);
-            }
-            if(out) {
-                const char *receipt=str(root,"relay_receipt");
-                if(strlen(receipt)==71&&!strncmp(receipt,"native-",7)) {
-                    ps(meta,"relay_ack",receipt);
-                    cJSON_DeleteItemFromObjectCaseSensitive(meta,"pending");save_meta();
-                } else if(status==200) {cJSON_Delete(out);out=NULL;fail("Relay receipt missing");}
-            }
-            cJSON_Delete(root);
+    int status=0;cJSON *root=transport(request,"/v1/call",&status),*out=NULL;
+    if(root) {
+        if(status==200&&get(root,"result"))out=cJSON_DetachItemFromObjectCaseSensitive(root,"result");
+        else if(status>=400&&status<500&&status!=408&&status!=429) {
+            out=cJSON_CreateObject();pn(out,"_rpc_error",status);
         }
-        break;
+        cJSON_Delete(root);
     }
-    cJSON_Delete(body);return out;
+    return out;
 }
 static cJSON *new_request(const char *op,cJSON *args) {
     cJSON *q=cJSON_CreateObject();char id[33];nonce(id);
@@ -291,7 +260,6 @@ static cJSON *rpc(const char *op,cJSON *args,bool mutation) {
     return r;
 }
 static bool replay(void) {
-    if(!drain_ack())return false;
     cJSON *pending=get(meta,"pending");if(!pending)return true;
     cJSON *r=exchange(pending);if(!r)return false;
     cJSON_Delete(r);cJSON_DeleteItemFromObjectCaseSensitive(meta,"pending");save_meta();return true;
@@ -453,7 +421,7 @@ void app_main(void) {
     if(strncmp(origin,"https://",8)||strlen(origin)>210||strchr(origin+8,'/')||
        strchr(origin,'@')||strchr(origin,'?')||strchr(origin,'#')||
        !valid_sha(str(config,"provider"))||strlen(str(config,"resource"))>150||
-       !*str(config,"site")||!*str(config,"resource")||!*str(config,"private_key")||!*str(config,"public_key")||
+       !*str(config,"site")||!*str(config,"resource")||!*str(config,"private_key")||
        !*str(config,"ssid")||strlen(str(config,"ssid"))>32||strlen(str(config,"password"))>64)
         halt("Invalid BiomeRTE configuration");
     ESP_ERROR_CHECK(nvs_flash_init_partition("runtime"));
