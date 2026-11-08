@@ -278,6 +278,7 @@ static cJSON *provider_args(void) {cJSON *a=cJSON_CreateObject();ps(a,"provider"
  * signed request in RAM for transport retries instead of wearing NVS each second. */
 static cJSON *poll_request;
 static cJSON *provider_poll(void) {
+    if(get(meta,"pending"))return NULL;
     if(!poll_request)poll_request=new_request("provider.poll",provider_args());
     cJSON *r=exchange(poll_request);
     if(r){cJSON_Delete(poll_request);poll_request=NULL;}
