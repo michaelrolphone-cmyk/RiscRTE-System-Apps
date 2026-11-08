@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Generate the reviewed product overlay from the exact delivered cohort.
 Product wiring lives here, not in the shared application. Existing grants,
-namespace keys, aliases and SD routes are retained verbatim.
+namespace keys and aliases are retained. Content-addressed SD destinations are
+explicitly bound to the replacement bytes; all other route fields are retained.
 """
 import argparse,copy,json,hashlib
 from pathlib import Path
-from assemble_shared_home_cohort import read_lane,inventory,fingerprint,checked_native,validate_bootfs_names
+from assemble_shared_home_cohort import read_lane,inventory,fingerprint,checked_native,validate_bootfs_names,external_target
 from compose_shared_app_cohort import digest,encode
 ROOT=Path(__file__).resolve().parents[1]
 COMMON_GRANTS=[('ui.home-presentation',1),('ui.canvas.raster',1),('ui.canvas-input',1),('alarm.service.facade',2),('time.civil',1)]
@@ -86,7 +87,8 @@ def replacement(packages,name,path,entries,sd,boot):
  source=item['row'].get('image_source')
  if source:
   if source.get('internal_fallback') is not True:raise ValueError('Unreviewed external provider route')
-  item['replace']['external_route']={'path':source['path'],'elf_sha256':digest(sd[source['path']])}
+  item['replace']['external_route']={'path':source['path'],'elf_sha256':digest(sd[source['path']]),
+                                   'target_path':external_target(source['path'],item['elf_sha256'])}
  return item
 def generate(cohort,packages,baseline):
  plans={}
@@ -144,6 +146,9 @@ def generate(cohort,packages,baseline):
   route={'storage':'sd' if source else 'internal','path':source['path'] if source else old_manifest['file_name']}
   oldelf=(sd if source else entries)[route['path']]
   ctx=packages/'contexts'
+  if source:
+   route['target_path']=external_target(route['path'],digest((ctx/'contexts.elf').read_bytes()))
+   for row in changed:row['image_source']['path']=route['target_path']
   update={'manifest':'contexts.json','package':'contexts','manifest_file':'contexts.json','elf_file':'contexts.elf',
           'manifest_sha256':digest((ctx/'contexts.json').read_bytes()),'elf_sha256':digest((ctx/'contexts.elf').read_bytes()),
           'route':route,'original_policy_rows':rows,'policy_rows':changed,'grant_substitutions':substitutions,
@@ -158,3 +163,4 @@ if __name__=='__main__':
  a=p.parse_args()
  if a.output.exists():raise ValueError('Fresh reviewed plan output required')
  a.output.write_bytes(encode(generate(a.cohort,a.packages,json.loads(a.baseline.read_text()))))
+

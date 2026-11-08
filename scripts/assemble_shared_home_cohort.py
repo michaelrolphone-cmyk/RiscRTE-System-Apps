@@ -3,7 +3,7 @@
 No product defaults, inferred bindings, store resizing, or alias shim generation.
 This writes unpacked candidates; owning qualification must pack and validate them.
 """
-import argparse, copy, hashlib, json, sys, zipfile
+import argparse, copy, hashlib, json, re, sys, zipfile
 from pathlib import Path, PurePosixPath
 from compose_shared_app_cohort import tree, safe, encode, digest, write_tree
 
@@ -31,6 +31,51 @@ def read_lane(cohort,lane):
 
 def fingerprint(record):
  return digest(encode(record))
+
+def same_json(a,b):
+ # Python equality aliases bool/int/float; Runtime authority comparison does not.
+ return json.dumps(a,sort_keys=True,allow_nan=False)==json.dumps(b,sort_keys=True,allow_nan=False)
+
+def external_target(path,sha256):
+ """Keep stable routes stable; content-addressed routes name their actual bytes."""
+ path=safe(path)
+ if not re.fullmatch(r'[0-9a-f]{64}',sha256):raise ValueError('Invalid executable digest')
+ name=PurePosixPath(path).name
+ if re.fullmatch(r'image-[0-9a-f]{64}\.elf',name):
+  return str(PurePosixPath(path).with_name('image-'+sha256+'.elf'))
+ return path
+
+def write_external(sd,boot,route,data,selected):
+ """Apply a reviewed destination without overwriting another route's bytes.
+ Old content-addressed objects are retained. This overlay does not own deletion
+ of prior releases, rollback objects, or other applications' external objects.
+ """
+ path=safe(route['path']);target=safe(route.get('target_path',path))
+ if target!=external_target(path,digest(data)):
+  raise ValueError('Explicit content-addressed destination required')
+ if path not in sd:raise ValueError('Installed external executable missing')
+ addressed=bool(re.fullmatch(r'image-[0-9a-f]{64}\.elf',PurePosixPath(target).name))
+ if target!=path or addressed:
+  if target in sd and sd[target]!=data:raise ValueError('External destination collision')
+ elif sd[path]!=data:
+  for section in ('drivers','app_capabilities'):
+   for row in boot.get(section,[]):
+    if row.get('image_source',{}).get('path')==path and (section,row) not in selected:
+     raise ValueError('External overwrite would change an unselected route')
+ sd[target]=data
+ return target
+
+def write_internal(entries,boot,path,data,selected):
+ """A selected executable never aliases an unselected manifest's image."""
+ if entries.get(path)!=data:
+  for section in ('drivers','app_capabilities'):
+   for row in boot.get(section,[]):
+    manifest=safe(row['manifest'])
+    if manifest in selected:continue
+    declaration=json.loads(entries[manifest]);filename=declaration.get('file_name')
+    if filename and safe(str(PurePosixPath(manifest).parent/filename))==path:
+     raise ValueError('Internal overwrite would change an unselected route')
+ entries[path]=data
 
 def declarations(manifest,field):
  rows=manifest.get(field,[])
@@ -133,7 +178,8 @@ def overlay(before, before_sd, plan, elf, common, packages):
  out=dict(before);sd=dict(before_sd);boot=copy.deepcopy(original['boot'])
  aliases=plan['aliases']
  if not aliases:raise ValueError('No reviewed Home aliases')
- names=set();routes=set();grant_checks=[]
+ names=set();routes=set();grant_checks=[];external_routes=[]
+ selected_aliases={safe(a['manifest']) for a in aliases}
  for alias in aliases:
   name=safe(alias['manifest'])
   if name in names:raise ValueError('Duplicate alias')
@@ -150,7 +196,7 @@ def overlay(before, before_sd, plan, elf, common, packages):
   route=alias['route'];path=safe(route['path']);storage=route['storage']
   if storage not in ('internal','sd'):raise ValueError('Unknown executable storage')
   rows=[r for r in boot.get('app_capabilities',[]) if r.get('manifest')==name]
-  if rows!=alias['original_policy_rows']:raise ValueError('Alias authority differs')
+  if not same_json(rows,alias['original_policy_rows']):raise ValueError('Alias authority differs')
   if not rows:raise ValueError('Alias has no explicit authority')
   internal=str(PurePosixPath(name).parent/old['file_name'])
   if storage=='internal' and path!=internal:raise ValueError('Executable differs from installed manifest')
@@ -158,13 +204,26 @@ def overlay(before, before_sd, plan, elf, common, packages):
    raise ValueError('SD route differs from installed authority')
   target=out if storage=='internal' else sd
   if path not in target:raise ValueError('Installed executable missing')
-  target[path]=elf;routes.add((storage,path));out[name]=encode(new)
+  destination=path
+  if storage=='sd':
+   if route.get('target_path',path)!=path and any(r.get('image_source',{}).get('internal_fallback') is not True for r in rows):
+    raise ValueError('External application retargeting requires installed internal fallback')
+   destination=write_external(sd,boot,route,elf,[('app_capabilities',r) for r in rows])
+   if any(r.get('image_source',{}).get('internal_fallback') is True for r in rows):
+    if internal not in out:raise ValueError('Installed application fallback missing')
+    write_internal(out,boot,internal,elf,selected_aliases);routes.add(('internal',internal))
+   external_routes.append({'manifest':name,'path':path,'target_path':destination,'elf_sha256':digest(elf)})
+  else:
+   if route.get('target_path',path)!=path:raise ValueError('Internal route cannot be retargeted')
+   write_internal(out,boot,path,elf,selected_aliases)
+  routes.add((storage,destination));out[name]=encode(new)
   proposed=alias['policy_rows']
   if len(proposed)!=len(rows):raise ValueError('Alias authority row count changed')
   for oldrow,newrow in zip(rows,proposed):
    a=copy.deepcopy(oldrow);b=copy.deepcopy(newrow)
    oldgrants=a.pop('grants',[]);newgrants=b.pop('grants',[])
-   if a!=b:raise ValueError('Only explicit grant changes are permitted')
+   if storage=='sd':a['image_source']['path']=destination
+   if not same_json(a,b):raise ValueError('Only explicit grant and external destination changes are permitted')
    grant_checks.append((oldgrants,newgrants,alias.get('grant_substitutions',[])))
    if len({encode(g) for g in newgrants})!=len(newgrants):raise ValueError('Duplicate grant')
    boot['app_capabilities'][boot['app_capabilities'].index(oldrow)]=copy.deepcopy(newrow)
@@ -190,14 +249,14 @@ def overlay(before, before_sd, plan, elf, common, packages):
    if digest(out[path])!=replacement['manifest_sha256'] or digest(out[binary])!=replacement['elf_sha256']:
     raise ValueError('Replacement provider baseline differs')
    existing=[r for r in boot.get('drivers',[]) if r.get('manifest')==path]
-   if not existing or any(r!=item['row'] for r in existing):
+   if not existing or any(not same_json(r,item['row']) for r in existing):
     raise ValueError('Replacement provider authority differs')
    source=item['row'].get('image_source')
    external=replacement.get('external_route')
    if source:
     if not isinstance(source,dict) or source.get('internal_fallback') is not True:
      raise ValueError('Replacement requires the installed internal fallback contract')
-    if not isinstance(external,dict) or set(external)!={'path','elf_sha256'}:
+    if not isinstance(external,dict) or not {'path','elf_sha256'}<=set(external) or not set(external)<={'path','elf_sha256','target_path'}:
      raise ValueError('Explicit external provider baseline required')
     external_path=safe(external['path'])
     if external_path!=source.get('path'):raise ValueError('External provider route differs')
@@ -205,13 +264,17 @@ def overlay(before, before_sd, plan, elf, common, packages):
      raise ValueError('External provider baseline differs')
     if external_path in provider_sd_paths or ('sd',external_path) in routes:
      raise ValueError('External provider route collision')
-    sd[external_path]=pbytes;provider_sd_paths.add(external_path)
+    destination=write_external(sd,boot,external,pbytes,[('drivers',r) for r in existing])
+    provider_sd_paths.add(destination)
+    for row in existing:row['image_source']['path']=destination
+    external_routes.append({'manifest':path,'path':external_path,'target_path':destination,'elf_sha256':digest(pbytes)})
    elif external is not None:
     raise ValueError('External route supplied for internal-only provider')
    previous=json.loads(out[path])
-   if {k:v for k,v in previous.items() if k!='version'}!={k:v for k,v in m.items() if k!='version'}:
+   if not same_json({k:v for k,v in previous.items() if k!='version'},{k:v for k,v in m.items() if k!='version'}):
     raise ValueError('Replacement provider changes selected profile or contract')
-  out[path]=mbytes;out[binary]=pbytes;provider_paths.update((path,binary))
+  write_internal(out,boot,binary,pbytes,{path})
+  out[path]=mbytes;provider_paths.update((path,binary))
  available=providers(out,boot)
  binding_rows={row['manifest']:row.get('bindings',[]) for row in boot.get('drivers',[])}
  for oldgrants,newgrants,substitutions in grant_checks:
@@ -241,12 +304,14 @@ def overlay(before, before_sd, plan, elf, common, packages):
   alias['role']='controller'
   alias['grant_substitutions']=copy.deepcopy(item.get('grant_substitutions',[]))
   subplan={'inventory_sha256':fingerprint(inventory(out,sd)),'aliases':[alias]}
-  out,sd,_=overlay(out,sd,subplan,abytes,new,packages)
+  out,sd,subreceipt=overlay(out,sd,subplan,abytes,new,packages)
+  external_routes.extend(subreceipt['external_routes'])
   updates.append({'manifest':name,'elf_sha256':digest(abytes),'package_manifest_sha256':digest(mbytes),
                   'installed_manifest_sha256':digest(out[name])})
  native_metadata=replace_native_metadata(out,plan['native_metadata'],packages) if 'native_metadata' in plan else None
  receipt={'inventory_sha256':fingerprint(original),'home_sha256':digest(elf),
           'native_metadata':native_metadata,'aliases':sorted(names),'application_updates':updates,'routes':[list(r) for r in sorted(routes)],
+          'external_routes':external_routes,
           'changed_internal':[n for n in sorted(out) if out[n]!=before.get(n)],
           'changed_sd':[n for n in sorted(sd) if sd[n]!=before_sd.get(n)],
           'packed':False,'dependency_closure_verified':False,'target_execution':False}
@@ -358,3 +423,4 @@ if __name__=='__main__':
  else:
   if not all((a.plan,a.home,a.packages,a.output)):p.error('--plan, --home, --packages and --output required for overlay')
   run(a.cohort,a.plan,a.home,a.packages,a.output,a.inputs,a.bootfs_tools,a.encoded_storage)
+
