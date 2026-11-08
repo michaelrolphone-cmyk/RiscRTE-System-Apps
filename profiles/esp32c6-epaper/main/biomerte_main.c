@@ -35,7 +35,7 @@
 #include "esp_private/startup_internal.h"
 #include "hal/modem_syscon_ll.h"
 
-#define VERSION "biome-monitor/2.0.0"
+#define VERSION "biome-monitor/2.0.1"
 #define CONTRACT "display.epaper.frame:1"
 #define RESPONSE_MAX 90000
 #define FRAME_SIZE 48000
@@ -186,49 +186,58 @@ static bool network_ready(void) {
 /* Gateway accepts the unchanged signed native envelope and returns {result}.
  * Certificate bundle validation stays enabled; redirects are never followed.
  */
+typedef struct { char *data; size_t used; bool overflow; } response_buffer;
+static esp_http_client_handle_t gateway_http;
+static esp_err_t gateway_event(esp_http_client_event_t *event) {
+    response_buffer *r=event->user_data;
+    if(event->event_id==HTTP_EVENT_ON_DATA&&r&&event->data_len>0) {
+        if((size_t)event->data_len>RESPONSE_MAX-r->used){r->overflow=true;return ESP_FAIL;}
+        memcpy(r->data+r->used,event->data,event->data_len);r->used+=(size_t)event->data_len;
+    }
+    return ESP_OK;
+}
 static cJSON *transport(const cJSON *body,const char *path,int *http_status) {
     *http_status=0;
     if(!network_ready())return NULL;
     char *wire=bm_canonical(body);if(!wire){fail("Request encoding failed");return NULL;}
-    const char *origin=str(config,"origin");
-    char url[256];snprintf(url,sizeof url,"%s%s",origin,path);
-    esp_http_client_config_t hc={.url=url,.crt_bundle_attach=esp_crt_bundle_attach,
-        .timeout_ms=45000,.disable_auto_redirect=true,.buffer_size=2048,.buffer_size_tx=2048};
-    esp_http_client_handle_t h=esp_http_client_init(&hc);
-    if(!h){free(wire);fail("HTTP allocation failed");return NULL;}
-    esp_http_client_set_method(h,HTTP_METHOD_POST);
-    esp_http_client_set_header(h,"Content-Type","application/json");
-    size_t len=strlen(wire);
-    esp_err_t e=esp_http_client_open(h,(int)len);
-    if(e==ESP_OK) {
-        size_t sent=0;while(sent<len) {int n=esp_http_client_write(h,wire+sent,(int)(len-sent));if(n<=0){e=ESP_FAIL;break;}sent+=n;}
+    char url[256];snprintf(url,sizeof url,"%s%s",str(config,"origin"),path);
+    if(!gateway_http) {
+        esp_http_client_config_t hc={.url=url,.crt_bundle_attach=esp_crt_bundle_attach,
+            .timeout_ms=45000,.disable_auto_redirect=true,.buffer_size=2048,.buffer_size_tx=2048,
+            .keep_alive_enable=true,.event_handler=gateway_event};
+        gateway_http=esp_http_client_init(&hc);
     }
-    free(wire);
+    if(!gateway_http){free(wire);fail("HTTP allocation failed");return NULL;}
+    response_buffer response={.data=malloc(RESPONSE_MAX+1)};
+    if(!response.data){free(wire);fail("Response allocation failed");return NULL;}
+    esp_err_t setup=esp_http_client_set_user_data(gateway_http,&response);
+    if(setup==ESP_OK)setup=esp_http_client_set_url(gateway_http,url);
+    if(setup==ESP_OK)setup=esp_http_client_set_method(gateway_http,HTTP_METHOD_POST);
+    if(setup==ESP_OK)setup=esp_http_client_set_header(gateway_http,"Content-Type","application/json");
+    if(setup==ESP_OK)setup=esp_http_client_set_post_field(gateway_http,wire,(int)strlen(wire));
+    /* perform consumes the complete response and preserves an eligible HTTP/1.1
+     * connection. On uncertainty discard it; rpc replays the same signed ID. */
+    esp_err_t e=setup==ESP_OK?esp_http_client_perform(gateway_http):setup;
+    int status=esp_http_client_get_status_code(gateway_http);
+    *http_status=status;
     cJSON *out=NULL;
-    if(e==ESP_OK) {
-        int64_t length=esp_http_client_fetch_headers(h);int status=esp_http_client_get_status_code(h);
-        *http_status=status;
-        if(status!=202&&length<=RESPONSE_MAX) {
-            char *response=malloc(RESPONSE_MAX+1);
-            if(response) {
-                size_t used=0;int n=0;
-                while(used<RESPONSE_MAX&&(n=esp_http_client_read(h,response+used,(int)(RESPONSE_MAX-used)))>0)used+=n;
-                if(n>=0&&esp_http_client_is_complete_data_received(h)&&used<RESPONSE_MAX) {
-                    response[used]=0;cJSON *root=cJSON_ParseWithLength(response,used+1);
-                    out=root;
-                }
-                free(response);
-            }
-        } else {
-            if(status>=400&&status<500&&status!=408&&status!=429){out=cJSON_CreateObject();pn(out,"_rpc_error",status);}
-            snprintf(error_text,sizeof error_text,"Gateway HTTP %d",status);
-            ESP_LOGW(TAG,"%s",error_text);failures++;
+    bool complete=e==ESP_OK&&esp_http_client_is_complete_data_received(gateway_http);
+    if(complete&&!response.overflow) {
+        response.data[response.used]=0;
+        if(status!=202)out=cJSON_ParseWithLength(response.data,response.used+1);
+        if(!out&&status>=400&&status<500&&status!=408&&status!=429) {
+            out=cJSON_CreateObject();pn(out,"_rpc_error",status);
         }
     }
-    esp_http_client_close(h);esp_http_client_cleanup(h);
-    if(!out){if(*http_status!=202)fail("Gateway response unavailable");return NULL;}
-    if(*http_status==200){last_success=ms();failures=0;error_text[0]=0;}
-    else if(*http_status!=202){snprintf(error_text,sizeof error_text,"Gateway HTTP %d",*http_status);failures++;}
+    esp_http_client_set_user_data(gateway_http,NULL);
+    esp_http_client_set_post_field(gateway_http,NULL,0);
+    free(response.data);free(wire);
+    if(!complete||response.overflow) {
+        esp_http_client_cleanup(gateway_http);gateway_http=NULL;
+    }
+    if(!out){if(status!=202)fail("Gateway response unavailable");return NULL;}
+    if(status==200){last_success=ms();failures=0;error_text[0]=0;}
+    else if(status!=202){snprintf(error_text,sizeof error_text,"Gateway HTTP %d",status);failures++;}
     return out;
 }
 /* Forward the existing native protocol unchanged. Every retry uses the same
@@ -265,6 +274,15 @@ static bool replay(void) {
     cJSON_Delete(r);cJSON_DeleteItemFromObjectCaseSensitive(meta,"pending");save_meta();return true;
 }
 static cJSON *provider_args(void) {cJSON *a=cJSON_CreateObject();ps(a,"provider",str(config,"provider"));return a;}
+/* Inbox reads have no effect to recover across power loss. Keep the exact
+ * signed request in RAM for transport retries instead of wearing NVS each second. */
+static cJSON *poll_request;
+static cJSON *provider_poll(void) {
+    if(!poll_request)poll_request=new_request("provider.poll",provider_args());
+    cJSON *r=exchange(poll_request);
+    if(r){cJSON_Delete(poll_request);poll_request=NULL;}
+    return r;
+}
 static bool identity(const cJSON *a) {
     return eq(a,"provider",str(config,"provider"))&&eq(a,"resource",str(config,"resource"))&&
         eq(a,"guard",str(config,"resource"))&&eq(a,"contract",CONTRACT)&&
@@ -443,7 +461,7 @@ void app_main(void) {
             if(advertise())advertised=ms();
             if(get(meta,"pending")){pause_ms(3000);continue;}
         }
-        cJSON *queue=rpc("provider.poll",provider_args(),false);
+        cJSON *queue=provider_poll();
         if(queue) {
             cJSON *item;
             cJSON_ArrayForEach(item,get(queue,"fences")) {
@@ -454,6 +472,6 @@ void app_main(void) {
             }
             cJSON_Delete(queue);
         }
-        pause_ms(15000);
+        pause_ms(1000);
     }
 }
