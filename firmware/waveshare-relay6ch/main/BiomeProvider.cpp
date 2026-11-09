@@ -26,7 +26,10 @@ bool endpoint(const char* url){
  return true;
 }
 bool parseResponse(JsonDocument& doc,const char* data,size_t size){
- doc.clear();return size&&size<=ResponseLimit&&Infra::BasicJsonGuard<20,256>(data,size,ResponseLimit/2).objectOnly()&&
+ // Native responses are serialized by the authenticated controller. Allow
+ // arbitrary bounded nested input JSON here so malformed physical steps can
+ // be claimed and failed; ProviderState validates identity, fences and I/O.
+ doc.clear();return size&&size<=ResponseLimit&&
   !deserializeJson(doc,data,size,DeserializationOption::NestingLimit(20))&&!doc.overflowed()&&doc["result"].is<JsonObjectConst>();
 }
 }
@@ -46,10 +49,8 @@ struct Client::Implementation {
  uint64_t now()const{return clock?clock(clockContext):0;}
  bool fail(const char* why,bool permanent=false){Infra::copy(error,sizeof(error),why);if(permanent)healthy=false;return false;}
  bool saveJson(const char* name,JsonObjectConst value,size_t limit){
-  const size_t size=measureJson(value);if(!size||size>limit)return false;
-  char* bytes=static_cast<char*>(malloc(size+1));if(!bytes)return false;
-  const bool encoded=serializeJson(value,bytes,size+1)==size;
-  bool result=encoded&&nvs_set_blob(nvs,name,bytes,size)==ESP_OK&&nvs_commit(nvs)==ESP_OK;
+  char* bytes=nullptr;size_t size=0;if(!encodeSnapshot(value,bytes,size,limit))return false;
+  const bool result=nvs_set_blob(nvs,name,bytes,size)==ESP_OK&&nvs_commit(nvs)==ESP_OK;
   eraseBytes(bytes,size+1);free(bytes);return result;
  }
  int loadJson(const char* name,JsonDocument& value,size_t limit){
@@ -60,15 +61,15 @@ struct Client::Implementation {
   // A malformed physical input can contain fractional values. Retain that
   // exact rejected command across reset; shape/range validation belongs to
   // ProviderState, not a parser that would strand an otherwise valid receipt.
-  const bool parsed=rc==ESP_OK&&Infra::BasicJsonGuard<24,256>(bytes,size,JournalLimit/2).objectOnly()&&
-   !deserializeJson(value,bytes,size,DeserializationOption::NestingLimit(24))&&!value.overflowed();
+  const bool parsed=rc==ESP_OK&&
+   !deserializeJson(value,static_cast<const char*>(bytes),size,DeserializationOption::NestingLimit(24))&&!value.overflowed();
   eraseBytes(bytes,size+1);free(bytes);return parsed?1:-1;
  }
  static bool saveState(void* context,JsonObjectConst value){
   return static_cast<Implementation*>(context)->saveJson("state",value,JournalLimit);
  }
  bool normalizeConfig(JsonObjectConst input,JsonDocument& out){
-  if(!Infra::keys(input,{"url"},{"site","realm","resource"})||measureJson(input)>2048||
+  if(!completeStrings(input)||!Infra::keys(input,{"url"},{"site","realm","resource"})||measureJson(input)>2048||
      !endpoint(input["url"]|"")||(!input["realm"].isNull()&&input["realm"]!="site"))return false;
   const char* site=input["site"]|"";if(site[0]&&!ident(site))return false;
   const char* resource=input["resource"]|device;

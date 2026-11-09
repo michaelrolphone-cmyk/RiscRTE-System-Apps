@@ -20,6 +20,8 @@ static void vectors(){
  a.clear();a["challenge"]=std::string(64,'0');a["site"]="human.site";a["key"]=std::string(64,'b');vector(a);
  a.clear();a["arguments"]["inputs"]["steps"][0]["on"][0]=1;a["arguments"]["inputs"]["steps"][0]["off"][0]=2;
  a["arguments"]["inputs"]["steps"][0]["wait_ms"]=137;a["arguments"]["inputs"]["steps"][1]["tone_hz"]=0;vector(a);
+ a.clear();const char nulKey[]="k\0ey",nulValue[]="a\0b";
+ a[JsonString(nulKey,sizeof(nulKey)-1)]=JsonString(nulValue,sizeof(nulValue)-1);vector(a);
  // Fixed nonsecret RSA public-number fixture, modulus2048 bits/exponent65537.
  // It exercises PSA PKCS#1 -> native SPKI conversion, not any device identity.
  uint8_t rsa[270]={0x30,0x82,0x01,0x0a,0x02,0x82,0x01,0x01,0x00};
@@ -47,5 +49,10 @@ int main(int argc,char**){
  const uint8_t expected[]={0x30,0x1a,0x30,0x0d,0x06,0x09,0x2a,0x86,0x48,0x86,0xf7,0x0d,0x01,0x01,0x01,0x05,0x00,0x03,0x09,0x00,0x30,0x06,0x02,0x01,0x03,0x02,0x01,0x03};
  assert(rsaSpki(shortKey,sizeof(shortKey),spki,sizeof(spki))==sizeof(expected)&&!memcmp(expected,spki,sizeof(expected)));
  assert(!rsaSpki(shortKey,sizeof(shortKey),spki,sizeof(expected)-1));
+ input.clear();const char nul[]="a\0b";input["value"]=JsonString(nul,sizeof(nul)-1);assert(!completeStrings(input.as<JsonVariantConst>()));
+ char* snapshot=nullptr;size_t snapshotSize=0;assert(encodeSnapshot(input.as<JsonVariantConst>(),snapshot,snapshotSize,1024));
+ assert(strstr(snapshot,"\\u0000"));JsonDocument restored;assert(!deserializeJson(restored,static_cast<const char*>(snapshot),snapshotSize));
+ free(snapshot);assert(restored["value"].as<JsonString>().size()==3&&!completeStrings(restored.as<JsonVariantConst>()));
+ assert(!encodeSnapshot(input.as<JsonVariantConst>(),snapshot,snapshotSize,2)&&!snapshot);
  puts("Biome native encoding: sorted canonical JSON, Unicode surrogate pairs, integral values, SHA256, Base64, and RSA SPKI format PASS");
 }

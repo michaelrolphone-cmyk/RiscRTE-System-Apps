@@ -21,7 +21,7 @@ import subprocess
 import sys
 
 rows = subprocess.check_output([sys.argv[1], "--vectors"], text=True).splitlines()
-assert len(rows) == 5
+assert len(rows) == 6
 # Keep control/Unicode fixture input independent of ArduinoJson's serializer.
 # The wire rows carry only ASCII canonical strings and digest identifiers.
 vectors = [
@@ -35,6 +35,7 @@ vectors = [
     {"challenge": "0" * 64, "site": "human.site", "key": "b" * 64},
     {"arguments": {"inputs": {"steps": [
         {"on": [1], "off": [2], "wait_ms": 137}, {"tone_hz": 0}]}}},
+    {"k\x00ey": "a\x00b"},
 ]
 for row in map(json.loads, rows):
     if "vector" in row:

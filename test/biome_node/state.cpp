@@ -9,7 +9,11 @@ struct Board {
  JsonDocument saved;unsigned saves=0,failSave=0,executions=0,polls=0,cancels=0;
  bool asynchronous=false;unsigned runningPolls=1,cancelPasses=2;
  static bool save(void* p,JsonObjectConst journal){
-  auto& b=*static_cast<Board*>(p);if(++b.saves==b.failSave)return false;b.saved.set(journal);return true;
+  auto& b=*static_cast<Board*>(p);if(++b.saves==b.failSave)return false;
+  // Exercise the exact NVS snapshot encoder and an actual JSON reload.
+  char* bytes=nullptr;size_t size=0;assert(encodeSnapshot(journal,bytes,size,12288));
+  JsonDocument decoded;assert(!deserializeJson(decoded,static_cast<const char*>(bytes),size,DeserializationOption::NestingLimit(24)));
+  free(bytes);b.saved.set(decoded);return true;
  }
  static bool ready(void*){return true;}
  static int execute(void* p,const char*,JsonObjectConst input,JsonObject output){
@@ -77,7 +81,7 @@ static void admission(){
  assert(state.fence(newer.as<JsonObjectConst>())==0&&board.executions==0);
 }
 static void invalidInputsSettle(){
- for(unsigned scenario=0;scenario<6;++scenario){
+ for(unsigned scenario=0;scenario<8;++scenario){
   Board board;ProviderState state;board.begin(state);bind(state);
   auto bad=action("invalid",scenario>=2);
   if(scenario==0)bad["inputs"]["channel"]=7;
@@ -85,11 +89,21 @@ static void invalidInputsSettle(){
   else if(scenario==2)bad["inputs"]["steps"][1]["off"][0]=7;
   else if(scenario==3)bad["inputs"]["steps"][0]["wait_ms"]=1.5;
   else if(scenario==4)bad["inputs"]["steps"][0]["wait_ms"]=1.0;
-  else{auto steps=bad["inputs"]["steps"].to<JsonArray>();for(unsigned i=0;i<129;++i)steps.add<JsonObject>()["wait_ms"]=1;}
+  else if(scenario==5){auto steps=bad["inputs"]["steps"].to<JsonArray>();for(unsigned i=0;i<129;++i)steps.add<JsonObject>()["wait_ms"]=1;}
+  else if(scenario==6)bad["inputs"]["steps"][1]["\xc3\xa9"]="control:\x01\n";
+  else{
+   bad["contract"]="serial.rs485:1";auto input=bad["inputs"].to<JsonObject>();
+   input["baud"]=9600;input["stop_bits"]=1;input["tx_hex"]="01";input["rx_max"]=0;input["timeout_ms"]=10;
+   const char parity[]="none\0trailing";input["parity"]=JsonString(parity,sizeof(parity)-1);
+  }
   assert(state.stage(bad.as<JsonObjectConst>())&&board.executions==0);
   // Type mutation from invalid float to valid int cannot reuse an intent.
   if(scenario==4){
    JsonDocument mutated;mutated.set(bad);mutated["state"]="claimed";mutated["inputs"]["steps"][0]["wait_ms"]=1;
+   assert(!state.claimed(mutated.as<JsonObjectConst>())&&board.executions==0);
+  }
+  if(scenario==7){
+   JsonDocument mutated;mutated.set(bad);mutated["state"]="claimed";mutated["inputs"]["parity"]="none";
    assert(!state.claimed(mutated.as<JsonObjectConst>())&&board.executions==0);
   }
   claim(state,bad);

@@ -22,7 +22,8 @@ class ProviderState {
  }
  bool reject(const char* why){Infra::copy(error,sizeof(error),why);return false;}
  bool validBinding(JsonObjectConst f)const{
-  return Infra::text(f["resource"],256)&&Infra::text(f["guard"],512)&&
+  return completeStrings(f["resource"])&&completeStrings(f["guard"])&&completeStrings(f["lease"])&&
+   Infra::text(f["resource"],256)&&Infra::text(f["guard"],512)&&
    Infra::text(f["lease"],128)&&Infra::integer(f["generation"],1,9007199254740991ULL);
  }
  bool sameBinding(JsonObjectConst a,JsonObjectConst b)const{
@@ -43,7 +44,8 @@ class ProviderState {
  }
  bool validAction(JsonObjectConst a)const{
   const char* cap=capability(a["contract"]|"");
-  return cap&&Infra::text(a["id"],128)&&Infra::text(a["provider"],64)&&
+  return cap&&completeStrings(a["id"])&&completeStrings(a["provider"])&&completeStrings(a["contract"])&&
+   Infra::text(a["id"],128)&&Infra::text(a["provider"],64)&&
    !strcmp(a["provider"]|"",expectedProvider)&&!strcmp(a["resource"]|"",expectedResource)&&
    validBinding(a)&&a["inputs"].is<JsonObjectConst>();
  }
@@ -171,7 +173,7 @@ class ProviderState {
    terminal("uncertain","claim_has_no_live_execution_intent");return healthy;
   }
   const char* cap=capability(a["contract"]|"");
-  if(!Infra::hardwareInput(cap,operationName(cap),a["inputs"].as<JsonObjectConst>())){
+  if(!completeStrings(a["inputs"])||!Infra::hardwareInput(cap,operationName(cap),a["inputs"].as<JsonObjectConst>())){
    journal["command"]["claimed"]=true;
    terminal("failed","invalid_hardware_inputs");return healthy;
   }
