@@ -1,6 +1,7 @@
 {
   "schema": 1,
   "variant": "1.0-radio.1",
+  "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
   "files": [
@@ -14,15 +15,15 @@
     },
     {
       "path": "README.md",
-      "sha256": "a5b12b4a40d19d07d9e548f62c82c7a60169835c88783d4885376e2f0f36de77"
+      "sha256": "cf539ee7e784921871e25fbd16584055ba35f656aa5dd4752ab663a33d0366ae"
     },
     {
       "path": "VALIDATION.md",
-      "sha256": "7f8376cfd1ff0d65c3f5745e0146fb0e0a27c978b959cac0a91629e2bf3638ac"
+      "sha256": "9e7b93b85e4489f88ad36b9da0d364cae260eeb1f0fd218812c71dd63f86f82e"
     },
     {
       "path": "integration.patch",
-      "sha256": "a88c003eeafab5a528513f7d9e298c5a3071983073c3b434e4cc6bc11d839902"
+      "sha256": "a3b965e0a6fc659a48607efb17b51bae8765033fec6633e4d288de7f34f41365"
     },
     {
       "path": "overlay/html/telemetry.html",
@@ -35,6 +36,10 @@
     {
       "path": "overlay/include/radio_telemetry_model.h",
       "sha256": "d82a3751956d211c903da8fed79ff8ee4148c56b6f83358166a029e576aa7918"
+    },
+    {
+      "path": "overlay/platformio.ini",
+      "sha256": "e81d72951a393afa93f73bcaf050a518e487492e311039907cf4a54f2c19bdce"
     },
     {
       "path": "overlay/src/radio_telemetry.cpp",
@@ -54,7 +59,7 @@
     },
     {
       "path": "prepare.py",
-      "sha256": "f9673e31fe658631ba113071cadee0bb7c9600c07b596ec3bd31ba677755d266"
+      "sha256": "fa751b2263fecef9e4ab324656f493b04da649ca4bf9b3cdb6d8b7a35bdef25b"
     }
   ]
 }

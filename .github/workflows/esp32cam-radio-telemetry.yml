@@ -1,4 +1,4 @@
-name: ESP32 camera radio telemetry
+name: ESP32-S3 CAM radio telemetry
 on:
   pull_request:
     paths:
@@ -12,14 +12,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   firmware:
+    name: ESP32-S3 CAM firmware
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        board:
-          - esp32cam_s3_wroom_n16r8
-          - esp32cam_ai_thinker
-          - esp32cam_espressif_esp32s2_cam_board
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,16 +21,15 @@ jobs:
           python-version: '3.11'
       - name: Install PlatformIO
         run: python -m pip install platformio==6.1.19
-      - name: Prepare pinned source
+      - name: Prepare pinned S3 source
         run: python firmware/esp32cam-rtsp-radio/prepare.py --output "$RUNNER_TEMP/esp32cam-radio"
-      - name: Build firmware
-        run: pio run -d "$RUNNER_TEMP/esp32cam-radio" -e "${{ matrix.board }}"
-      - name: Preserve firmware
+      - name: Build S3 firmware
+        run: pio run -d "$RUNNER_TEMP/esp32cam-radio" -e esp32cam_s3_wroom_n16r8
+      - name: Preserve S3 firmware
         uses: actions/upload-artifact@v4
         with:
-          name: esp32cam-radio-${{ matrix.board }}
-          path: |
-            ${{ runner.temp }}/esp32cam-radio/.pio/build/${{ matrix.board }}/*.bin
+          name: esp32cam-radio-esp32cam_s3_wroom_n16r8
+          path: ${{ runner.temp }}/esp32cam-radio/.pio/build/esp32cam_s3_wroom_n16r8/*.bin
           if-no-files-found: error
           retention-days: 7
   host-tests:

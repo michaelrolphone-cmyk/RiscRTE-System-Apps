@@ -1,6 +1,6 @@
-# ESP32CAM-RTSP with Wi-Fi and Bluetooth telemetry
+# ESP32-S3 CAM with Wi-Fi and Bluetooth telemetry
 
-This is a reproducible radio telemetry variant of
+This version targets the ESP32-S3 CAM N16R8 camera only. It is based on
 [rzeldent/esp32cam-rtsp](https://github.com/rzeldent/esp32cam-rtsp), pinned to
 `14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7`.
 The original RTSP, HTTP camera stream, snapshots, camera settings, and OTA
@@ -22,14 +22,7 @@ python3 firmware/esp32cam-rtsp-radio/prepare.py \
   --output /tmp/esp32cam-radio --build
 ```
 
-The default board is `esp32cam_s3_wroom_n16r8`. Choose the environment that
-matches the physical board, for example:
-
-```sh
-python3 firmware/esp32cam-rtsp-radio/prepare.py \
-  --output /tmp/esp32cam-radio-ai-thinker \
-  --build -e esp32cam_ai_thinker
-```
+The only build target is `esp32cam_s3_wroom_n16r8`, matching the S3 CAM used here.
 
 The preparation command verifies the package hashes, checks out the exact
 upstream commit, applies `integration.patch`, and copies `overlay/`. It
@@ -41,9 +34,8 @@ pio run -d /tmp/esp32cam-radio -e esp32cam_s3_wroom_n16r8
 ```
 
 The application binary is
-`.pio/build/<environment>/firmware.bin` inside the prepared project.
-Use the normal upstream PlatformIO upload procedure and the correct board
-environment when installing. This change does not automatically flash or
+`.pio/build/esp32cam_s3_wroom_n16r8/firmware.bin` inside the prepared project.
+Use the normal PlatformIO upload procedure for this S3 target when installing. This change does not automatically flash or
 reconfigure any connected camera.
 
 ## See signal strength
@@ -179,9 +171,8 @@ If the SDK never delivers the cancellation report, status reports
 `retirement_stalled`; a camera restart clears the uncertain session. Ordinary
 Wi-Fi/BLE observation and UDP output continue.
 
-The S3 SDK used here enables FTM. Classic ESP32 reports FTM unsupported.
-ESP32-S2 supports Wi-Fi/FTM but has no BLE radio. The responder must also
-implement FTM; arbitrary phones or access points may not.
+The S3 SDK used here enables FTM. The responder must also implement FTM;
+arbitrary phones or access points may not.
 
 ## HTTP API
 
@@ -230,9 +221,9 @@ c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude \
 /tmp/radio-model-test
 ```
 
-The scoped GitHub workflow builds S3 N16R8, AI Thinker classic ESP32, and
-ESP32-S2, and preserves each board's firmware files as seven-day build
-artifacts. It also runs the receiver and radio model tests.
+The scoped GitHub workflow builds only the ESP32-S3 CAM N16R8 target and
+preserves its firmware files as seven-day build artifacts. It also runs the
+receiver and radio model tests.
 
 See `VALIDATION.md` for the exact verified results and remaining hardware
 checks. Source/compile tests do not establish physical scan reception, FTM

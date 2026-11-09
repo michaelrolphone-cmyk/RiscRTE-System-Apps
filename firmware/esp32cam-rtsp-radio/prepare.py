@@ -40,8 +40,6 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, default=Path(".radio-build/esp32cam-rtsp"),
                         help="empty destination directory (never overwrites an existing project)")
     parser.add_argument("--build", action="store_true", help="run PlatformIO after preparing")
-    parser.add_argument("-e", "--environment", default=DEFAULT_BOARD,
-                        help="PlatformIO board environment, default: " + DEFAULT_BOARD)
     args = parser.parse_args(argv)
     package = Path(__file__).resolve().parent
     try:
@@ -72,9 +70,9 @@ def main(argv=None):
                 shutil.copyfile(source, destination)
         print("Prepared " + str(output))
         print("Upstream " + UPSTREAM_COMMIT)
-        print("Build: pio run -d " + str(output) + " -e " + args.environment)
+        print("Build: pio run -d " + str(output) + " -e " + DEFAULT_BOARD)
         if args.build:
-            run(["pio", "run", "-e", args.environment], cwd=output)
+            run(["pio", "run", "-e", DEFAULT_BOARD], cwd=output)
     except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as error:
         print("prepare: " + str(error), file=sys.stderr)
         return 1
