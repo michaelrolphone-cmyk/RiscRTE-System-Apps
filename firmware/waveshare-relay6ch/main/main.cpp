@@ -120,7 +120,8 @@ extern "C" void app_main(){
  if(gpio_config(&button)!=ESP_OK)fail("setup button unavailable");
  if(!node->journal.initialize(&files.base))fail("journal allocation failed");
  if(esp_task_wdt_add(nullptr)!=ESP_OK)fail("watchdog registration failed");
- node->recovery={1,sizeof(node->recovery),nullptr,[](void*)->int32_t{return esp_task_wdt_reset()==ESP_OK?0:-1;},nullptr,[](void*){esp_restart();}};
+ // Legacy endpoint failures must not interrupt independent native hardware.
+ node->recovery={1,sizeof(node->recovery),nullptr,[](void*)->int32_t{return esp_task_wdt_reset()==ESP_OK?0:-1;},nullptr,[](void*){if(!connected()&&(!provider||!provider->outputsActive()))esp_restart();}};
  unsigned last=~0u;uint64_t report=0,buttonAt=0;bool buttonReleased=false,setupRequested=false;
  BiomeRelay::HttpSchedule schedule;
  for(;;){
