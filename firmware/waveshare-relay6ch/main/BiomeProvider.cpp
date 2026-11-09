@@ -26,7 +26,7 @@ bool endpoint(const char* url){
  return true;
 }
 bool parseResponse(JsonDocument& doc,const char* data,size_t size){
- doc.clear();return size&&size<=ResponseLimit&&Infra::BasicJsonGuard<20,256>(data,size).objectOnly()&&
+ doc.clear();return size&&size<=ResponseLimit&&Infra::BasicJsonGuard<20,256>(data,size,ResponseLimit/2).objectOnly()&&
   !deserializeJson(doc,data,size,DeserializationOption::NestingLimit(20))&&!doc.overflowed()&&doc["result"].is<JsonObjectConst>();
 }
 }
@@ -57,7 +57,11 @@ struct Client::Implementation {
   if(rc==ESP_ERR_NVS_NOT_FOUND)return 0;if(rc!=ESP_OK||!size||size>limit)return -1;
   char* bytes=static_cast<char*>(malloc(size+1));if(!bytes)return -1;
   rc=nvs_get_blob(nvs,name,bytes,&size);bytes[size]=0;
-  const bool parsed=rc==ESP_OK&&Infra::parseJournal(value,bytes,size);
+  // A malformed physical input can contain fractional values. Retain that
+  // exact rejected command across reset; shape/range validation belongs to
+  // ProviderState, not a parser that would strand an otherwise valid receipt.
+  const bool parsed=rc==ESP_OK&&Infra::BasicJsonGuard<24,256>(bytes,size,JournalLimit/2).objectOnly()&&
+   !deserializeJson(value,bytes,size,DeserializationOption::NestingLimit(24))&&!value.overflowed();
   eraseBytes(bytes,size+1);free(bytes);return parsed?1:-1;
  }
  static bool saveState(void* context,JsonObjectConst value){

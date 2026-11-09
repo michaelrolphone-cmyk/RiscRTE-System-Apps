@@ -9,7 +9,7 @@ static void hex(const uint8_t bytes[32],char output[65]){
 }
 static void vector(JsonDocument& input){
  char text[8192],digest[65];uint8_t bytes[32];NativeCanonical c(text,sizeof(text));c.value(input.as<JsonVariantConst>());assert(c.finish(bytes));hex(bytes,digest);
- JsonDocument row;row["input"]=input;row["canonical"]=text;row["sha256"]=digest;serializeJson(row,std::cout);std::cout<<"\n";
+ static unsigned index=0;JsonDocument row;row["vector"]=index++;row["canonical"]=text;row["sha256"]=digest;serializeJson(row,std::cout);std::cout<<"\n";
 }
 static void vectors(){
  JsonDocument a;a["z"]="line\n\t\"\\ \xc3\xa9 \xf0\x9f\x98\x80\x7f";a["a"]=true;a["negative"]=-123;a["empty"]=nullptr;

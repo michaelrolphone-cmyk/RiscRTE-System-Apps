@@ -1,5 +1,6 @@
 #pragma once
 #include "../infra_node/Digest.h"
+#include <cmath>
 
 namespace BiomeRelay {
 // Native BiomeRTE store.encode is JSON with sorted keys, no whitespace,
@@ -7,7 +8,7 @@ namespace BiomeRelay {
 // exact signed representation; its optional output is useful for test vectors.
 class NativeCanonical {
  dtls_sha256_ctx hash;
- char* buffer;size_t capacity,count=0;bool good=true;
+ char* buffer;size_t capacity,count=0;bool good=true,allowFloating=false;
  void byte(uint8_t c){dtls_sha256_update(&hash,&c,1);if(buffer){if(count+1<capacity)buffer[count]=char(c);else good=false;}++count;}
  void raw(const char* s){while(*s)byte(uint8_t(*s++));}
  void escaped(uint16_t c){const char* hex="0123456789abcdef";raw("\\u");for(int shift=12;shift>=0;shift-=4)byte(hex[(c>>shift)&15]);}
@@ -34,22 +35,33 @@ class NativeCanonical {
   byte('"');
  }
  public:
- explicit NativeCanonical(char* out=nullptr,size_t size=0):buffer(out),capacity(size){dtls_sha256_init(&hash);}
+ explicit NativeCanonical(char* out=nullptr,size_t size=0,bool floating=false):buffer(out),capacity(size),allowFloating(floating){dtls_sha256_init(&hash);}
+ size_t write(uint8_t c){byte(c);return 1;}
+ size_t write(const uint8_t* p,size_t n){for(size_t i=0;i<n;++i)byte(p[i]);return n;}
  void value(JsonVariantConst v,unsigned depth=0){
-  if(!good||depth>16){good=false;return;}
+  if(!good||depth>(allowFloating?24u:16u)){good=false;return;}
   if(v.is<JsonObjectConst>()){
-   const char* names[64];size_t n=0;
-   for(JsonPairConst p:v.as<JsonObjectConst>()){if(n==64){good=false;return;}names[n++]=p.key().c_str();}
+   const size_t count=v.size();if(count>256){good=false;return;}
+   auto names=static_cast<const char**>(malloc(count*sizeof(const char*)));if(count&&!names){good=false;return;}
+   size_t n=0;for(JsonPairConst p:v.as<JsonObjectConst>())names[n++]=p.key().c_str();
    for(size_t i=1;i<n;++i){auto name=names[i];size_t j=i;while(j&&strcmp(names[j-1],name)>0){names[j]=names[j-1];--j;}names[j]=name;}
-   byte('{');for(size_t i=0;i<n;++i){if(i)byte(',');string(names[i]);byte(':');value(v[names[i]],depth+1);}byte('}');
+   byte('{');for(size_t i=0;i<n;++i){if(i)byte(',');string(names[i]);byte(':');value(v[names[i]],depth+1);}byte('}');free(names);
   }else if(v.is<JsonArrayConst>()){
-   if(v.size()>128){good=false;return;}byte('[');bool comma=false;
+   if(v.size()>(allowFloating?4096u:128u)){good=false;return;}byte('[');bool comma=false;
    for(auto entry:v.as<JsonArrayConst>()){if(comma)byte(',');comma=true;value(entry,depth+1);}byte(']');
   }else if(v.is<const char*>())string(v.as<const char*>());
   else if(v.isNull())raw("null");
   else if(v.is<bool>())raw(v.as<bool>()?"true":"false");
   else if(v.is<int64_t>()){char number[32];snprintf(number,sizeof(number),"%lld",static_cast<long long>(v.as<int64_t>()));raw(number);}
   else if(v.is<uint64_t>()){char number[32];snprintf(number,sizeof(number),"%llu",static_cast<unsigned long long>(v.as<uint64_t>()));raw(number);}
+  else if(allowFloating&&v.is<double>()){
+   const double number=v.as<double>();if(!std::isfinite(number)){good=false;return;}
+   char encoded[64];snprintf(encoded,sizeof(encoded),"%.17g",number);raw(encoded);
+   // Receipt identity distinguishes a fractional JSON type from an integer,
+   // even when both carry the mathematical value one. Native signatures
+   // still reject floating values; this branch is local receipt hashing only.
+   if(!strchr(encoded,'.')&&!strchr(encoded,'e')&&!strchr(encoded,'E'))raw(".0");
+  }
   else good=false;
  }
  bool finish(uint8_t out[32]){dtls_sha256_final(out,&hash);if(buffer&&capacity)buffer[count<capacity?count:capacity-1]=0;return good;}
