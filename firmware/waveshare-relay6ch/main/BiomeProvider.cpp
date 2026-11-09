@@ -160,7 +160,7 @@ struct Client::Implementation {
   return open(kind,config["url"]|"",payload.as<JsonObjectConst>());
  }
  bool pairRequest(bool finish){
-  char url[769];Infra::copy(url,sizeof(url),config["url"]|"");
+  char url[800];Infra::copy(url,sizeof(url),config["url"]|"");
   const char* suffix=finish?"pair/finish":"pair/begin";char* tail=strrchr(url,'/');
   if(!tail)return fail("provider_endpoint_invalid",true);
   const size_t prefix=tail-url+1;if(prefix+strlen(suffix)>=sizeof(url))return fail("pair_endpoint_too_long",true);
@@ -246,7 +246,7 @@ struct Client::Implementation {
    }
    if(count>sizeof(chunk)||bodySize+count>ResponseLimit){networkOutcome=RISC_HTTP_SIZE;done=true;}
    else if(count){memcpy(body+bodySize,chunk,count);bodySize+=count;body[bodySize]=0;}
-   if(info.utc_seconds){utc=info.utc_seconds;utcAt=now();}
+   if(info.utc_seconds&&!utc){utc=info.utc_seconds;utcAt=now();}
    if(rc<0||read<0||queried<0){networkOutcome=rc<0?rc:read<0?read:queried;done=true;}
    else if(rc==RISC_HTTP_EOF||read==RISC_HTTP_EOF)done=true;
    if(now()-started>=Infra::ServiceRequestTimeoutMs+1000){networkOutcome=RISC_HTTP_TIMEOUT;done=true;}
@@ -337,6 +337,7 @@ bool Client::begin(const uint8_t mac[6],const risc_http_client_v2& http,Infra::H
 }
 void Client::tick(bool connected,bool mayOpen){if(impl)impl->tick(connected,mayOpen);}
 bool Client::busy()const{return impl&&impl->busy();}
+bool Client::retained()const{return impl&&impl->retained;}
 bool Client::effectsBusy()const{return impl&&(impl->state.pending()||impl->state.active());}
 bool Client::outputsActive()const{return impl&&impl->state.active();}
 bool Client::configured()const{return impl&&impl->configured();}
@@ -367,7 +368,7 @@ void Client::publicIdentity(JsonObject out)const{
  out["device"]=impl->device;out["firmware"]="2.0.0";out["resource"]=impl->config["resource"];out["site"]=impl->config["site"];
  out["url"]=impl->config["url"];out["configured"]=impl->configured();out["ready"]=impl->ready();
  const int phase=impl->keyPhase.load(std::memory_order_acquire);
- if(phase!=1){out["public_key"]=impl->publicKey;out["fingerprint"]=impl->actor;out["error"]=impl->state.healthy?impl->error:impl->state.error;}
+ if(phase!=1){out["public_key"]=impl->publicKey;out["fingerprint"]=impl->actor;out["error"]=!impl->state.healthy&&impl->state.error[0]?impl->state.error:impl->error;}
  out["pairing"]=!impl->configured()?"unconfigured":phase!=2?"identity_pending":impl->enrolled?"enrolled":
   impl->pair["challenge"].isNull()?"requesting_approval":"awaiting_approval";
  if(!impl->state.journal["fence"].isNull())out["generation"]=impl->state.journal["fence"]["generation"];
