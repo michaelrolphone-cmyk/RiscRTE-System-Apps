@@ -5,6 +5,8 @@ def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def head(p):return subprocess.check_output(['git','-C',str(p),'rev-parse','HEAD'],text=True).strip()
 def main():
  p=argparse.ArgumentParser();p.add_argument('--build',type=pathlib.Path,required=True);p.add_argument('--runtime',type=pathlib.Path,required=True);p.add_argument('--output',type=pathlib.Path,required=True);a=p.parse_args();out=a.output;out.mkdir(exist_ok=True,parents=True)
+ build_info=json.loads((a.build/'project_description.json').read_text())
+ if build_info.get('project_version')!='2.0.0':raise ValueError('Refusing to label an application with a different embedded project version as 2.0.0')
  image=bytearray(b'\xff'*0x800000);components=[]
  for name,path,offset,limit in [('bootloader.bin','bootloader/bootloader.bin',0,0x8000),('partitions.bin','partition_table/partition-table.bin',0x8000,0x1000),('biomerte-relay6ch-v2.0.0-application.bin','riscrte_relay6ch.bin',0x50000,0x300000)]:
   data=(a.build/path).read_bytes();assert 0<len(data)<=limit

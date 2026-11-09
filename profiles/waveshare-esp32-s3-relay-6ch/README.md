@@ -62,13 +62,61 @@ and 1–5,000 ms. All relays and the buzzer start off on boot.
 
 ## Wi-Fi configuration and pairing
 
+Use a 2.4 GHz Wi-Fi network with DNS and HTTPS access to the public gateway.
+The first TLS connection also needs SNTP time sampling; the firmware uses
+`pool.ntp.org` while UTC is unknown. A network that blocks time sampling can
+prevent the initial pairing connection.
+
 The existing captive setup portal remains at http://192.168.4.1 on the
 `RiscRTE-Setup` access point (password `RiscRTE-Setup`). For an already configured board, release BOOT after normal startup, then hold
 BOOT for three seconds to request setup. The firmware waits for active HTTP
 and physical output work to quiesce before starting the portal. Holding BOOT
 during reset selects the chip's ROM download mode instead.
 
-Enter the Wi-Fi network and password, then import a BiomeRTE setup document:
+Enter the Wi-Fi network and password. Choose the setup document for the
+installation that is actually on the board:
+
+### Preserving an existing 1.0.4 installation
+
+For an already enrolled board, make a **private** setup document using the
+current service credential from its existing private pairing file:
+
+```json
+{
+  "format": "riscrte-setup/1",
+  "credentials": {
+    "<existing service credential_ref>": "<current private service credential>"
+  },
+  "biomerte": {
+    "url": "https://biomerte-controller.cantikash.chatgpt.site/api/provider/call",
+    "site": "f45540bf9910412680734d0613e84460",
+    "realm": "site"
+  }
+}
+```
+
+Replace the two placeholders with the existing service credential reference
+and its current value. Import this document through the local portal and
+leave the existing role selection unchanged. Omit `policy` and relay
+configuration: the board retains its saved infrastructure bindings, identity,
+credentials and execution custody. Reimporting an old full policy can invoke
+relay reconfiguration, which is unnecessary for this migration.
+
+If legacy enrollment has not finished, use its full current private
+`riscrte-setup/1` pairing document and add the same top-level `biomerte`
+object. The existing bootstrap and custody checks still apply.
+
+Keep either private document private; only the `biomerte` object is public.
+The public native-only file is rejected when an existing participant, legacy
+credentials, bootstrap data or pending custody are present. Existing
+authorization checks for changing paired settings remain in force.
+
+### Fresh BiomeRTE-only installation
+
+For a board with no legacy enrollment or pending custody, import
+`biomerte-controller-setup.json`. It is filled in for the existing public
+controller and pinned to its site ID. To use another controller, start with
+`biomerte-setup.example.json`:
 
 ```json
 {
@@ -80,19 +128,14 @@ Enter the Wi-Fi network and password, then import a BiomeRTE setup document:
 }
 ```
 
-Replace the URL with the controller's public native-provider endpoint. The
-example file is `biomerte-setup.example.json`. This release also includes
-`biomerte-controller-setup.json`, filled in for the existing BiomeRTE Controller
-at https://biomerte-controller.cantikash.chatgpt.site and pinned to its site ID. Optional `site` pins a
-specific controller site and optional `resource` names the board resource.
-When omitted, enrollment supplies the site and the resource defaults to
-`relay6ch.<device-MAC>`. This setup file contains no owner token or private
-device key. Wi-Fi credentials stay in the existing local setup journal.
+Optional `site` pins a specific controller site and optional `resource` names
+the board resource. When omitted, enrollment supplies the site and the
+resource defaults to `relay6ch.<device-MAC>`. These public setup documents
+contain no owner token or private device key. Wi-Fi credentials remain in the
+existing local setup journal. Both setup forms save that journal durably
+before the native client adopts the configuration.
 
-A legacy infrastructure pairing document may include the same optional
-`biomerte` object. Existing authorization checks for replacing paired
-credentials remain in force. Both forms save the setup journal durably before
-the native client adopts the configuration.
+### Verify the device identity and approve pairing
 
 After Wi-Fi connects, the board generates an RSA-2048 identity and stores it
 in its own NVS namespace. It exports only the public key and fingerprint.
@@ -100,6 +143,19 @@ The gateway pairing endpoints create a candidate and accept proof of private
 key possession; an owner must approve that exact fingerprint through
 BiomeRTE's existing `pair.approve` operation. An unapproved candidate never
 registers ready capability offers.
+
+To read the generated identity over Wi-Fi, first let the saved setup connect
+to the network and create its pairing candidate. Then hold BOOT for three
+seconds after normal startup, reconnect to `RiscRTE-Setup`, open
+http://192.168.4.1 and expand **BiomeRTE device identity**. Copy its exact
+fingerprint and resource. Opening the portal before the first network
+connection may show that key generation has not happened yet.
+
+Inspect the identity without resubmitting credentials. The physical recovery
+portal exits after 120 seconds with no active client, then rejoins the saved
+network. Switch to an internet-connected owner session and approve only the
+fingerprint you read from that board. The firmware retries pairing finish
+automatically; its backoff can approach five minutes.
 
 Grant the verified device only these scopes, substituting its exact resource:
 
