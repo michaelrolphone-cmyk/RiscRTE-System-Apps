@@ -338,17 +338,20 @@ bool Client::begin(const uint8_t mac[6],const risc_http_client_v2& http,Infra::H
 void Client::tick(bool connected,bool mayOpen){if(impl)impl->tick(connected,mayOpen);}
 bool Client::busy()const{return impl&&impl->busy();}
 bool Client::effectsBusy()const{return impl&&(impl->state.pending()||impl->state.active());}
+bool Client::outputsActive()const{return impl&&impl->state.active();}
 bool Client::configured()const{return impl&&impl->configured();}
 bool Client::ready()const{return impl&&impl->ready();}
+bool Client::enrolled()const{return impl&&impl->enrolled;}
 bool Client::acceptConfig(JsonObjectConst input){
- if(!impl||impl->busy()||!impl->healthy||impl->state.pending())return false;
+ if(!impl)return false;
  JsonDocument candidate;if(!impl->normalizeConfig(input,candidate))return impl->fail("provider_configuration_invalid");
  // Omitted site is an onboarding default, not a request to erase enrollment.
  if(!strlen(candidate["site"]|"")&&candidate["url"]==impl->config["url"])candidate["site"]=impl->config["site"];
  if(candidate.as<JsonObjectConst>()==impl->config.as<JsonObjectConst>())return true;
+ if(impl->busy()||!impl->healthy||impl->state.pending())return false;
  const bool targetChanged=candidate["url"]!=impl->config["url"]||candidate["site"]!=impl->config["site"]||
   candidate["resource"]!=impl->config["resource"];
- if(targetChanged&&!impl->state.journal["fence"].isNull())return impl->fail("provider_target_locked_by_fence");
+ if(targetChanged&&(impl->enrolled||!impl->state.journal["fence"].isNull()))return impl->fail("provider_target_locked_by_fence");
  if(!impl->saveJson("config",candidate.as<JsonObjectConst>(),2048))return impl->fail("provider_configuration_storage_failed",true);
  impl->config.set(candidate);impl->offerIndex=0;impl->due=0;impl->failures=0;impl->error[0]=0;
  if(targetChanged){

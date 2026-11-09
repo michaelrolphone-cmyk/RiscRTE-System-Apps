@@ -18,7 +18,7 @@ class NativeCanonical {
    if(c=='"'||c=='\\'){byte('\\');byte(c);}
    else if(c=='\b')raw("\\b");else if(c=='\f')raw("\\f");else if(c=='\n')raw("\\n");
    else if(c=='\r')raw("\\r");else if(c=='\t')raw("\\t");
-   else if(c<32)escaped(c);
+   else if(c<32||c==127)escaped(c);
    else if(c<128)byte(c);
    else{
     unsigned continuation=0;uint32_t minimum=0;

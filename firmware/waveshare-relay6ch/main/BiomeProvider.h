@@ -19,8 +19,10 @@ class Client {
  void tick(bool networkConnected,bool mayOpenHttp=true);
  bool busy()const;
  bool effectsBusy()const;
+ bool outputsActive()const;
  bool configured()const;
  bool ready()const;
+ bool enrolled()const;
  bool acceptConfig(JsonObjectConst config);
  void publicIdentity(JsonObject out)const;
 };
