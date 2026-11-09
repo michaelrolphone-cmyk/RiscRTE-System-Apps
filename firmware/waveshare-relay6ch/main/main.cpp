@@ -164,7 +164,7 @@ extern "C" void app_main(){
    ESP_LOGI("relay6ch","biomerte=%s fingerprint=%s resource=%s error=%s",identity["pairing"]|"unconfigured",identity["fingerprint"]|"",identity["resource"]|"",identity["error"]|"");
    last=state;report=now(nullptr);
   }
-  if(node->phase==Phase::Retained){ESP_LOGE("relay6ch","retained ownership fault; watchdog recovery");for(;;)vTaskDelay(pdMS_TO_TICKS(1000));}
+  if(node->phase==Phase::Retained||provider->retained()){ESP_LOGE("relay6ch","retained HTTP ownership fault; watchdog recovery");for(;;)vTaskDelay(pdMS_TO_TICKS(1000));}
   vTaskDelay(pdMS_TO_TICKS(10));
  }
 }
