@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Radio telemetry · ESP32CAM</title>
+<style>
+:root{color-scheme:dark;--bg:#101820;--panel:#182530;--line:#314351;--text:#edf3f5;--muted:#b4c5cd;--accent:#7bd5bc}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,sans-serif}main{max-width:1240px;margin:auto;padding:24px}
+a{color:var(--accent)}h1{font-size:28px;margin:8px 0}h2{font-size:20px;margin:0 0 14px}h3{font-size:16px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+p{max-width:90ch;color:var(--muted)}section,details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin:18px 0}
+.badge{border:1px solid var(--line);border-radius:40px;padding:7px 14px;color:var(--accent)}.metrics{display:flex;gap:12px;flex-wrap:wrap}.metric{padding:14px 18px;background:var(--panel);border:1px solid var(--line);border-radius:10px;flex:1;min-width:150px}.metric strong{display:block;font-size:25px}.metric span{color:var(--muted)}
+.table{overflow:auto}table{width:100%;border-collapse:collapse;text-align:left;font-size:14px;white-space:nowrap}th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}td,th{padding:11px 10px;border-bottom:1px solid var(--line)}td:first-child{white-space:normal;min-width:150px}td small{display:block;color:var(--muted)}.stale{opacity:.55}
+label{display:block;color:var(--muted)}input{display:block;background:var(--bg);border:1px solid #506775;border-radius:6px;color:var(--text);padding:9px;width:100%;font:inherit;margin-top:5px}input[type=checkbox]{display:inline;width:auto;margin-right:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}button{background:var(--accent);border:0;border-radius:6px;color:#10251f;padding:9px 15px;font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:default}button.secondary{background:transparent;border:1px solid var(--line);color:var(--text)}.actions{display:flex;gap:12px;align-items:center;margin-top:20px;flex-wrap:wrap}.notice{color:#ffd09b}.error{color:#ffafaf}.muted{color:var(--muted)}summary{cursor:pointer;font-weight:600}code{font-size:13px}#status{white-space:pre-wrap}.empty{color:var(--muted);padding:20px 10px}
+@media(max-width:600px){main{padding:14px}section,details{padding:14px}h1{font-size:24px}}
+</style></head>
+<body><main>
+<div class="top"><div><a href="/">← Camera</a><h1>Radio telemetry</h1><div id="receiver" class="muted">Connecting to receiver…</div></div><span class="badge" id="connection" role="status">Waiting</span></div>
+<p>Nearby 2.4 GHz Wi-Fi access points and Bluetooth LE advertisers. Signal readings come from this camera's receiver. Each row shows its own observation age; Wi-Fi and Bluetooth samples are taken at different times.</p>
+<div class="metrics"><div class="metric"><strong id="wifi-count">—</strong><span>Wi-Fi access points</span></div><div class="metric"><strong id="ble-count">—</strong><span>BLE advertisers</span></div><div class="metric"><strong id="udp-count">—</strong><span>UDP packets sent</span></div><div class="metric"><strong id="heap">—</strong><span id="heap-label">Receiver uptime</span></div></div>
+<section><h2>Wi-Fi</h2><p id="wifi-state" class="muted">Waiting for the first scan.</p><div class="table"><table><thead><tr><th>Access point / BSSID</th><th>Channel</th><th>RSSI</th><th>Smoothed</th><th>Approx. range</th><th>Age</th><th>Samples</th><th>FTM</th></tr></thead><tbody id="wifi"></tbody></table></div></section>
+<section><h2>Bluetooth LE</h2><p id="ble-state" class="muted">Waiting for the first scan.</p><div class="table"><table><thead><tr><th>Advertiser / address</th><th>Address type</th><th>RSSI</th><th>Smoothed</th><th>Approx. range</th><th>Age</th><th>Samples</th><th>TX power</th></tr></thead><tbody id="ble"></tbody></table></div></section>
+<section><h2>Wi-Fi time-of-flight ranging</h2><p>FTM measures round-trip timing with a compatible responder. Use a Wi-Fi row's <b>Measure</b> button. Ordinary access points may not offer this service.</p><div id="ftm" role="status">No ranging request yet.</div></section>
+<details><summary>Scanning, output and range settings</summary>
+<p>Changes take effect without restarting the camera. UDP output is enabled by entering the receiver computer's IPv4 address. An empty address disables UDP; this page and the JSON API remain available.</p>
+<form id="config"><div class="grid">
+<label><input type="checkbox" id="wifi_enabled">Enable Wi-Fi scans</label>
+<label><input type="checkbox" id="ble_enabled">Enable BLE scans</label>
+<label>Wi-Fi scan interval (seconds)<input type="number" id="wifi_interval_ms" min="10" max="86400" step="1" required></label>
+<label>BLE scan interval (seconds)<input type="number" id="ble_interval_ms" min="1" max="86400" step="1" required></label>
+<label>BLE scan duration (seconds)<input type="number" id="ble_duration_ms" min="0.2" max="5" step="0.1" required></label>
+<label>UDP receiver IPv4<input id="udp_host" placeholder="192.168.1.60" maxlength="15"></label>
+<label>UDP port<input type="number" id="udp_port" min="1" max="65535" required></label>
+<label>Publish interval (seconds)<input type="number" id="publish_interval_ms" min="1" max="86400" step="1" required></label>
+<label>Wi-Fi reference RSSI at 1 m (dBm)<input type="number" id="wifi_reference_rssi_1m_dbm" min="-127" max="-1" step="0.1" required></label>
+<label>BLE reference RSSI at 1 m (dBm)<input type="number" id="ble_reference_rssi_1m_dbm" min="-127" max="-1" step="0.1" required></label>
+<label>Path-loss exponent<input type="number" id="path_loss_exponent" min="0.5" max="6" step="0.1" required></label>
+</div><p class="notice">RSSI ranges are estimates. Default reference values are assumptions, and walls, antenna orientation and transmitter power can change the result substantially. iBeacon advertisements can supply their own one-meter reference. Advertised TX power is shown separately.</p>
+<div class="actions"><button type="submit">Save settings</button><button class="secondary" id="reload" type="button">Reload settings</button><span id="saved" role="status"></span></div></form></details>
+<section><h2>Delivery and scan status</h2><div id="status" class="muted">Waiting for telemetry…</div><p><a href="/api/telemetry" target="_blank" rel="noopener">Open JSON telemetry</a> · <a href="/api/telemetry/config" target="_blank" rel="noopener">Open JSON configuration</a></p><p class="muted">The Wi-Fi scan lists access points, not every Wi-Fi client. Bluetooth lists advertising LE devices, not Classic Bluetooth connections. Short scan windows may miss broadcasts. Device addresses can change. There is no bearing or direction measurement.</p></section>
+</main><script>
+'use strict';
+const byId = id => document.getElementById(id);
+const secondFields = ['wifi_interval_ms','ble_interval_ms','ble_duration_ms','publish_interval_ms'];
+const numberFields = ['udp_port','wifi_reference_rssi_1m_dbm','ble_reference_rssi_1m_dbm','path_loss_exponent'];
+let configLoaded = false, lastTelemetry = null, pollTimer = null;
+function finite(value){return typeof value === 'number' && Number.isFinite(value);}
+function num(value, suffix='', digits=0){return finite(value) ? value.toFixed(digits)+suffix : '—';}
+function age(ms){return finite(ms) ? (ms<1000 ? '<1 s' : (ms/1000).toFixed(ms<10000?1:0)+' s') : '—';}
+async function api(path, options={}){
+ const response = await fetch(path, {cache:'no-store',credentials:'same-origin',...options});
+ let body;try{body=await response.json();}catch(e){throw new Error('Invalid JSON response (HTTP '+response.status+')');}
+ if(!response.ok)throw new Error(typeof body.error==='string'?body.error:JSON.stringify(body));
+ return body;
+}
+function addCell(row,text,sub){const cell=document.createElement('td');cell.textContent=text;if(sub){const small=document.createElement('small');small.textContent=sub;cell.appendChild(small);}row.appendChild(cell);return cell;}
+function distance(observation){if(!finite(observation.distance_m))return '—';return '≈ '+num(observation.distance_m,' m',1);}
+function rows(radio, observations, capabilities, config){
+ const body=byId(radio);body.replaceChildren();
+ const sorted=[...observations].sort((a,b)=>(b.rssi_filtered_dbm||-200)-(a.rssi_filtered_dbm||-200));
+ if(!sorted.length){const row=document.createElement('tr');const cell=addCell(row,'No observations yet.');cell.colSpan=8;cell.className='empty';body.appendChild(row);return;}
+ for(const observation of sorted){
+  const row=document.createElement('tr');
+  const interval=radio==='wifi'?config.wifi_interval_ms:config.ble_interval_ms;
+  if(finite(observation.age_ms)&&observation.age_ms>Math.max(30000,(interval||60000)*2))row.className='stale';
+  addCell(row,observation.name || (radio==='wifi'?'Hidden SSID':'Unnamed advertiser'),observation.address||observation.id);
+  addCell(row,radio==='wifi'?String(observation.channel??'—'):String(observation.address_type??'—'));
+  addCell(row,num(observation.rssi_dbm,' dBm'));
+  addCell(row,num(observation.rssi_filtered_dbm,' dBm',1));
+  addCell(row,distance(observation),observation.distance_method||'');
+  addCell(row,age(observation.age_ms));addCell(row,String(observation.sample_count??0));
+  if(radio==='wifi'){
+   const cell=addCell(row,'');if(observation.ftm_responder && capabilities.ftm){const button=document.createElement('button');button.textContent='Measure';button.disabled=!!lastTelemetry?.ftm?.busy;button.onclick=()=>range(observation,button);cell.appendChild(button);}else{cell.textContent=capabilities.ftm?'Not advertised':'Unsupported';}
+  }else{addCell(row,num(observation.tx_power_dbm,' dBm'));}
+  body.appendChild(row);
+ }
+}
+function loadConfig(config){
+ for(const key of ['wifi_enabled','ble_enabled'])byId(key).checked=!!config[key];
+ for(const key of secondFields)byId(key).value=(config[key]||0)/1000;
+ for(const key of numberFields)byId(key).value=config[key]??'';
+ byId('udp_host').value=config.udp_host||'';configLoaded=true;
+}
+function render(data){
+ lastTelemetry=data;const status=data.status||{},config=data.config||{},cap=data.capabilities||{};
+ byId('receiver').textContent='Receiver '+data.receiver_id+(data.boot_id?' · boot '+data.boot_id:'');
+ byId('connection').textContent=data.paused?'Scanning paused':status.worker_ready===false?'Telemetry worker unavailable':'Connected';
+ byId('connection').classList.remove('error');byId('wifi-count').textContent=(data.wifi||[]).length;
+ byId('ble-count').textContent=cap.ble?(data.ble||[]).length:'Unsupported';
+ byId('udp-count').textContent=status.udp_sent??0;
+ byId('heap').textContent=age(data.uptime_ms);
+ byId('wifi-state').textContent='Scan: '+(status.wifi_scan?'scanning':'idle')+' · last completed '+age(status.wifi_last_scan_age_ms)+' ago';
+ byId('ble-state').textContent=cap.ble?'Scan: '+(status.ble_initializing?'initializing':status.ble_scan?'scanning':'idle')+' · last completed '+age(status.ble_last_scan_age_ms)+' ago':'This board has no Bluetooth LE radio.';
+ rows('wifi',data.wifi||[],cap,config);rows('ble',data.ble||[],cap,config);
+ const ftm=data.ftm||{};
+ byId('ftm').textContent=!cap.ftm?'FTM is not supported by this board / SDK.':ftm.busy?'Measuring '+(ftm.target||'')+'…':'Status: '+(ftm.status||'idle')+(ftm.target?' · '+ftm.target:'')+(finite(ftm.distance_m)?' · '+num(ftm.distance_m,' m',2):'')+(finite(ftm.rtt_ns)?' · RTT '+num(ftm.rtt_ns,' ns'):'')+(finite(ftm.age_ms)?' · '+age(ftm.age_ms)+' ago':'')+(ftm.recovery?' · '+ftm.recovery:'');
+ byId('status').textContent='Wi-Fi error: '+(status.wifi_error||'none')+'\nBLE error: '+(status.ble_error||'none')+'\nUDP destination: '+(config.udp_host?config.udp_host+':'+config.udp_port:'disabled')+' · failed sends: '+(status.udp_failed||0)+'\nTable replacements: Wi-Fi '+(status.wifi_evictions||0)+' / BLE '+(status.ble_evictions||0);
+ byId('ble_enabled').disabled=!cap.ble;
+ if(!configLoaded)loadConfig(config);
+}
+async function poll(){
+ clearTimeout(pollTimer);
+ try{render(await api('/api/telemetry'));}
+ catch(error){byId('connection').textContent='Connection unavailable';byId('connection').classList.add('error');byId('status').textContent=error.message+' — displayed readings are from the last successful response.';}
+ finally{pollTimer=setTimeout(poll,2000);}
+}
+async function range(observation,button){
+ button.disabled=true;byId('ftm').textContent='Requesting measurement…';
+ try{await api('/api/telemetry/ftm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:observation.address,channel:observation.channel})});byId('ftm').textContent='Measurement requested. Waiting for the radio report.';}
+ catch(error){byId('ftm').textContent=error.message;}
+ finally{button.disabled=false;}
+}
+byId('config').addEventListener('submit',async event=>{
+ event.preventDefault();const settings={};
+ for(const key of ['wifi_enabled','ble_enabled'])settings[key]=byId(key).checked;
+ for(const key of secondFields)settings[key]=Math.round(Number(byId(key).value)*1000);
+ for(const key of numberFields)settings[key]=Number(byId(key).value);
+ settings.udp_host=byId('udp_host').value.trim();
+ const saved=byId('saved');saved.textContent='Saving…';
+ try{const result=await api('/api/telemetry/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(settings)});if(result.config)loadConfig(result.config);saved.textContent='Saved';saved.className='';}
+ catch(error){saved.textContent=error.message;saved.className='error';}
+});
+byId('reload').onclick=async()=>{try{const data=await api('/api/telemetry/config');loadConfig(data.config||data);byId('saved').textContent='Reloaded';}catch(error){byId('saved').textContent=error.message;}};
+poll();
+</script></body></html>

@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "variant": "1.0-radio.1",
+  "upstream_repository": "rzeldent/esp32cam-rtsp",
+  "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "e57e790c419a3641ed79fd561adeafd68c331cf03fd3bc1d0e12afaf504f055e"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "README.md",
+      "sha256": "a5b12b4a40d19d07d9e548f62c82c7a60169835c88783d4885376e2f0f36de77"
+    },
+    {
+      "path": "VALIDATION.md",
+      "sha256": "7f8376cfd1ff0d65c3f5745e0146fb0e0a27c978b959cac0a91629e2bf3638ac"
+    },
+    {
+      "path": "integration.patch",
+      "sha256": "a88c003eeafab5a528513f7d9e298c5a3071983073c3b434e4cc6bc11d839902"
+    },
+    {
+      "path": "overlay/html/telemetry.html",
+      "sha256": "2cac232bed271834fcffd2f182cd81e282ab0e4e447d258ae33652b59b29adcd"
+    },
+    {
+      "path": "overlay/include/radio_telemetry.h",
+      "sha256": "6ec150bc0f93d3c50417e9be676d734288e360a36803b18bcb7e95f769cb11d5"
+    },
+    {
+      "path": "overlay/include/radio_telemetry_model.h",
+      "sha256": "d82a3751956d211c903da8fed79ff8ee4148c56b6f83358166a029e576aa7918"
+    },
+    {
+      "path": "overlay/src/radio_telemetry.cpp",
+      "sha256": "794714eee41e1f4d8980cc00af1a347214bc08f3b6fe878dcaba31c43aae735e"
+    },
+    {
+      "path": "overlay/test/radio_telemetry_model/test_model.cpp",
+      "sha256": "6642fe3bb033b89657a40f80a6d7b28738d0baab975d3aa0320828909af50a91"
+    },
+    {
+      "path": "overlay/tests/test_telemetry_receiver.py",
+      "sha256": "02052b399fce7193f22d8b305f3c307290280c3bf4b686afad1319155c6bee0a"
+    },
+    {
+      "path": "overlay/tools/telemetry_receiver.py",
+      "sha256": "40fb95c55a1674f08acc350481e31ffa62bb47d48cfe0a7a4fec68b48a7132a8"
+    },
+    {
+      "path": "prepare.py",
+      "sha256": "f9673e31fe658631ba113071cadee0bb7c9600c07b596ec3bd31ba677755d266"
+    }
+  ]
+}
