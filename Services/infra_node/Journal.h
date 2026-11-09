@@ -1,5 +1,6 @@
 #pragma once
 #include "Core.h"
+#include "BiomeSetup.h"
 #include <RiscBoundAppDataAsyncV1.h>
 namespace Infra {
 class Journal {
@@ -27,7 +28,8 @@ class Journal {
     seq=sequence;loadedCrc=crc32(payload,length);revision=fresh;blocked=false;reload=false;loadError="state_loaded";return 0;
   }
   bool valid(){
-   if(!keys(state.as<JsonObjectConst>(),{"schema_version","installation_id","credential_generation","credentials","participant_id","cursor","pending","job","checkpoints","configuration_revision"},{"bootstrap","enrollment_id","credential_sha256","rotation","configuration","target_epoch","configuration_desired_id","configuration_expires_at","setup_policy","setup_pending","relay","protocol_rejections","allocation"})||measureJson(state["relay"])>65536||state["schema_version"]!=1||!state["installation_id"].is<const char*>()||strlen(state["installation_id"]|"")>64||!state["pending"].is<JsonArray>()||state["pending"].size()>PendingMax||measureJson(state["credentials"])>4096||measureJson(state["job"])>(state["job"]["spec"]["capability"]["capability_id"]=="device.outputs.batch"?8192u:RecordMax)||measureJson(state["checkpoints"])>4096||measureJson(state["configuration"])>8192||measureJson(state["setup_policy"])>PolicyMax||(!state["setup_pending"].isNull()&&!state["setup_pending"].is<bool>()))return false;
+   if(!keys(state.as<JsonObjectConst>(),{"schema_version","installation_id","credential_generation","credentials","participant_id","cursor","pending","job","checkpoints","configuration_revision"},{"bootstrap","enrollment_id","credential_sha256","rotation","configuration","target_epoch","configuration_desired_id","configuration_expires_at","setup_policy","setup_pending","relay","protocol_rejections","allocation","biomerte"})||measureJson(state["relay"])>65536||state["schema_version"]!=1||!state["installation_id"].is<const char*>()||strlen(state["installation_id"]|"")>64||!state["pending"].is<JsonArray>()||state["pending"].size()>PendingMax||measureJson(state["credentials"])>4096||measureJson(state["job"])>(state["job"]["spec"]["capability"]["capability_id"]=="device.outputs.batch"?8192u:RecordMax)||measureJson(state["checkpoints"])>4096||measureJson(state["configuration"])>8192||measureJson(state["setup_policy"])>PolicyMax||(!state["setup_pending"].isNull()&&!state["setup_pending"].is<bool>()))return false;
+   if(state.as<JsonObjectConst>().containsKey("biomerte")&&!biomeSetup(state["biomerte"]))return false;
    if(measureJson(state["allocation"])>4096)return false;
    if(measureJson(state["protocol_rejections"])>4096||state["protocol_rejections"]["items"].size()>8)return false;
    for(auto op:state["pending"].as<JsonArrayConst>())if(measureJson(op)>RecordMax)return false;return !state.overflowed()&&valueBounds(state.as<JsonVariantConst>(),0,24);

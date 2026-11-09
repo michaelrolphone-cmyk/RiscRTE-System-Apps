@@ -30,6 +30,32 @@ static void step(Node& n,unsigned count=1){while(count--){assert(n.advance()>=0)
 static void request(std::string v){wire=v;at=0;accepted=false;output.clear();}
 static std::string post(Node& n,JsonDocument& data,std::string extra=""){std::string body;serializeJson(data,body);return "POST /setup HTTP/1.1\r\nHost: 192.168.4.1\r\nContent-Type: application/json\r\nX-Setup-Token: "+std::string(n.portal.nonce)+"\r\nContent-Length: "+std::to_string(body.size())+"\r\n"+extra+"\r\n"+body;}
 static void stop(Node& n){n.drain=true;for(unsigned i=0;i<20&&n.phase!=Phase::Stopped;++i)step(n);assert(n.phase==Phase::Stopped);n.dispose();}
+
+static unsigned nativeCommits=0;
+static void onNativeCommit(JsonObjectConst config){
+ ++nativeCommits;assert(biomeSetup(config));
+ const char* payload=nullptr;size_t size=0;uint64_t seq=0;
+ assert(unframe(disk.data(),disk.size(),payload,size,seq)&&seq>1);
+ JsonDocument saved;assert(parseJournal(saved,payload,size));
+ assert(sameBiomeSetup(config,saved["biomerte"]));
+}
+static void publicNativeIdentity(JsonObject out){
+ out["fingerprint"]="public-fingerprint";
+ out["public_key"]="-----BEGIN PUBLIC KEY-----\nexample\n-----END PUBLIC KEY-----\n";
+ out["pairing"]="awaiting_approval";out["error"]="display \"quoted\" text";
+}
+static void nativeForm(JsonDocument& form){
+ form.clear();form["ssid"]="Home";form["password"]="native-password";
+ form["pairing"]["format"]="biomerte-relay-setup/1";
+ form["pairing"]["biomerte"]["url"]="https://controller.test/api/provider/call";
+ form["pairing"]["biomerte"]["realm"]="site";
+}
+static bool applyForm(Node& n,JsonDocument& form){
+ std::string body;serializeJson(form,body);assert(body.size()<=Portal::InputMax);
+ memcpy(n.portal.input,body.data(),body.size());n.portal.bodyAt=0;n.portal.bodySize=body.size();
+ return n.acceptSetup();
+}
+
 int main(int argc,char** argv){assert(argc==3);std::ifstream file(argv[1]);policyBytes={std::istreambuf_iterator<char>(file),{}};
  const char* seed=R"({"schema_version":1,"installation_id":"example-installation","credential_generation":1,"credentials":{},"participant_id":"","cursor":0,"pending":[],"job":null,"checkpoints":{},"configuration_revision":1})";
  // Request-line recognition must match actual browser HTTP, including the
@@ -90,5 +116,97 @@ int main(int argc,char** argv){assert(argc==3);std::ifstream file(argv[1]);polic
  }
  // Both uncertain commit outcomes: only a proven complete snapshot earns Saved.
  for(bool applied:{false,true}){initial(seed);Node u;initialize(u);step(u,2);form["pairing"]=savedPairing;form["pairing"]["policy"]=policy;request(post(u,form));commit=applied;outcome=RISC_APP_DATA_COMMIT_UNKNOWN;for(unsigned i=0;i<400&&u.phase!=Phase::SetupFinish;++i)step(u);assert(u.phase==Phase::SetupFinish&&u.setupFailed==!applied);assert(strstr(u.portal.body,applied?"Settings saved.":"could not be committed"));stop(u);}
- puts("Portal: captive redirect, page/session, CSRF and framing, pin validation, save-before-disconnect, wrong Wi-Fi retry, durable reboot, DNS bounds, uncertain commits PASS");
+
+ // The board opt-in admits a public native setup envelope without an old
+ // Channel Bus secret; all other products retain their original first setup.
+ for(bool enabled:{false,true}){
+  initial(seed);Node u;initialize(u);u.allowBiomeSetup=enabled;step(u,2);nativeForm(form);
+  assert(applyForm(u,form)==enabled&&u.journal.writes==0);
+  if(enabled){assert(biomeSetup(u.journal.state["biomerte"]));assert(!u.credential("participant")[0]);}
+  else assert(u.journal.state["biomerte"].isNull());
+  stop(u);
+ }
+ // Staged configuration contains only public routing fields with a strict
+ // HTTPS ingress route. No owner token or private key is accepted or persisted.
+ JsonDocument native;nativeForm(form);native.set(form["pairing"]["biomerte"]);
+ assert(biomeSetup(native));native["site"]="f45540bf9910412680734d0613e84460";assert(biomeSetup(native));native["site"]="";assert(biomeSetup(native));
+ for(const char* url:{"http://controller.test/api/provider/call","https:///api/provider/call","https://user@controller.test/api/provider/call","https://controller.test/api/provider/call?token=secret","https://controller.test/other"}){
+  JsonDocument bad;bad.set(native);bad["url"]=url;assert(!biomeSetup(bad));
+ }
+ for(const char* name:{"credential","owner_token","private_key"}){
+  JsonDocument bad;bad.set(native);bad[name]="secret";assert(!biomeSetup(bad));
+ }
+ {JsonDocument bad;bad.set(native);bad["site"]="bad site";assert(!biomeSetup(bad));bad.remove("site");bad["resource"]="with space";assert(!biomeSetup(bad));bad["resource"]=std::string(129,'r');assert(!biomeSetup(bad));bad.remove("resource");bad["realm"]="owner";assert(!biomeSetup(bad));}
+ {JsonDocument equal;equal.set(native);equal.remove("realm");assert(sameBiomeSetup(equal,native));}
+ // Journal validation rejects any corrupt or secret-bearing native extension.
+ {Journal j;assert(parse(j.state,seed,strlen(seed)));j.state["biomerte"]=native;assert(j.valid());j.state["biomerte"]["private_key"]="secret";assert(!j.valid());}
+ // Existing legacy authority is still required when adding native routing.
+ // A later legacy pairing with no native section preserves that routing.
+ for(bool authenticated:{false,true}){
+  initial(seed);Node u;initialize(u);u.allowBiomeSetup=true;step(u,2);
+  u.journal.state["participant_id"]="existing-participant";
+  u.journal.state["credentials"]["participant"]="participant-secret";
+  form["pairing"]=savedPairing;form["pairing"]["biomerte"]=native;
+  if(!authenticated)form["pairing"]["credentials"]["participant"]="wrong-secret";
+  assert(applyForm(u,form)==authenticated);
+  if(authenticated){
+   assert(sameBiomeSetup(u.journal.state["biomerte"],native));
+   form["pairing"]=savedPairing;assert(applyForm(u,form));
+   assert(sameBiomeSetup(u.journal.state["biomerte"],native));
+   u.setupRecovery=true;form["pairing"]=nullptr;assert(!applyForm(u,form));
+  }else assert(u.journal.state["biomerte"].isNull());
+  stop(u);
+ }
+ // First legacy setup may opt into native routing without changing legacy
+ // credential or implementation-pin validation.
+ {initial(seed);Node u;initialize(u);u.allowBiomeSetup=true;step(u,2);
+  form["pairing"]=savedPairing;form["pairing"]["biomerte"]=native;
+  assert(applyForm(u,form));assert(!strcmp(u.credential("participant"),"participant-secret"));
+  assert(sameBiomeSetup(u.journal.state["biomerte"],native));stop(u);
+ }
+ // Native enrollment locks routing. The same envelope remains idempotent,
+ // and a physically entered recovery session can correct only Wi-Fi.
+ {initial(seed);Node u;initialize(u);u.allowBiomeSetup=true;step(u,2);
+  u.journal.state["biomerte"]=native;u.biomeTargetLocked=true;nativeForm(form);
+  assert(applyForm(u,form));form["pairing"]["biomerte"]["url"]="https://other.test/api/provider/call";
+  assert(!applyForm(u,form)&&sameBiomeSetup(u.journal.state["biomerte"],native));
+  u.setupRecovery=true;form["pairing"]=nullptr;form["password"]="corrected-native-password";
+  assert(applyForm(u,form)&&sameBiomeSetup(u.journal.state["biomerte"],native));
+  stop(u);
+ }
+ // An incomplete legacy installation or unresolved old execution cannot be
+ // converted to a native-only installation by replacing its setup envelope.
+ for(unsigned custody=0;custody<4;++custody){
+  initial(seed);Node u;initialize(u);u.allowBiomeSetup=true;step(u,2);nativeForm(form);
+  if(custody==0)u.journal.state["credentials"]["participant"]="old-secret";
+  if(custody==1)u.journal.state["participant_id"]="old-participant";
+  if(custody==2)u.journal.state["pending"].add<JsonObject>()["kind"]="unresolved";
+  if(custody==3)u.journal.state["job"].to<JsonObject>()["kind"]="unresolved";
+  assert(!applyForm(u,form)&&u.journal.state["biomerte"].isNull());stop(u);
+ }
+ // Native configuration is applied only after the exact new journal snapshot
+ // is proven durable, including an ambiguous write resolved by reloading.
+ for(unsigned result=0;result<3;++result){
+  initial(seed);Node u;initialize(u);u.allowBiomeSetup=true;u.setupCommitted=onNativeCommit;
+  step(u,2);nativeForm(form);nativeCommits=0;request(post(u,form));
+  for(unsigned i=0;i<400&&u.phase!=Phase::SetupSave;++i)step(u);
+  assert(u.phase==Phase::SetupSave&&nativeCommits==0);
+  commit=result!=0;outcome=result<2?RISC_APP_DATA_COMMIT_UNKNOWN:RISC_APP_DATA_OK;
+  step(u);assert(u.journal.writeToken&&nativeCommits==0);
+  for(unsigned i=0;i<20&&u.phase!=Phase::SetupFinish;++i)step(u);
+  assert(u.phase==Phase::SetupFinish&&u.setupFailed==(result==0));
+  assert(nativeCommits==(result?1u:0u));stop(u);
+ }
+ // The optional public identity is JSON encoded; quotes and PEM newlines do
+ // not corrupt the token/session response. No native fields on other boards.
+ {Portal p;strcpy(p.nonce,"0123456789abcdef0123456789abcdef");p.message="Connect \"Home\".";
+  p.sessionResponse();JsonDocument session;assert(parse(session,p.session,strlen(p.session)));
+  assert(session["biomerte"].isNull());p.publicIdentity=publicNativeIdentity;p.sessionResponse();
+  assert(parse(session,p.session,strlen(p.session))&&session["token"]==p.nonce);
+  assert(session["biomerte"]["pairing"]=="awaiting_approval");
+  assert(session["biomerte"]["error"]=="display \"quoted\" text");
+  assert(!strstr(p.session,"PRIVATE KEY"));
+ }
+
+ puts("Portal: legacy security/regressions, native board opt-in and route validation, preserved authority, target locking, durable commit callbacks and public identity PASS");
 }
