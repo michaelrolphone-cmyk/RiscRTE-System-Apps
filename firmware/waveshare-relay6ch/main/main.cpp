@@ -1,5 +1,7 @@
 #include "Node.h"
 #include "Board.h"
+#include "BiomeProvider.h"
+#include "HttpSchedule.h"
 #include "Upgrade.h"
 #include "Factory.h"
 #include "NativeHttp.h"
@@ -14,9 +16,20 @@
 #include <esp_log.h>
 #include <nvs.h>
 #include <nvs_flash.h>
+#include <driver/gpio.h>
 #include <new>
 namespace {
 using namespace Infra;
+BiomeRelay::Client* provider=nullptr;
+JsonDocument stagedBiome;bool stagedBiomePending=false;
+void stageBiome(JsonObjectConst config){
+ stagedBiome.clear();stagedBiome.set(config);stagedBiomePending=!stagedBiome.overflowed();
+ if(!stagedBiomePending)ESP_LOGE("relay6ch","committed native setup could not be staged");
+}
+void publicIdentity(JsonObject out){
+ if(provider)provider->publicIdentity(out);
+ out["setup_commit_pending"]=stagedBiomePending;
+}
 TaskHandle_t ownerTask=nullptr;nvs_handle_t store=0;uint64_t revision=1,writeGeneration=0,pendingWrite=0;int32_t writeOutcome=0;
 uint8_t initialState[1024]{};size_t initialStateSize=0;bool initializedStore=false;bool wifiStarted=false,apMode=false,joining=false;uint64_t joinStarted=0;
 uint64_t now(void*){return esp_timer_get_time()/1000;}
@@ -93,18 +106,63 @@ extern "C" void app_main(){
  node->entropy={1,sizeof(node->entropy),nullptr,[](void*,void* b,uint32_t n)->int32_t{if(!owner()||!b||!n||n>32)return RISC_ENTROPY_INVALID;if(!wifiStarted)return RISC_ENTROPY_UNAVAILABLE;esp_fill_random(b,n);return 0;}};
  node->station={1,sizeof(node->station),nullptr,stationConnect,[](void*)->int32_t{return connected()?0:1;},stationClose,stationAp};
  node->upgradeSetup=RelayBoard::upgradeSetup;
- node->portal.api=portalApi();node->hardware={nullptr,RelayBoard::ready,RelayBoard::execute,RelayBoard::poll,RelayBoard::cancel};
+ // Physical I/O has one owner. Legacy roles keep their own identity and
+ // journal, but never receive the Board hooks or advertise physical offers.
+ node->externalHardware=true;node->allowBiomeSetup=true;
+ node->setupCommitted=stageBiome;node->portal.api=portalApi();node->portal.publicIdentity=publicIdentity;
+ provider=new(std::nothrow) BiomeRelay::Client();
+ if(!provider||!provider->begin(mac,*RiscCpu::NativeHttp::apiV2(),
+    {nullptr,RelayBoard::ready,RelayBoard::execute,RelayBoard::poll,RelayBoard::cancel},now))
+  fail("native provider journal or identity unavailable");
+ // GPIO0 is the board's BOOT button. A hold after normal startup requests
+ // setup; holding it during reset retains the chip's ROM download behavior.
+ gpio_config_t button{};button.pin_bit_mask=1ULL<<GPIO_NUM_0;button.mode=GPIO_MODE_INPUT;button.pull_up_en=GPIO_PULLUP_ENABLE;button.pull_down_en=GPIO_PULLDOWN_DISABLE;button.intr_type=GPIO_INTR_DISABLE;
+ if(gpio_config(&button)!=ESP_OK)fail("setup button unavailable");
  if(!node->journal.initialize(&files.base))fail("journal allocation failed");
  if(esp_task_wdt_add(nullptr)!=ESP_OK)fail("watchdog registration failed");
  node->recovery={1,sizeof(node->recovery),nullptr,[](void*)->int32_t{return esp_task_wdt_reset()==ESP_OK?0:-1;},nullptr,[](void*){esp_restart();}};
- unsigned last=~0u;uint64_t report=0;
+ unsigned last=~0u;uint64_t report=0,buttonAt=0;bool buttonReleased=false,setupRequested=false;
+ BiomeRelay::HttpSchedule schedule;
  for(;;){
   constexpr unsigned caps=MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT;node->memory={};auto& m=node->memory;m.struct_size=sizeof(m);m.internal_free=heap_caps_get_free_size(caps);m.internal_largest=heap_caps_get_largest_free_block(caps);m.dma_free=heap_caps_get_free_size(caps|MALLOC_CAP_DMA);m.dma_largest=heap_caps_get_largest_free_block(caps|MALLOC_CAP_DMA);m.stack_headroom=uxTaskGetStackHighWaterMark(nullptr);
-  node->advance();
-  if(node->drain||node->phase==Phase::Retained||node->phase==Phase::StorageBlocked||
-     node->phase==Phase::ProtocolBlocked||node->phase==Phase::AuthBlocked||node->phase==Phase::CapacityBlocked)
-   RelayBoard::cancel(nullptr);
-  const unsigned state=unsigned(node->phase);if(state!=last||now(nullptr)-report>=15000){ESP_LOGI("relay6ch","state=%u reason=%s free=%llu largest=%llu stack=%u reset=%u",state,node->status.reason,(unsigned long long)m.internal_free,(unsigned long long)m.internal_largest,m.stack_headroom,unsigned(esp_reset_reason()));last=state;report=now(nullptr);}
+  const uint64_t at=now(nullptr);
+  if(gpio_get_level(GPIO_NUM_0)){buttonReleased=true;buttonAt=0;}
+  else if(buttonReleased&&!setupRequested&&node->loaded&&node->phase<Phase::SetupStart){
+   if(!buttonAt)buttonAt=at;
+   else if(at-buttonAt>=3000){setupRequested=true;buttonReleased=false;ESP_LOGI("relay6ch","setup requested; waiting for outstanding work");}
+  }
+  // Wait for physical I/O and active HTTP to settle before changing the radio.
+  // Keep durable pending receipts intact so broken Wi-Fi can still be repaired.
+  if(setupRequested&&!provider->busy()&&!provider->outputsActive()&&!node->net.token&&
+     !node->journal.writeToken&&!node->journal.reload&&node->phase!=Phase::Save&&node->phase<Phase::SetupStart){
+   const int closed=stationClose(nullptr);
+   if(closed==-2)node->retained();
+   else if(!closed){node->setupRecovery=true;node->portal.nonce[0]=0;node->reason(Phase::SetupStart,"physical_setup_requested");setupRequested=false;}
+  }
+  const bool inSetup=node->phase>=Phase::SetupStart;
+  const bool hadNative=provider->busy();
+  provider->tick(connected(),schedule.grantNative(node->net.token!=0,node->phase==Phase::Send,inSetup));
+  if(!hadNative&&provider->busy())schedule.openedNative();
+  // A confirmed saved portal snapshot is retried until the native NVS journal
+  // can accept it. Never apply uncommitted request-buffer contents.
+  if(stagedBiomePending&&provider->acceptConfig(stagedBiome.as<JsonObjectConst>())){
+   stagedBiomePending=false;stagedBiome.clear();
+  }
+  node->biomeTargetLocked|=provider->enrolled();
+  if(!provider->busy()){
+   const bool hadNode=node->net.token!=0;node->advance();
+   if(!hadNode&&node->net.token)schedule.openedNode();
+  }else{
+   // The native state machine owns the shared HTTP client this turn. A live
+   // cooperative owner still feeds the task watchdog while Node is paused.
+   esp_task_wdt_reset();
+  }
+  const unsigned state=unsigned(node->phase);if(state!=last||now(nullptr)-report>=15000){
+   ESP_LOGI("relay6ch","state=%u reason=%s free=%llu largest=%llu stack=%u reset=%u",state,node->status.reason,(unsigned long long)m.internal_free,(unsigned long long)m.internal_largest,m.stack_headroom,unsigned(esp_reset_reason()));
+   JsonDocument identity;provider->publicIdentity(identity.to<JsonObject>());node->biomeTargetLocked|=identity["pairing"]=="enrolled";
+   ESP_LOGI("relay6ch","biomerte=%s fingerprint=%s resource=%s error=%s",identity["pairing"]|"unconfigured",identity["fingerprint"]|"",identity["resource"]|"",identity["error"]|"");
+   last=state;report=now(nullptr);
+  }
   if(node->phase==Phase::Retained){ESP_LOGE("relay6ch","retained ownership fault; watchdog recovery");for(;;)vTaskDelay(pdMS_TO_TICKS(1000));}
   vTaskDelay(pdMS_TO_TICKS(10));
  }

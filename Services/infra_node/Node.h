@@ -15,8 +15,15 @@ enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,Offer
 class Node {
  public:
  void (*upgradeSetup)(JsonObject,JsonObjectConst,JsonObject)=nullptr;
+ // A product can move physical execution to an independently fenced provider.
+ // Defaults keep all existing infrastructure products and their setup unchanged.
+ bool externalHardware=false,allowBiomeSetup=false,biomeTargetLocked=false;
+ void (*setupCommitted)(JsonObjectConst)=nullptr;
  Hardware hardware{};
- bool hardwareReady()const{return hardware.ready&&hardware.execute&&hardware.ready(hardware.context);}
+ bool hardwareReady()const{return !externalHardware&&hardware.ready&&hardware.execute&&hardware.ready(hardware.context);}
+ bool legacyProvider(JsonObjectConst pin)const{return !externalHardware||!hardwareCapability(pin["capability_id"]|"");}
+ unsigned legacyProviderCount()const{unsigned count=0;for(auto p:config["service"]["providers"].as<JsonArrayConst>())if(legacyProvider(p))++count;return count;}
+ JsonObjectConst legacyProviderAt(unsigned index)const{for(auto p:config["service"]["providers"].as<JsonArrayConst>()){if(!legacyProvider(p))continue;if(!index)return p.as<JsonObjectConst>();--index;}return JsonObjectConst();}
  bool workReady()const{return roleReady(32000)||hardwareReady();}
  int hardwareStep();
  risc_platform_recovery_v1 recovery{};risc_recovery_snapshot_v1 recoveryHealth{};unsigned networkFailures=0;uint64_t networkFailedSince=0,phaseSince=0;Phase supervisedPhase=Phase::Cold;
@@ -51,6 +58,9 @@ class Node {
  JsonObjectConst bindingAt(unsigned i)const{return bindings()[i].as<JsonObjectConst>();}
  JsonObjectConst endpoint(unsigned i)const{return find(config["endpoints"],"endpoint_policy_id",bindingAt(i)["endpoint_policy_id"]|"");}
  const char* credential(const char* ref)const{if(action==Action::RelayVerify&&journal.state["relay"]["verification"]["secrets"][ref].is<const char*>())return journal.state["relay"]["verification"]["secrets"][ref];return journal.state["relay"]["secrets"][ref].is<const char*>()?(journal.state["relay"]["secrets"][ref]|""):(journal.state["credentials"][ref]|"");}
+ // This path only owns networking. It cannot erase or bypass legacy identity,
+ // bootstrap authority, or unresolved requests just because native config exists.
+ bool networkOnly()const{return allowBiomeSetup&&biomeSetup(journal.state["biomerte"])&&!text(journal.state["participant_id"],128)&&!text(journal.state["bootstrap"],1024)&&!credential(config["service"]["credential_ref"]|"")[0]&&!roleBusy();}
  void reason(Phase p,const char* why){if(phase!=p||strcmp(status.reason,why)){auto& d=diagnostics[diagnosticNext++%128];d={};d.at=now();d.phase=static_cast<unsigned>(p);d.pending=journal.state["pending"].size();copy(d.reason,sizeof(d.reason),why);status.diagnostic_events=diagnosticNext;}phase=p;copy(status.reason,sizeof(status.reason),why);}
  int retained(){reason(Phase::Retained,"retained_fault");return INFRA_RETAINED;}
  int block(Phase p,const char* why){
@@ -87,8 +97,9 @@ class Node {
    config.set(journal.state["setup_policy"]);if(!policy(config))return block(Phase::StorageBlocked,"saved_setup_policy_invalid");}
   if(!Infra::configuration(configuration(),config["endpoints"],config["service"]["contact_interval_ms"]))return block(Phase::StorageBlocked,"configuration_invalid");
   for(auto kv:journal.state["credentials"].as<JsonObjectConst>())if(!text(kv.value(),1024))return block(Phase::StorageBlocked,"credential_invalid");
-  if(!journal.state["credentials"][config["wifi"]["credential_ref"]|""].is<const char*>()||!credential(config["service"]["credential_ref"])[0]){reason(Phase::SetupStart,"phone_setup_required");return 1;}
-  if(!text(journal.state["participant_id"],128)&&(!text(journal.state["bootstrap"],1024)||!text(journal.state["enrollment_id"],128)||!digest(journal.state["credential_sha256"])))return block(Phase::AuthBlocked,"enrollment_provisioning_required");
+  if(allowBiomeSetup&&setupCommitted&&biomeSetup(journal.state["biomerte"]))setupCommitted(journal.state["biomerte"].as<JsonObjectConst>());
+  if(!journal.state["credentials"][config["wifi"]["credential_ref"]|""].is<const char*>()||(!networkOnly()&&!credential(config["service"]["credential_ref"])[0])){reason(Phase::SetupStart,"phone_setup_required");return 1;}
+  if(!networkOnly()&&!text(journal.state["participant_id"],128)&&(!text(journal.state["bootstrap"],1024)||!text(journal.state["enrollment_id"],128)||!digest(journal.state["credential_sha256"])))return block(Phase::AuthBlocked,"enrollment_provisioning_required");
   configureCadence();loaded=true;reason(journal.state["setup_pending"]==true?Phase::SetupJoin:Phase::Connect,"network_connecting");return 1;
  }
  void configureCadence(){unsigned i=0;for(auto b:bindings()){cadence[i]={};cadence[i].interval=b["cadence_ms"];cadence[i].timeout=b["timeout_ms"];cadence[i].required=b["required"];bindingDisabled[i]=!bindingAllowed(configuration(),b);cursors[i][0]=0;++i;}}
@@ -145,7 +156,7 @@ class Node {
   volatile char* secret=authorization;for(size_t i=0;i<sizeof(authorization);++i)secret[i]=0;secret=siteAuthorization;for(size_t i=0;i<sizeof(siteAuthorization);++i)secret[i]=0;
   if(r==-2)return retained();if(r<0)return backoff("transport_open_failed");if(r)return 1;status.requested++;reason(Phase::Receive,"request_in_flight");return 1;
  }
- int stopJob(const char* why){if(hardware.cancel&&!hardware.cancel(hardware.context))return 1;if(text(journal.state["job"]["binding_id"],128)){auto a=make(Action::BindingStop,"execution","binding_report");a["binding_id"]=journal.state["job"]["binding_id"];a["generation"]=journal.state["job"]["generation"];a["kind"]="stopped";a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}if(!text(journal.state["job"]["attempt_id"],128)){journal.state["job"]=nullptr;return persist(Phase::Ready);}auto a=make(Action::Stop,"execution","stop_report");attempt(a);a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}
+ int stopJob(const char* why){if(!externalHardware&&hardware.cancel&&!hardware.cancel(hardware.context))return 1;if(text(journal.state["job"]["binding_id"],128)){auto a=make(Action::BindingStop,"execution","binding_report");a["binding_id"]=journal.state["job"]["binding_id"];a["generation"]=journal.state["job"]["generation"];a["kind"]="stopped";a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}if(!text(journal.state["job"]["attempt_id"],128)){journal.state["job"]=nullptr;return persist(Phase::Ready);}auto a=make(Action::Stop,"execution","stop_report");attempt(a);a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}
  void networkFailed(){if(!networkFailures)networkFailedSince=now();if(networkFailures<UINT32_MAX)++networkFailures;}
  void networkSucceeded(){networkFailures=0;networkFailedSince=0;}
  void supervise(){
@@ -176,12 +187,21 @@ class Node {
   if(phase==Phase::Backoff){if(now()<waitUntil)return 1;phase=Phase::Connect;return 1;}
   if(phase==Phase::Connect){if(drain){phase=Phase::Drain;return 1;}auto r=station.connect(station.context,config["wifi"]["ssid"],credential(config["wifi"]["credential_ref"]));if(r==-2)return retained();if(r<0){r=station.close(station.context);if(r==-2)return retained();if(r)return 1;return backoff("wifi_reconnect_backoff");}if(r)return 1;phase=boot[0]?Phase::Recover:Phase::Nonce;return 1;}
   if(phase==Phase::Nonce){uint8_t nonce[32];auto r=entropy.fill(entropy.context,nonce,sizeof(nonce));if(r==RISC_ENTROPY_RETAINED)return retained();if(r==RISC_ENTROPY_UNAVAILABLE||r==RISC_ENTROPY_BUSY)return 1;if(r)return block(Phase::ProtocolBlocked,"entropy_failed");for(unsigned i=0;i<32;++i)snprintf(boot+i*2,3,"%02x",nonce[i]);copy(status.boot_id,sizeof(status.boot_id),boot);phase=Phase::Recover;return 1;}
+  if(phase==Phase::Recover&&networkOnly()){rebootRecovery=false;snapshotNeeded=inventoryNeeded=false;reason(Phase::Ready,"biomerte_network_ready");}
   if(phase==Phase::Recover&&journal.state["protocol_rejections"]["quarantined"]==true)phase=Phase::Ready;
   if(phase==Phase::Recover){if(journal.state["job"]["phase"]=="awaiting_acceptance")return jobStep();if(journal.state["pending"].size())return resume();auto job=journal.state["job"];if(!job.isNull()&&text(job["attempt_id"],128))return stopJob("reboot_or_reconnect_requires_reconciliation");if(snapshotNeeded&&text(journal.state["participant_id"],128))return snapshotStep();rebootRecovery=false;phase=Phase::Ready;}
   if(phase==Phase::Drain){if(net.token){auto r=net.close();if(r==-2)return retained();if(r)return 1;}if(journal.state["pending"].size()){phase=Phase::Recover;return 1;}if(!journal.state["job"].isNull())return stopJob("owner_shutdown");auto r=station.close(station.context);if(r==-2)return retained();if(r)return 1;phase=Phase::Stopped;return 0;}
   if(phase==Phase::Stopped)return 0;
   if(phase!=Phase::Ready)return -1;
   if(drain){phase=Phase::Drain;return 1;}
+  if(networkOnly()){
+   // Native-only boards still reconnect through the same station lifecycle.
+   // No participant/session/role requests are created without legacy authority.
+   const int r=station.poll?station.poll(station.context):0;
+   if(r==-2)return retained();
+   if(r){reason(Phase::Connect,"biomerte_wifi_reconnect");return 1;}
+   reason(Phase::Ready,"biomerte_network_ready");return 1;
+  }
   if(serviceBlocked||now()<serviceRetryAt){
    // Relay requests have separate saved custody. A successful relay request
    // must not close the participant circuit or clear its diagnostic.
