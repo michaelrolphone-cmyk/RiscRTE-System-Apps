@@ -13,7 +13,9 @@ class Portal {
  void (*publicIdentity)(JsonObject)=nullptr;
  static const char* page();
  void sessionResponse(){
-  Allocator allocator{4096};JsonDocument data{&allocator};
+  // A 64-bit ArduinoJson variant pool alone uses 4096 bytes. Budget its
+  // allocation separately from the bounded wire payload and copied strings.
+  Allocator allocator{8192};JsonDocument data{&allocator};
   data["token"]=nonce;data["message"]=message;
   if(publicIdentity)publicIdentity(data["biomerte"].to<JsonObject>());
   const size_t size=measureJson(data);

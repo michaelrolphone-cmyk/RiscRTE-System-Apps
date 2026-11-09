@@ -14,6 +14,7 @@ def main():
  shutil.copy2(ROOT/'profiles/waveshare-esp32-s3-relay-6ch/README.md',out/'README.md');shutil.copy2(ROOT/'profiles/waveshare-esp32-s3-relay-6ch/catalog.json',out/'catalog.json')
  shutil.copy2(ROOT/'profiles/waveshare-esp32-s3-relay-6ch/biomerte-capabilities.json',out/'biomerte-capabilities.json')
  shutil.copy2(ROOT/'profiles/waveshare-esp32-s3-relay-6ch/biomerte-setup.example.json',out/'biomerte-setup.example.json')
+ shutil.copy2(ROOT/'profiles/waveshare-esp32-s3-relay-6ch/biomerte-controller-setup.json',out/'biomerte-controller-setup.json')
  shutil.copy2(ROOT/'LICENSE',out/'SYSTEM-APPS-LICENSE');shutil.copy2(a.runtime/'LICENSE',out/'RUNTIME-LICENSE')
  manifest={'profile':'waveshare-esp32-s3-relay-6ch','version':'2.0.0','chip':'esp32s3','flash_bytes':len(image),'requires_psram':False,'flash_mode':'dio','flash_frequency_mhz':40,'initial_image':{'asset':'biomerte-relay6ch-v2.0.0-initial.bin','offset':0,'first_install_only':True,'replaces_saved_data':True,'sha256':sha(out/'biomerte-relay6ch-v2.0.0-initial.bin')},'components':components,'sources':{'apps':head(ROOT),'runtime':head(a.runtime)},'qualification':{'target_compiled':True,'hardware_tested':False}}
  (out/'flash-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

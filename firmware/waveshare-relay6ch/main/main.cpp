@@ -120,7 +120,8 @@ extern "C" void app_main(){
  if(gpio_config(&button)!=ESP_OK)fail("setup button unavailable");
  if(!node->journal.initialize(&files.base))fail("journal allocation failed");
  if(esp_task_wdt_add(nullptr)!=ESP_OK)fail("watchdog registration failed");
- node->recovery={1,sizeof(node->recovery),nullptr,[](void*)->int32_t{return esp_task_wdt_reset()==ESP_OK?0:-1;},nullptr,[](void*){esp_restart();}};
+ // Legacy endpoint failures must not interrupt independent native hardware.
+ node->recovery={1,sizeof(node->recovery),nullptr,[](void*)->int32_t{return esp_task_wdt_reset()==ESP_OK?0:-1;},nullptr,[](void*){if(!connected()&&(!provider||!provider->outputsActive()))esp_restart();}};
  unsigned last=~0u;uint64_t report=0,buttonAt=0;bool buttonReleased=false,setupRequested=false;
  BiomeRelay::HttpSchedule schedule;
  for(;;){
@@ -163,7 +164,7 @@ extern "C" void app_main(){
    ESP_LOGI("relay6ch","biomerte=%s fingerprint=%s resource=%s error=%s",identity["pairing"]|"unconfigured",identity["fingerprint"]|"",identity["resource"]|"",identity["error"]|"");
    last=state;report=now(nullptr);
   }
-  if(node->phase==Phase::Retained){ESP_LOGE("relay6ch","retained ownership fault; watchdog recovery");for(;;)vTaskDelay(pdMS_TO_TICKS(1000));}
+  if(node->phase==Phase::Retained||provider->retained()){ESP_LOGE("relay6ch","retained HTTP ownership fault; watchdog recovery");for(;;)vTaskDelay(pdMS_TO_TICKS(1000));}
   vTaskDelay(pdMS_TO_TICKS(10));
  }
 }

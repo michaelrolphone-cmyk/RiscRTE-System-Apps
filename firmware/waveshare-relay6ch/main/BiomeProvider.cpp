@@ -26,7 +26,10 @@ bool endpoint(const char* url){
  return true;
 }
 bool parseResponse(JsonDocument& doc,const char* data,size_t size){
- doc.clear();return size&&size<=ResponseLimit&&Infra::BasicJsonGuard<20,256>(data,size).objectOnly()&&
+ // Native responses are serialized by the authenticated controller. Allow
+ // arbitrary bounded nested input JSON here so malformed physical steps can
+ // be claimed and failed; ProviderState validates identity, fences and I/O.
+ doc.clear();return size&&size<=ResponseLimit&&
   !deserializeJson(doc,data,size,DeserializationOption::NestingLimit(20))&&!doc.overflowed()&&doc["result"].is<JsonObjectConst>();
 }
 }
@@ -46,10 +49,8 @@ struct Client::Implementation {
  uint64_t now()const{return clock?clock(clockContext):0;}
  bool fail(const char* why,bool permanent=false){Infra::copy(error,sizeof(error),why);if(permanent)healthy=false;return false;}
  bool saveJson(const char* name,JsonObjectConst value,size_t limit){
-  const size_t size=measureJson(value);if(!size||size>limit)return false;
-  char* bytes=static_cast<char*>(malloc(size+1));if(!bytes)return false;
-  const bool encoded=serializeJson(value,bytes,size+1)==size;
-  bool result=encoded&&nvs_set_blob(nvs,name,bytes,size)==ESP_OK&&nvs_commit(nvs)==ESP_OK;
+  char* bytes=nullptr;size_t size=0;if(!encodeSnapshot(value,bytes,size,limit))return false;
+  const bool result=nvs_set_blob(nvs,name,bytes,size)==ESP_OK&&nvs_commit(nvs)==ESP_OK;
   eraseBytes(bytes,size+1);free(bytes);return result;
  }
  int loadJson(const char* name,JsonDocument& value,size_t limit){
@@ -57,14 +58,18 @@ struct Client::Implementation {
   if(rc==ESP_ERR_NVS_NOT_FOUND)return 0;if(rc!=ESP_OK||!size||size>limit)return -1;
   char* bytes=static_cast<char*>(malloc(size+1));if(!bytes)return -1;
   rc=nvs_get_blob(nvs,name,bytes,&size);bytes[size]=0;
-  const bool parsed=rc==ESP_OK&&Infra::parseJournal(value,bytes,size);
+  // A malformed physical input can contain fractional values. Retain that
+  // exact rejected command across reset; shape/range validation belongs to
+  // ProviderState, not a parser that would strand an otherwise valid receipt.
+  const bool parsed=rc==ESP_OK&&
+   !deserializeJson(value,static_cast<const char*>(bytes),size,DeserializationOption::NestingLimit(24))&&!value.overflowed();
   eraseBytes(bytes,size+1);free(bytes);return parsed?1:-1;
  }
  static bool saveState(void* context,JsonObjectConst value){
   return static_cast<Implementation*>(context)->saveJson("state",value,JournalLimit);
  }
  bool normalizeConfig(JsonObjectConst input,JsonDocument& out){
-  if(!Infra::keys(input,{"url"},{"site","realm","resource"})||measureJson(input)>2048||
+  if(!completeStrings(input)||!Infra::keys(input,{"url"},{"site","realm","resource"})||measureJson(input)>2048||
      !endpoint(input["url"]|"")||(!input["realm"].isNull()&&input["realm"]!="site"))return false;
   const char* site=input["site"]|"";if(site[0]&&!ident(site))return false;
   const char* resource=input["resource"]|device;
@@ -160,7 +165,7 @@ struct Client::Implementation {
   return open(kind,config["url"]|"",payload.as<JsonObjectConst>());
  }
  bool pairRequest(bool finish){
-  char url[769];Infra::copy(url,sizeof(url),config["url"]|"");
+  char url[800];Infra::copy(url,sizeof(url),config["url"]|"");
   const char* suffix=finish?"pair/finish":"pair/begin";char* tail=strrchr(url,'/');
   if(!tail)return fail("provider_endpoint_invalid",true);
   const size_t prefix=tail-url+1;if(prefix+strlen(suffix)>=sizeof(url))return fail("pair_endpoint_too_long",true);
@@ -246,7 +251,7 @@ struct Client::Implementation {
    }
    if(count>sizeof(chunk)||bodySize+count>ResponseLimit){networkOutcome=RISC_HTTP_SIZE;done=true;}
    else if(count){memcpy(body+bodySize,chunk,count);bodySize+=count;body[bodySize]=0;}
-   if(info.utc_seconds){utc=info.utc_seconds;utcAt=now();}
+   if(info.utc_seconds&&!utc){utc=info.utc_seconds;utcAt=now();}
    if(rc<0||read<0||queried<0){networkOutcome=rc<0?rc:read<0?read:queried;done=true;}
    else if(rc==RISC_HTTP_EOF||read==RISC_HTTP_EOF)done=true;
    if(now()-started>=Infra::ServiceRequestTimeoutMs+1000){networkOutcome=RISC_HTTP_TIMEOUT;done=true;}
@@ -337,6 +342,7 @@ bool Client::begin(const uint8_t mac[6],const risc_http_client_v2& http,Infra::H
 }
 void Client::tick(bool connected,bool mayOpen){if(impl)impl->tick(connected,mayOpen);}
 bool Client::busy()const{return impl&&impl->busy();}
+bool Client::retained()const{return impl&&impl->retained;}
 bool Client::effectsBusy()const{return impl&&(impl->state.pending()||impl->state.active());}
 bool Client::outputsActive()const{return impl&&impl->state.active();}
 bool Client::configured()const{return impl&&impl->configured();}
@@ -367,7 +373,7 @@ void Client::publicIdentity(JsonObject out)const{
  out["device"]=impl->device;out["firmware"]="2.0.0";out["resource"]=impl->config["resource"];out["site"]=impl->config["site"];
  out["url"]=impl->config["url"];out["configured"]=impl->configured();out["ready"]=impl->ready();
  const int phase=impl->keyPhase.load(std::memory_order_acquire);
- if(phase!=1){out["public_key"]=impl->publicKey;out["fingerprint"]=impl->actor;out["error"]=impl->state.healthy?impl->error:impl->state.error;}
+ if(phase!=1){out["public_key"]=impl->publicKey;out["fingerprint"]=impl->actor;out["error"]=!impl->state.healthy&&impl->state.error[0]?impl->state.error:impl->error;}
  out["pairing"]=!impl->configured()?"unconfigured":phase!=2?"identity_pending":impl->enrolled?"enrolled":
   impl->pair["challenge"].isNull()?"requesting_approval":"awaiting_approval";
  if(!impl->state.journal["fence"].isNull())out["generation"]=impl->state.journal["fence"]["generation"];

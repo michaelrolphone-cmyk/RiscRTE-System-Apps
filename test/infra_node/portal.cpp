@@ -72,7 +72,7 @@ int main(int argc,char** argv){assert(argc==3);std::ifstream file(argv[1]);polic
  initial(seed);Node n;initialize(n);step(n,2);assert(n.phase==Phase::SetupPortal&&ap&&n.portal.dns&&n.portal.listener);
  request("GET /generate_204 HTTP/1.1\r\nHost: connectivitycheck.gstatic.com\r\n\r\n");step(n,30);assert(output.find("302 Found")!=std::string::npos&&output.find("Location: http://192.168.4.1/")!=std::string::npos);
  request("GET / HTTP/1.1\r\nHost: 192.168.4.1\r\n\r\n");step(n,100);assert(output.find("Set up your RiscRTE")!=std::string::npos&&output.find("Content-Length:")!=std::string::npos);
- request("GET /session HTTP/1.1\r\nHost: 192.168.4.1\r\n\r\n");step(n,30);assert(output.find(n.portal.nonce)!=std::string::npos);
+ request("GET /session HTTP/1.1\r\nHost: 192.168.4.1\r\n\r\n");step(n,30);assert(output.find("200 OK")!=std::string::npos);assert(output.find(n.portal.nonce)!=std::string::npos);
  JsonDocument form;form["ssid"]="Home";form["password"]="secret-password";form["pairing"]=nullptr;
  request(post(n,form,"Origin: http://evil.example\r\n"));step(n,30);assert(output.find("403 Error")!=std::string::npos&&n.journal.writes==0);
  request(post(n,form,"Content-Length: 1\r\n"));step(n,30);assert(output.find("400 Error")!=std::string::npos&&n.journal.writes==0);
@@ -200,12 +200,14 @@ int main(int argc,char** argv){assert(argc==3);std::ifstream file(argv[1]);polic
  // The optional public identity is JSON encoded; quotes and PEM newlines do
  // not corrupt the token/session response. No native fields on other boards.
  {Portal p;strcpy(p.nonce,"0123456789abcdef0123456789abcdef");p.message="Connect \"Home\".";
-  p.sessionResponse();JsonDocument session;assert(parse(session,p.session,strlen(p.session)));
+  p.sessionResponse();assert(strstr(p.header,"200 OK"));JsonDocument session;assert(parse(session,p.session,strlen(p.session)));
   assert(session["biomerte"].isNull());p.publicIdentity=publicNativeIdentity;p.sessionResponse();
   assert(parse(session,p.session,strlen(p.session))&&session["token"]==p.nonce);
   assert(session["biomerte"]["pairing"]=="awaiting_approval");
   assert(session["biomerte"]["error"]=="display \"quoted\" text");
   assert(!strstr(p.session,"PRIVATE KEY"));
+  p.publicIdentity=[](JsonObject out){out["oversize"]=std::string(3000,'x');};p.sessionResponse();
+  assert(strstr(p.header,"503 Error")&&strstr(p.body,"temporarily unavailable"));
  }
 
  puts("Portal: legacy security/regressions, native board opt-in and route validation, preserved authority, target locking, durable commit callbacks and public identity PASS");

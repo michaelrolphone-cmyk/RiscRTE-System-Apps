@@ -9,7 +9,11 @@ struct Board {
  JsonDocument saved;unsigned saves=0,failSave=0,executions=0,polls=0,cancels=0;
  bool asynchronous=false;unsigned runningPolls=1,cancelPasses=2;
  static bool save(void* p,JsonObjectConst journal){
-  auto& b=*static_cast<Board*>(p);if(++b.saves==b.failSave)return false;b.saved.set(journal);return true;
+  auto& b=*static_cast<Board*>(p);if(++b.saves==b.failSave)return false;
+  // Exercise the exact NVS snapshot encoder and an actual JSON reload.
+  char* bytes=nullptr;size_t size=0;assert(encodeSnapshot(journal,bytes,size,12288));
+  JsonDocument decoded;assert(!deserializeJson(decoded,static_cast<const char*>(bytes),size,DeserializationOption::NestingLimit(24)));
+  free(bytes);b.saved.set(decoded);return true;
  }
  static bool ready(void*){return true;}
  static int execute(void* p,const char*,JsonObjectConst input,JsonObject output){
@@ -71,12 +75,46 @@ static void admission(){
  for(const char* field:{"provider","resource","guard","lease","contract"}){
   auto a=action();a[field]="wrong";assert(!state.stage(a.as<JsonObjectConst>()));
  }
- auto a=action();a["inputs"]["pin"]=45;assert(!state.stage(a.as<JsonObjectConst>()));
- a=action();a["inputs"]["channel"]=7;assert(!state.stage(a.as<JsonObjectConst>()));
  auto different=fence(1,"another-holder");assert(state.fence(different.as<JsonObjectConst>())<0);
  auto newer=fence(2,"lease-two");assert(state.fence(newer.as<JsonObjectConst>())==0);
  auto older=fence();assert(state.fence(older.as<JsonObjectConst>())<0);
  assert(state.fence(newer.as<JsonObjectConst>())==0&&board.executions==0);
+}
+static void invalidInputsSettle(){
+ for(unsigned scenario=0;scenario<8;++scenario){
+  Board board;ProviderState state;board.begin(state);bind(state);
+  auto bad=action("invalid",scenario>=2);
+  if(scenario==0)bad["inputs"]["channel"]=7;
+  else if(scenario==1)bad["inputs"]["pin"]=45;
+  else if(scenario==2)bad["inputs"]["steps"][1]["off"][0]=7;
+  else if(scenario==3)bad["inputs"]["steps"][0]["wait_ms"]=1.5;
+  else if(scenario==4)bad["inputs"]["steps"][0]["wait_ms"]=1.0;
+  else if(scenario==5){auto steps=bad["inputs"]["steps"].to<JsonArray>();for(unsigned i=0;i<129;++i)steps.add<JsonObject>()["wait_ms"]=1;}
+  else if(scenario==6)bad["inputs"]["steps"][1]["\xc3\xa9"]="control:\x01\n";
+  else{
+   bad["contract"]="serial.rs485:1";auto input=bad["inputs"].to<JsonObject>();
+   input["baud"]=9600;input["stop_bits"]=1;input["tx_hex"]="01";input["rx_max"]=0;input["timeout_ms"]=10;
+   const char parity[]="none\0trailing";input["parity"]=JsonString(parity,sizeof(parity)-1);
+  }
+  assert(state.stage(bad.as<JsonObjectConst>())&&board.executions==0);
+  // Type mutation from invalid float to valid int cannot reuse an intent.
+  if(scenario==4){
+   JsonDocument mutated;mutated.set(bad);mutated["state"]="claimed";mutated["inputs"]["steps"][0]["wait_ms"]=1;
+   assert(!state.claimed(mutated.as<JsonObjectConst>())&&board.executions==0);
+  }
+  if(scenario==7){
+   JsonDocument mutated;mutated.set(bad);mutated["state"]="claimed";mutated["inputs"]["parity"]="none";
+   assert(!state.claimed(mutated.as<JsonObjectConst>())&&board.executions==0);
+  }
+  claim(state,bad);
+  assert(state.journal["command"]["state"]=="failed"&&state.outcome()&&board.executions==0&&board.polls==0);
+  assert(state.journal["command"]["result"]["reason"]=="invalid_hardware_inputs");
+  ProviderState rebooted;board.begin(rebooted);
+  assert(rebooted.journal["command"]["state"]=="failed"&&board.executions==0);
+  accept(rebooted,bad);
+  auto next=action("valid-after-invalid");assert(rebooted.stage(next.as<JsonObjectConst>()));claim(rebooted,next);
+  assert(board.executions==1&&rebooted.journal["command"]["state"]=="succeeded");accept(rebooted,next);
+ }
 }
 static void recovery(){
  // Reset before the claim request: only a claim-to-report-uncertain is allowed.
@@ -137,5 +175,5 @@ static void batchesAndFences(){
  assert(pending.stage(queued.as<JsonObjectConst>()));assert(pending.fence(replacement.as<JsonObjectConst>())==0);
  claim(pending,queued);assert(preclaim.executions==0&&pending.journal["command"]["state"]=="uncertain");
 }
-int main(){retries();admission();recovery();storageFailures();batchesAndFences();
- puts("Biome provider state: strict admission, durable arm, exact retries, conflict rejection, reboot uncertainty, storage failure, and quiescent fences PASS");}
+int main(){retries();admission();invalidInputsSettle();recovery();storageFailures();batchesAndFences();
+ puts("Biome provider state: strict admission, invalid input settlement, durable arm, exact retries, conflict rejection, reboot uncertainty, storage failure, and quiescent fences PASS");}

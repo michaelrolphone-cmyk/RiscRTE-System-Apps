@@ -18,6 +18,7 @@ class Client {
  // NEW request; a held request continues until its native cleanup completes.
  void tick(bool networkConnected,bool mayOpenHttp=true);
  bool busy()const;
+ bool retained()const;
  bool effectsBusy()const;
  bool outputsActive()const;
  bool configured()const;

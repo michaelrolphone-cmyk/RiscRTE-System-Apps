@@ -1,5 +1,7 @@
 #pragma once
 #include "../infra_node/Digest.h"
+#include <cmath>
+#include <new>
 
 namespace BiomeRelay {
 // Native BiomeRTE store.encode is JSON with sorted keys, no whitespace,
@@ -7,13 +9,13 @@ namespace BiomeRelay {
 // exact signed representation; its optional output is useful for test vectors.
 class NativeCanonical {
  dtls_sha256_ctx hash;
- char* buffer;size_t capacity,count=0;bool good=true;
+ char* buffer;size_t capacity,count=0;bool good=true,allowFloating=false;
  void byte(uint8_t c){dtls_sha256_update(&hash,&c,1);if(buffer){if(count+1<capacity)buffer[count]=char(c);else good=false;}++count;}
  void raw(const char* s){while(*s)byte(uint8_t(*s++));}
  void escaped(uint16_t c){const char* hex="0123456789abcdef";raw("\\u");for(int shift=12;shift>=0;shift-=4)byte(hex[(c>>shift)&15]);}
- void string(const char* text){
-  byte('"');auto p=reinterpret_cast<const uint8_t*>(text);
-  while(*p&&good){
+ void string(const char* text,size_t size){
+  byte('"');auto p=reinterpret_cast<const uint8_t*>(text);const auto end=p+size;
+  while(p<end&&good){
    uint32_t c=*p++;
    if(c=='"'||c=='\\'){byte('\\');byte(c);}
    else if(c=='\b')raw("\\b");else if(c=='\f')raw("\\f");else if(c=='\n')raw("\\n");
@@ -26,7 +28,7 @@ class NativeCanonical {
     else if(c>=0xe0&&c<=0xef){continuation=2;minimum=0x800;c&=15;}
     else if(c>=0xf0&&c<=0xf4){continuation=3;minimum=0x10000;c&=7;}
     else {good=false;break;}
-    for(unsigned i=0;i<continuation;++i){if((*p&0xc0)!=0x80){good=false;break;}c=(c<<6)|(*p++&63);}
+    for(unsigned i=0;i<continuation;++i){if(p>=end||(*p&0xc0)!=0x80){good=false;break;}c=(c<<6)|(*p++&63);}
     if(!good||c<minimum||c>0x10ffff||(c>=0xd800&&c<=0xdfff)){good=false;break;}
     if(c<=0xffff)escaped(c);else{c-=0x10000;escaped(0xd800+(c>>10));escaped(0xdc00+(c&1023));}
    }
@@ -34,26 +36,64 @@ class NativeCanonical {
   byte('"');
  }
  public:
- explicit NativeCanonical(char* out=nullptr,size_t size=0):buffer(out),capacity(size){dtls_sha256_init(&hash);}
+ explicit NativeCanonical(char* out=nullptr,size_t size=0,bool floating=false):buffer(out),capacity(size),allowFloating(floating){dtls_sha256_init(&hash);}
+ size_t write(uint8_t c){byte(c);return 1;}
+ size_t write(const uint8_t* p,size_t n){for(size_t i=0;i<n;++i)byte(p[i]);return n;}
  void value(JsonVariantConst v,unsigned depth=0){
-  if(!good||depth>16){good=false;return;}
+  if(!good||depth>(allowFloating?24u:16u)){good=false;return;}
   if(v.is<JsonObjectConst>()){
-   const char* names[64];size_t n=0;
-   for(JsonPairConst p:v.as<JsonObjectConst>()){if(n==64){good=false;return;}names[n++]=p.key().c_str();}
-   for(size_t i=1;i<n;++i){auto name=names[i];size_t j=i;while(j&&strcmp(names[j-1],name)>0){names[j]=names[j-1];--j;}names[j]=name;}
-   byte('{');for(size_t i=0;i<n;++i){if(i)byte(',');string(names[i]);byte(':');value(v[names[i]],depth+1);}byte('}');
+   const size_t count=v.size();if(count>4096){good=false;return;}
+   struct Entry{JsonString key;JsonVariantConst value;};
+   auto entries=new(std::nothrow) Entry[count];if(count&&!entries){good=false;return;}
+   size_t n=0;for(JsonPairConst p:v.as<JsonObjectConst>())entries[n++]={p.key(),p.value()};
+   auto order=[](JsonString a,JsonString b){
+    const size_t common=a.size()<b.size()?a.size():b.size();
+    const int compared=memcmp(a.c_str(),b.c_str(),common);
+    return compared?compared:(a.size()<b.size()?-1:a.size()>b.size()?1:0);
+   };
+   for(size_t i=1;i<n;++i){auto entry=entries[i];size_t j=i;while(j&&order(entries[j-1].key,entry.key)>0){entries[j]=entries[j-1];--j;}entries[j]=entry;}
+   byte('{');for(size_t i=0;i<n;++i){if(i)byte(',');string(entries[i].key.c_str(),entries[i].key.size());byte(':');value(entries[i].value,depth+1);}byte('}');delete[] entries;
   }else if(v.is<JsonArrayConst>()){
-   if(v.size()>128){good=false;return;}byte('[');bool comma=false;
+   if(v.size()>(allowFloating?4096u:128u)){good=false;return;}byte('[');bool comma=false;
    for(auto entry:v.as<JsonArrayConst>()){if(comma)byte(',');comma=true;value(entry,depth+1);}byte(']');
-  }else if(v.is<const char*>())string(v.as<const char*>());
+  }else if(v.is<const char*>()){auto text=v.as<JsonString>();string(text.c_str(),text.size());}
   else if(v.isNull())raw("null");
   else if(v.is<bool>())raw(v.as<bool>()?"true":"false");
   else if(v.is<int64_t>()){char number[32];snprintf(number,sizeof(number),"%lld",static_cast<long long>(v.as<int64_t>()));raw(number);}
   else if(v.is<uint64_t>()){char number[32];snprintf(number,sizeof(number),"%llu",static_cast<unsigned long long>(v.as<uint64_t>()));raw(number);}
+  else if(allowFloating&&v.is<double>()){
+   const double number=v.as<double>();if(!std::isfinite(number)){good=false;return;}
+   char encoded[64];snprintf(encoded,sizeof(encoded),"%.17g",number);raw(encoded);
+   // Receipt identity distinguishes a fractional JSON type from an integer,
+   // even when both carry the mathematical value one. Native signatures
+   // still reject floating values; this branch is local receipt hashing only.
+   if(!strchr(encoded,'.')&&!strchr(encoded,'e')&&!strchr(encoded,'E'))raw(".0");
+  }
   else good=false;
  }
+ size_t size()const{return count;}
  bool finish(uint8_t out[32]){dtls_sha256_final(out,&hash);if(buffer&&capacity)buffer[count<capacity?count:capacity-1]=0;return good;}
 };
+// The controller can return malformed nested physical inputs. Keep exact
+// Unicode/control bytes in their durable failed receipt, including NUL, while
+// requiring all strings to be complete C strings before legacy Board parsing.
+inline bool completeStrings(JsonVariantConst value,unsigned depth=0){
+ if(depth>24)return false;
+ if(value.is<const char*>()){auto text=value.as<JsonString>();return text.size()==strlen(text.c_str());}
+ if(value.is<JsonObjectConst>())for(JsonPairConst field:value.as<JsonObjectConst>()){
+  if(field.key().size()!=strlen(field.key().c_str())||!completeStrings(field.value(),depth+1))return false;
+ }
+ else if(value.is<JsonArrayConst>())for(auto item:value.as<JsonArrayConst>())if(!completeStrings(item,depth+1))return false;
+ return true;
+}
+inline bool encodeSnapshot(JsonVariantConst value,char*& output,size_t& size,size_t limit){
+ output=nullptr;size=0;uint8_t ignored[32];NativeCanonical measure(nullptr,0,true);measure.value(value);
+ if(!measure.finish(ignored)||!measure.size()||measure.size()>limit)return false;
+ size=measure.size();output=static_cast<char*>(malloc(size+1));if(!output){size=0;return false;}
+ NativeCanonical encoder(output,size+1,true);encoder.value(value);
+ if(!encoder.finish(ignored)||encoder.size()!=size){free(output);output=nullptr;size=0;return false;}
+ return true;
+}
 inline bool nativeDigest(JsonVariantConst value,uint8_t out[32]){
  NativeCanonical canonical;canonical.value(value);return canonical.finish(out);
 }

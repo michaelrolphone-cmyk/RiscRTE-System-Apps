@@ -81,7 +81,9 @@ Enter the Wi-Fi network and password, then import a BiomeRTE setup document:
 ```
 
 Replace the URL with the controller's public native-provider endpoint. The
-example file is `biomerte-setup.example.json`. Optional `site` pins a
+example file is `biomerte-setup.example.json`. This release also includes
+`biomerte-controller-setup.json`, filled in for the existing BiomeRTE Controller
+at https://biomerte-controller.cantikash.chatgpt.site and pinned to its site ID. Optional `site` pins a
 specific controller site and optional `resource` names the board resource.
 When omitted, enrollment supplies the site and the resource defaults to
 `relay6ch.<device-MAC>`. This setup file contains no owner token or private
@@ -178,8 +180,8 @@ python scripts/package_relay6ch.py --build relay-build \
 ```
 
 Host gates are `scripts/test_infrastructure.sh`,
-`scripts/test_relay6ch.sh` and `scripts/test_biome_node.sh`; run the latter
-two with and without `SANITIZE=1`. CI also verifies that regenerated factory
+`scripts/test_biome_integration.sh`, `scripts/test_relay6ch.sh` and
+`scripts/test_biome_node.sh`; run the latter two with and without `SANITIZE=1`. CI also verifies that regenerated factory
 policy and provider pins match the committed files before compiling the
 ESP32-S3 target.
 
