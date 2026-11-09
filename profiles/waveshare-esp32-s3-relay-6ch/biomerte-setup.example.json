@@ -1,0 +1,7 @@
+{
+  "format": "biomerte-relay-setup/1",
+  "biomerte": {
+    "url": "https://your-controller.example/api/provider/call",
+    "realm": "site"
+  }
+}

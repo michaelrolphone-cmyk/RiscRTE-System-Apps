@@ -1,9 +1,9 @@
-name: Waveshare relay6ch firmware
+name: BiomeRTE relay6ch Wi-Fi firmware
 on:
   push:
-    branches: [work/waveshare-relay6ch, release/waveshare-relay6ch-v1.0.4]
+    branches: [work/relay6ch-biomerte-20261109, release/biomerte-relay6ch-v2.0.0]
   pull_request:
-    paths: ['firmware/waveshare-relay6ch/**', 'Services/infra_node/**', 'profiles/waveshare-esp32-s3-relay-6ch/**', 'scripts/*relay6ch*', 'test/infra_node/hardware.cpp', '.github/workflows/relay6ch.yml']
+    paths: ['firmware/waveshare-relay6ch/**', 'Services/infra_node/**', 'Services/biome_node/**', 'test/biome_node/**', 'scripts/test_biome_node.sh', 'profiles/waveshare-esp32-s3-relay-6ch/**', 'scripts/*relay6ch*', 'test/infra_node/hardware.cpp', '.github/workflows/relay6ch.yml']
 permissions:
   contents: read
 concurrency:
@@ -30,6 +30,9 @@ jobs:
       - run: |
           RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_infrastructure.sh
           RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_relay6ch.sh
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_biome_integration.sh
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_biome_node.sh
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" ASAN_OPTIONS=detect_leaks=0 SANITIZE=1 bash apps/scripts/test_biome_node.sh
           RISC_RUNTIME_ROOT="$PWD/00-runtime" ASAN_OPTIONS=detect_leaks=0 SANITIZE=1 bash apps/scripts/test_relay6ch.sh
   target:
     runs-on: ubuntu-24.04
@@ -66,7 +69,7 @@ jobs:
           if-no-files-found: error
   publish:
     needs: [test, target]
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -81,8 +84,8 @@ jobs:
         run: |
           cd delivery
           sha256sum --check SHA256SUMS
-          if gh release view waveshare-relay6ch-v1.0.4 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          if gh release view biomerte-relay6ch-v2.0.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "This version has already been published."
             exit 0
           fi
-          gh release create waveshare-relay6ch-v1.0.4 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'Waveshare ESP32-S3-Relay-6CH v1.0.4' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS
+          gh release create biomerte-relay6ch-v2.0.0 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'BiomeRTE Wi-Fi relay6ch v2.0.0' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS
