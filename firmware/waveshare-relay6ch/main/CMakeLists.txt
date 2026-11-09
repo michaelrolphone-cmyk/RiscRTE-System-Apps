@@ -1,6 +1,6 @@
 get_filename_component(apps "${CMAKE_CURRENT_LIST_DIR}/../../.." REALPATH)
 set(node "${apps}/Services/infra_node")
-idf_component_register(SRCS main.cpp Board.cpp "${node}/Node.cpp" "${node}/Relay.cpp" "${node}/Enrollment.cpp" "${node}/Setup.cpp"
+idf_component_register(SRCS main.cpp Board.cpp BiomeProvider.cpp "${node}/Node.cpp" "${node}/Relay.cpp" "${node}/Enrollment.cpp" "${node}/Setup.cpp"
  "${apps}/lib/EnrollmentCrypto/monocypher.c" "${apps}/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c"
  INCLUDE_DIRS "." "${node}" "${RISC_RUNTIME_ROOT}/sdk/app" "${RISC_RUNTIME_ROOT}/sdk/driver" "${RISC_RUNTIME_ROOT}/sdk/hardware"
  "${RISC_RUNTIME_ROOT}/src" "${RISC_RUNTIME_ROOT}/lib/ArduinoJson/src" "${RISC_RUNTIME_ROOT}/src/ports/esp32s3"

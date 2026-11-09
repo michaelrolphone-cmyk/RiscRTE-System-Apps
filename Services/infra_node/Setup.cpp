@@ -20,12 +20,29 @@ bool Node::acceptSetup(){
  const size_t pn=strlen(response["password"]);if(pn&&pn<8)return false;
  auto pairing=response["pairing"].as<JsonObjectConst>();
  const bool existing=text(journal.state["participant_id"],128);
- if(setupRecovery||(existing&&!response["pairing"].isNull())){const char* ref=config["service"]["credential_ref"]|"";if(!text(pairing["credentials"][ref],1024)||strcmp(pairing["credentials"][ref],credential(ref)))return false;}
+ const bool nativeOnly=networkOnly();
+ const bool hasBiome=pairing.containsKey("biomerte");
+ const bool biomeEnvelope=pairing["format"]=="biomerte-relay-setup/1";
+ // Validate routing before changing any in-memory settings. A previously
+ // enrolled native identity cannot be redirected through the local portal.
+ if(hasBiome&&(!allowBiomeSetup||!biomeSetup(pairing["biomerte"])||
+    (biomeTargetLocked&&!sameBiomeSetup(pairing["biomerte"],journal.state["biomerte"]))))return false;
+ if(biomeEnvelope&&(!allowBiomeSetup||!keys(pairing,{"format","biomerte"})||
+    existing||credential(config["service"]["credential_ref"])[0]||
+    text(journal.state["bootstrap"],1024)||journal.state["pending"].size()||
+    !journal.state["job"].isNull()))return false;
+ // Legacy identities still prove the existing private credential. A native-
+ // only installation has no such credential; its target lock protects native
+ // ownership while a local setup session may correct Wi-Fi.
+ if((setupRecovery&&!nativeOnly)||(existing&&!response["pairing"].isNull())){const char* ref=config["service"]["credential_ref"]|"";if(!text(pairing["credentials"][ref],1024)||strcmp(pairing["credentials"][ref],credential(ref)))return false;}
 
  // A pairing may initialize an empty installation. It cannot replace active
  // identity or unresolved execution custody during a Wi-Fi correction.
- if(!response["pairing"].isNull()&&!existing){
-  if(!keys(pairing,{"format","policy","credentials","bootstrap","enrollment_id","credential_sha256"},{"participant_id","installation_id"})||pairing["format"]!="riscrte-setup/1"||text(journal.state["participant_id"],128)||journal.state["pending"].size()||!journal.state["job"].isNull()||measureJson(pairing["policy"])>PolicyMax||(!text(pairing["participant_id"],128)&&(!text(pairing["bootstrap"],1024)||!text(pairing["enrollment_id"],128)))||!digest(pairing["credential_sha256"])||!pairing["credentials"].is<JsonObjectConst>()||measureJson(pairing["credentials"])>3500)return false;
+ if(biomeEnvelope){
+  // Retain this image's factory policy for Wi-Fi/setup. Node's board-only
+  // networkOnly path prevents legacy enrollment without legacy credentials.
+ }else if(!response["pairing"].isNull()&&!existing){
+  if(!keys(pairing,{"format","policy","credentials","bootstrap","enrollment_id","credential_sha256"},{"participant_id","installation_id","biomerte"})||pairing["format"]!="riscrte-setup/1"||text(journal.state["participant_id"],128)||journal.state["pending"].size()||!journal.state["job"].isNull()||measureJson(pairing["policy"])>PolicyMax||(!text(pairing["participant_id"],128)&&(!text(pairing["bootstrap"],1024)||!text(pairing["enrollment_id"],128)))||!digest(pairing["credential_sha256"])||!pairing["credentials"].is<JsonObjectConst>()||measureJson(pairing["credentials"])>3500)return false;
   if(upgradeSetup)upgradeSetup(response["pairing"]["policy"].as<JsonObject>(),config.as<JsonObjectConst>(),JsonObject());
   for(auto kv:pairing["credentials"].as<JsonObjectConst>())if(!text(kv.value(),1024))return false;
   // Published implementation/contract pins and low-water bounds stay tied to
@@ -60,7 +77,7 @@ bool Node::acceptSetup(){
   config.set(request);journal.state["credentials"]=pairing["credentials"];for(const char* k:{"bootstrap","enrollment_id","credential_sha256"})journal.state[k]=pairing[k];
   journal.state["configuration"]=config["configuration"];journal.state["configuration_revision"]=config["configuration"]["revision"];
   if(text(pairing["participant_id"],128)){journal.state["participant_id"]=pairing["participant_id"];journal.state["installation_id"]=pairing["installation_id"];}else journal.state["installation_id"]=portal.nonce;
- }else if(!credential(config["service"]["credential_ref"])[0]||(!text(journal.state["participant_id"],128)&&!text(journal.state["bootstrap"],1024)))return false;
+ }else if(!nativeOnly&&(!credential(config["service"]["credential_ref"])[0]||(!text(journal.state["participant_id"],128)&&!text(journal.state["bootstrap"],1024))))return false;
  // An authenticated existing pairing can add/rotate relay secrets through the
  // phone portal. Never discard outstanding webhook custody to change config.
  if(existing&&!pairing["policy"]["relay"].isNull()){
@@ -75,6 +92,7 @@ bool Node::acceptSetup(){
   config.set(request["policy"]);journal.state["credentials"]=candidate;journal.state.remove("relay");relayReady=relayBlocked=false;relayHealthAt=relayRetryAt=0;for(auto& at:relayPollAt)at=0;
  }
  if(!response["mode"].isNull()){if(!journal.state["configuration"].is<JsonObject>())journal.state["configuration"]=config["configuration"];config["allocation"]["automatic"]=response["mode"]=="automatic";journal.state.remove("allocation");roleLeaseUntil=0;journal.state["configuration"].remove("active_bindings");journal.state["configuration"].remove("active_modes");if(response["mode"]!="automatic"){journal.state["configuration"]["mode"]=response["mode"];config["configuration"]["mode"]=response["mode"];}relayFence=relayLeaseUntil=0;relayCheckpointHash[0]=0;relayBlocked=false;}
+ if(hasBiome)journal.state["biomerte"]=pairing["biomerte"];
  config["wifi"]["ssid"]=response["ssid"];journal.state["credentials"][config["wifi"]["credential_ref"]|""]=response["password"];
  journal.state["setup_policy"]=config;journal.state["setup_pending"]=true;
  return journal.valid()&&!config.overflowed();
@@ -91,6 +109,7 @@ int Node::setupStep(){
  if(phase==Phase::SetupSave){
   int r=journal.writeToken?journal.collect():journal.reload?journal.load():journal.save();if(r==-2)return retained();if(r>0)return 1;
   setupFailed=r<0||journal.seq!=saveSequence||journal.loadedCrc!=journal.desiredCrc;
+  if(!setupFailed&&allowBiomeSetup&&setupCommitted&&biomeSetup(journal.state["biomerte"]))setupCommitted(journal.state["biomerte"].as<JsonObjectConst>());
   portal.respond(setupFailed?500:200,setupFailed?"Settings could not be committed. Power-cycle the device and try setup again.":"Settings saved. The setup Wi-Fi will turn off while the device connects. Reconnect your phone to your normal Wi-Fi. If RiscRTE-Setup returns, reconnect to it to correct the Wi-Fi details.");
   setupDeadline=now()+5000;phase=Phase::SetupFinish;return 1;
  }
