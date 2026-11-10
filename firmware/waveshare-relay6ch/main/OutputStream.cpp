@@ -19,17 +19,27 @@ struct OutputStream::State {
  esp_websocket_client_handle_t socket=nullptr;
  FreshIntent intent;JsonDocument grant;char url[1024]{},headers[4096]{},buffer[2049]{};
  size_t used=0;bool assembling=false;std::atomic<bool> connected{false},failed{false};
- uint64_t lastApplied=0,lastRejectedLog=0;std::mutex ackMutex;
- void ack(const char* stage,uint64_t sequence){
+ uint64_t lastApplied=0,lastRejectedLog=0,lastAckFailureLog=0,ackDue=0;std::mutex ackMutex;
+ bool ack(const char* stage,uint64_t sequence){
   std::lock_guard<std::mutex> guard(ackMutex);
-  if(!connected.load())return;
-  const uint64_t next=intent.acknowledge(sequence,!strcmp(stage,"applied"));if(!next)return;
-  JsonDocument value;value["type"]="ack";value["stage"]=stage;value["sequence"]=next;
-  value["intent_sequence"]=sequence;value["epoch"]=grant["epoch"];value["authority"]=grant["authority"];
-  value["generation"]=grant["generation"];value["commanded_mask"]=RelayBoard::streamOutput();
-  value["contact_feedback"]=false;value["provider_monotonic_ms"]=esp_timer_get_time()/1000;
-  char data[512];const size_t n=serializeJson(value,data,sizeof(data));
-  if(n<sizeof(data))esp_websocket_client_send_text(socket,data,n,pdMS_TO_TICKS(20));
+  if(!connected.load()||sequence>(UINT64_MAX-2)/2)return false;
+  const bool applied=!strcmp(stage,"applied");
+  if(sequence*2+(applied?2:1)<=intent.ackSequence)return true;
+  return intent.acknowledge(sequence,applied,[&](uint64_t next){
+   JsonDocument value;value["type"]="ack";value["stage"]=stage;value["sequence"]=next;
+   value["intent_sequence"]=sequence;value["epoch"]=grant["epoch"];value["authority"]=grant["authority"];
+   value["generation"]=grant["generation"];value["commanded_mask"]=RelayBoard::streamOutput();
+   value["contact_feedback"]=false;value["provider_monotonic_ms"]=esp_timer_get_time()/1000;
+   char data[512];const size_t n=serializeJson(value,data,sizeof(data));
+   const int sent=n<sizeof(data)?esp_websocket_client_send_text(socket,data,n,pdMS_TO_TICKS(20)):-1;
+   if(sent==int(n))return true;
+   const uint64_t now=esp_timer_get_time()/1000;
+   if(now-lastAckFailureLog>=5000){
+    lastAckFailureLog=now;ESP_LOGW("relay-stream","ACK write failed stage=%s sequence=%llu sent=%d expected=%u",
+     stage,(unsigned long long)sequence,sent,unsigned(n));
+   }
+   return false;
+  })!=0;
  }
  void data(const esp_websocket_event_data_t& event){
   if(event.op_code==1&&event.payload_offset==0){used=0;assembling=true;}
@@ -52,7 +62,9 @@ struct OutputStream::State {
   const uint64_t utc=uint64_t(tv.tv_sec)*1000+tv.tv_usec/1000;
   if(!intent.accept(msg["authority"]|"",msg["generation"],msg["epoch"]|"",msg["sequence"],
       mask,uint64_t(msg["issued_at"].as<double>()*1000),uint64_t(msg["expires_at"].as<double>()*1000),utc,mono)){
-   if(mono-lastRejectedLog>=5000){lastRejectedLog=mono;ESP_LOGW("relay-stream","Intent rejected: binding, sequence or freshness; remaining_ms=%lld",
+   if(mono-lastRejectedLog>=5000){lastRejectedLog=mono;ESP_LOGW("relay-stream","Intent rejected: binding, sequence or freshness; sequence=%llu age_ms=%lld remaining_ms=%lld",
+    (unsigned long long)msg["sequence"].as<uint64_t>(),
+    (long long)(int64_t(utc)-int64_t(msg["issued_at"].as<double>()*1000)),
     (long long)(int64_t(msg["expires_at"].as<double>()*1000)-int64_t(utc)));}
    return;
   }
@@ -92,7 +104,11 @@ bool OutputStream::attach(JsonObjectConst grant){
 void OutputStream::tick(){
  if(!state)return;
  const uint64_t applied=RelayBoard::streamApplied();
- if(applied!=state->lastApplied){state->lastApplied=applied;state->ack("applied",applied);}
+ const uint64_t now=esp_timer_get_time()/1000;
+ if(applied!=state->lastApplied&&now>=state->ackDue){
+  if(state->ack("applied",applied))state->lastApplied=applied;
+  else state->ackDue=now+20;
+ }
 }
 void OutputStream::close(){
  if(!state)return;
