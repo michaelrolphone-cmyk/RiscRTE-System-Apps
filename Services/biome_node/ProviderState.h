@@ -208,6 +208,20 @@ class ProviderState {
      a["state"]!=journal["command"]["state"])return reject("result_receipt_mismatch");
   journal["command"]["reported"]=true;return persist();
  }
+ bool superseded(){
+  // Controller authority ended; retain the historical effect receipt, cancel
+  // active execution locally, and stop trying to report an obsolete generation.
+  if(!healthy)return false;
+  if(running){cancel();if(running)return false;}
+  if(needsClaim())terminal("uncertain","controller_superseded_before_claim");
+  if(!journal["command"].isNull()){
+   journal["command"]["reported"]=true;
+   journal["command"]["controller_abandoned"]=true;
+   freshClaim=false;
+   return persist();
+  }
+  return true;
+ }
  void cancel(){
   if(!running)return;cancelling=true;tick();
  }

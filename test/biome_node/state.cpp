@@ -175,5 +175,19 @@ static void batchesAndFences(){
  assert(pending.stage(queued.as<JsonObjectConst>()));assert(pending.fence(replacement.as<JsonObjectConst>())==0);
  claim(pending,queued);assert(preclaim.executions==0&&pending.journal["command"]["state"]=="uncertain");
 }
-int main(){retries();admission();invalidInputsSettle();recovery();storageFailures();batchesAndFences();
+static void controllerAbandonment(){
+ Board board;board.asynchronous=true;board.cancelPasses=2;ProviderState state;board.begin(state);bind(state);
+ auto a=action("abandoned",true);assert(state.stage(a.as<JsonObjectConst>()));claim(state,a);
+ assert(state.active()&&!state.superseded());state.tick();assert(state.superseded());
+ assert(!state.active()&&!state.pending()&&board.executions==1);
+ assert(state.journal["command"]["state"]=="uncertain");
+ assert(state.journal["command"]["controller_abandoned"]==true);
+ ProviderState reboot;board.begin(reboot);assert(!reboot.pending());
+ auto f=fence(2,"new-lease");assert(reboot.fence(f.as<JsonObjectConst>())==0);
+ auto next=action("new-action",false,2,"new-lease");assert(reboot.stage(next.as<JsonObjectConst>()));
+ Board pre;ProviderState before;pre.begin(before);bind(before);
+ auto queued=action("never-executed");assert(before.stage(queued.as<JsonObjectConst>()));
+ assert(before.superseded()&&pre.executions==0&&!before.pending());
+}
+int main(){controllerAbandonment();retries();admission();invalidInputsSettle();recovery();storageFailures();batchesAndFences();
  puts("Biome provider state: strict admission, invalid input settlement, durable arm, exact retries, conflict rejection, reboot uncertainty, storage failure, and quiescent fences PASS");}

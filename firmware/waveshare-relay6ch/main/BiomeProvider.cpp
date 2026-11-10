@@ -43,6 +43,7 @@ struct Client::Implementation {
  char streamEpoch[33]{};
  char device[32]{},actor[65]{},publicKey[512]{},error[128]{};
  psa_key_id_t key=0;std::atomic<int> keyPhase{0};
+ bool supersededPending=false;
  bool healthy=true,identityBound=false,enrolled=false,retained=false,done=false,wasHardwareReady=false,recoveryClaim=false;
  unsigned offerIndex=0,failures=0;
  Request request=Request::None;uint64_t httpToken=0,due=0,utc=0,utcAt=0,started=0;
@@ -281,7 +282,20 @@ struct Client::Implementation {
   if(closed==RISC_HTTP_RETAINED||closed<0){retained=true;fail("native_http_cleanup_retained",true);return;}
   httpToken=0;Request completed=request;request=Request::None;
   const bool valid=networkOutcome==0&&info.status_code>=200&&info.status_code<300&&parseResponse(response,body,bodySize);
+  bool superseded=false;
+  if(!valid&&info.status_code==409){
+   JsonDocument failure;
+   if(!deserializeJson(failure,body,bodySize)){
+    const char* reason=failure["error"]|"";
+    superseded=strstr(reason,"Superseded")||strstr(reason,"Stale resource generation");
+   }
+  }
+  if(!valid&&info.status_code==404&&(completed==Request::Status||completed==Request::Result))superseded=true;
   eraseBytes(body,ResponseLimit+1);free(body);body=nullptr;
+  if(superseded){
+   output.close();streamEpoch[0]=0;pendingStream.clear();pendingFence.clear();
+   supersededPending=true;due=now();failures=0;return;
+  }
   if(!valid){
    // All provider operations are keyed by durable native action/binding IDs.
    // A lost claim or result response cannot cause the board effect to replay.
@@ -328,6 +342,10 @@ struct Client::Implementation {
   if(!pendingStream.isNull()){
    JsonDocument args;args["session"]=pendingStream["id"];args["role"]="provider";
    call(Request::StreamAttach,"stream.attach",args.as<JsonObjectConst>());return;
+  }
+  if(supersededPending){
+   if(!state.superseded())return;
+   supersededPending=false;
   }
   if(state.outcome()||state.needsClaim()){
    auto command=state.journal["command"].as<JsonObjectConst>();

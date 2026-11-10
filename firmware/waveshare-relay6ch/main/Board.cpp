@@ -50,9 +50,11 @@ static void runStream(void*){
    const uint8_t desired=now<streamDeadline.load()?streamMask.load():0;
    const uint8_t old=mask;
    // Break before make and avoid toggling contacts for same-state intent.
-   for(unsigned ch=1;ch<=6;++ch)if((old&~desired)&(1u<<(ch-1)))setRelay(ch,false);
-   for(unsigned ch=1;ch<=6;++ch)if((desired&~old)&(1u<<(ch-1)))setRelay(ch,true);
-   appliedSequence.store(streamSequence.load());
+   bool ok=true;
+   for(unsigned ch=1;ch<=6;++ch)if((old&~desired)&(1u<<(ch-1)))ok=setRelay(ch,false)&&ok;
+   if(ok)for(unsigned ch=1;ch<=6&&ok;++ch)if((desired&~old)&(1u<<(ch-1)))ok=setRelay(ch,true);
+   if(ok)appliedSequence.store(streamSequence.load());
+   else{streamMask=0;streamDeadline=0;}
   }
   vTaskDelay(pdMS_TO_TICKS(5));
  }
