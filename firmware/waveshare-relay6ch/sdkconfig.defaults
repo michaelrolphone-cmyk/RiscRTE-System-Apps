@@ -29,3 +29,10 @@ CONFIG_ESP_WIFI_SOFTAP_SUPPORT=y
 CONFIG_MBEDTLS_RSA_C=y
 CONFIG_MBEDTLS_PKCS1_V15=y
 CONFIG_MBEDTLS_SHA256_C=y
+
+# The signed Stream authorization header exceeds the transport's 1 KiB default.
+# Keep data bounds independent and free handshake/data/TLS buffers when idle.
+CONFIG_WS_BUFFER_SIZE=6144
+CONFIG_WS_DYNAMIC_BUFFER=y
+CONFIG_ESP_WS_CLIENT_ENABLE_DYNAMIC_BUFFER=y
+CONFIG_MBEDTLS_DYNAMIC_BUFFER=y

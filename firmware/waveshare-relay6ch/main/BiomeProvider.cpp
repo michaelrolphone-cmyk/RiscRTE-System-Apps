@@ -301,7 +301,10 @@ struct Client::Implementation {
   if(!valid){
    // All provider operations are keyed by durable native action/binding IDs.
    // A lost claim or result response cannot cause the board effect to replay.
-   backoff(completed==Request::PairFinish&&info.status_code==403?"pairing_awaiting_approval":"native_request_not_acknowledged");
+   if(completed==Request::StreamAttach||completed==Request::Fenced||completed==Request::Poll){
+    const char* operation=completed==Request::StreamAttach?"stream_attach":completed==Request::Fenced?"fenced":"poll";
+    char reason[96];snprintf(reason,sizeof(reason),"native_%s_http_%d",operation,int(info.status_code));backoff(reason);
+   }else backoff(completed==Request::PairFinish&&info.status_code==403?"pairing_awaiting_approval":"native_request_not_acknowledged");
    return;
   }
   failures=0;due=now();error[0]=0;received(completed,response["result"].as<JsonObjectConst>());response.clear();

@@ -4,17 +4,22 @@
 #include <esp_websocket_client.h>
 #include <esp_crt_bundle.h>
 #include <esp_timer.h>
+#include <esp_log.h>
+#include "sdkconfig.h"
 #include <esp_netif_sntp.h>
 #include <sys/time.h>
 #include <atomic>
 #include <new>
 #include <mutex>
 namespace BiomeRelay {
+static_assert(CONFIG_WS_BUFFER_SIZE>=6144,"Stream credentials require the bounded HTTP upgrade buffer");
+static_assert(CONFIG_WS_DYNAMIC_BUFFER,"Release the upgrade buffer after connection");
+static_assert(CONFIG_MBEDTLS_DYNAMIC_BUFFER&&CONFIG_ESP_WS_CLIENT_ENABLE_DYNAMIC_BUFFER,"Stream and HTTP TLS must share bounded internal RAM");
 struct OutputStream::State {
  esp_websocket_client_handle_t socket=nullptr;
- FreshIntent intent;JsonDocument grant;char url[1024]{},headers[4096]{},buffer[2048]{};
- size_t used=0;bool assembling=false;std::atomic<bool> connected{false};
- uint64_t lastApplied=0;std::mutex ackMutex;
+ FreshIntent intent;JsonDocument grant;char url[1024]{},headers[4096]{},buffer[2049]{};
+ size_t used=0;bool assembling=false;std::atomic<bool> connected{false},failed{false};
+ uint64_t lastApplied=0,lastRejectedLog=0;std::mutex ackMutex;
  void ack(const char* stage,uint64_t sequence){
   std::lock_guard<std::mutex> guard(ackMutex);
   if(!connected.load())return;
@@ -39,18 +44,26 @@ struct OutputStream::State {
      !msg["generation"].is<uint64_t>())return;
   const unsigned mask=msg["outputs"]["mask"];if(mask>63)return;
   timeval tv{};gettimeofday(&tv,nullptr);
-  if(tv.tv_sec<1704067200)return; // No unsynchronized clock can authorize motion.
-  const uint64_t utc=uint64_t(tv.tv_sec)*1000+tv.tv_usec/1000,mono=esp_timer_get_time()/1000;
+  const uint64_t mono=esp_timer_get_time()/1000;
+  if(tv.tv_sec<1704067200){
+   if(mono-lastRejectedLog>=5000){lastRejectedLog=mono;ESP_LOGW("relay-stream","Intent rejected: clock is not synchronized");}
+   return;
+  } // No unsynchronized clock can authorize motion.
+  const uint64_t utc=uint64_t(tv.tv_sec)*1000+tv.tv_usec/1000;
   if(!intent.accept(msg["authority"]|"",msg["generation"],msg["epoch"]|"",msg["sequence"],
-      mask,uint64_t(msg["issued_at"].as<double>()*1000),uint64_t(msg["expires_at"].as<double>()*1000),utc,mono))return;
+      mask,uint64_t(msg["issued_at"].as<double>()*1000),uint64_t(msg["expires_at"].as<double>()*1000),utc,mono)){
+   if(mono-lastRejectedLog>=5000){lastRejectedLog=mono;ESP_LOGW("relay-stream","Intent rejected: binding, sequence or freshness; remaining_ms=%lld",
+    (long long)(int64_t(msg["expires_at"].as<double>()*1000)-int64_t(utc)));}
+   return;
+  }
   RelayBoard::streamDesired(intent.desired,intent.deadline,intent.sequence);
   ack("received",intent.sequence);
  }
  static void event(void* context,esp_event_base_t,int32_t id,void* data){
   auto* self=static_cast<State*>(context);
-  if(id==WEBSOCKET_EVENT_CONNECTED){self->connected=true;RelayBoard::streamNeutral();}
+  if(id==WEBSOCKET_EVENT_CONNECTED){self->failed=false;self->connected=true;RelayBoard::streamNeutral();ESP_LOGI("relay-stream","Connected");}
   else if(id==WEBSOCKET_EVENT_DISCONNECTED||id==WEBSOCKET_EVENT_ERROR||id==WEBSOCKET_EVENT_CLOSED){
-   self->connected=false;self->assembling=false;self->intent.detach();RelayBoard::streamNeutral();
+   self->failed=true;self->connected=false;self->assembling=false;self->intent.detach();RelayBoard::streamNeutral();
   }else if(id==WEBSOCKET_EVENT_DATA)self->data(*static_cast<esp_websocket_event_data_t*>(data));
  }
 };
@@ -68,7 +81,7 @@ bool OutputStream::attach(JsonObjectConst grant){
  static bool ntp=false;
  if(!ntp){esp_sntp_config_t config=ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");if(esp_netif_sntp_init(&config)==ESP_OK)ntp=true;}
  esp_websocket_client_config_t config{};config.uri=s->url;config.headers=s->headers;
- config.crt_bundle_attach=esp_crt_bundle_attach;config.buffer_size=2048;config.disable_auto_reconnect=true;
+ config.crt_bundle_attach=esp_crt_bundle_attach;config.buffer_size=2048;config.network_timeout_ms=10000;config.disable_auto_reconnect=true;
  s->socket=esp_websocket_client_init(&config);
  if(!s->socket||esp_websocket_register_events(s->socket,WEBSOCKET_EVENT_ANY,State::event,s)!=ESP_OK||
     esp_websocket_client_start(s->socket)!=ESP_OK){
@@ -88,5 +101,7 @@ void OutputStream::close(){
  retainedIntent=state->intent;retainedIntent.detach();
  state->intent.revoke();RelayBoard::streamEnd();delete state;state=nullptr;
 }
-bool OutputStream::active()const{return state&&state->connected.load();}
+// An opening transport owns its attempt until the SDK reports a terminal event.
+// A provider poll must not tear down an in-flight TLS/WebSocket handshake.
+bool OutputStream::active()const{return state&&!state->failed.load();}
 }
