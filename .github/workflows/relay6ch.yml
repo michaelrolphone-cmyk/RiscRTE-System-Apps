@@ -1,7 +1,7 @@
 name: BiomeRTE relay6ch Wi-Fi firmware
 on:
   push:
-    branches: [work/relay6ch-biomerte-20261109, release/biomerte-relay6ch-v2.0.0]
+    branches: [work/bounded-stream-relay6ch-20261110, work/relay6ch-biomerte-20261109, release/biomerte-relay6ch-v2.1.0]
   pull_request:
     paths: ['firmware/waveshare-relay6ch/**', 'Services/infra_node/**', 'Services/biome_node/**', 'test/biome_node/**', 'scripts/test_biome_node.sh', 'profiles/waveshare-esp32-s3-relay-6ch/**', 'scripts/*relay6ch*', 'test/infra_node/hardware.cpp', '.github/workflows/relay6ch.yml']
 permissions:
@@ -27,6 +27,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Qualify streaming freshness independently of hardware
+        run: g++ -std=c++17 -Wall -Wextra -Werror apps/test/relay6ch_host/stream.cpp -o /tmp/relay-stream && /tmp/relay-stream
       - run: |
           RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_infrastructure.sh
           RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_relay6ch.sh
@@ -57,6 +59,7 @@ jobs:
           . "$IDF_PATH/export.sh"
           export RISC_RUNTIME_ROOT="$PWD/00-runtime" RELAY6CH_OUTPUT="$PWD/delivery"
           python apps/scripts/generate_relay6ch.py
+          python -c "import pathlib,base64; [print('GENERATED_POLICY:'+p+':'+base64.b64encode(pathlib.Path('apps',p).read_bytes()).decode()) for p in ['firmware/waveshare-relay6ch/main/Factory.h','profiles/waveshare-esp32-s3-relay-6ch/catalog.json','profiles/waveshare-esp32-s3-relay-6ch/node-policy.example.json']]"
           # Confirm the clean build uses the same provider pins as the tested image.
           git -C apps diff --exit-code -- firmware/waveshare-relay6ch/main/Factory.h profiles/waveshare-esp32-s3-relay-6ch
           idf.py -C apps/firmware/waveshare-relay6ch -B "$PWD/relay-build" -D "RISC_RUNTIME_ROOT=$RISC_RUNTIME_ROOT" reconfigure
@@ -84,8 +87,8 @@ jobs:
         run: |
           cd delivery
           sha256sum --check SHA256SUMS
-          if gh release view biomerte-relay6ch-v2.0.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          if gh release view biomerte-relay6ch-v2.1.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "This version has already been published."
             exit 0
           fi
-          gh release create biomerte-relay6ch-v2.0.0 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'BiomeRTE Wi-Fi relay6ch v2.0.0' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS
+          gh release create biomerte-relay6ch-v2.1.0 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'BiomeRTE Wi-Fi relay6ch v2.1.0' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS

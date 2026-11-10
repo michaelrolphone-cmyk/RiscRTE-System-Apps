@@ -1,6 +1,6 @@
 {
   "format": "biomerte-capabilities/1",
-  "firmware": "biomerte-relay6ch/2.0.0",
+  "firmware": "biomerte-relay6ch/2.1.0",
   "transport": "https-signed-native-provider",
   "contracts": [
     {
@@ -125,6 +125,17 @@
         },
         "before": "Acquire the shared board resource. Each component is 0–255.",
         "read_result": "Successful output reports commanded red, green and blue."
+      }
+    },
+    {
+      "name": "device.outputs.stream",
+      "version": 1,
+      "inputs": {},
+      "outputs": {},
+      "description": "Persistent fenced desired-output stream; discrete invocation is unsupported.",
+      "usage": {
+        "before": "Acquire a persistent native lease and use stream.open. Desired outputs contain mask (six bits), authority, generation, epoch, sequence, issued_at and expires_at. Heartbeats do not renew intent.",
+        "read_result": "Received and applied acks are distinct. contact_feedback=false. Provider neutralizes when intent expires or transport disconnects."
       }
     }
   ]

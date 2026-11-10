@@ -9,7 +9,7 @@ def generate():
  # a self-referential firmware digest while pinning all executable inputs.
  runtime=pathlib.Path(os.environ.get('RISC_RUNTIME_ROOT',ROOT/'../relay-runtime')).resolve()
  outdir=pathlib.Path(os.environ.get('RELAY6CH_OUTPUT',ROOT/'../relay-delivery'));outdir.mkdir(parents=True,exist_ok=True)
- package=outdir/'biomerte-relay6ch-v2.0.0-source.zip'
+ package=outdir/'biomerte-relay6ch-v2.1.0-source.zip'
  with zipfile.ZipFile(package,'w',zipfile.ZIP_STORED) as z:
   sources=list((ROOT/'Services/infra_node').glob('*'))+list((ROOT/'firmware/waveshare-relay6ch').rglob('*'))+[ROOT/'scripts/generate_relay6ch.py']
   sources += list((ROOT/'Services/biome_node').rglob('*'))

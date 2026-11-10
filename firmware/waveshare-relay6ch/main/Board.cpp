@@ -11,8 +11,12 @@
 namespace RelayBoard {
 constexpr int pins[]={1,2,41,42,45,46};constexpr uart_port_t uart=UART_NUM_1;
 static bool active=false;static rmt_channel_handle_t pixels=nullptr;static rmt_encoder_handle_t encoder=nullptr;
-static uint8_t mask=0, pixel[3]{};
+static std::atomic<uint8_t> mask{0};static uint8_t pixel[3]{};
 static unsigned toneHz=0;
+static std::atomic<bool> streamOwned{false};
+static std::atomic<uint8_t> streamMask{0};
+static std::atomic<uint64_t> streamDeadline{0}, streamSequence{0}, appliedSequence{0};
+static TaskHandle_t streamTask=nullptr;
 static bool setRelay(unsigned channel,bool on){
  const uint8_t bit=1u<<(channel-1);
  if(gpio_set_level(gpio_num_t(pins[channel-1]),on)!=ESP_OK)return false;
@@ -38,8 +42,41 @@ static bool setPixel(const uint8_t rgb[3]){
  memcpy(pixel,rgb,3);return true;
 }
 
+static bool batchStateBusy();
+static void runStream(void*){
+ for(;;){
+  if(streamOwned.load()){
+   const uint64_t now=esp_timer_get_time()/1000;
+   const uint8_t desired=now<streamDeadline.load()?streamMask.load():0;
+   const uint8_t old=mask;
+   // Break before make and avoid toggling contacts for same-state intent.
+   for(unsigned ch=1;ch<=6;++ch)if((old&~desired)&(1u<<(ch-1)))setRelay(ch,false);
+   for(unsigned ch=1;ch<=6;++ch)if((desired&~old)&(1u<<(ch-1)))setRelay(ch,true);
+   appliedSequence.store(streamSequence.load());
+  }
+  vTaskDelay(pdMS_TO_TICKS(5));
+ }
+}
+bool streamBegin(){
+ if(!active||streamOwned.load()||batchStateBusy())return false;
+ streamMask=0;streamDeadline=0;streamSequence=0;appliedSequence=0;streamOwned=true;return true;
+}
+void streamDesired(uint8_t desired,uint64_t deadline,uint64_t sequence){
+ streamMask=desired;streamDeadline=deadline;streamSequence=sequence;
+}
+void streamNeutral(){streamMask=0;streamDeadline=0;}
+void streamEnd(){
+ streamNeutral();
+ // Keep local task custody until neutral has been applied.
+ for(unsigned i=0;i<20&&mask;++i)vTaskDelay(pdMS_TO_TICKS(5));
+ streamOwned=false;
+}
+uint64_t streamApplied(){return appliedSequence.load();}
+uint8_t streamOutput(){return mask;}
+
 enum class BatchState { Idle, Running, Cancelling, Complete, Failed };
 static std::atomic<BatchState> batchState{BatchState::Idle};
+static bool batchStateBusy(){return batchState.load()!=BatchState::Idle;}
 static TaskHandle_t batchTask=nullptr;
 static Infra::OutputFrame frames[Infra::OutputFrameLimit];
 static unsigned frameCount=0,completed=0,elapsedMs=0;
@@ -94,7 +131,7 @@ int poll(void*,JsonObject out){
  const auto state=batchState.load();
  if(state==BatchState::Running||state==BatchState::Cancelling)return 1;
  if(state!=BatchState::Complete&&state!=BatchState::Failed)return -1;
- out["steps_completed"]=completed;out["elapsed_ms"]=elapsedMs;out["commanded_mask"]=mask;
+ out["steps_completed"]=completed;out["elapsed_ms"]=elapsedMs;out["commanded_mask"]=mask.load();
  out["tone_hz"]=toneHz;out["contact_feedback"]=false;
  auto rgb=out["rgb"].to<JsonArray>();for(auto c:pixel)rgb.add(c);
  auto stamps=out["applied_at_ms"].to<JsonArray>();auto states=out["relay_masks"].to<JsonArray>();
@@ -117,6 +154,7 @@ bool begin(){
  rmt_tx_channel_config_t rc{};rc.gpio_num=GPIO_NUM_38;rc.clk_src=RMT_CLK_SRC_DEFAULT;rc.resolution_hz=10000000;rc.mem_block_symbols=64;rc.trans_queue_depth=1;
  rmt_copy_encoder_config_t ec{};
  if(rmt_new_tx_channel(&rc,&pixels)!=ESP_OK||rmt_new_copy_encoder(&ec,&encoder)!=ESP_OK||rmt_enable(pixels)!=ESP_OK)return false;
+ if(xTaskCreate(runStream,"output-stream",3072,nullptr,5,&streamTask)!=pdPASS)return false;
  if(xTaskCreate(runFrames,"output-batch",4096,nullptr,4,&batchTask)!=pdPASS)return false;
  active=true;JsonDocument in,out;in["red"]=0;in["green"]=0;in["blue"]=0;return execute(nullptr,"light.rgb",in.as<JsonObjectConst>(),out.to<JsonObject>())==0;
 }
@@ -124,7 +162,7 @@ int execute(void*,const char* c,JsonObjectConst in,JsonObject out){
  using namespace Infra;
  const bool batch=!strcmp(c,"device.outputs.batch");
  const char* op=batch?"apply":!strcmp(c,"serial.rs485")?"exchange":!strcmp(c,"sound.buzzer")?"tone":"set";
- if(!active||batchState.load()!=BatchState::Idle||!hardwareInput(c,op,in))return -1;
+ if(!active||streamOwned.load()||batchState.load()!=BatchState::Idle||!hardwareInput(c,op,in))return -1;
  if(batch){
   unsigned totalMs=0;if(!decodeOutputBatch(in,frames,totalMs))return -1;
   frameCount=in["steps"].size();completed=elapsedMs=0;
@@ -132,7 +170,7 @@ int execute(void*,const char* c,JsonObjectConst in,JsonObject out){
  }
  if(!strcmp(c,"relay.bank")){
   unsigned channel=in["channel"];bool on=in["on"];if(!setRelay(channel,on))return -1;
-  out["channel"]=channel;out["on"]=on;out["commanded_mask"]=mask;out["contact_feedback"]=false;return 0;
+  out["channel"]=channel;out["on"]=on;out["commanded_mask"]=mask.load();out["contact_feedback"]=false;return 0;
  }
  if(!strcmp(c,"sound.buzzer")){
   if(!setTone(in["frequency_hz"]))return -1;

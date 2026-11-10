@@ -1,4 +1,5 @@
 #include "BiomeProvider.h"
+#include "OutputStream.h"
 #include "../../../Services/biome_node/ProviderState.h"
 #include "../../../Services/biome_node/NativeEncoding.h"
 #include <nvs.h>
@@ -12,7 +13,7 @@
 namespace BiomeRelay {
 namespace {
 constexpr size_t ResponseLimit=8192,JournalLimit=12288;
-constexpr const char* Contracts[]={"relay.bank:1","device.outputs.batch:1","serial.rs485:1","sound.buzzer:1","light.rgb:1"};
+constexpr const char* Contracts[]={"relay.bank:1","device.outputs.batch:1","serial.rs485:1","sound.buzzer:1","light.rgb:1","device.outputs.stream:1"};
 void eraseBytes(void* memory,size_t count){auto p=static_cast<volatile uint8_t*>(memory);while(count--)*p++=0;}
 bool hex64(const char* text){if(!text||strlen(text)!=64)return false;for(const char* p=text;*p;++p)if(!((*p>='0'&&*p<='9')||(*p>='a'&&*p<='f')))return false;return true;}
 bool ident(const char* text){if(!text||!text[0]||strlen(text)>128)return false;for(const unsigned char* p=reinterpret_cast<const unsigned char*>(text);*p;++p)if(!((*p>='a'&&*p<='z')||(*p>='A'&&*p<='Z')||(*p>='0'&&*p<='9')||*p=='_'||*p=='.'||*p==':'||*p=='-'))return false;return true;}
@@ -35,10 +36,11 @@ bool parseResponse(JsonDocument& doc,const char* data,size_t size){
 }
 
 struct Client::Implementation {
- enum class Request {None,PairBegin,PairFinish,Offer,Poll,Fenced,Claim,Status,Result};
+ enum class Request {None,PairBegin,PairFinish,Offer,Poll,Fenced,Claim,Status,Result,StreamAttach};
  nvs_handle_t nvs=0;risc_http_client_v2 http{};Infra::Hardware hardware{};
  uint64_t (*clock)(void*)=nullptr;void* clockContext=nullptr;
- ProviderState state;JsonDocument config,pair,pendingFence,response;
+ ProviderState state;OutputStream output;JsonDocument config,pair,pendingFence,response,pendingStream;
+ char streamEpoch[33]{};
  char device[32]{},actor[65]{},publicKey[512]{},error[128]{};
  psa_key_id_t key=0;std::atomic<int> keyPhase{0};
  bool healthy=true,identityBound=false,enrolled=false,retained=false,done=false,wasHardwareReady=false,recoveryClaim=false;
@@ -79,7 +81,7 @@ struct Client::Implementation {
  }
  bool configured()const{return endpoint(config["url"]|"");}
  bool physicalReady()const{return hardware.ready&&hardware.ready(hardware.context);}
- bool ready()const{return keyPhase.load(std::memory_order_acquire)==2&&healthy&&state.healthy&&identityBound&&enrolled&&offerIndex==5&&physicalReady();}
+ bool ready()const{return keyPhase.load(std::memory_order_acquire)==2&&healthy&&state.healthy&&identityBound&&enrolled&&offerIndex==6&&physicalReady();}
  bool busy()const{return httpToken||retained||keyPhase.load(std::memory_order_acquire)==1;}
 
  bool initializeIdentity(bool create){
@@ -203,6 +205,14 @@ struct Client::Implementation {
     backoff("capability_offer_mismatch");return;
    }
    ++offerIndex;break;
+  case Request::StreamAttach:
+   if(result["contract"]!="device.outputs.stream:1"||result["provider"]!=actor||
+      result["resource"]!=config["resource"]||result["generation"]!=state.journal["fence"]["generation"]||
+      result["lease"]!=state.journal["fence"]["lease"]||result["epoch"]!=pendingStream["epoch"]){
+    backoff("stream_attachment_mismatch");pendingStream.clear();return;
+   }
+   if(!output.attach(result)){backoff("stream_connection_failed");return;}
+   Infra::copy(streamEpoch,sizeof(streamEpoch),result["epoch"]|"");pendingStream.clear();break;
   case Request::Fenced:{
    JsonDocument normalized;
    if(result["state"]!="bound"||!normalizedFence(result,false,normalized)||
@@ -212,7 +222,7 @@ struct Client::Implementation {
    if(!result["fences"].is<JsonArrayConst>()||!result["actions"].is<JsonArrayConst>()){backoff("provider_poll_invalid");return;}
    for(JsonObjectConst fence:result["fences"].as<JsonArrayConst>()){
     JsonDocument normalized;if(!normalizedFence(fence,false,normalized)){backoff("provider_fence_invalid");return;}
-    pendingFence.set(normalized);return;
+    output.close();streamEpoch[0]=0;pendingStream.clear();pendingFence.set(normalized);return;
    }
    for(JsonObjectConst action:result["actions"].as<JsonArrayConst>()){
     if(state.pending()&&state.journal["command"]["id"]!=action["id"])continue;
@@ -222,7 +232,16 @@ struct Client::Implementation {
     }
     if(!state.stage(action)){backoff(state.error);return;}break;
    }
-   if(!state.needsClaim()&&!state.outcome())due=now()+1000;
+   if(!state.pending()&&!state.active()){
+    for(JsonObjectConst stream:result["streams"].as<JsonArrayConst>()){
+     if(stream["contract"]=="device.outputs.stream:1"&&stream["provider"]==actor&&stream["resource"]==config["resource"]&&
+        stream["lease"]==state.journal["fence"]["lease"]&&stream["generation"]==state.journal["fence"]["generation"]&&
+        (!output.active()||stream["epoch"]!=streamEpoch)){
+      pendingStream.set(stream);break;
+     }
+    }
+   }
+   if(!state.needsClaim()&&!state.outcome()&&pendingStream.isNull())due=now()+1000;
    break;}
   case Request::Claim:
    if(!state.claimed(result)){backoff(state.error);return;}recoveryClaim=false;break;
@@ -272,6 +291,8 @@ struct Client::Implementation {
   failures=0;due=now();error[0]=0;received(completed,response["result"].as<JsonObjectConst>());response.clear();
  }
  void tick(bool connected,bool mayOpen){
+  output.tick();
+  if(!connected){output.close();streamEpoch[0]=0;}
   state.tick();
   if(httpToken){advanceHttp();return;}
   int phase=keyPhase.load(std::memory_order_acquire);
@@ -287,9 +308,15 @@ struct Client::Implementation {
   if(pair["challenge"].isNull()){pairRequest(false);return;}
   if(!enrolled){pairRequest(true);return;}
   const bool hwReady=physicalReady();if(hwReady!=wasHardwareReady){wasHardwareReady=hwReady;offerIndex=0;}
-  if(offerIndex<5){
+  if(offerIndex<6){
    JsonDocument args;args["provider"]=actor;args["contract"]=Contracts[offerIndex];args["resource"]=config["resource"];
    args["state"]=hwReady?"ready":"offline";args["capacity"]=1;
+   if(offerIndex==5){
+    args["configuration"]["lease_class"]="persistent";args["configuration"]["stream_only"]=true;auto stream=args["configuration"]["stream"].to<JsonObject>();
+    stream["enabled"]=true;stream["direction"]="bidirectional";stream["delivery"]="supersedable";
+    stream["lanes"].to<JsonArray>().add("control");stream["max_message_bytes"]=2048;stream["buffer_depth"]=1;
+    stream["messages_per_second"]=100;
+   }
    call(Request::Offer,"cap.offer",args.as<JsonObjectConst>());return;
   }
   if(!pendingFence.isNull()){
@@ -297,6 +324,10 @@ struct Client::Implementation {
    if(fenced<0){backoff(state.error);pendingFence.clear();return;}if(fenced>0)return;
    JsonDocument args;args["provider"]=actor;args["lease"]=pendingFence["lease"];args["generation"]=pendingFence["generation"];
    call(Request::Fenced,"cap.fenced",args.as<JsonObjectConst>());return;
+  }
+  if(!pendingStream.isNull()){
+   JsonDocument args;args["session"]=pendingStream["id"];args["role"]="provider";
+   call(Request::StreamAttach,"stream.attach",args.as<JsonObjectConst>());return;
   }
   if(state.outcome()||state.needsClaim()){
    auto command=state.journal["command"].as<JsonObjectConst>();
@@ -370,7 +401,7 @@ bool Client::acceptConfig(JsonObjectConst input){
 }
 void Client::publicIdentity(JsonObject out)const{
  if(!impl){out["error"]="provider_not_initialized";return;}
- out["device"]=impl->device;out["firmware"]="2.0.0";out["resource"]=impl->config["resource"];out["site"]=impl->config["site"];
+ out["device"]=impl->device;out["firmware"]="2.1.0";out["stream_connected"]=impl->output.active();out["resource"]=impl->config["resource"];out["site"]=impl->config["site"];
  out["url"]=impl->config["url"];out["configured"]=impl->configured();out["ready"]=impl->ready();
  const int phase=impl->keyPhase.load(std::memory_order_acquire);
  if(phase!=1){out["public_key"]=impl->publicKey;out["fingerprint"]=impl->actor;out["error"]=!impl->state.healthy&&impl->state.error[0]?impl->state.error:impl->error;}
