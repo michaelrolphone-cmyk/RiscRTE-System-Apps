@@ -185,6 +185,12 @@ class SocketTests(unittest.TestCase):
             result = json.loads(process.stdout.readline())
             self.assertEqual(result["source_ip"], "127.0.0.1")
             self.assertEqual(result["telemetry"]["observation"]["rssi_dbm"], -64)
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sender:
+                sender.sendto(encode(ahrs_packet()), ("127.0.0.1", port))
+            self.assertTrue(select.select([process.stdout], [], [], 5)[0], "AHRS packet not received")
+            ahrs_result = json.loads(process.stdout.readline())
+            self.assertEqual(ahrs_result["telemetry"]["type"], "ahrs")
+            self.assertEqual(ahrs_result["telemetry"]["ahrs"]["imu"]["accel_m_s2"][2], 9.80665)
             process.send_signal(signal.SIGINT)
             process.communicate(timeout=5)
             self.assertEqual(process.returncode, 0)
@@ -238,6 +244,105 @@ class SummaryOrderingTests(unittest.TestCase):
         summary, arrived = next(iter(cache.summaries.values()))
         self.assertEqual(summary["telemetry"]["sequence"], 1)
         self.assertEqual(arrived, 2)
+
+
+def ahrs_packet(sequence=1, boot_id="boot-a"):
+    return {
+        "schema": 1, "type": "ahrs", "receiver_id": "cam-one", "boot_id": boot_id,
+        "uptime_ms": 30000, "timestamp_ms": None, "sequence": sequence,
+        "ahrs": {
+            "worker_ready": True, "paused": False,
+            "imu": {"present": True, "valid": True, "age_ms": 10, "sample_count": 100,
+                    "accel_m_s2": [0, 0, 9.80665], "gyro_rad_s": [0.01, 0.02, 0.03],
+                    "temp_c": 25.0},
+            "mag": {"present": True, "valid": True, "age_ms": 20,
+                    "field_uT": [10.0, 12.0, -35.0],
+                    "calibration": "factory_sensitivity_only"},
+            "barometer": {"present": True, "valid": True, "age_ms": 30,
+                          "pressure_pa": 101325.0, "temp_c": 23.5,
+                          "pressure_altitude_m": 0.0},
+            "attitude": {"valid": True, "age_ms": 10, "quaternion_wxyz": [1, 0, 0, 0],
+                         "roll_deg": 0, "pitch_deg": 0, "yaw_deg": 0,
+                         "reference": "relative_yaw", "generation": 1,
+                         "yaw_origin_uptime_ms": 1000},
+            "calibration": {"status": "uncalibrated", "gyro_bias_rad_s": [0, 0, 0],
+                            "gyro_bias_valid": False, "samples": 0}
+        }
+    }
+
+
+class AhrsTests(unittest.TestCase):
+    def test_ahrs_jsonl_retains_units_timing_and_additive_metadata(self):
+        value = ahrs_packet()
+        value["ahrs"]["mounting"] = "sensor_axes"
+        parsed = receiver.parse_datagram(encode(value))
+        self.assertEqual(parsed, value)
+        saved = json.loads(receiver.json_line(record(parsed)))
+        self.assertEqual(saved["telemetry"]["ahrs"]["imu"]["age_ms"], 10)
+        self.assertEqual(saved["telemetry"]["ahrs"]["attitude"]["reference"], "relative_yaw")
+
+    def test_missing_sensors_use_null_measurements(self):
+        value = ahrs_packet()
+        data = value["ahrs"]
+        for name, fields in (("imu", ("accel_m_s2", "gyro_rad_s", "temp_c")),
+                             ("mag", ("field_uT",)),
+                             ("barometer", ("pressure_pa", "temp_c", "pressure_altitude_m")),
+                             ("attitude", ("quaternion_wxyz", "roll_deg", "pitch_deg", "yaw_deg"))):
+            data[name]["valid"] = False
+            data[name]["age_ms"] = None
+            if name != "attitude":
+                data[name]["present"] = False
+            for field in fields:
+                data[name][field] = None
+        data["attitude"]["yaw_origin_uptime_ms"] = None
+        self.assertEqual(receiver.parse_datagram(encode(value)), value)
+
+    def test_reject_inconsistent_or_malformed_ahrs(self):
+        mutations = [
+            lambda x: x["ahrs"].update(paused=True),
+            lambda x: x["ahrs"].update(worker_ready=False),
+            lambda x: x["ahrs"]["imu"].update(present=False),
+            lambda x: x["ahrs"]["imu"].update(valid=False),
+            lambda x: x["ahrs"]["imu"].update(age_ms=None),
+            lambda x: x["ahrs"]["imu"].update(gyro_rad_s=[0, 0]),
+            lambda x: x["ahrs"]["mag"].update(field_uT=[0, True, 1]),
+            lambda x: x["ahrs"]["barometer"].update(pressure_pa=float("nan")),
+            lambda x: x["ahrs"]["attitude"].update(quaternion_wxyz=[2, 0, 0, 0]),
+            lambda x: x["ahrs"]["attitude"].update(reference="true_north"),
+            lambda x: x["ahrs"]["attitude"].update(yaw_origin_uptime_ms=None),
+            lambda x: x["ahrs"]["calibration"].update(gyro_bias_valid=1),
+        ]
+        for mutation in mutations:
+            value = ahrs_packet()
+            mutation(value)
+            with self.subTest(value=value), self.assertRaises(receiver.PacketError):
+                receiver.parse_datagram(encode(value))
+
+    def test_ahrs_cache_orders_packets_preserves_sources_and_expiry(self):
+        cache = receiver.LatestObservations(maximum=2, ttl=5)
+        for sequence, now in ((0xfffffffe, 1), (1, 2), (0xffffffff, 3)):
+            cache.add(record(ahrs_packet(sequence)), now)
+        value, arrived = next(iter(cache.ahrs.values()))
+        self.assertEqual(value["telemetry"]["sequence"], 1)
+        self.assertEqual(arrived, 2)
+        cache.add(record(ahrs_packet(1, "boot-b")), 4)
+        cache.add(record(ahrs_packet(), ip="192.0.2.2"), 4)
+        self.assertEqual(len(cache.ahrs), 2)
+        cache.add(record(ahrs_packet(), ip="192.0.2.3"), 4)
+        self.assertEqual(len(cache.ahrs), 2)
+        cache.rows(10)
+        self.assertEqual(len(cache.ahrs), 0)
+
+    def test_view_ages_ahrs_independently_and_does_not_show_stale_angles(self):
+        cache = receiver.LatestObservations()
+        cache.add(record(ahrs_packet()), 10)
+        fresh = receiver.render_view(cache, 10.1, 0)
+        self.assertIn("relative yaw", fresh)
+        self.assertIn("1013.2 hPa", fresh)
+        stale = receiver.render_view(cache, 11, 0)
+        self.assertIn("attitude unavailable/stale", stale)
+        self.assertNotIn("roll 0.0", stale)
+        self.assertIn("pressure unavailable/stale", receiver.render_view(cache, 13, 0))
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Receive ESP32CAM radio telemetry. JSONL on stdout; no files unless --log is set.
+"""Receive ESP32CAM radio and AHRS telemetry. JSONL on stdout; no files unless --log is set.
 
 Examples:
   python3 tools/telemetry_receiver.py
@@ -79,6 +79,75 @@ def _constant(_value):
     raise PacketError("nonstandard JSON number")
 
 
+def _vector(value, label, length, nullable=False, maximum=1e6):
+    if value is None and nullable:
+        return
+    if not isinstance(value, list) or len(value) != length:
+        raise PacketError("%s must contain %d numbers" % (label, length))
+    for component in value:
+        _number(component, label, -maximum, maximum)
+
+
+def _ahrs(data):
+    """Validate fresh/null sensor values while preserving additive metadata."""
+    if not isinstance(data, dict):
+        raise PacketError("AHRS must be an object")
+    for key in ("worker_ready", "paused"):
+        if type(data.get(key)) is not bool:
+            raise PacketError("AHRS %s must be boolean" % key)
+    sensor_values = {
+        "imu": {"accel_m_s2": 3, "gyro_rad_s": 3, "temp_c": 0},
+        "mag": {"field_uT": 3},
+        "barometer": {"pressure_pa": 0, "temp_c": 0, "pressure_altitude_m": 0},
+        "attitude": {"quaternion_wxyz": 4, "roll_deg": 0, "pitch_deg": 0, "yaw_deg": 0},
+    }
+    for name, fields in sensor_values.items():
+        sensor = data.get(name)
+        if not isinstance(sensor, dict) or type(sensor.get("valid")) is not bool:
+            raise PacketError("AHRS %s needs a validity flag" % name)
+        if name != "attitude" and type(sensor.get("present")) is not bool:
+            raise PacketError("AHRS %s needs a presence flag" % name)
+        valid = sensor["valid"]
+        if valid and (data["paused"] or not data["worker_ready"] or
+                      (name != "attitude" and not sensor["present"])):
+            raise PacketError("AHRS valid sample contradicts device state")
+        if valid or sensor.get("age_ms") is not None:
+            _integer(sensor.get("age_ms"), name + " age_ms")
+        for field, length in fields.items():
+            if field not in sensor:
+                raise PacketError("AHRS missing " + name + " " + field)
+            value = sensor[field]
+            if not valid:
+                if value is not None:
+                    raise PacketError("AHRS invalid readings must be null")
+            elif length:
+                _vector(value, name + " " + field, length)
+            else:
+                _number(value, name + " " + field)
+        if "observed_uptime_ms" in sensor and sensor["observed_uptime_ms"] is not None:
+            _integer(sensor["observed_uptime_ms"], name + " observed_uptime_ms")
+    imu, attitude = data["imu"], data["attitude"]
+    _integer(imu.get("sample_count"), "IMU sample_count")
+    if attitude.get("reference") != "relative_yaw":
+        raise PacketError("unsupported attitude reference")
+    _integer(attitude.get("generation"), "attitude generation")
+    if attitude.get("yaw_origin_uptime_ms") is not None:
+        _integer(attitude["yaw_origin_uptime_ms"], "yaw origin")
+    if attitude["valid"]:
+        if not imu["valid"] or attitude.get("yaw_origin_uptime_ms") is None:
+            raise PacketError("valid attitude needs a fresh IMU and yaw origin")
+        if abs(sum(v * v for v in attitude["quaternion_wxyz"]) - 1) > 0.01:
+            raise PacketError("attitude quaternion must be normalized")
+    calibration = data.get("calibration")
+    if not isinstance(calibration, dict):
+        raise PacketError("AHRS calibration must be an object")
+    _text(calibration.get("status"), "calibration status", 64)
+    if type(calibration.get("gyro_bias_valid")) is not bool:
+        raise PacketError("gyro_bias_valid must be boolean")
+    _vector(calibration.get("gyro_bias_rad_s"), "gyro bias", 3)
+    _integer(calibration.get("samples"), "calibration samples")
+
+
 def parse_datagram(data):
     """Validate schema 1 without discarding additive firmware metadata."""
     if not data or len(data) > MAX_DATAGRAM:
@@ -134,6 +203,8 @@ def parse_datagram(data):
             raise PacketError("calibrated must be boolean")
         if "tx_power_dbm" in item:
             _number(item["tx_power_dbm"], "tx_power_dbm", -127, 127, nullable=True)
+    elif kind == "ahrs":
+        _ahrs(message.get("ahrs"))
     elif kind == "summary":
         for key in ("wifi_count", "ble_count"):
             if key in message:
@@ -198,18 +269,20 @@ class LatestObservations:
         self.ttl = ttl
         self.items = OrderedDict()
         self.summaries = OrderedDict()
+        self.ahrs = OrderedDict()
 
     def add(self, record, now):
         message = record["telemetry"]
         receiver = (record["source_ip"], message["receiver_id"])
-        if message["type"] == "summary":
-            previous = self.summaries.get(receiver)
+        if message["type"] in ("summary", "ahrs"):
+            collection = self.ahrs if message["type"] == "ahrs" else self.summaries
+            previous = collection.get(receiver)
             if previous and not _is_newer_packet(message, previous[0]["telemetry"]):
                 return
-            self.summaries[receiver] = (record, now)
-            self.summaries.move_to_end(receiver)
-            while len(self.summaries) > self.maximum:
-                self.summaries.popitem(last=False)
+            collection[receiver] = (record, now)
+            collection.move_to_end(receiver)
+            while len(collection) > self.maximum:
+                collection.popitem(last=False)
             return
         item = message["observation"]
         key = receiver + (message["radio"], item["address"].lower(),
@@ -230,9 +303,10 @@ class LatestObservations:
                 del self.items[key]
             else:
                 rows.append((record, age))
-        for key, (_record, arrived) in list(self.summaries.items()):
-            if now - arrived > self.ttl:
-                del self.summaries[key]
+        for collection in (self.summaries, self.ahrs):
+            for key, (_record, arrived) in list(collection.items()):
+                if now - arrived > self.ttl:
+                    del collection[key]
         return rows
 
 
@@ -243,7 +317,7 @@ def display_text(value, length):
 
 
 def render_view(cache, now, rejected):
-    lines = ["ESP32CAM radio telemetry | stale after %.0fs | rejected packets %d" % (cache.ttl, rejected),
+    lines = ["ESP32CAM radio / AHRS telemetry | radio stale after %.0fs | rejected packets %d" % (cache.ttl, rejected),
              "RECEIVER / SOURCE IP        RADIO  ADDRESS / TYPE        RSSI   EMA    AGE(s)  RANGE(m) / METHOD         NAME"]
     for record, age in cache.rows(now):
         message = record["telemetry"]
@@ -274,7 +348,28 @@ def render_view(cache, now, rejected):
                          (display_text(message["receiver_id"], 64),
                           record["source_ip"], display_text(ftm.get("status"), 80),
                           dist_text, age_text))
-    lines.append("RSSI ranges are approximate. FTM requires a compatible responding AP. Ctrl-C to stop.")
+    for record, arrived in cache.ahrs.values():
+        message = record["telemetry"]
+        data = message["ahrs"]
+        attitude = data["attitude"]
+        elapsed = max(0, now - arrived)
+        sample_age = attitude.get("age_ms")
+        age = None if sample_age is None else sample_age / 1000.0 + elapsed
+        # Do not leave an old tilt looking live between UDP packets.
+        fresh = attitude["valid"] and age is not None and age <= 0.5
+        angles = ("roll %.1f, pitch %.1f, relative yaw %.1f deg" %
+                  (attitude["roll_deg"], attitude["pitch_deg"], attitude["yaw_deg"])
+                  if fresh else "attitude unavailable/stale")
+        barometer = data["barometer"]
+        baro_age = barometer.get("age_ms")
+        pressure = ("%.1f hPa" % (barometer["pressure_pa"] / 100.0)
+                    if barometer["valid"] and baro_age is not None and
+                    baro_age / 1000.0 + elapsed <= 2 else "pressure unavailable/stale")
+        lines.append("AHRS %s@%s: %s, %s, age %s, gyro %s" %
+                     (display_text(message["receiver_id"], 64), record["source_ip"],
+                      angles, pressure, "--" if age is None else "%.2fs" % age,
+                      display_text(data["calibration"]["status"], 64)))
+    lines.append("RSSI ranges are approximate. AHRS yaw is relative. FTM needs a compatible AP. Ctrl-C to stop.")
     return "\n".join(lines)
 
 
@@ -283,7 +378,7 @@ def arguments(argv=None):
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--bind", default="0.0.0.0", help="local IPv4 address (default: all interfaces)")
     parser.add_argument("--port", type=int, default=9876)
-    parser.add_argument("--view", action="store_true", help="show latest devices instead of JSONL stdout")
+    parser.add_argument("--view", action="store_true", help="show latest radios and AHRS instead of JSONL stdout")
     parser.add_argument("--ttl", type=float, default=180, help="hide observations older than this many seconds")
     parser.add_argument("--max-devices", type=int, default=1024, help="bounded display cache size")
     parser.add_argument("--log", help="optional rotating JSONL file; no files are written by default")

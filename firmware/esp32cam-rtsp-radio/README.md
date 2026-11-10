@@ -1,4 +1,4 @@
-# ESP32-S3 CAM with Wi-Fi and Bluetooth telemetry
+# ESP32-S3 CAM with RF and AHRS telemetry
 
 This version targets the ESP32-S3 CAM N16R8 camera only. It is based on
 [rzeldent/esp32cam-rtsp](https://github.com/rzeldent/esp32cam-rtsp), pinned to
@@ -6,7 +6,8 @@ This version targets the ESP32-S3 CAM N16R8 camera only. It is based on
 The original RTSP, HTTP camera stream, snapshots, camera settings, and OTA
 services remain in the firmware.
 
-The variant adds a live `/telemetry` page, JSON API, and optional UDP JSON output.
+Version `1.0-radio.4` adds Stratux AHRS v1.1 sensor support alongside the
+live `/telemetry` page, light controls, JSON API, and optional UDP JSON output.
 It observes 2.4 GHz Wi-Fi access points and Bluetooth LE advertisers. It does
 not connect to the discovered devices.
 
@@ -37,6 +38,19 @@ The application binary is
 `.pio/build/esp32cam_s3_wroom_n16r8/firmware.bin` inside the prepared project.
 Use the normal PlatformIO upload procedure for this S3 target when installing. This change does not automatically flash or
 reconfigure any connected camera.
+
+## Connect the Stratux AHRS sensor
+
+The supported v1.1 profile is MPU9250 + AK8963 + BMP280, identified at runtime.
+It supplies acceleration, angular velocity, magnetic field, pressure,
+temperature, and six-axis attitude with explicitly relative yaw.
+Open `http://<camera-ip>/telemetry#ahrs` for live readings and a stationary
+gyro-calibration button. The full API is `GET /api/ahrs`; AHRS also appears
+in `GET /api/telemetry` and separate UDP packets (default 10 Hz).
+
+Use GPIO21 for SDA and GPIO47 for SCL on the free I²C controller. Read
+[AHRS.md](AHRS.md) for the full Stratux physical-header power/ground mapping,
+3.3 V pull-ups, units/frames, API and UDP details, and post-flash test steps.
 
 ## See signal strength
 
@@ -299,7 +313,9 @@ test on the actual FORIOT board.
 | --- | --- |
 | `GET /api/light` | Light command state and driver status |
 | `POST /api/light` | Set light on/off, brightness, and RGB color |
-| `GET /telemetry` | Camera light controls and live RF telemetry page |
+| `GET /telemetry` | Camera light controls, AHRS and live RF telemetry page |
+| `GET /api/ahrs` | Sensor identities, cached measurements, attitude, and calibration status |
+| `POST /api/ahrs/calibrate` | Queue stationary gyro-bias calibration |
 | `GET /api/telemetry` | Current bounded snapshot and capabilities |
 | `GET /api/telemetry/config` | Persistent radio configuration |
 | `POST /api/telemetry/config` | Validate and apply partial JSON settings |
@@ -354,7 +370,7 @@ c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude \
 
 The scoped GitHub workflow builds only the ESP32-S3 CAM N16R8 target and
 preserves its firmware files as seven-day build artifacts. It also runs the
-receiver, radio model, and light API model tests.
+receiver, radio model, light API model, and AHRS model tests.
 
 See `VALIDATION.md` for the exact verified results and remaining hardware
 checks. Source/compile tests do not establish physical scan reception, FTM

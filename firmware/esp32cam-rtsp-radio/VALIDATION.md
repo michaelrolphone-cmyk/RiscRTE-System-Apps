@@ -1,12 +1,14 @@
-# Validation record: ESP32-S3 CAM telemetry and light controls
+# Validation record: ESP32-S3 CAM RF, AHRS and light controls
 
 ## Current scope and source
 
-Version: `1.0-radio.3`. The only firmware target is
+Version: `1.0-radio.4`. The only firmware target is
 `esp32cam_s3_wroom_n16r8`. This package extends pinned upstream
 `14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7`.
-This update adds portal controls for the existing light API. The camera/light
-C++ modules, GPIO48 light profile, and radio behavior are unchanged.
+This update adds a Stratux AHRS sensor worker, cached API/UI readings, gyro
+calibration, and separate UDP motion packets. The camera/light implementation
+and RF acquisition are preserved; radio publication gains an independent AHRS
+cadence using the existing destination.
 
 The native project is an upstream checkout with the intentional integration
 patch and overlay. The GitHub delivery repository contains that reproducible
@@ -36,7 +38,31 @@ References:
 - https://docs.keyestudio.com/projects/MB0184/en/latest/docs/MB0184%20ESP32-S3%20CAM%20Development%20Board.html
 - https://www.makerguides.com/control-esp32-cam-flash-led/
 
-## Current UI verification
+## Current AHRS qualification scope
+
+The supported v1.1 sensor profile is inferred from the vendor guide's
+Stratux v1.3b2 compatibility and that firmware's explicit MPU9250/BMP280
+drivers. Actual chip identities must pass runtime checks. The guide does not
+provide a PCB schematic or readable chip markings. Both the vendor PDF and
+FORIOT header image were visually inspected.
+
+The selected GPIO21/47 pins are exposed and avoid camera, USB, LED, SD,
+and octal-PSRAM connections. The actual pinned SDK uses camera I²C controller1,
+so the sensor module selects the opposite controller0. The wiring guide
+reproduces the Pi header's intended3V3/5V/GND rails and documents3V3 I²C
+pull-ups; these are wiring-source findings, not an electrical bench test.
+
+New meaningful checks cover the sensor conversion/filter/calibration model,
+AHRS packet parsing and receiver ordering/freshness, UDP-to-JSONL reception,
+and firmware/embedded-script compilation. The scoped CI runs the actual
+package preparation and single S3 build. Use the CI run associated with the
+published head for its final result; this document does not predeclare a run.
+
+No new native or browser interaction execution, connected-sensor read,
+physical calibration, illumination, flash, or streaming coexistence test is
+claimed. Those tests require the user's connected board.
+
+## Prior UI verification (version `1.0-radio.3`)
 
 The portal adds Turn on, Turn off, brightness slider/numeric entry, RGB color,
 White preset, Apply color & brightness, and Reload light state. It uses the
@@ -123,6 +149,12 @@ latched pixel off. A failed command returns HTTP503 and marks command state
 unknown rather than reporting physical success.
 
 ## Package reproduction
+
+For `1.0-radio.4`, the manifest includes the AHRS module, model checks and
+wiring/API documentation. CI verifies those hashes and reconstructs the
+pinned upstream project before building; there is no claim of a new native
+checkout comparison.
+
 
 For version `1.0-radio.2`, the preparation script reproduced all 117 source
 files byte-for-byte against the native project used for its successful S3 build.

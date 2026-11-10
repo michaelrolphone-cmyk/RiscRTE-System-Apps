@@ -1,5 +1,6 @@
 #include "radio_telemetry.h"
 #include "radio_telemetry_model.h"
+#include "ahrs_telemetry.h"
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
@@ -46,6 +47,7 @@ struct Config {
     uint32_t bleInterval = 10000;
     uint32_t bleDuration = 2000;
     uint32_t publishInterval = 5000;
+    uint32_t ahrsPublishInterval = 100;
     char udpHost[16] = {};
     uint16_t udpPort = 9876;
     float wifiReference = -45.0f;
@@ -184,6 +186,7 @@ void putConfig(JsonObject output, const Config &config) {
     output["ble_interval_ms"] = config.bleInterval;
     output["ble_duration_ms"] = config.bleDuration;
     output["publish_interval_ms"] = config.publishInterval;
+    output["ahrs_publish_interval_ms"] = config.ahrsPublishInterval;
     output["udp_host"] = String(config.udpHost);
     output["udp_port"] = config.udpPort;
     output["wifi_reference_rssi_1m_dbm"] = config.wifiReference;
@@ -235,6 +238,7 @@ bool patchConfig(JsonObjectConst input, Config &config, String &error) {
         else if (!strcmp(key, "ble_interval_ms")) valid = readUnsigned(value, config.bleInterval, 1000, 86400000);
         else if (!strcmp(key, "ble_duration_ms")) valid = readUnsigned(value, config.bleDuration, 200, 5000);
         else if (!strcmp(key, "publish_interval_ms")) valid = readUnsigned(value, config.publishInterval, 1000, 86400000);
+        else if (!strcmp(key, "ahrs_publish_interval_ms")) valid = readUnsigned(value, config.ahrsPublishInterval, 50, 86400000);
         else if (!strcmp(key, "wifi_reference_rssi_1m_dbm")) valid = readFloat(value, config.wifiReference, -127, -1);
         else if (!strcmp(key, "ble_reference_rssi_1m_dbm")) valid = readFloat(value, config.bleReference, -127, -1);
         else if (!strcmp(key, "path_loss_exponent")) valid = readFloat(value, config.exponent, 0.5f, 6.0f);
@@ -451,6 +455,7 @@ void putSummary(JsonObject output, bool withConfig) {
     capabilities["ble"] = static_cast<bool>(RADIO_HAS_BLE);
     capabilities["ftm"] = static_cast<bool>(RADIO_HAS_FTM);
     capabilities["bluetooth_classic"] = false;
+    capabilities["ahrs"] = true;
     JsonObject counts = output.createNestedObject("counts");
     counts["wifi"] = wifiCount;
     counts["ble"] = bleCount;
@@ -472,7 +477,10 @@ void putSummary(JsonObject output, bool withConfig) {
     report["wifi_evictions"] = state.wifiEvictions;
     report["ble_evictions"] = state.bleEvictions;
     report["wifi_truncated"] = state.wifiTruncated;
-    if (withConfig) putConfig(output.createNestedObject("config"), config);
+    if (withConfig) {
+        putConfig(output.createNestedObject("config"), config);
+        ahrs_telemetry::writeJson(output.createNestedObject("ahrs"));
+    }
     putFtm(output.createNestedObject("ftm"), ftmCopy);
 }
 
@@ -712,7 +720,7 @@ bool sendDatagram(WiFiUDP &udp, IPAddress target, uint16_t port, const JsonDocum
     return sent;
 }
 
-// Publishes at most one short datagram per worker iteration, with no backlog.
+// Publishes at most one radio-table datagram per worker iteration, with no backlog.
 void publishStep(WiFiUDP &udp, const Config &config, uint32_t now,
                  bool &publishing, size_t &cursor, uint32_t &lastStart) {
     if (pauseRequested() || !config.udpHost[0]) { publishing = false; return; }
@@ -756,6 +764,25 @@ void publishStep(WiFiUDP &udp, const Config &config, uint32_t now,
     publishing = false;
 }
 
+// AHRS has its own cadence; radio table publication never queues motion samples.
+void publishAhrs(WiFiUDP &udp, const Config &config, uint32_t now, uint32_t &lastPublish) {
+    if (pauseRequested() || !config.udpHost[0] ||
+        now - lastPublish < config.ahrsPublishInterval) return;
+    lastPublish = now;
+    IPAddress destination;
+    if (!destination.fromString(config.udpHost)) return;
+    DynamicJsonDocument document(4096);
+    JsonObject output = document.to<JsonObject>();
+    uint32_t sequence;
+    {
+        Lock lock;
+        sequence = ++packetSequence;
+    }
+    putEnvelope(output, "ahrs", sequence);
+    ahrs_telemetry::writeJson(output.createNestedObject("ahrs"), true);
+    sendDatagram(udp, destination, config.udpPort, document);
+}
+
 void worker(void *) {
     WiFiUDP udp;
     bool wifiOwned = false, wifiCancelled = false, publishing = false;
@@ -763,6 +790,7 @@ void worker(void *) {
     uint32_t nextWifi = millis() + 5000;
     uint32_t nextBle = millis() + 1000;
     uint32_t lastExpire = millis(), lastPublish = millis(), lastRevision = 0;
+    uint32_t lastAhrsPublish = millis();
     size_t publicationCursor = 0;
 #if RADIO_HAS_BLE
     NimBLEScan *bleScan = nullptr;
@@ -787,6 +815,7 @@ void worker(void *) {
         if (revision != lastRevision) {
             publishing = false;
             lastPublish = now - config.publishInterval;
+            lastAhrsPublish = now - config.ahrsPublishInterval;
             lastRevision = revision;
             nextWifi = now + 1000;
             nextBle = now + 1000;
@@ -908,6 +937,7 @@ void worker(void *) {
             } else nextBle = now + 30000;
         }
 #endif
+        publishAhrs(udp, config, now, lastAhrsPublish);
         publishStep(udp, config, now, publishing, publicationCursor, lastPublish);
         vTaskDelay(pdMS_TO_TICKS(20));
     }
@@ -937,11 +967,11 @@ void sendError(int code, const String &message) {
 
 void handleSnapshot() {
     if (!authorized()) return;
-    DynamicJsonDocument document(4096);
+    DynamicJsonDocument document(8192);
     putSummary(document.to<JsonObject>(), true);
     if (document.overflowed()) { sendError(503, "Telemetry summary allocation failed"); return; }
     String serialized;
-    serialized.reserve(4096);
+    serialized.reserve(8192);
     serializeJson(document, serialized);
     if (!serialized.length()) { sendError(503, "Telemetry serialization failed"); return; }
     serialized.remove(serialized.length() - 1);
@@ -1001,6 +1031,48 @@ bool requireJsonContentType() {
         return false;
     }
     return true;
+}
+
+void handleAhrs() {
+    if (!authorized()) return;
+    DynamicJsonDocument document(6144);
+    JsonObject output = document.to<JsonObject>();
+    uint32_t sequence;
+    {
+        Lock lock;
+        sequence = packetSequence;
+    }
+    putEnvelope(output, "ahrs", sequence);
+    ahrs_telemetry::writeJson(output.createNestedObject("ahrs"));
+    if (document.overflowed()) { sendError(503, "AHRS snapshot allocation failed"); return; }
+    String serialized;
+    serializeJson(document, serialized);
+    httpServer->sendHeader("Cache-Control", "no-store");
+    httpServer->send(200, "application/json", serialized);
+}
+
+void handleAhrsCalibration() {
+    if (!authorized() || !requireJsonContentType()) return;
+    // A body-free command endpoint avoids ambiguous partial calibration settings.
+    // A JSON empty object is accepted for conventional API clients.
+    String body = httpServer->arg("plain");
+    if (body.length() > 256) { sendError(413, "Calibration request body is too large"); return; }
+    body.replace(" ", ""); body.replace("\t", ""); body.replace("\r", ""); body.replace("\n", "");
+    if (body.length() && body != "{}") {
+        sendError(400, "Send an empty body or {} to request stationary gyro calibration");
+        return;
+    }
+    const auto result = ahrs_telemetry::requestGyroCalibration();
+    if (result == ahrs_telemetry::CalibrationRequest::Busy) {
+        sendError(409, "Gyro calibration is already pending");
+        return;
+    }
+    if (result != ahrs_telemetry::CalibrationRequest::Accepted) {
+        sendError(503, "A fresh, running IMU is required for gyro calibration");
+        return;
+    }
+    httpServer->sendHeader("Cache-Control", "no-store");
+    httpServer->send(202, "application/json", "{\"status\":\"queued\"}");
 }
 
 void handleSetConfig() {
@@ -1113,6 +1185,9 @@ void begin(WebServer &server, bool (*authorize)()) {
     server.on("/api/telemetry/config", HTTP_GET, handleGetConfig);
     server.on("/api/telemetry/config", HTTP_POST, handleSetConfig);
     server.on("/api/telemetry/ftm", HTTP_POST, handleFtm);
+    server.on("/api/ahrs", HTTP_GET, handleAhrs);
+    server.on("/api/ahrs/calibrate", HTTP_POST, handleAhrsCalibration);
+    ahrs_telemetry::begin();
     if (!stateMutex) return;
     loadConfig();
 #if RADIO_HAS_FTM
@@ -1131,6 +1206,7 @@ void loop() {
 }
 
 void pause(bool paused) {
+    ahrs_telemetry::pause(paused);
     if (!stateMutex) return;
     Lock lock;
     isPaused = paused;
