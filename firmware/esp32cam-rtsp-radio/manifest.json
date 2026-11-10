@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.5",
+  "variant": "1.0-radio.6",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -15,7 +15,7 @@
     },
     {
       "path": "integration.patch",
-      "sha256": "e0c551770fe345d5130f1dbf65de96f636888715999104fdcfac394a63ccf17e"
+      "sha256": "8532cbb1b14ef3e1e690c83f9a4e110b8b7d79ef59f1a20009d5783dd08dbcd0"
     },
     {
       "path": "LICENSE",
