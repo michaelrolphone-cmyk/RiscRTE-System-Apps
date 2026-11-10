@@ -1,0 +1,29 @@
+name: Promote qualified relay6ch streaming image
+on:
+  push:
+    branches: [deploy/relay6ch-6bbea197]
+    paths: [.github/workflows/promote-relay6ch-6bbe.yml]
+permissions:
+  actions: read
+  contents: write
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 42765904519
+          name: relay6ch-6bbea19705cfb9db60e4b22efff684dd4c6d7479
+          path: delivery
+      - name: Verify exact qualified firmware and publish installation assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd delivery
+          sha256sum --check SHA256SUMS
+          python -c "import json; m=json.load(open('flash-manifest.json')); assert m['sources']['apps']=='6bbea19705cfb9db60e4b22efff684dd4c6d7479'; assert m['version']=='2.1.0'; assert m['chip']=='esp32s3'"
+          if gh release view biomerte-relay6ch-v2.1.0-6bbea197 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            exit 0
+          fi
+          gh release create biomerte-relay6ch-v2.1.0-6bbea197 --repo "$GITHUB_REPOSITORY" --target 6bbea19705cfb9db60e4b22efff684dd4c6d7479 --prerelease --title 'Qualified relay6ch streaming firmware 2.1.0 (6bbea197)' --notes 'Promoted unchanged from successful qualification run 42765904519. Board-specific ESP32-S3 image with freshness enforcement and superseded-command quiescence. Physical installation and timing qualification remain separate.' *.bin *.json *.zip *LICENSE SHA256SUMS
