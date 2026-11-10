@@ -1,18 +1,19 @@
 diff --git a/html/index.html b/html/index.html
-index da95f57..380b4cb 100644
+index da95f57..35350d5 100644
 --- a/html/index.html
 +++ b/html/index.html
-@@ -251,6 +251,6 @@
-         <div><a href="http://{{IPv4}}/restart " target="_blank" rel="noopener">http://{{IPv4}}/restart</a> </div>
-     </div>
+@@ -93,6 +93,9 @@
+ </head>
  
--</body>
-+<p style="text-align:center"><a href="/telemetry">Camera light, AHRS and RF telemetry</a></p></body>
+ <body>
++    <nav class="text-center alert alert-info" aria-label="Camera controls">
++        <a class="btn btn-primary btn-lg" href="/telemetry">Camera light, AHRS &amp; Wi-Fi / Bluetooth telemetry</a>
++    </nav>
+     <h1 class="text-center">{{ThingName}}</h1>
+     <hr>
  
- </html>
-\ No newline at end of file
 diff --git a/include/settings.h b/include/settings.h
-index b8db461..af47b60 100644
+index b8db461..4ad565e 100644
 --- a/include/settings.h
 +++ b/include/settings.h
 @@ -1,7 +1,7 @@
@@ -20,15 +21,15 @@ index b8db461..af47b60 100644
  
  #define APP_TITLE "ESP32CAM-RTSP"
 -#define APP_VERSION "1.0"
-+#define APP_VERSION "1.0-radio.6"
++#define APP_VERSION "1.0-radio.7"
  
  #define WIFI_SSID "ESP32CAM-RTSP"
  #define WIFI_PASSWORD nullptr
 diff --git a/src/main.cpp b/src/main.cpp
-index bae860b..222544b 100644
+index bae860b..f269c53 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
-@@ -17,12 +17,15 @@
+@@ -17,13 +17,16 @@
  #include <format_number.h>
  #include <moustache.h>
  #include <settings.h>
@@ -40,10 +41,21 @@ index bae860b..222544b 100644
  #include <micro_rtsp_source_audio_i2s.h>
  
  // HTML files
+-extern const char index_html_min_start[] asm("_binary_html_index_min_html_start");
 +extern const char telemetry_html_start[] asm("_binary_html_telemetry_html_start");
- extern const char index_html_min_start[] asm("_binary_html_index_min_html_start");
++extern const char index_html_start[] asm("_binary_html_index_html_start");
  
  auto param_group_camera = iotwebconf::ParameterGroup("camera", "Camera settings");
+ auto param_frame_duration = iotwebconf::Builder<iotwebconf::UIntTParameter<unsigned long>>("fd").label("Frame duration (ms)").defaultValue(DEFAULT_FRAME_DURATION).min(10).build();
+@@ -166,7 +169,7 @@ void handle_root()
+       {"OtaSupported", String(esp_ota_get_next_update_partition(nullptr) != nullptr)}};
+ 
+   web_server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+-  auto html = moustache_render(index_html_min_start, substitutions);
++  auto html = moustache_render(index_html_start, substitutions);
+   web_server.send(200, "text/html", html);
+ }
+ 
 @@ -422,6 +425,7 @@ void setup_ota()
                 { 
        // Free memory for the update: stop the RTSP server and release the camera frame buffers, so Update.write() has all the heap it needs

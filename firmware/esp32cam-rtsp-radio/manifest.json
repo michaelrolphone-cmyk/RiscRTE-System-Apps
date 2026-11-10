@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.6",
+  "variant": "1.0-radio.7",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -15,7 +15,7 @@
     },
     {
       "path": "integration.patch",
-      "sha256": "8532cbb1b14ef3e1e690c83f9a4e110b8b7d79ef59f1a20009d5783dd08dbcd0"
+      "sha256": "25f732276426251ee3c2c8520495648b471a2ef9a1fc44ae63b02783ac9eaa9a"
     },
     {
       "path": "LICENSE",
@@ -51,7 +51,7 @@
     },
     {
       "path": "overlay/platformio.ini",
-      "sha256": "e81d72951a393afa93f73bcaf050a518e487492e311039907cf4a54f2c19bdce"
+      "sha256": "8b55c23f0ca12f29547ecb3d25262b5cd2ac85a257d741ef7dc60d25a74454d1"
     },
     {
       "path": "overlay/src/ahrs_telemetry.cpp",
