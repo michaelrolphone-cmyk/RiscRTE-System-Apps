@@ -28,7 +28,11 @@ jobs:
         with:
           node-version: '24'
       - name: Qualify streaming freshness independently of hardware
-        run: g++ -std=c++17 -Wall -Wextra -Werror apps/test/relay6ch_host/stream.cpp -o /tmp/relay-stream && /tmp/relay-stream
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror apps/test/relay6ch_host/stream.cpp -o /tmp/relay-stream
+          /tmp/relay-stream
+          g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined apps/test/relay6ch_host/stream.cpp -o /tmp/relay-stream-sanitize
+          ASAN_OPTIONS=detect_leaks=0 /tmp/relay-stream-sanitize
       - run: |
           RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_infrastructure.sh
           RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_relay6ch.sh

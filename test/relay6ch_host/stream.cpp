@@ -51,6 +51,7 @@ int main(){
  assert(attempts==2); // Delivered feedback cannot be emitted a second time.
  assert(feedback.accept(a,8,e,8,0,10001,10501,10002,106));
  assert(feedback.acknowledge(8,true,[](uint64_t){return false;})==0);
+ assert(feedback.accept(a,8,e,9,0,10002,10502,10003,107));
  assert(feedback.acknowledge(9,true,[](uint64_t){return true;})==20);
  assert(feedback.acknowledge(8,true,[](uint64_t){assert(false);return true;})==0);
  assert(feedback.ackSequence==20); // A newer state supersedes pending feedback.
