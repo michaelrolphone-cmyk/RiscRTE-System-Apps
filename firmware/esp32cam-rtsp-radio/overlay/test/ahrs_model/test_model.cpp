@@ -95,7 +95,7 @@ static void gyro_integration_and_gravity_feedback() {
     Attitude yaw;
     assert(yaw.update(Vec3(0,0,GRAVITY),Vec3(),0));
     for (uint32_t i=1;i<=50;++i)
-        assert(yaw.update(Vec3(0,0,GRAVITY),Vec3(0,0,PI/2),20*i));
+        assert(yaw.update(Vec3(0,0,GRAVITY),Vec3(0,0,PI_VALUE/2),20*i));
     assert(near(yaw.anglesDeg().z,90,0.05));
     assert(yaw.generation()==1 && yaw.originMs()==0);
     // Sustained specific acceleration outside the gravity band must not pull tilt.
@@ -116,10 +116,10 @@ static void timing_gaps_wrap_and_invalid_samples() {
     assert(!attitude.update(Vec3(),Vec3(),0));
     assert(!attitude.valid());
     assert(attitude.update(Vec3(0,0,GRAVITY),Vec3(),UINT32_MAX-15));
-    assert(attitude.update(Vec3(0,0,GRAVITY),Vec3(0,0,PI/2),16));
+    assert(attitude.update(Vec3(0,0,GRAVITY),Vec3(0,0,PI_VALUE/2),16));
     assert(near(attitude.anglesDeg().z,2.88,0.01));
     assert(attitude.generation()==1);
-    assert(attitude.update(Vec3(0,0,GRAVITY),Vec3(0,0,PI/2),1000));
+    assert(attitude.update(Vec3(0,0,GRAVITY),Vec3(0,0,PI_VALUE/2),1000));
     assert(attitude.generation()==2 && attitude.originMs()==1000);
     assert(attitude.resetReason()==ResetReason::SampleGap);
     assert(near(attitude.anglesDeg().z,0,1e-9));

@@ -27,7 +27,7 @@
     },
     {
       "path": "overlay/include/ahrs_telemetry_model.h",
-      "sha256": "becae10ddb79b740ab6d890dbcdca5a2a2ce096701be7b8ad60f37f1c0a0b9ea"
+      "sha256": "dafbad970cdfaaaba0ae31d1de252d7d494f2e83b209a204f5226a308b266372"
     },
     {
       "path": "overlay/include/ahrs_telemetry.h",
@@ -67,7 +67,7 @@
     },
     {
       "path": "overlay/test/ahrs_model/test_model.cpp",
-      "sha256": "31dcc2efd8230c89e29dbaeebe764796ed62e78673b127c0f556d51b642a455c"
+      "sha256": "c81055d7fc613704f995f7f6434ffc302b63061133bdc62731e974e3abd7c370"
     },
     {
       "path": "overlay/test/camera_light_model/test_model.cpp",
@@ -95,7 +95,7 @@
     },
     {
       "path": "VALIDATION.md",
-      "sha256": "59ffc8e5bc87a6e95584bfefcbb94e5294e942da31512ab2efaf4bd9e7f3e6fa"
+      "sha256": "6ec58765e008c8fd51b03a646378c006eaa17c1978e633d4e86f524012bb318f"
     }
   ]
 }

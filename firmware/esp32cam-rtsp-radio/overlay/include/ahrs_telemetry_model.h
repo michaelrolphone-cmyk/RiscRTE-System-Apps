@@ -8,9 +8,9 @@
 #include <cstdint>
 
 namespace ahrs_telemetry_model {
-constexpr double PI = 3.14159265358979323846;
+constexpr double PI_VALUE = 3.14159265358979323846;
 constexpr double GRAVITY = 9.80665;
-constexpr double RAD_PER_DEG = PI / 180.0;
+constexpr double RAD_PER_DEG = PI_VALUE / 180.0;
 constexpr uint32_t IMU_FRESH_MS = 500;
 constexpr uint32_t MAG_FRESH_MS = 1000;
 constexpr uint32_t BARO_FRESH_MS = 2000;

@@ -58,6 +58,12 @@ and firmware/embedded-script compilation. The scoped CI runs the actual
 package preparation and single S3 build. Use the CI run associated with the
 published head for its final result; this document does not predeclare a run.
 
+The first integrated CI run passed the host/model checks but caught an
+Arduino `PI` macro collision when compiling the firmware. The pure model
+constant was renamed to `PI_VALUE` and its test references updated; no driver
+behavior or existing feature was removed. The subsequent current-head run is
+the qualification result for delivery.
+
 No new native or browser interaction execution, connected-sensor read,
 physical calibration, illumination, flash, or streaming coexistence test is
 claimed. Those tests require the user's connected board.
