@@ -47,3 +47,14 @@ jobs:
         run: c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude test/radio_telemetry_model/test_model.cpp -o "$RUNNER_TEMP/radio-model-test"
       - name: Run radio model tests
         run: '"$RUNNER_TEMP/radio-model-test"'
+      - name: Check out pinned ArduinoJson for light API model tests
+        uses: actions/checkout@v4
+        with:
+          repository: bblanchon/ArduinoJson
+          ref: 40ee05c065ce248192c47eb37af7a70a6935dfa6
+          path: .ci-deps/ArduinoJson
+      - name: Compile and run light API model tests
+        working-directory: firmware/esp32cam-rtsp-radio/overlay
+        run: |
+          c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude -I"$GITHUB_WORKSPACE/.ci-deps/ArduinoJson/src" test/camera_light_model/test_model.cpp -o "$RUNNER_TEMP/camera-light-model-test"
+          "$RUNNER_TEMP/camera-light-model-test"

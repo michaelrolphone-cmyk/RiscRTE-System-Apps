@@ -174,10 +174,101 @@ Wi-Fi/BLE observation and UDP output continue.
 The S3 SDK used here enables FTM. The responder must also implement FTM;
 arbitrary phones or access points may not.
 
+## Camera light API
+
+This S3 build adds authenticated `GET /api/light` and `POST /api/light`.
+The selected light profile is one WS2812-compatible RGB pixel on GPIO48,
+with GRB byte order. White is produced by setting all three color components
+to the same value. Brightness is separate from the chosen color.
+
+The FORIOT listing identifies ASIN B0GD2BZ9B1 as an N16R8/OV3660 S3 board.
+The [seller's pinout image](https://m.media-amazon.com/images/I/81e8TEDdnsL._AC_SL1500_.jpg)
+labels GPIO48 as WS2812 and GPIO4 as CAM_SIOD. Its board layout matches the
+[OV3660 listing photo](https://m.media-amazon.com/images/I/71v0J4UcR1L._AC_SL1500_.jpg);
+the pinout itself pictures an OV2640 camera variant. This supports the chosen
+GPIO48 profile, while the fitted LED and routing on the user's physical PCB
+remain untested. API driver readiness and a completed command are separate
+from physical LED detection and measured illumination. The response explicitly
+reports that physical verification/readback is absent.
+
+### GPIO4 is a camera signal on this S3
+
+The linked [GPIO4 flash tutorial](https://www.makerguides.com/control-esp32-cam-flash-led/)
+uses the original **AI Thinker ESP32-CAM**. Its white-flash wiring and SD-card
+GPIO4 conflict must not be copied to this S3 configuration. Here GPIO4 is
+`CAMERA_CONFIG_PIN_SCCB_SDA`, the camera's control-data line; GPIO5 is its
+control clock. The light module checks for camera-pin conflicts at compile
+time and never uses GPIO4 as a light output.
+
+The selected pixel is driven with RMT, leaving the camera's LEDC clock
+timer/channel untouched. This is a color/brightness interface, not a claim
+that the board has a high-power white flash. Illumination range is unmeasured.
+
+### Requests
+
+Use the camera's configured authentication credentials. If the existing
+camera username is empty, the upstream authentication callback allows
+unauthenticated requests, as it does for the other protected camera routes.
+
+Read the current commanded state and driver status:
+
+```sh
+curl -u USER:PASSWORD http://CAMERA_IP/api/light
+```
+
+Turn on white light at brightness 128 out of 255:
+
+```sh
+curl -u USER:PASSWORD -H 'Content-Type: application/json' \
+  --data '{"on":true,"brightness":128,"rgb":[255,255,255]}' \
+  http://CAMERA_IP/api/light
+```
+
+Change brightness without changing the selected color or on/off command:
+
+```json
+{"brightness":64}
+```
+
+Turn off:
+
+```sh
+curl -u USER:PASSWORD -H 'Content-Type: application/json' \
+  --data '{"on":false}' http://CAMERA_IP/api/light
+```
+
+The POST body is a nonempty partial object, at most 256 bytes, with these fields:
+
+| Field | Accepted value |
+| --- | --- |
+| `on` | JSON boolean |
+| `brightness` | Integer from 0 through 255 |
+| `rgb` | Array of exactly three integers from 0 through 255, in red/green/blue order |
+
+Unknown fields, malformed JSON, and invalid types/ranges are rejected before
+a hardware command is issued. Mutations require `application/json` (HTTP415
+otherwise); invalid updates return HTTP400, and a body over 256 bytes returns
+HTTP413. A driver failure returns HTTP503 with its error stage and sets
+`command_state_known` false. A 100ms transmission-fault deadline prevents a
+stalled RMT transfer from holding the camera service indefinitely; it does not
+limit how long the light stays on.
+Changes to brightness/color while off remain remembered in RAM and output
+black. Brightness zero also outputs black. The light initializes off; its
+initial remembered color is white and brightness is 128. State is not
+persisted across reboot. There is no automatic light-duration limit.
+
+See the [FORIOT listing](https://www.amazon.com/dp/B0GD2BZ9B1),
+[Keyestudio's matching S3 camera-family documentation](https://docs.keyestudio.com/projects/MB0184/en/latest/docs/MB0184%20ESP32-S3%20CAM%20Development%20Board.html),
+and the [pinned S3 camera BSP GPIO definitions](https://github.com/larryli/esp-idf_esp32_s3_cam/blob/d677304d482a0aee9bc609cf7127aa2f6e0fe519/include/bsp/esp32_s3_cam.h).
+These references support the selected profile without substituting for a
+test on the actual FORIOT board.
+
 ## HTTP API
 
 | Method and path | Purpose |
 | --- | --- |
+| `GET /api/light` | Light command state and driver status |
+| `POST /api/light` | Set light on/off, brightness, and RGB color |
 | `GET /telemetry` | Live page |
 | `GET /api/telemetry` | Current bounded snapshot and capabilities |
 | `GET /api/telemetry/config` | Persistent radio configuration |
@@ -221,9 +312,19 @@ c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude \
 /tmp/radio-model-test
 ```
 
+After the firmware build has installed ArduinoJson, run the light API model
+tests from the prepared project:
+
+```sh
+c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude \
+  -I.pio/libdeps/esp32cam_s3_wroom_n16r8/ArduinoJson/src \
+  test/camera_light_model/test_model.cpp -o /tmp/camera-light-model-test
+/tmp/camera-light-model-test
+```
+
 The scoped GitHub workflow builds only the ESP32-S3 CAM N16R8 target and
 preserves its firmware files as seven-day build artifacts. It also runs the
-receiver and radio model tests.
+receiver, radio model, and light API model tests.
 
 See `VALIDATION.md` for the exact verified results and remaining hardware
 checks. Source/compile tests do not establish physical scan reception, FTM

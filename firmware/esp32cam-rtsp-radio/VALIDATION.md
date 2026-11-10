@@ -1,26 +1,104 @@
-# ESP32-S3 CAM validation
+# Validation record: ESP32-S3 CAM telemetry and light API
 
-Only esp32cam_s3_wroom_n16r8 is a build target in this version.
+## Current scope and source
 
-## Native firmware
+Version: `1.0-radio.2`. The only firmware target is
+`esp32cam_s3_wroom_n16r8`. This package extends pinned upstream
+`14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7`.
+The light addition preserves the existing radio telemetry and camera integration.
 
-PASS on the Mac through BiomeRTE. PlatformIO 6.1.19.
+The native project is an upstream checkout with the intentional integration
+patch and overlay. The GitHub delivery repository contains that reproducible
+package, rather than pretending its PR commit is the native upstream commit.
 
-Application binary: 1462864 bytes.
+## Board and light evidence
 
-SHA-256: 313f98f500cefae14e915d43ec9a7b2742df6cfc16cb1aea3167eca019741003
+The exact ASIN B0GD2BZ9B1 identifies a FORIOT N16R8/OV3660, dual-Type-C S3
+camera board. Its seller photos were inspected. The corresponding FORIOT
+pinout depicts an OV2640 camera variant on the matching board layout and labels
+GPIO48 WS2812, GPIO4 CAM_SIOD, and GPIO5 CAM_SIOC. This supports the selected
+one-pixel GPIO48/GRB profile; it does not substitute for physical verification
+of the user's particular PCB revision.
 
-## Host checks
+The GPIO4 white-flash tutorial cited during the request explicitly uses an
+AI Thinker ESP32-CAM. The S3 camera's global board flags use GPIO4 for SCCB SDA,
+so the light module explicitly forbids GPIO4 and asserts against every defined
+camera signal pin. RMT drives the pixel; the camera's LEDC timer/channel are
+not reassigned.
 
-- Receiver: 16 tests passed, including real localhost UDP delivery, malformed data, rotation, freshness, reordering and sequence wrap.
-- C++ model: compile and tests passed for MAC validation, range math and signed iBeacon calibration.
-- Dashboard JavaScript syntax passed in Node.
-- git diff --check passed.
+References:
+
+- https://www.amazon.com/dp/B0GD2BZ9B1
+- https://m.media-amazon.com/images/I/7102nyCrLYL._AC_SL1500_.jpg
+- https://m.media-amazon.com/images/I/71v0J4UcR1L._AC_SL1500_.jpg
+- https://m.media-amazon.com/images/I/81e8TEDdnsL._AC_SL1500_.jpg
+- https://docs.keyestudio.com/projects/MB0184/en/latest/docs/MB0184%20ESP32-S3%20CAM%20Development%20Board.html
+- https://www.makerguides.com/control-esp32-cam-flash-led/
+
+## Current native verification
+
+Completed through the Mac terminal capability; no cloud development shell was used.
+
+Operation: `esp32cam-light-module-validate-build-1`, exit code 0.
+
+- Light model: six test functions passed, including 28 rejected request cases.
+- The model compiled with `-std=c++11 -Wall -Wextra -pedantic`, without warnings.
+- Tests cover default-off/color memory, integer boundaries and brightness
+  rounding, atomic validation, trailing JSON content, embedded-NUL key aliasing,
+  GRB/MSB wire order, 300us latch timing, and invalid clock resolution.
+- The initial malformed-input test exposed escaped NUL aliasing in ArduinoJson
+  object-key storage. Explicit raw/escaped NUL rejection fixed that issue before
+  the successful test and firmware build.
+- ESP32-S3 CAM firmware build succeeded in 20.415 seconds.
+- Integration check confirmed `camera_light::begin` and version `1.0-radio.2`.
+- The integration `git diff --check` passed.
+- An independent source review found no blocking defects in pin ownership, RMT
+  transmission/recovery, authenticated API handling, or state/error reporting.
+
+| Native build measure | Value |
+| --- | --- |
+| Application binary size | 1,472,528 bytes |
+| Application binary SHA-256 | `2a15b92acafa6ffbbd537f34dbb75b12a863addf7cff33557c40be9ee1b1aabc` |
+| Reported RAM | 76,996 / 327,680 bytes (23.5%) |
+| Reported flash | 1,472,161 / 6,553,600 bytes (22.5%) |
+
+The checksum above belongs to the native application binary, not a GitHub
+artifact ZIP. CI artifacts have their own run identity and archive digest.
+
+New source SHA-256 values:
+
+- `include/camera_light.h`: `c0c676b74ce90ed0134c4d82aea3591ed801c19cd0d14cae1fc519ef04c34b51`
+- `include/camera_light_model.h`: `3a3d980a112c94ef9b45bbbb3be002a04da258438f4de9218c776419f3406fe6`
+- `src/camera_light.cpp`: `48787da311e2260a957cd4b598f2561597eae75aa44fad7cc7469fd5d8696636`
+- `test/camera_light_model/test_model.cpp`: `0e191a640d7eb980b3416aa607bd9b5a79a1eee0a17c9ba9542732a5e76af1ce`
+
+The full native source/build receipt is content-addressed artifact
+`6259f196cf9b3c0da2f741e8ec2dfbb7ca339078ea47aff9e8dd9945f39799f3`.
+The earlier radio-only binary is historical and is not the current light-enabled image.
+
+## CI checks
+
+The scoped GitHub workflow builds only the S3 target, runs the 16 receiver
+tests and radio model tests, and now also runs the light model tests against
+ArduinoJson 6.21.5, pinned to source commit
+`40ee05c065ce248192c47eb37af7a70a6935dfa6`.
+The workflow preserves S3 binaries as seven-day artifacts. Consult the workflow
+run for the actual delivery commit's current result; this document does not
+predeclare a future CI result.
 
 ## Physical qualification
 
-The ESP32-S3 CAM has not been flashed with this version. Live RF reception, FTM accuracy, OTA behavior, and camera/radio coexistence remain unmeasured. RSSI distance is explicitly approximate.
+The camera has not been flashed with this version. No live LED illumination,
+color-order measurement, brightness/lux measurement, camera/lighting coexistence,
+radio/video coexistence, physical OTA operation, or FTM ranging accuracy is
+claimed. The API reports driver and command status, with
+`hardware_verified=false` and `optical_readback=false`.
 
-## S3 package reproduction
+The light has no automatic duration limit. The RMT driver has a 100ms
+transaction-completion fault deadline; that does not switch a successfully
+latched pixel off. A failed command returns HTTP503 and marks command state
+unknown rather than reporting physical success.
 
-PASS: the preparation command reconstructed all 113 source files byte-for-byte. The resulting PlatformIO configuration contains exactly one S3 environment.
+## Package reproduction
+
+The preparation script reproduced all 117 source files byte-for-byte against the native project used for the successful S3 build. Temporary reproduction files were removed after comparison.

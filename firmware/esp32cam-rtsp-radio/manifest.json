@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.1",
+  "variant": "1.0-radio.2",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -15,19 +15,27 @@
     },
     {
       "path": "README.md",
-      "sha256": "cf539ee7e784921871e25fbd16584055ba35f656aa5dd4752ab663a33d0366ae"
+      "sha256": "ad9aecbd86dc73aa4956c5c2d33b96f3402ee081e9bce0525c5c2ddaf832a764"
     },
     {
       "path": "VALIDATION.md",
-      "sha256": "9e7b93b85e4489f88ad36b9da0d364cae260eeb1f0fd218812c71dd63f86f82e"
+      "sha256": "ad47824d1ec2469ee5a059537aa7904620be0b9e79a992bf03c12c3540538dc4"
     },
     {
       "path": "integration.patch",
-      "sha256": "a3b965e0a6fc659a48607efb17b51bae8765033fec6633e4d288de7f34f41365"
+      "sha256": "bbe00de0262f7dbd1f69d626ea37dbb0b7d73daeb71159da45c541e3b6a9a976"
     },
     {
       "path": "overlay/html/telemetry.html",
       "sha256": "2cac232bed271834fcffd2f182cd81e282ab0e4e447d258ae33652b59b29adcd"
+    },
+    {
+      "path": "overlay/include/camera_light.h",
+      "sha256": "c0c676b74ce90ed0134c4d82aea3591ed801c19cd0d14cae1fc519ef04c34b51"
+    },
+    {
+      "path": "overlay/include/camera_light_model.h",
+      "sha256": "3a3d980a112c94ef9b45bbbb3be002a04da258438f4de9218c776419f3406fe6"
     },
     {
       "path": "overlay/include/radio_telemetry.h",
@@ -42,8 +50,16 @@
       "sha256": "e81d72951a393afa93f73bcaf050a518e487492e311039907cf4a54f2c19bdce"
     },
     {
+      "path": "overlay/src/camera_light.cpp",
+      "sha256": "48787da311e2260a957cd4b598f2561597eae75aa44fad7cc7469fd5d8696636"
+    },
+    {
       "path": "overlay/src/radio_telemetry.cpp",
       "sha256": "794714eee41e1f4d8980cc00af1a347214bc08f3b6fe878dcaba31c43aae735e"
+    },
+    {
+      "path": "overlay/test/camera_light_model/test_model.cpp",
+      "sha256": "0e191a640d7eb980b3416aa607bd9b5a79a1eee0a17c9ba9542732a5e76af1ce"
     },
     {
       "path": "overlay/test/radio_telemetry_model/test_model.cpp",
