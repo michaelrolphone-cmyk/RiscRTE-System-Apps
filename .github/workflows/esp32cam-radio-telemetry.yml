@@ -39,6 +39,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Check portal JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          page = Path('firmware/esp32cam-rtsp-radio/overlay/html/telemetry.html').read_text()
+          scripts = re.findall(r'<script>(.*?)</script>', page, re.S)
+          if not scripts:
+              raise SystemExit('No embedded portal script found')
+          for script in scripts:
+              subprocess.run(['node', '--check', '-'], input=script, text=True, check=True)
+          PY
       - name: Test UDP collector
         working-directory: firmware/esp32cam-rtsp-radio/overlay
         run: python -m unittest discover -s tests -p 'test_telemetry_receiver.py' -v

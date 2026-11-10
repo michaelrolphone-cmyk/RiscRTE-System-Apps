@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.2",
+  "variant": "1.0-radio.3",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -15,19 +15,19 @@
     },
     {
       "path": "README.md",
-      "sha256": "ad9aecbd86dc73aa4956c5c2d33b96f3402ee081e9bce0525c5c2ddaf832a764"
+      "sha256": "e4d8afbe5265d6982f06856bf3f83436774396546d338340fce3fdf1c8453adc"
     },
     {
       "path": "VALIDATION.md",
-      "sha256": "ad47824d1ec2469ee5a059537aa7904620be0b9e79a992bf03c12c3540538dc4"
+      "sha256": "7009843e21b22ebb17bd92dc4a514b225b0b25825984fc8af8cf3ecc07e82fa9"
     },
     {
       "path": "integration.patch",
-      "sha256": "bbe00de0262f7dbd1f69d626ea37dbb0b7d73daeb71159da45c541e3b6a9a976"
+      "sha256": "1b88c21870abf546b50da61e68a5ad54322fff5401880ff9a777864371cce525"
     },
     {
       "path": "overlay/html/telemetry.html",
-      "sha256": "2cac232bed271834fcffd2f182cd81e282ab0e4e447d258ae33652b59b29adcd"
+      "sha256": "c00b07316286b692986bf12c4ca524084e9dbd545a965bc43caec0ef22c897e0"
     },
     {
       "path": "overlay/include/camera_light.h",

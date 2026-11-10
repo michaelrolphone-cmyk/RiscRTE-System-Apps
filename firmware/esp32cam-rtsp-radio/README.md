@@ -174,7 +174,37 @@ Wi-Fi/BLE observation and UDP output continue.
 The S3 SDK used here enables FTM. The responder must also implement FTM;
 arbitrary phones or access points may not.
 
-## Camera light API
+## Camera light controls
+
+Firmware `1.0-radio.3` exposes the light controls directly in the device's
+web portal. Open **Camera light and RF telemetry** from the camera's home
+page, or go to `http://<camera-ip>/telemetry#light`.
+
+To test after flashing:
+
+1. Choose **White** (or use the color picker).
+2. Set brightness with the slider or the numeric field, from 0 through 255.
+3. Select **Turn on** and check the camera view or the LED itself.
+4. Adjust the color/brightness and select **Apply color & brightness**.
+5. Select **Turn off** when finished.
+
+**White** only selects the color; **Turn on** sends it with the selected
+brightness. **Apply color & brightness** preserves the current on/off state.
+**Turn off** sends only the off command, so incomplete brightness edits cannot
+prevent it. Brightness zero outputs black even if the on command is selected.
+
+The panel reads state on page load, after each command, and when you select
+**Reload light state**. It never changes the LED merely by loading the page.
+Radio polling does not overwrite light edits. A command temporarily disables
+the light controls until its response or an eight-second request timeout;
+there is no automatic command retry. A timeout does not switch the LED off.
+
+The panel displays driver/command status, including unknown output after a
+driver failure. A successful command is not an optical measurement. Check the
+physical LED/camera view to confirm the result. **Reload light state** also
+loads changes made by another API client and replaces pending form edits.
+
+### Light API
 
 This S3 build adds authenticated `GET /api/light` and `POST /api/light`.
 The selected light profile is one WS2812-compatible RGB pixel on GPIO48,
@@ -269,7 +299,7 @@ test on the actual FORIOT board.
 | --- | --- |
 | `GET /api/light` | Light command state and driver status |
 | `POST /api/light` | Set light on/off, brightness, and RGB color |
-| `GET /telemetry` | Live page |
+| `GET /telemetry` | Camera light controls and live RF telemetry page |
 | `GET /api/telemetry` | Current bounded snapshot and capabilities |
 | `GET /api/telemetry/config` | Persistent radio configuration |
 | `POST /api/telemetry/config` | Validate and apply partial JSON settings |

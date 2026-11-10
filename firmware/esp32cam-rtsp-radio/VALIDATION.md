@@ -1,11 +1,12 @@
-# Validation record: ESP32-S3 CAM telemetry and light API
+# Validation record: ESP32-S3 CAM telemetry and light controls
 
 ## Current scope and source
 
-Version: `1.0-radio.2`. The only firmware target is
+Version: `1.0-radio.3`. The only firmware target is
 `esp32cam_s3_wroom_n16r8`. This package extends pinned upstream
 `14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7`.
-The light addition preserves the existing radio telemetry and camera integration.
+This update adds portal controls for the existing light API. The camera/light
+C++ modules, GPIO48 light profile, and radio behavior are unchanged.
 
 The native project is an upstream checkout with the intentional integration
 patch and overlay. The GitHub delivery repository contains that reproducible
@@ -35,7 +36,27 @@ References:
 - https://docs.keyestudio.com/projects/MB0184/en/latest/docs/MB0184%20ESP32-S3%20CAM%20Development%20Board.html
 - https://www.makerguides.com/control-esp32-cam-flash-led/
 
-## Current native verification
+## Current UI verification
+
+The portal adds Turn on, Turn off, brightness slider/numeric entry, RGB color,
+White preset, Apply color & brightness, and Reload light state. It uses the
+existing authenticated `/api/light` endpoint. Page load is read-only; requests
+are serialized and radio polling does not modify light form values. Turn off
+is independent of form validation and sends only `{"on":false}`. API driver
+errors are rendered with unknown output rather than a successful on/off state.
+
+The native terminal capability was not advertised during this UI update, so
+new native execution is not claimed. The scoped GitHub workflow verifies all
+package hashes, reconstructs the pinned upstream source, checks the embedded
+portal JavaScript syntax, builds the sole S3 target, and runs the existing
+receiver/radio/light model checks. Consult the run tied to the delivery commit
+for its actual results; this record does not predeclare CI success.
+
+No browser interaction run or physical illumination test is claimed by this
+record. Review and CI validate source integration, syntax, and firmware build;
+actual illumination remains for the user's board test after flashing.
+
+## Prior native verification (version `1.0-radio.2`)
 
 Completed through the Mac terminal capability; no cloud development shell was used.
 
@@ -74,7 +95,9 @@ New source SHA-256 values:
 
 The full native source/build receipt is content-addressed artifact
 `6259f196cf9b3c0da2f741e8ec2dfbb7ca339078ea47aff9e8dd9945f39799f3`.
-The earlier radio-only binary is historical and is not the current light-enabled image.
+This binary is the prior API-enabled version and does not contain the new
+portal controls. Use the artifact from the `1.0-radio.3` delivery commit's CI run
+for the UI-enabled image.
 
 ## CI checks
 
@@ -101,4 +124,8 @@ unknown rather than reporting physical success.
 
 ## Package reproduction
 
-The preparation script reproduced all 117 source files byte-for-byte against the native project used for the successful S3 build. Temporary reproduction files were removed after comparison.
+For version `1.0-radio.2`, the preparation script reproduced all 117 source
+files byte-for-byte against the native project used for its successful S3 build.
+Temporary reproduction files were removed after comparison. For version
+`1.0-radio.3`, CI runs the same manifest-verified preparation script before its
+S3 build; no new byte-for-byte comparison with a native checkout is claimed.
