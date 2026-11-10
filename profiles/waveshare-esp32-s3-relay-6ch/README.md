@@ -1,4 +1,4 @@
-# BiomeRTE Wi-Fi firmware for Waveshare ESP32-S3-Relay-6CH — 2.0.0
+# BiomeRTE Wi-Fi firmware for Waveshare ESP32-S3-Relay-6CH — 2.1.0
 
 This firmware registers the board's physical relays and locally timed output
 batches directly with BiomeRTE over Wi-Fi and HTTPS. The board can move between
@@ -257,3 +257,10 @@ behavior require qualification on the actual board. Release manifests report
 `hardware_tested: false` until such evidence is recorded.
 
 Hardware reference: https://docs.waveshare.com/ESP32-S3-Relay-6CH
+
+
+## Version 2.1.0 streaming release
+
+Adds `device.outputs.stream:1` alongside the existing discrete contracts. Desired states are checked for authority, fence generation, epoch, sequence and freshness by the provider's local output task. Transport loss or expired driving intent applies neutral locally; received and applied acknowledgements remain separate from physical contact feedback. The gateway must provide reachable persistent stream hosting before live attachment.
+
+The release workflow builds and publishes the board-specific no-PSRAM image, flash manifest and checksums. Physical installation and timing qualification remain separate from the successful host and target builds.
