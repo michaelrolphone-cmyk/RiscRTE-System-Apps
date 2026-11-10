@@ -328,9 +328,9 @@ bool initializeBarometer(Snapshot &state, model::BmpCalibration &calibration) {
 }
 
 void invalidateImu(Snapshot &state, model::StationaryCalibration &calibration) {
-    state.imu.present=false;
+    if (state.imu.i2cError != 0) state.imu.present=false;
     state.imu.valid=false;
-    state.mag.present=false;
+    if (!state.imu.present) state.mag.present=false;
     state.mag.valid=false;
     state.mag.error="imu_unavailable";
     state.magTrimValid=false;
@@ -487,19 +487,21 @@ void worker(void *) {
             const uint32_t lastMag=state.mag.seen ? state.mag.observed : magConfigured;
             const uint32_t lastBaro=state.barometer.seen ? state.barometer.observed : barometerConfigured;
             if (imuReady && (state.imu.consecutive >= 3 || now-lastImu > 1000)) {
-                if (now-lastImu > 1000) { lastBusError=0; fail(state.imu,"data_timeout"); }
+                if (now-lastImu > 1000 && !state.imu.consecutive) { lastBusError=0; fail(state.imu,"data_timeout"); }
                 invalidateImu(state,gyroCalibration);
                 imuReady=magReady=false;
                 nextImu=now+RETRY_MS;
             }
             if (magReady && (state.mag.consecutive >= 3 || now-lastMag > 2000)) {
-                if (now-lastMag > 2000) { lastBusError=0; fail(state.mag,"data_timeout"); }
-                state.mag.present=state.mag.valid=false;
+                if (now-lastMag > 2000 && !state.mag.consecutive) { lastBusError=0; fail(state.mag,"data_timeout"); }
+                if (state.mag.i2cError != 0) state.mag.present=false;
+                state.mag.valid=false;
                 magReady=false; nextMag=now+RETRY_MS;
             }
             if (barometerReady && (state.barometer.consecutive >= 3 || now-lastBaro > 5000)) {
-                if (now-lastBaro > 5000) { lastBusError=0; fail(state.barometer,"data_timeout"); }
-                state.barometer.present=state.barometer.valid=false;
+                if (now-lastBaro > 5000 && !state.barometer.consecutive) { lastBusError=0; fail(state.barometer,"data_timeout"); }
+                if (state.barometer.i2cError != 0) state.barometer.present=false;
+                state.barometer.valid=false;
                 barometerReady=false; nextBarometer=now+RETRY_MS;
             }
         }
