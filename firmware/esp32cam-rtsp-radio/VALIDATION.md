@@ -2,13 +2,13 @@
 
 ## Current scope and source
 
-Version: `1.0-radio.4`. The only firmware target is
+Version: `1.0-radio.5`. The only firmware target is
 `esp32cam_s3_wroom_n16r8`. This package extends pinned upstream
 `14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7`.
-This update adds a Stratux AHRS sensor worker, cached API/UI readings, gyro
-calibration, and separate UDP motion packets. The camera/light implementation
-and RF acquisition are preserved; radio publication gains an independent AHRS
-cadence using the existing destination.
+This update moves the AHRS I²C pins from SDA21/SCL47 to SDA41/SCL42 and
+updates the portal wiring hint and wiring guide. It retains the separate
+sensor controller, 100 kHz bus, sensor acquisition, API/UDP telemetry,
+camera/light implementation, and RF acquisition.
 
 The native project is an upstream checkout with the intentional integration
 patch and overlay. The GitHub delivery repository contains that reproducible
@@ -38,7 +38,38 @@ References:
 - https://docs.keyestudio.com/projects/MB0184/en/latest/docs/MB0184%20ESP32-S3%20CAM%20Development%20Board.html
 - https://www.makerguides.com/control-esp32-cam-flash-led/
 
-## Current AHRS qualification scope
+## Current pin assignment qualification (version `1.0-radio.5`)
+
+The requested pair is GPIO41 for SDA and GPIO42 for SCL. Espressif documents
+both as digital GPIOs that can route peripheral signals; they are not the
+S3's flash/PSRAM, USB, or strapping pins. The matching board BSP exposes
+IO42 immediately above IO41 and assigns neither to the camera, RGB LED,
+microSD, or UART.
+
+GPIO41/42 have alternate external JTAG functions TDI/TMS, so an external
+pin-JTAG adapter cannot share this sensor bus. Normal USB flashing remains
+available and this change requires no eFuse programming.
+
+The module's existing compile-time camera/reserved-pin checks remain in place.
+The API's reported bus pins derive from the changed constants. The portal
+hint, README, wiring table, firmware version, and package hashes move with them.
+The existing scoped CI verifies preparation, embedded script syntax, model
+and receiver tests, and compilation of the single S3 target. Consult the run
+associated with the published `1.0-radio.5` head for its actual result; this
+record does not predeclare CI success.
+
+References:
+
+- https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-reference/peripherals/gpio.html
+- https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-guides/jtag-debugging/configure-other-jtag.html
+- https://github.com/larryli/esp-idf_esp32_s3_cam/blob/d677304d482a0aee9bc609cf7127aa2f6e0fe519/docs/hardware.md
+- https://github.com/larryli/esp-idf_esp32_s3_cam/blob/d677304d482a0aee9bc609cf7127aa2f6e0fe519/include/bsp/esp32_s3_cam.h
+
+No physical GPIO41/42 wiring, sensor reception, or pull-up measurement is
+claimed. Moving pins does not establish whether the Stratux board has fitted
+pull-ups. The existing 3.3 V I²C electrical requirements still apply.
+
+## Prior AHRS qualification (version `1.0-radio.4`)
 
 The supported v1.1 sensor profile is inferred from the vendor guide's
 Stratux v1.3b2 compatibility and that firmware's explicit MPU9250/BMP280
@@ -61,8 +92,9 @@ published head for its final result; this document does not predeclare a run.
 The first integrated CI run passed the host/model checks but caught an
 Arduino `PI` macro collision when compiling the firmware. The pure model
 constant was renamed to `PI_VALUE` and its test references updated; no driver
-behavior or existing feature was removed. The subsequent current-head run is
-the qualification result for delivery.
+behavior or existing feature was removed. The subsequent successful run
+[42738871688](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/42738871688)
+qualified the prior `1.0-radio.4` head `41abda6dc5acb61c849e6560ab61062dce617f5a`.
 
 No new native or browser interaction execution, connected-sensor read,
 physical calibration, illumination, flash, or streaming coexistence test is
@@ -133,8 +165,8 @@ for the UI-enabled image.
 
 ## CI checks
 
-The scoped GitHub workflow builds only the S3 target, runs the 16 receiver
-tests and radio model tests, and now also runs the light model tests against
+The scoped GitHub workflow builds only the S3 target, runs the 21 receiver
+tests plus radio and AHRS model tests, and runs the light model tests against
 ArduinoJson 6.21.5, pinned to source commit
 `40ee05c065ce248192c47eb37af7a70a6935dfa6`.
 The workflow preserves S3 binaries as seven-day artifacts. Consult the workflow
@@ -156,7 +188,7 @@ unknown rather than reporting physical success.
 
 ## Package reproduction
 
-For `1.0-radio.4`, the manifest includes the AHRS module, model checks and
+For `1.0-radio.5`, the manifest includes the AHRS module, model checks and
 wiring/API documentation. CI verifies those hashes and reconstructs the
 pinned upstream project before building; there is no claim of a new native
 checkout comparison.

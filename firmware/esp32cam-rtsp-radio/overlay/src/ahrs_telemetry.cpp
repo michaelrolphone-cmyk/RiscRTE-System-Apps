@@ -27,7 +27,8 @@ constexpr uint8_t CAMERA_BUS = 0;
 #error "Confirm the SDK camera SCCB controller before enabling the AHRS bus."
 #endif
 constexpr uint8_t SENSOR_BUS = 1-CAMERA_BUS;
-constexpr int SDA_PIN = 21, SCL_PIN = 47;
+// GPIO41/42 are also external JTAG pins; do not share them with a pin-JTAG adapter.
+constexpr int SDA_PIN = 41, SCL_PIN = 42;
 constexpr uint32_t BUS_HZ = 100000;
 constexpr uint32_t RETRY_MS = 5000;
 static_assert(SENSOR_BUS != CAMERA_BUS, "AHRS must not own the camera SCCB controller.");

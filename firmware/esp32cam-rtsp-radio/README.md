@@ -6,8 +6,9 @@ This version targets the ESP32-S3 CAM N16R8 camera only. It is based on
 The original RTSP, HTTP camera stream, snapshots, camera settings, and OTA
 services remain in the firmware.
 
-Version `1.0-radio.4` adds Stratux AHRS v1.1 sensor support alongside the
-live `/telemetry` page, light controls, JSON API, and optional UDP JSON output.
+Version `1.0-radio.5` uses GPIO41 (SDA) and GPIO42 (SCL) for the Stratux AHRS
+v1.1 sensor. It includes the live `/telemetry` page, light controls, JSON API,
+and optional UDP JSON output.
 It observes 2.4 GHz Wi-Fi access points and Bluetooth LE advertisers. It does
 not connect to the discovered devices.
 
@@ -48,7 +49,8 @@ Open `http://<camera-ip>/telemetry#ahrs` for live readings and a stationary
 gyro-calibration button. The full API is `GET /api/ahrs`; AHRS also appears
 in `GET /api/telemetry` and separate UDP packets (default 10 Hz).
 
-Use GPIO21 for SDA and GPIO47 for SCL on the free I²C controller. Read
+Use GPIO41 for SDA and GPIO42 for SCL on the free I²C controller. The previous
+`1.0-radio.4` build used GPIO21/47; reflash when moving to the new pair. Read
 [AHRS.md](AHRS.md) for the full Stratux physical-header power/ground mapping,
 3.3 V pull-ups, units/frames, API and UDP details, and post-flash test steps.
 

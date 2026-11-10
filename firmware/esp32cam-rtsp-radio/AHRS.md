@@ -1,6 +1,6 @@
 # Stratux AHRS v1.1 telemetry on the ESP32-S3 CAM
 
-Firmware version: `1.0-radio.4`. Target: `esp32cam_s3_wroom_n16r8`.
+Firmware version: `1.0-radio.5`. Target: `esp32cam_s3_wroom_n16r8`.
 
 This adds acquisition from the Stratux sensor board to the same firmware that
 provides the camera, light controls, Wi-Fi/BLE observations, and FTM. The
@@ -45,8 +45,8 @@ I²C pins supplied by the intended Raspberry Pi installation:
 | --- | --- | --- |
 | 1 | 3.3 V supply | `3V3` |
 | 2 and 4 | 5 V supply | `5V` |
-| 3 | SDA, 3.3 V logic | `GPIO21` |
-| 5 | SCL, 3.3 V logic | `GPIO47` |
+| 3 | SDA, 3.3 V logic | `GPIO41` |
+| 5 | SCL, 3.3 V logic | `GPIO42` |
 | 6 and 9 | Ground | `GND` |
 | 7, 8, 10, 11, 12 | Other Pi GPIO functions | Leave disconnected |
 | Fan connector | Fan output | Leave unused |
@@ -61,11 +61,22 @@ The vendor's component-side Pi photo shows pins 1–12 at the SD-card end.
 The mating connector viewed from underneath is mirrored. Identify pin 1 from
 that documented orientation before attaching wires.
 
-GPIO21 and GPIO47 are exposed on the FORIOT's right header in the
-[seller's pinout](https://m.media-amazon.com/images/I/81e8TEDdnsL._AC_SL1500_.jpg).
-From the bottom upward: GND, GPIO19, GPIO20, GPIO21, GPIO47.
+Use the header pins labeled **IO41** and **IO42**. In the matching board's
+[right-header table](https://github.com/larryli/esp-idf_esp32_s3_cam/blob/d677304d482a0aee9bc609cf7127aa2f6e0fe519/docs/hardware.md),
+IO42 is directly above IO41, between IO2 above and IO40 below. Use the printed
+GPIO labels rather than counting module package pads or header positions.
 The selected pair avoids camera signals, native USB, GPIO48 RGB LED, SD pins,
 and the N16R8 octal-PSRAM pins.
+
+[Espressif's GPIO documentation](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-reference/peripherals/gpio.html)
+allows GPIO41 and GPIO42 to route peripheral signals. Their alternate
+[external JTAG functions](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-guides/jtag-debugging/configure-other-jtag.html)
+are TDI and TMS: do not connect an external pin-JTAG adapter to these pins while
+using the AHRS bus. USB flashing remains available; no eFuse changes are needed.
+
+**Firmware and wiring must match:** version `1.0-radio.5` uses SDA41/SCL42.
+Version `1.0-radio.4` used SDA21/SCL47, so install the new firmware before
+expecting sensor communication on the new pair.
 
 ### I²C pull-ups and controller
 
@@ -77,7 +88,7 @@ that ESP32 weak internal pulls replace them.
 
 The [pinned Arduino S3 SDK configuration](https://github.com/espressif/arduino-esp32/blob/2.0.17/tools/sdk/esp32s3/sdkconfig)
 assigns camera SCCB to hardware I²C controller **1**. AHRS selects the other
-controller, **0**, using GPIO21/47. It does not take over the camera's
+controller, **0**, using GPIO41/42. It does not take over the camera's
 GPIO4/5 control bus.
 
 Pi pin and pull-up reference:

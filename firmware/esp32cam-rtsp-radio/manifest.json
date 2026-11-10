@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.4",
+  "variant": "1.0-radio.5",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -11,11 +11,11 @@
     },
     {
       "path": "AHRS.md",
-      "sha256": "18f76b166831af8a1e1975009630f9be8bc1ed3281b0a85d62c6565ddc04592b"
+      "sha256": "6b505cc5cc8a9e492e686365a312c12e0de0668d3c670374f3d7abb4a7b63705"
     },
     {
       "path": "integration.patch",
-      "sha256": "09065af42bb7e68083c7527b0025bd140d116801ac72df7b77687aeeb788b6e5"
+      "sha256": "e0c551770fe345d5130f1dbf65de96f636888715999104fdcfac394a63ccf17e"
     },
     {
       "path": "LICENSE",
@@ -23,7 +23,7 @@
     },
     {
       "path": "overlay/html/telemetry.html",
-      "sha256": "fbdbaf066dcdf3c049d96ea177e80c18de4a71e4443e154afaf17dcdf4bd5285"
+      "sha256": "68a0ed20c2985bc04b0c11b86d8d9ade4a4c6e18e2219ebe386b54ee2d3efeb2"
     },
     {
       "path": "overlay/include/ahrs_telemetry_model.h",
@@ -55,7 +55,7 @@
     },
     {
       "path": "overlay/src/ahrs_telemetry.cpp",
-      "sha256": "c13e8a8a477fd1e5bd5ce6aa0aaee3c61cca14f03b2af9e0a1f01ced3eca418d"
+      "sha256": "c42d2e8ad653a2296d6557962e70a9da115f34285528fa996857d0b08d3ea145"
     },
     {
       "path": "overlay/src/camera_light.cpp",
@@ -91,11 +91,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "62858be93e379c1ff4b21dbcd6dd5341fa39a0d4cf2e1b2cc3460f874ce0355a"
+      "sha256": "26a589b985a01fa1295fd18c42dd0bb3edad8e76d7a380fe367cad185932bb77"
     },
     {
       "path": "VALIDATION.md",
-      "sha256": "6ec58765e008c8fd51b03a646378c006eaa17c1978e633d4e86f524012bb318f"
+      "sha256": "d9265e05657390a23e683e494d480f00cad6a3c21b2e38dda0bb4b459385dec3"
     }
   ]
 }
