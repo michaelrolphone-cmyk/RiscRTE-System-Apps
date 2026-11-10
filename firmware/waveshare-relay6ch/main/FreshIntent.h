@@ -22,11 +22,14 @@ struct FreshIntent {
  uint8_t output(uint64_t now)const{return bound&&seen&&now<deadline?desired:0;}
  // Derive acknowledgment order from the server intent so a reboot can resume
  // with the next fresh intent without resetting this lane's sequence.
- uint64_t acknowledge(uint64_t seq,bool applied){
+ template<class Sender> uint64_t acknowledge(uint64_t seq,bool applied,Sender send){
   if(seq>(UINT64_MAX-2)/2)return 0;
   const uint64_t next=seq*2+(applied?2:1);
-  if(next<=ackSequence)return 0;
+  if(next<=ackSequence||!send(next))return 0;
   ackSequence=next;return next;
+ }
+ uint64_t acknowledge(uint64_t seq,bool applied){
+  return acknowledge(seq,applied,[](uint64_t){return true;});
  }
  void detach(){desired=0;deadline=0;/* sequence remains high across reconnect */}
  void revoke(){detach();bound=false;}
