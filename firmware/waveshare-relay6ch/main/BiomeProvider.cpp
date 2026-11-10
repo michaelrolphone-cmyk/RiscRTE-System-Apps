@@ -1,5 +1,6 @@
 #include "BiomeProvider.h"
 #include "OutputStream.h"
+#include "StreamRecovery.h"
 #include "../../../Services/biome_node/ProviderState.h"
 #include "../../../Services/biome_node/NativeEncoding.h"
 #include <nvs.h>
@@ -282,12 +283,13 @@ struct Client::Implementation {
   if(closed==RISC_HTTP_RETAINED||closed<0){retained=true;fail("native_http_cleanup_retained",true);return;}
   httpToken=0;Request completed=request;request=Request::None;
   const bool valid=networkOutcome==0&&info.status_code>=200&&info.status_code<300&&parseResponse(response,body,bodySize);
-  bool superseded=false;
+  bool superseded=!valid&&networkOutcome==0&&bindingInvalidated(info.status_code,
+    completed==Request::StreamAttach,completed==Request::Fenced);
   if(!valid&&info.status_code==409){
    JsonDocument failure;
    if(!deserializeJson(failure,body,bodySize)){
     const char* reason=failure["error"]|"";
-    superseded=strstr(reason,"Superseded")||strstr(reason,"Stale resource generation");
+    superseded=superseded||strstr(reason,"Superseded")||strstr(reason,"Stale resource generation");
    }
   }
   if(!valid&&info.status_code==404&&(completed==Request::Status||completed==Request::Result))superseded=true;

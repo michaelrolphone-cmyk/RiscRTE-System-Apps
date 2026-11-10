@@ -14,11 +14,12 @@ struct OutputStream::State {
  esp_websocket_client_handle_t socket=nullptr;
  FreshIntent intent;JsonDocument grant;char url[1024]{},headers[4096]{},buffer[2048]{};
  size_t used=0;bool assembling=false;std::atomic<bool> connected{false};
- uint64_t ackSequence=0,lastApplied=0;std::mutex ackMutex;
+ uint64_t lastApplied=0;std::mutex ackMutex;
  void ack(const char* stage,uint64_t sequence){
   std::lock_guard<std::mutex> guard(ackMutex);
   if(!connected.load())return;
-  JsonDocument value;value["type"]="ack";value["stage"]=stage;value["sequence"]=++ackSequence;
+  const uint64_t next=intent.acknowledge(sequence,!strcmp(stage,"applied"));if(!next)return;
+  JsonDocument value;value["type"]="ack";value["stage"]=stage;value["sequence"]=next;
   value["intent_sequence"]=sequence;value["epoch"]=grant["epoch"];value["authority"]=grant["authority"];
   value["generation"]=grant["generation"];value["commanded_mask"]=RelayBoard::streamOutput();
   value["contact_feedback"]=false;value["provider_monotonic_ms"]=esp_timer_get_time()/1000;
@@ -61,7 +62,7 @@ bool OutputStream::attach(JsonObjectConst grant){
  const char* url=grant["url"];const char* key=grant["attachment_credential"];
  if(strncmp(url,"wss://",6)||strlen(url)>950||strlen(key)>3900||strchr(key,'\r')||strchr(key,'\n'))return false;
  auto* s=new(std::nothrow) State;if(!s)return false;
- s->grant.set(grant);
+ s->grant.set(grant);s->intent=retainedIntent;
  if(!s->intent.bind(grant["authority"]|"",grant["generation"],grant["epoch"]|"")||!RelayBoard::streamBegin()){delete s;return false;}
  snprintf(s->url,sizeof(s->url),"%s/control",url);snprintf(s->headers,sizeof(s->headers),"Authorization: Stream %s\r\n",key);
  static bool ntp=false;
@@ -84,6 +85,7 @@ void OutputStream::close(){
  if(!state)return;
  RelayBoard::streamNeutral();
  if(state->socket){esp_websocket_client_stop(state->socket);esp_websocket_client_destroy(state->socket);}
+ retainedIntent=state->intent;retainedIntent.detach();
  state->intent.revoke();RelayBoard::streamEnd();delete state;state=nullptr;
 }
 bool OutputStream::active()const{return state&&state->connected.load();}
