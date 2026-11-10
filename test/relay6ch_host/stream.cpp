@@ -28,5 +28,13 @@ int main(){
  for(int code:{404,409,410})assert(BiomeRelay::bindingInvalidated(code,false,true));
  for(int code:{200,401,429,500,502,503})assert(!BiomeRelay::bindingInvalidated(code,true,true));
  assert(!BiomeRelay::bindingInvalidated(404,false,false));
+ BiomeRelay::FreshIntent firstBoot,secondBoot;
+ assert(firstBoot.acknowledge(100,false)==201);
+ assert(firstBoot.acknowledge(100,true)==202);
+ assert(firstBoot.acknowledge(100,false)==0);
+ assert(secondBoot.acknowledge(101,false)>firstBoot.ackSequence);
+ assert(secondBoot.acknowledge(100,true)==0);
+ assert(secondBoot.acknowledge(101,true)==204);
+ assert(!s.accept(a,5,e,UINT64_MAX,0,10000,10500,10001,105));
 }
 

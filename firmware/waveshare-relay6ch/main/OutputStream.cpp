@@ -18,7 +18,8 @@ struct OutputStream::State {
  void ack(const char* stage,uint64_t sequence){
   std::lock_guard<std::mutex> guard(ackMutex);
   if(!connected.load())return;
-  JsonDocument value;value["type"]="ack";value["stage"]=stage;value["sequence"]=++intent.ackSequence;
+  const uint64_t next=intent.acknowledge(sequence,!strcmp(stage,"applied"));if(!next)return;
+  JsonDocument value;value["type"]="ack";value["stage"]=stage;value["sequence"]=next;
   value["intent_sequence"]=sequence;value["epoch"]=grant["epoch"];value["authority"]=grant["authority"];
   value["generation"]=grant["generation"];value["commanded_mask"]=RelayBoard::streamOutput();
   value["contact_feedback"]=false;value["provider_monotonic_ms"]=esp_timer_get_time()/1000;
