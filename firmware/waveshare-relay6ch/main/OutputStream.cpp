@@ -32,7 +32,8 @@ struct OutputStream::State {
  esp_websocket_client_handle_t socket=nullptr;
  FreshIntent intent;JsonDocument grant;char url[1024]{},headers[4096]{},buffer[2049]{};
  size_t used=0;bool assembling=false,started=false;std::atomic<bool> connected{false},failed{false};
- uint64_t lastRejectedLog=0,lastAckFailureLog=0,ackDue=0;PendingAcks pending;
+ uint64_t lastRejectedLog=0,lastAckFailureLog=0,ackDue=0,lastReceivedAt=0;PendingAcks pending;
+ std::atomic<uint32_t> intentAgeMs{0},receiveGapMs{0};
  bool ack(const char* stage,uint64_t sequence){
   if(!connected.load()||sequence>(UINT64_MAX-2)/2)return false;
   const bool applied=!strcmp(stage,"applied");
@@ -42,6 +43,7 @@ struct OutputStream::State {
    value["intent_sequence"]=sequence;value["epoch"]=grant["epoch"];value["authority"]=grant["authority"];
    value["generation"]=grant["generation"];value["commanded_mask"]=RelayBoard::streamOutput();
    value["output_transitions"]=RelayBoard::streamTransitions();value["intent_expirations"]=RelayBoard::streamExpirations();
+   value["intent_age_ms"]=intentAgeMs.load();value["receive_gap_ms"]=receiveGapMs.load();
    value["contact_feedback"]=false;value["provider_monotonic_ms"]=esp_timer_get_time()/1000;
    char data[512];const size_t n=serializeJson(value,data,sizeof(data));
    const int sent=n<sizeof(data)?esp_websocket_client_send_text(socket,data,n,pdMS_TO_TICKS(20)):-1;
@@ -81,6 +83,8 @@ struct OutputStream::State {
     (long long)(int64_t(msg["expires_at"].as<double>()*1000)-int64_t(utc)));}
    return;
   }
+  intentAgeMs.store(uint32_t(utc-uint64_t(msg["issued_at"].as<double>()*1000)));
+  receiveGapMs.store(lastReceivedAt?uint32_t(mono-lastReceivedAt):0);lastReceivedAt=mono;
   RelayBoard::streamDesired(intent.desired,intent.deadline,intent.sequence);
   pending.accepted(intent.sequence);
  }
