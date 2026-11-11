@@ -15,6 +15,7 @@
 #include <esp_netif_sntp.h>
 #include <sys/time.h>
 #include <atomic>
+#include <mutex>
 #include <new>
 namespace BiomeRelay {
 static_assert(SNTP_COMP_ROUNDTRIP==1&&SNTP_CHECK_RESPONSE>=2,"Control requires compensated, origin-checked SNTP");
@@ -35,7 +36,7 @@ struct OutputStream::State {
  FreshIntent intent;JsonDocument grant;char url[1024]{},headers[4096]{},buffer[2049]{};
  size_t used=0;bool assembling=false,started=false;std::atomic<bool> connected{false},failed{false};
  uint64_t lastRejectedLog=0,lastAckFailureLog=0,lastReceivedAt=0;PendingAcks pending;
- std::atomic<bool> closing{false},feedbackRunning{false},feedbackStopped{false};bool feedbackStarted=false;
+ std::atomic<bool> closing{false},feedbackRunning{false},feedbackStopped{false};bool feedbackStarted=false;std::mutex inputMutex;
  std::atomic<uint32_t> intentAgeMs{0},receiveGapMs{0};
  bool ack(const char* stage,uint64_t sequence){
   if(!connected.load()||sequence>(UINT64_MAX-2)/2)return false;
@@ -100,8 +101,11 @@ struct OutputStream::State {
   }
   intentAgeMs.store(uint32_t(utc-uint64_t(msg["issued_at"].as<double>()*1000)));
   receiveGapMs.store(lastReceivedAt?uint32_t(mono-lastReceivedAt):0);lastReceivedAt=mono;
-  RelayBoard::streamDesired(intent.desired,intent.deadline,intent.sequence);
-  pending.accepted(intent.sequence);
+  {std::lock_guard<std::mutex> guard(inputMutex);
+   if(closing.load())return;
+   RelayBoard::streamDesired(intent.desired,intent.deadline,intent.sequence);
+   pending.accepted(intent.sequence);
+  }
  }
  static void event(void* context,esp_event_base_t,int32_t id,void* data){
   auto* self=static_cast<State*>(context);
@@ -158,7 +162,7 @@ void OutputStream::tick(){
 }
 void OutputStream::close(){
  if(!state)return;
- state->closing=true;RelayBoard::streamNeutral();
+ {std::lock_guard<std::mutex> guard(state->inputMutex);state->closing=true;RelayBoard::streamNeutral();}
  state->feedbackRunning.store(false,std::memory_order_release);
  // Wait for the bounded feedback write before destroying its socket or state.
  // Receive callbacks reject input as soon as closing is set; GPIO stays neutral.
