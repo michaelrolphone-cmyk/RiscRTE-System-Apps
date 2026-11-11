@@ -8,6 +8,8 @@
 #include <esp_websocket_client.h>
 #include <esp_crt_bundle.h>
 #include <esp_timer.h>
+#include <esp_task_wdt.h>
+#include <freertos/task.h>
 #include <esp_log.h>
 #include "sdkconfig.h"
 #include <esp_netif_sntp.h>
@@ -32,7 +34,8 @@ struct OutputStream::State {
  esp_websocket_client_handle_t socket=nullptr;
  FreshIntent intent;JsonDocument grant;char url[1024]{},headers[4096]{},buffer[2049]{};
  size_t used=0;bool assembling=false,started=false;std::atomic<bool> connected{false},failed{false};
- uint64_t lastRejectedLog=0,lastAckFailureLog=0,ackDue=0,lastReceivedAt=0;PendingAcks pending;
+ uint64_t lastRejectedLog=0,lastAckFailureLog=0,lastReceivedAt=0;PendingAcks pending;
+ std::atomic<bool> closing{false},feedbackRunning{false},feedbackStopped{false};bool feedbackStarted=false;
  std::atomic<uint32_t> intentAgeMs{0},receiveGapMs{0};
  bool ack(const char* stage,uint64_t sequence){
   if(!connected.load()||sequence>(UINT64_MAX-2)/2)return false;
@@ -46,7 +49,7 @@ struct OutputStream::State {
    value["intent_age_ms"]=intentAgeMs.load();value["receive_gap_ms"]=receiveGapMs.load();
    value["contact_feedback"]=false;value["provider_monotonic_ms"]=esp_timer_get_time()/1000;
    char data[512];const size_t n=serializeJson(value,data,sizeof(data));
-   const int sent=n<sizeof(data)?esp_websocket_client_send_text(socket,data,n,pdMS_TO_TICKS(20)):-1;
+   const int sent=n<sizeof(data)?esp_websocket_client_send_text(socket,data,n,pdMS_TO_TICKS(1000)):-1;
    if(sent==int(n))return true;
    const uint64_t now=esp_timer_get_time()/1000;
    if(now-lastAckFailureLog>=5000){
@@ -56,7 +59,19 @@ struct OutputStream::State {
    return false;
   })!=0;
  }
+ static void feedbackTask(void* context){
+  auto* self=static_cast<State*>(context);
+  while(self->feedbackRunning.load(std::memory_order_acquire)){
+   if(self->connected.load())self->pending.drain(RelayBoard::streamApplied(),[&](bool applied,uint64_t sequence){
+    return self->ack(applied?"applied":"received",sequence);
+   });
+   vTaskDelay(pdMS_TO_TICKS(20));
+  }
+  self->feedbackStopped.store(true,std::memory_order_release);
+  vTaskDelete(nullptr);
+ }
  void data(const esp_websocket_event_data_t& event){
+  if(closing.load()||!connected.load())return;
   if(event.op_code==1&&event.payload_offset==0){used=0;assembling=true;}
   if(!assembling||event.payload_offset!=int(used)||event.data_len<0||
      event.payload_len>int(sizeof(buffer)-1)||used+event.data_len>=sizeof(buffer)){assembling=false;return;}
@@ -131,18 +146,25 @@ void OutputStream::tick(){
   // A clock-qualified attachment can now become visible to router readiness.
   // If its signed credential expired while waiting, normal handshake failure
   // causes the provider to fetch a fresh attachment for the same binding.
+  state->feedbackRunning=true;
+  if(xTaskCreate(State::feedbackTask,"relay-feedback",4096,state,tskIDLE_PRIORITY+1,nullptr)!=pdPASS){
+   state->feedbackRunning=false;state->failed=true;return;
+  }
+  state->feedbackStarted=true;
   if(esp_websocket_client_start(state->socket)!=ESP_OK)state->failed=true;
   return;
  }
- const uint64_t applied=RelayBoard::streamApplied();
- const uint64_t now=esp_timer_get_time()/1000;
- if(now>=state->ackDue&&!state->pending.drain(applied,[&](bool appliedStage,uint64_t sequence){
-    return state->ack(appliedStage?"applied":"received",sequence);
-   }))state->ackDue=now+20;
+
 }
 void OutputStream::close(){
  if(!state)return;
- RelayBoard::streamNeutral();
+ state->closing=true;RelayBoard::streamNeutral();
+ state->feedbackRunning.store(false,std::memory_order_release);
+ // Wait for the bounded feedback write before destroying its socket or state.
+ // Receive callbacks reject input as soon as closing is set; GPIO stays neutral.
+ while(state->feedbackStarted&&!state->feedbackStopped.load(std::memory_order_acquire)){
+  esp_task_wdt_reset();vTaskDelay(1);
+ }
  if(state->socket){if(state->started)esp_websocket_client_stop(state->socket);esp_websocket_client_destroy(state->socket);}
  retainedIntent=state->intent;retainedIntent.detach();
  state->intent.revoke();RelayBoard::streamEnd();delete state;state=nullptr;
