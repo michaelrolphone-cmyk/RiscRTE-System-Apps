@@ -911,7 +911,7 @@
         "implementation_ref": {
           "kind": "risc-native-static",
           "profile": "waveshare-esp32-s3-relay-6ch",
-          "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+          "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
         },
         "provides": [
           {
@@ -954,8 +954,8 @@
         "capability_id": "scheduler.drive",
         "provider_id": "waveshare-relay6ch-scheduler-drive",
         "revision": 6,
-        "definition_digest": "1937af3e3e832ab5415ea3d8758f6c6eaeb8cdccd44b86dcb2a0f9ed30d39398",
-        "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+        "definition_digest": "f1df2cff6693a5d164bfb5ce18f22ad443d2d9b5e8f147124efda51b5119b360",
+        "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
       }
     },
     {
@@ -965,7 +965,7 @@
         "implementation_ref": {
           "kind": "risc-native-static",
           "profile": "waveshare-esp32-s3-relay-6ch",
-          "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+          "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
         },
         "provides": [
           {
@@ -1008,8 +1008,8 @@
         "capability_id": "service.reconcile",
         "provider_id": "waveshare-relay6ch-service-reconcile",
         "revision": 6,
-        "definition_digest": "ae29effbd3f406c779e33f53d951af69c8e811d77a1a49bece62190dbd1d372d",
-        "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+        "definition_digest": "7d14f25eff5788ed3680af174a27c15c5fa6419cf95fafceabce2f6a981582ce",
+        "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
       }
     },
     {
@@ -1019,7 +1019,7 @@
         "implementation_ref": {
           "kind": "risc-native-static",
           "profile": "waveshare-esp32-s3-relay-6ch",
-          "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+          "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
         },
         "provides": [
           {
@@ -1062,8 +1062,8 @@
         "capability_id": "service.health.observe",
         "provider_id": "waveshare-relay6ch-service-health-observe",
         "revision": 6,
-        "definition_digest": "3cf60d4b9e21e6bc7c514d716a737ef18168bd2ce6c4eb5f4766754561b7a50e",
-        "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+        "definition_digest": "1674f15d17cf009ae533d0ae20c9bfadb27f97f53f00b06357c2d3c34f5dc8b9",
+        "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
       }
     },
     {
@@ -1073,7 +1073,7 @@
         "implementation_ref": {
           "kind": "risc-native-static",
           "profile": "waveshare-esp32-s3-relay-6ch",
-          "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+          "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
         },
         "provides": [
           {
@@ -1116,8 +1116,8 @@
         "capability_id": "source.poll",
         "provider_id": "waveshare-relay6ch-source-poll",
         "revision": 6,
-        "definition_digest": "5328f67f874510c9aad1f0a8f6cbfcc9b0a1313b95c4fb444461127ad5b93503",
-        "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+        "definition_digest": "2ce60459dab61e9c393a3b644db3d4cf4c04e0d5f53ec0a5a9cad278d0561f27",
+        "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
       }
     },
     {
@@ -1128,7 +1128,7 @@
         "implementation_ref": {
           "kind": "risc-native-static",
           "profile": "waveshare-esp32-s3-relay-6ch",
-          "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+          "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
         },
         "provides": [
           {
@@ -1163,8 +1163,8 @@
         "capability_id": "relay.bank",
         "provider_id": "waveshare-relay6ch-relay-bank",
         "revision": 6,
-        "definition_digest": "0feb2c0a759ff6138cb8d35de02fcf202d272f25e61f104d9e948b4ab6cb2c05",
-        "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+        "definition_digest": "6bf382c9f136b6b6fc1df7802539087a25ef192ad8aba5ed1239753ae526d2ba",
+        "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
       }
     },
     {
@@ -1175,7 +1175,7 @@
         "implementation_ref": {
           "kind": "risc-native-static",
           "profile": "waveshare-esp32-s3-relay-6ch",
-          "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+          "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
         },
         "provides": [
           {
@@ -1210,8 +1210,8 @@
         "capability_id": "serial.rs485",
         "provider_id": "waveshare-relay6ch-serial-rs485",
         "revision": 6,
-        "definition_digest": "fdf26e0e12db20f921652ced2690f52a148945eff7311818377ce1cd547d10a0",
-        "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+        "definition_digest": "b49e7c85e597fdd6c48930e4ec76868cf01f0f767a41e36eb5f558c9936ad62c",
+        "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
       }
     },
     {
@@ -1222,7 +1222,7 @@
         "implementation_ref": {
           "kind": "risc-native-static",
           "profile": "waveshare-esp32-s3-relay-6ch",
-          "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+          "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
         },
         "provides": [
           {
@@ -1257,8 +1257,8 @@
         "capability_id": "sound.buzzer",
         "provider_id": "waveshare-relay6ch-sound-buzzer",
         "revision": 6,
-        "definition_digest": "3a613d42cecdd7348b98272d70772f043e1b3e1e7fc274bee13474990811989b",
-        "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+        "definition_digest": "be694454651ab3dbff2e637598018dcac0e5debc67b1fe1c9b0a63529cc12a2f",
+        "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
       }
     },
     {
@@ -1269,7 +1269,7 @@
         "implementation_ref": {
           "kind": "risc-native-static",
           "profile": "waveshare-esp32-s3-relay-6ch",
-          "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+          "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
         },
         "provides": [
           {
@@ -1304,8 +1304,8 @@
         "capability_id": "light.rgb",
         "provider_id": "waveshare-relay6ch-light-rgb",
         "revision": 6,
-        "definition_digest": "f6a634cd8caa790744e18c7ed51f2d1b4e4628b3f31266238527ec40d1bc6139",
-        "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+        "definition_digest": "1c41ef686d896af4cf7535cc5829787b5362361315a97479b6e978da8091c7fd",
+        "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
       }
     },
     {
@@ -1316,7 +1316,7 @@
         "implementation_ref": {
           "kind": "risc-native-static",
           "profile": "waveshare-esp32-s3-relay-6ch",
-          "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+          "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
         },
         "provides": [
           {
@@ -1351,8 +1351,8 @@
         "capability_id": "device.outputs.batch",
         "provider_id": "waveshare-relay6ch-device-outputs-batch",
         "revision": 6,
-        "definition_digest": "505f8d670556da63a56e1282739cb95f9015cde9bb2a77a25b5d18faef9aa2f0",
-        "package_digest": "623ac869aabca6c1ab3fed3d54010a9263b0e9a2b6693f95ec91c41d5392a9f7"
+        "definition_digest": "026331ea8987ad178d883915d665d14e7f1d402a66784325f5f2fb6e2d72b004",
+        "package_digest": "52fece640f1d982c51041a06f234b1b8afe1ae1afc230e6adbc8004319bd56ed"
       }
     }
   ]
