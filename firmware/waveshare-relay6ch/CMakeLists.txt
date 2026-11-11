@@ -48,3 +48,14 @@ endif()
 list(FILTER aes_sources EXCLUDE REGEX "esp_aes_dma_core[.]c$")
 set_property(TARGET tfpsacrypto PROPERTY SOURCES "${aes_sources}")
 target_sources(tfpsacrypto PRIVATE "${CMAKE_BINARY_DIR}/risc_relay_aes_dma.c")
+
+# Separate RX/TX locks require teardown to wait for any active TLS writer.
+idf_component_get_property(ws_lib espressif__esp_websocket_client COMPONENT_LIB)
+idf_component_get_property(ws_dir espressif__esp_websocket_client COMPONENT_DIR)
+execute_process(COMMAND "${PYTHON}" "${CMAKE_CURRENT_LIST_DIR}/websocket_lifetime.py"
+ "${ws_dir}/esp_websocket_client.c" "${CMAKE_BINARY_DIR}/risc_relay_websocket.c"
+ COMMAND_ERROR_IS_FATAL ANY)
+get_target_property(ws_sources ${ws_lib} SOURCES)
+list(FILTER ws_sources EXCLUDE REGEX "esp_websocket_client[.]c$")
+set_property(TARGET ${ws_lib} PROPERTY SOURCES "${ws_sources}")
+target_sources(${ws_lib} PRIVATE "${CMAKE_BINARY_DIR}/risc_relay_websocket.c")
