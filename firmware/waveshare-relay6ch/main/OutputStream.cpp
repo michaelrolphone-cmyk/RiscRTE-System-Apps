@@ -23,8 +23,8 @@ namespace {
 CompensatedClock streamClock;
 void clockSynchronized(timeval* value){
  const unsigned samples=streamClock.synchronized(value->tv_sec);
- ESP_LOGI("relay-stream","SNTP sync samples=%u utc=%lld.%06ld compensated_ready=%u",samples,
-  (long long)value->tv_sec,(long)value->tv_usec,unsigned(streamClock.ready()));
+ ESP_LOGI("relay-stream","SNTP sync samples=%u utc=%lld.%06ld compensated_ready=%u mono_ms=%llu",samples,
+  (long long)value->tv_sec,(long)value->tv_usec,unsigned(streamClock.ready()),(unsigned long long)(esp_timer_get_time()/1000));
 }
 }
 static_assert(CONFIG_ESP_WS_CLIENT_SEPARATE_TX_LOCK,"Control receive must not share the ACK transmit lock");
@@ -40,19 +40,25 @@ struct OutputStream::State {
  size_t used=0;bool assembling=false,started=false;std::atomic<bool> connected{false},failed{false};
  uint64_t lastRejectedLog=0,lastAckFailureLog=0,lastReceivedAt=0;PendingAcks pending;
  std::atomic<bool> closing{false},feedbackRunning{false},feedbackStopped{false};bool feedbackStarted=false;std::mutex inputMutex;
- std::atomic<uint32_t> intentAgeMs{0},receiveGapMs{0};
+ struct InputTiming {uint64_t sequence=0,issuedUtc=0,expiryUtc=0,receivedUtc=0,receivedMono=0;uint32_t gap=0;};
+ InputTiming timing;
  bool ack(const char* stage,uint64_t sequence){
   if(!connected.load()||sequence>(UINT64_MAX-2)/2)return false;
   const bool applied=!strcmp(stage,"applied");
   if(sequence*2+(applied?2:1)<=intent.ackSequence)return true;
   return intent.acknowledge(sequence,applied,[&](uint64_t next){
+   InputTiming sample;{std::lock_guard<std::mutex> guard(inputMutex);sample=timing;}
    JsonDocument value;value["type"]="ack";value["stage"]=stage;value["sequence"]=next;
    value["intent_sequence"]=sequence;value["epoch"]=intent.epoch;value["authority"]=intent.authority;
    value["generation"]=intent.generation;value["commanded_mask"]=RelayBoard::streamOutput();
    value["output_transitions"]=RelayBoard::streamTransitions();value["intent_expirations"]=RelayBoard::streamExpirations();
-   value["intent_age_ms"]=intentAgeMs.load();value["receive_gap_ms"]=receiveGapMs.load();
+   value["intent_age_ms"]=sample.receivedUtc-sample.issuedUtc;value["receive_gap_ms"]=sample.gap;
+   value["timing_sequence"]=sample.sequence;value["issued_utc_ms"]=sample.issuedUtc;value["expires_utc_ms"]=sample.expiryUtc;
+   value["provider_received_utc_ms"]=sample.receivedUtc;value["provider_received_monotonic_ms"]=sample.receivedMono;
    value["contact_feedback"]=false;value["provider_monotonic_ms"]=esp_timer_get_time()/1000;
-   char data[512];const size_t n=serializeJson(value,data,sizeof(data));
+   char data[896];
+   if(measureJson(value)>=sizeof(data))return false;
+   const size_t n=serializeJson(value,data,sizeof(data));
    // Feedback has its own task. Use the transport's existing I/O budget;
    // a one-second ACK deadline must not abort a healthy held-input lane.
    const uint64_t began=esp_timer_get_time()/1000;
@@ -111,10 +117,10 @@ struct OutputStream::State {
     (long long)(int64_t(msg["expires_at"].as<double>()*1000)-int64_t(utc)));}
    return;
   }
-  intentAgeMs.store(uint32_t(utc-uint64_t(msg["issued_at"].as<double>()*1000)));
-  receiveGapMs.store(lastReceivedAt?uint32_t(mono-lastReceivedAt):0);lastReceivedAt=mono;
+  const uint32_t gap=lastReceivedAt?uint32_t(mono-lastReceivedAt):0;lastReceivedAt=mono;
   {std::lock_guard<std::mutex> guard(inputMutex);
    if(closing.load())return;
+   timing={intent.sequence,uint64_t(msg["issued_at"].as<double>()*1000),uint64_t(msg["expires_at"].as<double>()*1000),utc,mono,gap};
    RelayBoard::streamDesired(intent.desired,intent.deadline,intent.sequence);
    pending.accepted(intent.sequence);
   }
