@@ -62,64 +62,64 @@
         "capability_id": "scheduler.drive",
         "provider_id": "waveshare-relay6ch-scheduler-drive",
         "revision": 6,
-        "definition_digest": "83f17dcfb65b4fbd9a1e4369d7d5c6681a808f657f34b0229a1670deb8a130b3",
-        "package_digest": "57f7c44058d9fa2ef4a34bb2944077acb309d0c385376b609e3d08cc2def5207"
+        "definition_digest": "fdc35ec8c31a019cccf788375ed912581aa6c9ed50e65237c67bd2fd764942cc",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
       },
       {
         "capability_id": "service.reconcile",
         "provider_id": "waveshare-relay6ch-service-reconcile",
         "revision": 6,
-        "definition_digest": "3f9de065b4dd2ac3ea4d7d00db637a0f9f118e61ecbdede8fdc9383e9923557e",
-        "package_digest": "57f7c44058d9fa2ef4a34bb2944077acb309d0c385376b609e3d08cc2def5207"
+        "definition_digest": "8e6e384bf420a6e68206606766869dcc61c69ccbf0e9afc1eff914b6af384617",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
       },
       {
         "capability_id": "service.health.observe",
         "provider_id": "waveshare-relay6ch-service-health-observe",
         "revision": 6,
-        "definition_digest": "c11ce4328dff1b3f252260e0daaf84268cf7d8133e5d7c9e14a08195e2158fbe",
-        "package_digest": "57f7c44058d9fa2ef4a34bb2944077acb309d0c385376b609e3d08cc2def5207"
+        "definition_digest": "cfdb6de36d5ab744c17a084e068c7e5b4c10990f2942335a58b8680cd54647e6",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
       },
       {
         "capability_id": "source.poll",
         "provider_id": "waveshare-relay6ch-source-poll",
         "revision": 6,
-        "definition_digest": "dc564a8689604937211616e9f3a590588a95d71df168d8e7688db6e8d71da54a",
-        "package_digest": "57f7c44058d9fa2ef4a34bb2944077acb309d0c385376b609e3d08cc2def5207"
+        "definition_digest": "0d4783f9a4fbf9b9109dba192c05ec3daf4eb047aa176ea18b7928f270b59d41",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
       },
       {
         "capability_id": "relay.bank",
         "provider_id": "waveshare-relay6ch-relay-bank",
         "revision": 6,
-        "definition_digest": "7f5eff294e2c7c604f2edad50bb19908918fb75bb66704e4f0e43b561c533ea4",
-        "package_digest": "57f7c44058d9fa2ef4a34bb2944077acb309d0c385376b609e3d08cc2def5207"
+        "definition_digest": "2fb149b73705b4b1adb4726246372d2c2ee6a3f52aa6114922647a601689b743",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
       },
       {
         "capability_id": "serial.rs485",
         "provider_id": "waveshare-relay6ch-serial-rs485",
         "revision": 6,
-        "definition_digest": "34df79ebf03e6c9608303ef7ee2cbbfb5a8a8ac2909160ead33a47b9ba4cf5d4",
-        "package_digest": "57f7c44058d9fa2ef4a34bb2944077acb309d0c385376b609e3d08cc2def5207"
+        "definition_digest": "82203bf8e4a0b35cb1b455500274e60dedc928e851214242e643e528f686938d",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
       },
       {
         "capability_id": "sound.buzzer",
         "provider_id": "waveshare-relay6ch-sound-buzzer",
         "revision": 6,
-        "definition_digest": "ef9d8d6b2e4bbbf9fd6dce86d56f267498284e235e201160e90ec6d596693776",
-        "package_digest": "57f7c44058d9fa2ef4a34bb2944077acb309d0c385376b609e3d08cc2def5207"
+        "definition_digest": "ab85844701fb383981e65e0bc5c06388b94d497a1ce463c53610d1f2857a5c79",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
       },
       {
         "capability_id": "light.rgb",
         "provider_id": "waveshare-relay6ch-light-rgb",
         "revision": 6,
-        "definition_digest": "8d9be07d544d045d35a3182cf50955324cc03f125db2ee310166e650e3e57d2c",
-        "package_digest": "57f7c44058d9fa2ef4a34bb2944077acb309d0c385376b609e3d08cc2def5207"
+        "definition_digest": "879c160a65c2610640010cb035017bfe025d5716c5edc00de196d080fb0315e6",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
       },
       {
         "capability_id": "device.outputs.batch",
         "provider_id": "waveshare-relay6ch-device-outputs-batch",
         "revision": 6,
-        "definition_digest": "6b557c02f59e647da35aaecbfda439f94ef75a5488c943869392aa1369acc790",
-        "package_digest": "57f7c44058d9fa2ef4a34bb2944077acb309d0c385376b609e3d08cc2def5207"
+        "definition_digest": "02e3195b0bf09dcb69e4064db04ea206502ca21497af01d8e576d22111545ab0",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
       }
     ]
   },

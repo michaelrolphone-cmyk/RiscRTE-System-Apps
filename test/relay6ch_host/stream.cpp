@@ -2,8 +2,16 @@
 #include <cstring>
 #include <initializer_list>
 #include "../../firmware/waveshare-relay6ch/main/FreshIntent.h"
+#include "../../firmware/waveshare-relay6ch/main/CompensatedClock.h"
 #include "../../firmware/waveshare-relay6ch/main/StreamRecovery.h"
 int main(){
+ BiomeRelay::CompensatedClock clock;
+ assert(!clock.ready());
+ assert(clock.synchronized(0)==0&&!clock.ready());
+ assert(clock.synchronized(-1)==0&&!clock.ready());
+ assert(clock.synchronized(1794356565)==1&&!clock.ready());
+ assert(clock.synchronized(1794356625)==2&&clock.ready());
+ assert(clock.synchronized(1794356685)==2&&clock.ready());
  BiomeRelay::FreshIntent s;const char* a="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
  const char* e="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
  assert(s.bind(a,4,e));assert(s.output(0)==0);
@@ -55,6 +63,16 @@ int main(){
  assert(feedback.acknowledge(9,true,[](uint64_t){return true;})==20);
  assert(feedback.acknowledge(8,true,[](uint64_t){assert(false);return true;})==0);
  assert(feedback.ackSequence==20); // A newer state supersedes pending feedback.
+ // Reproduce actual sequence68: a clock26ms behind must reject, without
+ // consuming its sequence. Correcting the clock may accept that still-fresh
+ // input, but must retain the original expiry and reject every replay.
+ BiomeRelay::FreshIntent clocked;assert(clocked.bind(a,9,e));
+ assert(!clocked.accept(a,9,e,68,0,10000,10500,9974,200));
+ assert(!clocked.seen&&clocked.sequence==0);
+ assert(clocked.accept(a,9,e,68,0,10000,10500,10010,300));
+ assert(clocked.deadline==790);
+ assert(!clocked.accept(a,9,e,68,0,10000,10500,10020,310));
+ assert(!clocked.accept(a,9,e,69,0,10000,10500,10500,790));
  assert(!s.accept(a,5,e,UINT64_MAX,0,10000,10500,10001,105));
 }
 

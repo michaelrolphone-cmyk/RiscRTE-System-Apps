@@ -26,3 +26,9 @@ get_target_property(bundle_sources ${bundle_lib} SOURCES)
 list(FILTER bundle_sources EXCLUDE REGEX "esp_crt_bundle[.]c$")
 set_property(TARGET ${bundle_lib} PROPERTY SOURCES "${bundle_sources}")
 target_sources(${bundle_lib} PRIVATE "${CMAKE_BINARY_DIR}/risc_esp_crt_bundle.c")
+
+# Control freshness needs an accurate subsecond clock, not server transmit time
+# delayed by Wi-Fi/WAN delivery. Apply these supported lwIP options to the SDK
+# library itself; setting them only on the application would not change SNTP.
+idf_component_get_property(lwip_lib lwip COMPONENT_LIB)
+target_compile_definitions(${lwip_lib} PUBLIC SNTP_COMP_ROUNDTRIP=1 SNTP_CHECK_RESPONSE=2)
