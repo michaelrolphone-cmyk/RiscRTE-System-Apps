@@ -97,6 +97,9 @@ extern "C" void app_main(){
  initialStateSize=Infra::frame(initialState,sizeof(initialState),seed,strlen(seed),1);uint8_t marker=0;auto markerRead=nvs_get_u8(store,"initialized",&marker);if(markerRead!=ESP_OK&&markerRead!=ESP_ERR_NVS_NOT_FOUND)fail("journal marker corrupt");initializedStore=markerRead==ESP_OK;
  if(esp_netif_init()!=ESP_OK||esp_event_loop_create_default()!=ESP_OK||!esp_netif_create_default_wifi_sta()||!esp_netif_create_default_wifi_ap())fail("network initialization failed");
  wifi_init_config_t wi=WIFI_INIT_CONFIG_DEFAULT();if(esp_wifi_init(&wi)!=ESP_OK||esp_wifi_set_storage(WIFI_STORAGE_RAM)!=ESP_OK)fail("Wi-Fi initialization failed");
+ // This powered relay endpoint receives short-lived driving intent. Modem sleep
+ // defers inbound packets to AP DTIM windows and can consume the intent lifetime.
+ if(esp_wifi_set_ps(WIFI_PS_NONE)!=ESP_OK)fail("Real-time Wi-Fi configuration failed");
  // Explicit AP address matches the existing captive DNS/portal contract.
  auto* ap=esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");esp_netif_dhcps_stop(ap);esp_netif_ip_info_t ip{};IP4_ADDR(&ip.ip,192,168,4,1);IP4_ADDR(&ip.gw,192,168,4,1);IP4_ADDR(&ip.netmask,255,255,255,0);if(esp_netif_set_ip_info(ap,&ip)!=ESP_OK||esp_netif_dhcps_start(ap)!=ESP_OK)fail("setup network unavailable");
  if(!RiscCpu::NativeTlsMemory::initialize())fail("internal TLS allocation policy unavailable");
