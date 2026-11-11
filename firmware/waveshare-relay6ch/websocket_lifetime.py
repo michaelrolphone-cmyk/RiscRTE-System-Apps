@@ -62,8 +62,24 @@ static void relay_close_transport(esp_websocket_client_handle_t client)
     if (esp_websocket_new_buf(client, true) != ESP_OK) {"""
     assert source.count(old)==1
     source=source.replace(old,new)
+    anchor = '            ESP_LOGD(TAG, "Transport connected to %s://%s:%d", client->config->scheme, client->config->host, client->config->port);'
+    assert source.count(anchor)==1
+    fast = """            // Control frames and feedback must not wait behind Nagle's
+            // small-write batching while the peer delays TCP acknowledgments.
+            int relay_fd = esp_transport_get_socket(client->transport);
+            int relay_no_delay = 1;
+            if (relay_fd < 0 || setsockopt(relay_fd, IPPROTO_TCP, TCP_NODELAY,
+                                          &relay_no_delay, sizeof(relay_no_delay)) != 0) {
+                esp_websocket_client_error(client, "Control TCP_NODELAY setup failed");
+                esp_websocket_client_abort_connection(client, WEBSOCKET_ERROR_TYPE_TCP_TRANSPORT);
+                break;
+            }
+            ESP_LOGI(TAG, "Control TCP_NODELAY enabled");
+"""
+    source=source.replace(anchor,fast+anchor)
+    source=source.replace('#include <stdio.h>', '#include <stdio.h>\\n#include "lwip/sockets.h"')
     return source
 if __name__=="__main__":
     s=pathlib.Path(sys.argv[1]).read_text()
     out=patch(s);pathlib.Path(sys.argv[2]).write_text(out)
-    print("WS_TLS_LIFETIME_SOURCE_PROOF "+json.dumps({"original_sha256":EXPECTED,"patched_sha256":hashlib.sha256(out.encode()).hexdigest(),"protected_close_sites":3,"post_tx_lock_connection_check":True}))
+    print("WS_TLS_LIFETIME_SOURCE_PROOF "+json.dumps({"original_sha256":EXPECTED,"patched_sha256":hashlib.sha256(out.encode()).hexdigest(),"protected_close_sites":3,"post_tx_lock_connection_check":True,"tcp_nodelay":True}))

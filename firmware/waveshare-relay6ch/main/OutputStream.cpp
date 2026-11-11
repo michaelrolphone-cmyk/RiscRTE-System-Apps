@@ -53,9 +53,18 @@ struct OutputStream::State {
    value["intent_age_ms"]=intentAgeMs.load();value["receive_gap_ms"]=receiveGapMs.load();
    value["contact_feedback"]=false;value["provider_monotonic_ms"]=esp_timer_get_time()/1000;
    char data[512];const size_t n=serializeJson(value,data,sizeof(data));
-   const int sent=n<sizeof(data)?esp_websocket_client_send_text(socket,data,n,pdMS_TO_TICKS(1000)):-1;
-   if(sent==int(n))return true;
+   // Feedback has its own task. Use the transport's existing I/O budget;
+   // a one-second ACK deadline must not abort a healthy held-input lane.
+   const uint64_t began=esp_timer_get_time()/1000;
+   const int sent=n<sizeof(data)?esp_websocket_client_send_text(socket,data,n,pdMS_TO_TICKS(10000)):-1;
    const uint64_t now=esp_timer_get_time()/1000;
+   if(sent==int(n)){
+    if(now-began>100&&now-lastAckFailureLog>=5000){
+     lastAckFailureLog=now;ESP_LOGW("relay-stream","ACK write delayed stage=%s sequence=%llu duration_ms=%llu",
+      stage,(unsigned long long)sequence,(unsigned long long)(now-began));
+    }
+    return true;
+   }
    if(now-lastAckFailureLog>=5000){
     lastAckFailureLog=now;ESP_LOGW("relay-stream","ACK write failed stage=%s sequence=%llu sent=%d expected=%u",
      stage,(unsigned long long)sequence,sent,unsigned(n));
