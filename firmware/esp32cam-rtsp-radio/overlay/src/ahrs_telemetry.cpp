@@ -9,6 +9,9 @@
 #include <freertos/task.h>
 #include <sdkconfig.h>
 #include <cstring>
+#include <new>
+#include <esp_heap_caps.h>
+#include <esp_timer.h>
 
 #if !defined(CONFIG_IDF_TARGET_ESP32S3)
 #error "This AHRS wiring profile is for the ESP32-S3 CAM only."
@@ -114,6 +117,10 @@ struct Snapshot {
 TwoWire sensorWire(SENSOR_BUS);
 SemaphoreHandle_t snapshotMutex=nullptr;
 Snapshot latest;
+constexpr size_t CAPTURE_HISTORY = 128;
+Snapshot *captureHistory = nullptr;
+uint64_t captureHistoryTime[CAPTURE_HISTORY] = {};
+size_t captureHistoryNext = 0, captureHistoryCount = 0;
 bool requestedPause=false, calibrationQueued=false;
 bool started=false;
 int lastBusError=0; // worker-owned; never accessed by the HTTP caller
@@ -127,6 +134,12 @@ void increment(uint32_t &value) { if (value != UINT32_MAX) ++value; }
 void publish(const Snapshot &value) {
     Lock lock;
     latest=value;
+    if (captureHistory) {
+        captureHistory[captureHistoryNext] = value;
+        captureHistoryTime[captureHistoryNext] = esp_timer_get_time();
+        captureHistoryNext = (captureHistoryNext + 1) % CAPTURE_HISTORY;
+        if (captureHistoryCount < CAPTURE_HISTORY) ++captureHistoryCount;
+    }
     latest.paused=requestedPause;
     if (calibrationQueued) latest.calibration=model::CalibrationState::Queued;
 }
@@ -556,6 +569,8 @@ void begin() {
     started=true;
     snapshotMutex=xSemaphoreCreateMutex();
     if (!snapshotMutex) return;
+    captureHistory = static_cast<Snapshot *>(heap_caps_malloc(sizeof(Snapshot) * CAPTURE_HISTORY, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+    if (captureHistory) for (size_t i=0;i<CAPTURE_HISTORY;++i) new (captureHistory+i) Snapshot();
     if (xTaskCreate(worker,"ahrs-telemetry",6144,nullptr,1,nullptr) != pdPASS) {
         Lock lock;
         latest.workerError="worker_start_failed";
@@ -581,11 +596,7 @@ CalibrationRequest requestGyroCalibration() {
     return CalibrationRequest::Accepted;
 }
 
-void writeJson(JsonObject output, bool compact) {
-    Snapshot state;
-    if (snapshotMutex) { Lock lock; state=latest; }
-    else state.workerError="state_memory_unavailable";
-    const uint32_t now=millis();
+static void renderSnapshot(JsonObject output, bool compact, const Snapshot &state, uint32_t now) {
     const bool active=state.workerReady && !state.paused;
     const bool imuValid=active && model::fresh(state.imu.valid,state.imu.seen,now,state.imu.observed,model::IMU_FRESH_MS);
     const bool magValid=active && model::fresh(state.mag.valid,state.mag.seen,now,state.mag.observed,model::MAG_FRESH_MS);
@@ -682,4 +693,30 @@ void writeJson(JsonObject output, bool compact) {
         calibration["max_gyro_std_rad_s"]=0.015;
     }
 }
+void writeJson(JsonObject output, bool compact) {
+    Snapshot state;
+    if (snapshotMutex) { Lock lock; state=latest; }
+    else state.workerError="state_memory_unavailable";
+    renderSnapshot(output,compact,state,millis());
+}
+
+bool writeJsonAt(JsonObject output, uint64_t captureUs) {
+    Snapshot state;
+    uint64_t selected = 0;
+    if (snapshotMutex && captureHistory) {
+        Lock lock;
+        for (size_t i=0;i<captureHistoryCount;++i) {
+            const size_t index=(captureHistoryNext+CAPTURE_HISTORY-1-i)%CAPTURE_HISTORY;
+            if (captureHistoryTime[index] <= captureUs) {
+                state=captureHistory[index];selected=captureHistoryTime[index];break;
+            }
+        }
+    }
+    if (!selected) return false;
+    renderSnapshot(output,false,state,static_cast<uint32_t>(captureUs/1000));
+    output["history_publish_monotonic_us"] = selected;
+    output["association"] = "last_sensor_state_published_before_camera_capture";
+    return true;
+}
 } // namespace ahrs_telemetry
+

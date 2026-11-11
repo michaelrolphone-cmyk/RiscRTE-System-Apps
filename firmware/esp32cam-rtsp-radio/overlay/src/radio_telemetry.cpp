@@ -1169,6 +1169,35 @@ void handleFtm() {
 }
 } // namespace
 
+bool writeFrameJson(JsonObject output, uint64_t captureUs) {
+    if (!stateMutex) return false;
+    uint32_t sequence;
+    Config config;
+    { Lock lock; sequence=packetSequence;config=configuration; }
+    output["schema"]="biome.capture.v1";
+    output["receiver_id"]=receiverId;output["boot_id"]=bootId;
+    output["capture_monotonic_us"]=captureUs;output["capture_clock"]="esp_timer";
+    char identity[64];snprintf(identity,sizeof(identity),"%s:%llu",bootId,static_cast<unsigned long long>(captureUs));output["frame_id"]=String(identity);
+    JsonObject ahrs=output.createNestedObject("ahrs");
+    putEnvelope(ahrs,"ahrs",sequence);ahrs["uptime_ms"]=static_cast<uint32_t>(captureUs/1000);
+    if (!ahrs_telemetry::writeJsonAt(ahrs.createNestedObject("ahrs"),captureUs)) output["ahrs"]=nullptr;
+    JsonObject radio=output.createNestedObject("radio");
+    putEnvelope(radio,nullptr,sequence);radio["uptime_ms"]=static_cast<uint32_t>(captureUs/1000);
+    for (int kind=0;kind<2;++kind) {
+        JsonArray rows=radio.createNestedArray(kind ? "ble" : "wifi");
+        const size_t count=kind ? BLE_CAPACITY : WIFI_CAPACITY;
+        for(size_t i=0;i<count;++i) {
+            Observation observation;
+            if (!copyObservation(kind!=0,i,observation)) continue;
+            const uint32_t age=static_cast<uint32_t>(captureUs/1000)-observation.lastSeen;
+            if (age>=0x80000000UL) continue; // A later scan cannot be assigned to this frame.
+            JsonObject row=rows.createNestedObject();
+            putObservation(row,observation,kind!=0,config);row["age_ms"]=age;
+        }
+    }
+    return true;
+}
+
 void begin(WebServer &server, bool (*authorize)()) {
     if (httpServer) return;
     httpServer = &server;
@@ -1212,3 +1241,4 @@ void pause(bool paused) {
     isPaused = paused;
 }
 } // namespace radio_telemetry
+

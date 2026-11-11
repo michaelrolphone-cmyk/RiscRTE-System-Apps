@@ -21,19 +21,21 @@ index b8db461..4ad565e 100644
  
  #define APP_TITLE "ESP32CAM-RTSP"
 -#define APP_VERSION "1.0"
-+#define APP_VERSION "1.0-radio.7"
++#define APP_VERSION "1.0-radio.8-sync"
  
  #define WIFI_SSID "ESP32CAM-RTSP"
  #define WIFI_PASSWORD nullptr
 diff --git a/src/main.cpp b/src/main.cpp
-index bae860b..f269c53 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
-@@ -17,13 +17,16 @@
+@@ -17,13 +17,19 @@
  #include <format_number.h>
  #include <moustache.h>
  #include <settings.h>
 +#include <radio_telemetry.h>
++#include <esp_heap_caps.h>
++#include <esp_timer.h>
++#include <memory>
 +#include <camera_light.h>
  
  #include <micro_rtsp_server.h>
@@ -47,7 +49,7 @@ index bae860b..f269c53 100644
  
  auto param_group_camera = iotwebconf::ParameterGroup("camera", "Camera settings");
  auto param_frame_duration = iotwebconf::Builder<iotwebconf::UIntTParameter<unsigned long>>("fd").label("Frame duration (ms)").defaultValue(DEFAULT_FRAME_DURATION).min(10).build();
-@@ -166,7 +169,7 @@ void handle_root()
+@@ -166,7 +172,7 @@
        {"OtaSupported", String(esp_ota_get_next_update_partition(nullptr) != nullptr)}};
  
    web_server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -56,7 +58,50 @@ index bae860b..f269c53 100644
    web_server.send(200, "text/html", html);
  }
  
-@@ -422,6 +425,7 @@ void setup_ota()
+@@ -273,6 +279,42 @@
+   log_v("client disconnected");
+   client.stop();
+   log_v("stopped streaming");
++}
++
++struct CaptureJsonAllocator {
++  void *allocate(size_t size){return heap_caps_malloc(size,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);}
++  void deallocate(void *ptr){heap_caps_free(ptr);}
++  void *reallocate(void *ptr,size_t size){return heap_caps_realloc(ptr,size,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);}
++};
++// One response binds actual camera-driver capture time and sensor samples.
++void handle_synchronized_capture() {
++  if (camera_init_result != ESP_OK) { web_server.send(503,"text/plain","Camera unavailable");return; }
++  // Hold a separate SDK buffer; do not overwrite the RTSP streamer's JPEG copy.
++  std::unique_ptr<camera_fb_t,void(*)(camera_fb_t *)> fb(esp_camera_fb_get(),esp_camera_fb_return);
++  if (!fb || fb->format!=PIXFORMAT_JPEG) {web_server.send(503,"text/plain","Camera frame unavailable");return;}
++  const uint64_t captureUs=static_cast<uint64_t>(fb->timestamp.tv_sec)*1000000ULL+fb->timestamp.tv_usec;
++  if (!captureUs) { web_server.send(503,"text/plain","Capture timestamp unavailable");return; }
++  BasicJsonDocument<CaptureJsonAllocator> document(65536);
++  JsonObject packet=document.to<JsonObject>();
++  if(!radio_telemetry::writeFrameJson(packet,captureUs)) {web_server.send(503,"text/plain","Sensor metadata unavailable");return;}
++  packet["width"]=fb->width;packet["height"]=fb->height;
++  packet["capture_timestamp_semantics"]="camera_driver_first_dma_buffer";
++  if(document.overflowed()) { web_server.send(503,"text/plain","Capture metadata allocation failed");return; }
++  packet["served_monotonic_us"]=static_cast<uint64_t>(esp_timer_get_time());
++  const size_t metadataSize=measureJson(document);
++  uint8_t *metadata=static_cast<uint8_t *>(heap_caps_malloc(metadataSize+1,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
++  if(!metadata){web_server.send(503,"text/plain","Capture metadata memory unavailable");return;}
++  serializeJson(document,reinterpret_cast<char *>(metadata),metadataSize+1);
++  const String first="--biomeframe\r\nContent-Type: application/json\r\nContent-Length: "+String(metadataSize)+"\r\n\r\n";
++  const String second="\r\n--biomeframe\r\nContent-Type: image/jpeg\r\nContent-Length: "+String(fb->len)+"\r\n\r\n";
++  const String end="\r\n--biomeframe--\r\n";
++  web_server.sendHeader("Cache-Control","no-store");
++  web_server.setContentLength(first.length()+metadataSize+second.length()+fb->len+end.length());
++  web_server.send(200,"multipart/mixed; boundary=biomeframe","");
++  auto client=web_server.client();
++  client.write(first.c_str(),first.length());client.write(metadata,metadataSize);
++  client.write(second.c_str(),second.length());client.write(fb->buf,fb->len);client.write(end.c_str(),end.length());
++  heap_caps_free(metadata);
+ }
+ 
+ void handle_restart()
+@@ -422,6 +464,7 @@
                 { 
        // Free memory for the update: stop the RTSP server and release the camera frame buffers, so Update.write() has all the heap it needs
        // On a successful update the device reboots; onError() restores these.
@@ -64,7 +109,7 @@ index bae860b..f269c53 100644
        rtsp_server.end();
        if (camera_init_result == ESP_OK)
        {
-@@ -443,6 +447,7 @@ void setup_ota()
+@@ -443,6 +486,7 @@
        case OTA_END_ERROR: log_e("OTA: end failed - %s", Update.errorString()); break;
        default: log_e("OTA error: %u", error);
        }
@@ -72,7 +117,7 @@ index bae860b..f269c53 100644
        // Restore the camera and RTSP server after a failed update (on success the
        // device reboots, so no restore is needed there).
        update_camera_settings();
-@@ -498,7 +503,9 @@ void setup()
+@@ -498,7 +542,9 @@
      log_e("Failed to initialize the I2S microphone");
  #endif
  
@@ -83,7 +128,7 @@ index bae860b..f269c53 100644
  
  #ifdef MICRO_RTSP_ENABLE_SRTP
    // Stream video over Secure RTP (RFC 3711), negotiated with "a=crypto"
-@@ -592,6 +599,16 @@ void setup()
+@@ -592,6 +638,17 @@
    web_server.onNotFound([]()
                          { iotWebConf.handleNotFound(); });
  
@@ -97,10 +142,11 @@ index bae860b..f269c53 100644
 +    }
 +  });
 +
++  web_server.on("/api/capture",HTTP_GET,[](){if(is_authenticated())handle_synchronized_capture();});
    // Start the ArduinoOTA (espota) service for network firmware uploads.
    setup_ota();
  }
-@@ -601,6 +618,7 @@ void loop()
+@@ -601,6 +658,7 @@
    iotWebConf.doLoop();
    rtsp_server.loop();
    ArduinoOTA.handle();

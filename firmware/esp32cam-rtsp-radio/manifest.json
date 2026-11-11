@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.7",
+  "variant": "1.0-radio.8-sync",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -15,7 +15,7 @@
     },
     {
       "path": "integration.patch",
-      "sha256": "25f732276426251ee3c2c8520495648b471a2ef9a1fc44ae63b02783ac9eaa9a"
+      "sha256": "cb167d231138d4e38fcbd7270d7649bd503ad7a5a637ffbe0f8aec74c39627ab"
     },
     {
       "path": "LICENSE",
@@ -31,7 +31,7 @@
     },
     {
       "path": "overlay/include/ahrs_telemetry.h",
-      "sha256": "71a5fca3b6fecd8c90c2011e7223c3cb8c1f7c8139e4e27cd68698e587c15646"
+      "sha256": "b3740b1c0488b978a5156427ca8918484d785f7d651b44ee261896ed861b97af"
     },
     {
       "path": "overlay/include/camera_light_model.h",
@@ -47,7 +47,7 @@
     },
     {
       "path": "overlay/include/radio_telemetry.h",
-      "sha256": "6ec150bc0f93d3c50417e9be676d734288e360a36803b18bcb7e95f769cb11d5"
+      "sha256": "272059807fcdb1dde016c5c9663e566fae41714594d33c88ff169388e7a68c1b"
     },
     {
       "path": "overlay/platformio.ini",
@@ -55,7 +55,7 @@
     },
     {
       "path": "overlay/src/ahrs_telemetry.cpp",
-      "sha256": "c42d2e8ad653a2296d6557962e70a9da115f34285528fa996857d0b08d3ea145"
+      "sha256": "a0b7f98a43bd037614db2b2081f9473e88542e4700d08eadb246fe49ada3842f"
     },
     {
       "path": "overlay/src/camera_light.cpp",
@@ -63,7 +63,7 @@
     },
     {
       "path": "overlay/src/radio_telemetry.cpp",
-      "sha256": "9dc2c3765d2d65f93bd5ff2912552cae413cc2d7190a47f94b6856345e88589d"
+      "sha256": "c49e321bda6ded9c2f8610cb86db59b568703f19ca6dcc076745bd53577cf304"
     },
     {
       "path": "overlay/test/ahrs_model/test_model.cpp",
@@ -96,6 +96,10 @@
     {
       "path": "VALIDATION.md",
       "sha256": "d9265e05657390a23e683e494d480f00cad6a3c21b2e38dda0bb4b459385dec3"
+    },
+    {
+      "path": "SYNCHRONIZATION.md",
+      "sha256": "01ef433ee5154550c5035f4f00b71db64307f1984259680550054cde665a58de"
     }
   ]
 }
