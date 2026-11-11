@@ -67,6 +67,16 @@ jobs:
           # Confirm the clean build uses the same provider pins as the tested image.
           git -C apps diff --exit-code -- firmware/waveshare-relay6ch/main/Factory.h profiles/waveshare-esp32-s3-relay-6ch
           idf.py -C apps/firmware/waveshare-relay6ch -B "$PWD/relay-build" -D "RISC_RUNTIME_ROOT=$RISC_RUNTIME_ROOT" reconfigure
+          python - <<'PY'
+          import json, shlex
+          rows=json.load(open('relay-build/compile_commands.json'))
+          sntp=[r for r in rows if r['file'].replace('\\\\','/').endswith('/lwip/src/apps/sntp/sntp.c')]
+          assert len(sntp)==1, 'Expected the actual SDK lwIP SNTP translation unit'
+          args=sntp[0].get('arguments') or shlex.split(sntp[0]['command'])
+          required=['-DSNTP_COMP_ROUNDTRIP=1','-DSNTP_CHECK_RESPONSE=2']
+          assert all(flag in args for flag in required), args
+          print('SNTP_SDK_COMPILE_PROOF',json.dumps({'source':sntp[0]['file'],'required_flags':required}))
+          PY
           cmake --build relay-build -- -j1
           python apps/scripts/package_relay6ch.py --build relay-build --runtime 00-runtime --output delivery
       - uses: actions/upload-artifact@v4
