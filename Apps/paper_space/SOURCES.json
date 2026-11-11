@@ -1,0 +1,93 @@
+{
+  "source_repo": "michaelrolphone-cmyk/T5S3-Reader",
+  "source_commit": "e58ac3106e5569a1271d28ab3a2f87907129a601",
+  "source_tree": "b1dfbe371d0dd429cfa2a1e4ef221e36c5139c33",
+  "inputs": {
+    "sdk/RiscRuntimeV1.h": {
+      "repo": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "commit": "6eaf2aa7cfb396a18731fe35c0e70c9072a54e93",
+      "path": "lib/PortableApps/include/RiscRuntimeV1.h",
+      "sha256": "6fbfacaa46d532bfef083e8c7dd3bbe36613e557279fdda887d814d53915526b",
+      "mode": "verbatim"
+    },
+    "sdk/RiscDisplayOutputV1.h": {
+      "repo": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "commit": "6eaf2aa7cfb396a18731fe35c0e70c9072a54e93",
+      "path": "lib/PortableApps/include/RiscDisplayOutputV1.h",
+      "sha256": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726",
+      "mode": "verbatim"
+    },
+    "sdk/RiscInputNavigationV1.h": {
+      "repo": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "commit": "6eaf2aa7cfb396a18731fe35c0e70c9072a54e93",
+      "path": "lib/PortableApps/include/RiscInputNavigationV1.h",
+      "sha256": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26",
+      "mode": "verbatim"
+    },
+    "sdk/RiscTouchV1.h": {
+      "repo": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "commit": "6eaf2aa7cfb396a18731fe35c0e70c9072a54e93",
+      "path": "lib/PortableApps/include/RiscTouchV1.h",
+      "sha256": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
+      "mode": "verbatim"
+    },
+    "sdk/RiscProviderV2.h": {
+      "repo": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "commit": "6eaf2aa7cfb396a18731fe35c0e70c9072a54e93",
+      "path": "lib/PortableApps/include/RiscProviderV2.h",
+      "sha256": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+      "mode": "verbatim"
+    },
+    "sdk/PortableTouch.h": {
+      "repo": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "commit": "6eaf2aa7cfb396a18731fe35c0e70c9072a54e93",
+      "path": "lib/PortableApps/include/PortableTouch.h",
+      "sha256": "c54a408ceda99210367e7798978c9b6614ebba4991015d37253bf37134862790",
+      "mode": "verbatim"
+    },
+    "lib/EpdFont/builtinFonts/ubuntu_12_regular.h": {
+      "sha256": "f7c8b076fd8f98dd5231f5f205dea432dcd546a27b17b2b4254357f2692d5154",
+      "git_blob": "7b90e0e38514bf204cf3ce9e1af1a21b0e19fad2",
+      "mode": "font-subset"
+    },
+    "src/activities/home/HomeActivity.cpp": {
+      "sha256": "6aefda56850d81c276ba5a181794d999eedd0683d0b6adb545fa35abd59d8787",
+      "git_blob": "5b2e0c6a8180275bcac604b88325e74a324ed8b2",
+      "mode": "design-reference"
+    },
+    "src/util/ButtonNavigator.h": {
+      "sha256": "97f83e9c986cc87bb2140644692db09062957a2acf7c7d5350c5eb00590f4563",
+      "git_blob": "2f9afbc1ceb33f89965181c0704f2553f2e4f8a9",
+      "mode": "design-reference"
+    },
+    "src/components/themes/BaseTheme.cpp": {
+      "sha256": "58d52206a815a921daaad8e83cac65a2907e13f6940816f236175bfe2daba482",
+      "git_blob": "9ded7cc28f2531e4d8a3577e8f6bb52bc9dae5dd",
+      "mode": "design-reference"
+    },
+    "sdk/RiscStreamProviderV1.h": {
+      "repo": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "commit": "6eaf2aa7cfb396a18731fe35c0e70c9072a54e93",
+      "path": "lib/PortableApps/include/RiscStreamProviderV1.h",
+      "sha256": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+      "mode": "verbatim"
+    },
+    "lib/EpdFont/builtinFonts/source/Ubuntu/Ubuntu-Regular.ttf": {
+      "sha256": "540f19be11a368130641d00ec1c354b535c0803560f598d7d062486c9278387a",
+      "git_blob": "b5505e6786fd98c24c32c461268eb0b430431579",
+      "mode": "copyright-name-table-only"
+    },
+    "lib/EpdFont/builtinFonts/source/Ubuntu/UFL.txt": {
+      "sha256": "2f0015108d68627bd788d313f529c21ff4da2c2c42a5e1f3883acc83480f9002",
+      "mode": "verbatim-license"
+    }
+  },
+  "font_subset": {
+    "name": "Paper Space Text 12",
+    "codepoints": "U+0020..U+007E",
+    "pixels": "unchanged",
+    "metrics": "unchanged",
+    "kerning": "not included in entry slice",
+    "sha256": "3911b1f06f95c892cf32c58731dae1f6d4543a363956cab1eb5dba1f3453a830"
+  }
+}
