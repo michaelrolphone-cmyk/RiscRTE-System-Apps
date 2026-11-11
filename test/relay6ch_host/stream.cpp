@@ -1,6 +1,9 @@
 #include <cassert>
 #include <cstring>
 #include <initializer_list>
+#include <atomic>
+#include <thread>
+#include "../../firmware/waveshare-relay6ch/main/PendingAcks.h"
 #include "../../firmware/waveshare-relay6ch/main/FreshIntent.h"
 #include "../../firmware/waveshare-relay6ch/main/CompensatedClock.h"
 #include "../../firmware/waveshare-relay6ch/main/StreamRecovery.h"
@@ -74,5 +77,26 @@ int main(){
  assert(!clocked.accept(a,9,e,68,0,10000,10500,10020,310));
  assert(!clocked.accept(a,9,e,69,0,10000,10500,10500,790));
  assert(!s.accept(a,5,e,UINT64_MAX,0,10000,10500,10001,105));
-}
 
+ // A blocked ACK writer cannot stall fresh control acceptance or expiry renewal.
+ BiomeRelay::PendingAcks mailbox;mailbox.accepted(1);
+ std::atomic<bool> entered{false},release{false};
+ std::thread writer([&]{
+  assert(mailbox.drain(1,[&](bool,uint64_t){entered=true;while(!release.load())std::this_thread::yield();return true;}));
+ });
+ while(!entered.load())std::this_thread::yield();
+ BiomeRelay::FreshIntent held;assert(held.bind(a,10,e));
+ for(uint64_t i=1;i<=60;++i){
+  const uint64_t mono=100*i,utc=10000+mono;
+  assert(held.accept(a,10,e,i,1,utc,utc+500,utc,mono));
+  mailbox.accepted(i);assert(held.output(mono+99)==1);
+ }
+ assert(mailbox.received.load()==60);release=true;writer.join();
+ unsigned drained=0;
+ assert(mailbox.drain(60,[&](bool,uint64_t seq){assert(seq==60);++drained;return true;}));
+ assert(drained==2);assert(held.output(6500)==0); // No ACK may extend an intent.
+ mailbox.accepted(61);
+ assert(!mailbox.drain(61,[](bool,uint64_t){return false;}));
+ assert(mailbox.sentReceived==60);
+ assert(mailbox.drain(61,[](bool,uint64_t){return true;}));
+}
