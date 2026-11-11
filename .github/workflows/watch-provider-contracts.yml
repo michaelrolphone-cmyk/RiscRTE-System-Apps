@@ -1,0 +1,29 @@
+name: Watch provider optional-input contracts
+on:
+  pull_request:
+  push:
+    branches: [badge/watch-provider-contracts-2026-10-29]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  provider-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 318d77283ba707b6f2820d2833e5d7ea3ff3f7e8
+          path: .dependencies/runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python3 test/scene/provider-contracts/qualify_existing_provider.py --system . --runtime .dependencies/runtime --output dist/watch-provider-contracts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: watch-provider-contract-evidence
+          path: dist/watch-provider-contracts
+          if-no-files-found: error
