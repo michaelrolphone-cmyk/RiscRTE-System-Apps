@@ -1,5 +1,6 @@
 #include "OutputStream.h"
 #include "FreshIntent.h"
+#include "PendingAcks.h"
 #include "CompensatedClock.h"
 #include "esp_sntp.h"
 #include "lwip/apps/sntp_opts.h"
@@ -13,7 +14,6 @@
 #include <sys/time.h>
 #include <atomic>
 #include <new>
-#include <mutex>
 namespace BiomeRelay {
 static_assert(SNTP_COMP_ROUNDTRIP==1&&SNTP_CHECK_RESPONSE>=2,"Control requires compensated, origin-checked SNTP");
 namespace {
@@ -24,6 +24,7 @@ void clockSynchronized(timeval* value){
   (long long)value->tv_sec,(long)value->tv_usec,unsigned(streamClock.ready()));
 }
 }
+static_assert(CONFIG_ESP_WS_CLIENT_SEPARATE_TX_LOCK,"Control receive must not share the ACK transmit lock");
 static_assert(CONFIG_WS_BUFFER_SIZE>=6144,"Stream credentials require the bounded HTTP upgrade buffer");
 static_assert(CONFIG_WS_DYNAMIC_BUFFER,"Release the upgrade buffer after connection");
 static_assert(CONFIG_MBEDTLS_DYNAMIC_BUFFER&&CONFIG_ESP_WS_CLIENT_ENABLE_DYNAMIC_BUFFER,"Stream and HTTP TLS must share bounded internal RAM");
@@ -31,9 +32,8 @@ struct OutputStream::State {
  esp_websocket_client_handle_t socket=nullptr;
  FreshIntent intent;JsonDocument grant;char url[1024]{},headers[4096]{},buffer[2049]{};
  size_t used=0;bool assembling=false,started=false;std::atomic<bool> connected{false},failed{false};
- uint64_t lastApplied=0,lastRejectedLog=0,lastAckFailureLog=0,ackDue=0;std::mutex ackMutex;
+ uint64_t lastRejectedLog=0,lastAckFailureLog=0,ackDue=0;PendingAcks pending;
  bool ack(const char* stage,uint64_t sequence){
-  std::lock_guard<std::mutex> guard(ackMutex);
   if(!connected.load()||sequence>(UINT64_MAX-2)/2)return false;
   const bool applied=!strcmp(stage,"applied");
   if(sequence*2+(applied?2:1)<=intent.ackSequence)return true;
@@ -41,6 +41,7 @@ struct OutputStream::State {
    JsonDocument value;value["type"]="ack";value["stage"]=stage;value["sequence"]=next;
    value["intent_sequence"]=sequence;value["epoch"]=grant["epoch"];value["authority"]=grant["authority"];
    value["generation"]=grant["generation"];value["commanded_mask"]=RelayBoard::streamOutput();
+   value["output_transitions"]=RelayBoard::streamTransitions();value["intent_expirations"]=RelayBoard::streamExpirations();
    value["contact_feedback"]=false;value["provider_monotonic_ms"]=esp_timer_get_time()/1000;
    char data[512];const size_t n=serializeJson(value,data,sizeof(data));
    const int sent=n<sizeof(data)?esp_websocket_client_send_text(socket,data,n,pdMS_TO_TICKS(20)):-1;
@@ -81,7 +82,7 @@ struct OutputStream::State {
    return;
   }
   RelayBoard::streamDesired(intent.desired,intent.deadline,intent.sequence);
-  ack("received",intent.sequence);
+  pending.accepted(intent.sequence);
  }
  static void event(void* context,esp_event_base_t,int32_t id,void* data){
   auto* self=static_cast<State*>(context);
@@ -131,10 +132,9 @@ void OutputStream::tick(){
  }
  const uint64_t applied=RelayBoard::streamApplied();
  const uint64_t now=esp_timer_get_time()/1000;
- if(applied!=state->lastApplied&&now>=state->ackDue){
-  if(state->ack("applied",applied))state->lastApplied=applied;
-  else state->ackDue=now+20;
- }
+ if(now>=state->ackDue&&!state->pending.drain(applied,[&](bool appliedStage,uint64_t sequence){
+    return state->ack(appliedStage?"applied":"received",sequence);
+   }))state->ackDue=now+20;
 }
 void OutputStream::close(){
  if(!state)return;
