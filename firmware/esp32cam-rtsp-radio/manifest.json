@@ -99,7 +99,7 @@
     },
     {
       "path": "ULTRASONIC.md",
-      "sha256": "b29a4d51acee405ab97c6a61efa62951d1bd838f208d8e63451b68d5d1185e2a"
+      "sha256": "a92b9900ffc298d82e54c4509f84e222e68ecb7aeed13d3088397631d30cf333"
     },
     {
       "path": "overlay/include/ultrasonic_model.h",

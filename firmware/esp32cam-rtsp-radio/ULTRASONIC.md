@@ -39,7 +39,7 @@ Power the sensors with the board and avoid resetting/flashing while a module
 is asserting ECHO. Disconnect the three strap ECHO wires (or power the modules
 off with their grounds still connected) for recovery/flashing if necessary.
 A stuck-HIGH module may prevent normal boot. Firmware cannot correct reset-time
-strap levels. GPIO46 is input-only and is used only for ECHO.
+strap levels. GPIO46 is configured only as an ECHO input.
 For a design that must recover automatically even with faulty/independently
 powered sensors, add reset-controlled ECHO isolation or a separate ranging MCU.
 
