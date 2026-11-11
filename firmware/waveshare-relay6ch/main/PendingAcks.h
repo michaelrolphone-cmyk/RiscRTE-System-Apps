@@ -3,7 +3,7 @@
 #include <stdint.h>
 namespace BiomeRelay {
 // The receive callback only publishes the newest sequence. Network writes are
-// drained by the cooperative owner, never from the WebSocket receive task.
+// drained by the independent feedback task, never from the receive callback.
 struct PendingAcks {
  std::atomic<uint64_t> received{0};
  uint64_t sentReceived=0,sentApplied=0;
