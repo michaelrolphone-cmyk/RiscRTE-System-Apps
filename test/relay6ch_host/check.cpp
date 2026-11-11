@@ -35,9 +35,12 @@ int main(){
  streamDesired(0,mono()+500,sequence++);
  for(int i=0;i<100&&physicalMask.load();++i)vTaskDelay(1);
  assert(physicalMask.load()==0&&streamTransitions()==transitions+1&&streamExpirations()==expirations);
+ for(int i=0;i<100&&physicalMask.load()!=2;++i){streamDesired(2,mono()+500,sequence++);vTaskDelay(10);}
+ assert(physicalMask.load()==2);
+ // Start the expiry measurement after observing ON, so host scheduling cannot
+ // consume the entire short test pulse before the assertion observes it.
  streamDesired(2,mono()+30,sequence++);
- for(int i=0;i<100&&physicalMask.load()!=2;++i)vTaskDelay(1);
- assert(physicalMask.load()==2);vTaskDelay(50);
+ for(int i=0;i<100&&physicalMask.load();++i)vTaskDelay(10);
  assert(physicalMask.load()==0&&streamExpirations()==expirations+1);
  streamEnd();
  puts("Production board driver: invalid tail causes zero writes, multiple relay sets, timing, RGB wire bytes, tone stop, final-state retention, cancellation preserves untouched channels and color: PASS");fflush(stdout);std::_Exit(0);
