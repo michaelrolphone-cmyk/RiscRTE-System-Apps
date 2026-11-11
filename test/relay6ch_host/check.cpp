@@ -20,5 +20,25 @@ int main(){
  assert(run(R"({"steps":[{"off":[5,6],"rgb":[0,0,0]}]})")==1);
  while((status=poll(nullptr,out.as<JsonObject>()))==1)vTaskDelay(1);
  assert(status==0&&physicalMask==0&&physicalRgb==0);
+
+ // Actual production GPIO task: repeated same-mask intents hold continuously.
+ assert(streamBegin());uint64_t sequence=1;
+ auto mono=[](){return uint64_t(esp_timer_get_time()/1000);};
+ streamDesired(1,mono()+500,sequence++);
+ for(int i=0;i<100&&physicalMask.load()!=1;++i)vTaskDelay(1);
+ assert(physicalMask.load()==1);
+ const auto transitions=streamTransitions(),expirations=streamExpirations();
+ for(int i=0;i<12;++i){
+  streamDesired(1,mono()+500,sequence++);vTaskDelay(100);
+  assert(physicalMask.load()==1&&streamTransitions()==transitions&&streamExpirations()==expirations);
+ }
+ streamDesired(0,mono()+500,sequence++);
+ for(int i=0;i<100&&physicalMask.load();++i)vTaskDelay(1);
+ assert(physicalMask.load()==0&&streamTransitions()==transitions+1&&streamExpirations()==expirations);
+ streamDesired(2,mono()+30,sequence++);
+ for(int i=0;i<100&&physicalMask.load()!=2;++i)vTaskDelay(1);
+ assert(physicalMask.load()==2);vTaskDelay(50);
+ assert(physicalMask.load()==0&&streamExpirations()==expirations+1);
+ streamEnd();
  puts("Production board driver: invalid tail causes zero writes, multiple relay sets, timing, RGB wire bytes, tone stop, final-state retention, cancellation preserves untouched channels and color: PASS");fflush(stdout);std::_Exit(0);
 }
