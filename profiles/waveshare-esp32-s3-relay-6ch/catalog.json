@@ -1,0 +1,1359 @@
+{
+  "contracts": [
+    {
+      "contract": {
+        "capability_id": "scheduler.drive",
+        "api_version": 1,
+        "operations": {
+          "maintain": {
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "binding_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "binding_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "binding_id",
+                "binding_revision"
+              ],
+              "additionalProperties": false
+            },
+            "output_schema": {
+              "type": "object",
+              "properties": {
+                "target_epoch": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "progress": {
+                  "type": "object",
+                  "properties": {
+                    "items_examined": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 32
+                    },
+                    "items_advanced": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 32
+                    }
+                  },
+                  "required": [
+                    "items_examined",
+                    "items_advanced"
+                  ],
+                  "additionalProperties": false
+                },
+                "more_work": {
+                  "type": "boolean"
+                },
+                "coalescible": {
+                  "const": true
+                }
+              },
+              "required": [
+                "target_epoch",
+                "progress",
+                "more_work",
+                "coalescible"
+              ],
+              "additionalProperties": true
+            },
+            "evidence_schema": {
+              "type": "object",
+              "required": [
+                "observer",
+                "boot_id",
+                "observed_at_ms",
+                "monotonic_ms"
+              ],
+              "properties": {
+                "observer": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "boot_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "observed_at_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "monotonic_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "quiescent": {
+                  "const": true
+                },
+                "executor_identity": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false
+            },
+            "effect_semantics": "target_deduplicated",
+            "execution_modes": [
+              "desired_state",
+              "job"
+            ]
+          }
+        }
+      },
+      "reference": {
+        "capability_id": "scheduler.drive",
+        "api_version": 1,
+        "contract_digest": "1f191cd4ba541a1b13e5ab122e25ce25891f7157ecaa48e1da5f6a449b63fe97"
+      }
+    },
+    {
+      "contract": {
+        "capability_id": "service.reconcile",
+        "api_version": 1,
+        "operations": {
+          "maintain": {
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "binding_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "binding_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "binding_id",
+                "binding_revision"
+              ],
+              "additionalProperties": false
+            },
+            "output_schema": {
+              "type": "object",
+              "properties": {
+                "target_epoch": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "progress": {
+                  "type": "object",
+                  "properties": {
+                    "items_examined": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 32
+                    },
+                    "items_advanced": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 32
+                    }
+                  },
+                  "required": [
+                    "items_examined",
+                    "items_advanced"
+                  ],
+                  "additionalProperties": false
+                },
+                "more_work": {
+                  "type": "boolean"
+                },
+                "coalescible": {
+                  "const": true
+                }
+              },
+              "required": [
+                "target_epoch",
+                "progress",
+                "more_work",
+                "coalescible"
+              ],
+              "additionalProperties": true
+            },
+            "evidence_schema": {
+              "type": "object",
+              "required": [
+                "observer",
+                "boot_id",
+                "observed_at_ms",
+                "monotonic_ms"
+              ],
+              "properties": {
+                "observer": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "boot_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "observed_at_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "monotonic_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "quiescent": {
+                  "const": true
+                },
+                "executor_identity": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false
+            },
+            "effect_semantics": "target_deduplicated",
+            "execution_modes": [
+              "desired_state",
+              "job"
+            ]
+          }
+        }
+      },
+      "reference": {
+        "capability_id": "service.reconcile",
+        "api_version": 1,
+        "contract_digest": "bf8c680a6667901ddc0e91f2bf982028b12a456679d50232d8b08ce88fdf3717"
+      }
+    },
+    {
+      "contract": {
+        "capability_id": "service.health.observe",
+        "api_version": 1,
+        "operations": {
+          "observe": {
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "binding_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "binding_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "binding_id",
+                "binding_revision"
+              ],
+              "additionalProperties": false
+            },
+            "output_schema": {
+              "type": "object",
+              "properties": {
+                "binding_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "binding_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "healthy": {
+                  "type": "boolean"
+                },
+                "unchanged": {
+                  "type": "boolean"
+                },
+                "http_status": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 599
+                },
+                "observed_at_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "vantage_point": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "coverage": {
+                  "const": "latest_state"
+                },
+                "lossless": {
+                  "const": false
+                }
+              },
+              "required": [
+                "binding_id",
+                "binding_revision",
+                "healthy",
+                "unchanged",
+                "http_status",
+                "observed_at_ms",
+                "vantage_point",
+                "coverage",
+                "lossless"
+              ],
+              "additionalProperties": true
+            },
+            "evidence_schema": {
+              "type": "object",
+              "required": [
+                "observer",
+                "boot_id",
+                "observed_at_ms",
+                "monotonic_ms"
+              ],
+              "properties": {
+                "observer": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "boot_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "observed_at_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "monotonic_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "quiescent": {
+                  "const": true
+                },
+                "executor_identity": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false
+            },
+            "effect_semantics": "repeatable_compute",
+            "execution_modes": [
+              "job"
+            ]
+          }
+        }
+      },
+      "reference": {
+        "capability_id": "service.health.observe",
+        "api_version": 1,
+        "contract_digest": "742a986d123ececf60ad6c715c5587b081f691adad992b04abbffe6aefcf998f"
+      }
+    },
+    {
+      "contract": {
+        "capability_id": "source.poll",
+        "api_version": 1,
+        "operations": {
+          "poll": {
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "binding_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "binding_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "binding_id",
+                "binding_revision"
+              ],
+              "additionalProperties": false
+            },
+            "output_schema": {
+              "type": "object",
+              "properties": {
+                "binding_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "binding_revision": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "healthy": {
+                  "type": "boolean"
+                },
+                "unchanged": {
+                  "type": "boolean"
+                },
+                "http_status": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 599
+                },
+                "observed_at_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "vantage_point": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "coverage": {
+                  "const": "latest_state"
+                },
+                "lossless": {
+                  "const": false
+                }
+              },
+              "required": [
+                "binding_id",
+                "binding_revision",
+                "healthy",
+                "unchanged",
+                "http_status",
+                "observed_at_ms",
+                "vantage_point",
+                "coverage",
+                "lossless"
+              ],
+              "additionalProperties": true
+            },
+            "evidence_schema": {
+              "type": "object",
+              "required": [
+                "observer",
+                "boot_id",
+                "observed_at_ms",
+                "monotonic_ms"
+              ],
+              "properties": {
+                "observer": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "boot_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "observed_at_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "monotonic_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "quiescent": {
+                  "const": true
+                },
+                "executor_identity": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false
+            },
+            "effect_semantics": "repeatable_compute",
+            "execution_modes": [
+              "job"
+            ]
+          }
+        }
+      },
+      "reference": {
+        "capability_id": "source.poll",
+        "api_version": 1,
+        "contract_digest": "4f10b9ec48f8b47b43aed171d7b7074cf13663ae447c1a960026e52937a0e8c4"
+      }
+    },
+    {
+      "contract": {
+        "capability_id": "relay.bank",
+        "api_version": 1,
+        "operations": {
+          "set": {
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "channel": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6
+                },
+                "on": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "channel",
+                "on"
+              ],
+              "additionalProperties": false
+            },
+            "output_schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "succeeded",
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "additionalProperties": true
+            },
+            "evidence_schema": {
+              "type": "object"
+            },
+            "effect_semantics": "convergent_state",
+            "execution_modes": [
+              "job"
+            ]
+          }
+        }
+      },
+      "reference": {
+        "capability_id": "relay.bank",
+        "api_version": 1,
+        "contract_digest": "ac21aac12363429e7e84463265d1d1a75def14cd253376c043b4924b5d805bc5"
+      }
+    },
+    {
+      "contract": {
+        "capability_id": "serial.rs485",
+        "api_version": 1,
+        "operations": {
+          "exchange": {
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "baud": {
+                  "type": "integer",
+                  "minimum": 1200,
+                  "maximum": 115200
+                },
+                "parity": {
+                  "enum": [
+                    "none",
+                    "even",
+                    "odd"
+                  ]
+                },
+                "stop_bits": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2
+                },
+                "tx_hex": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 512,
+                  "pattern": "^[0-9a-f]*$"
+                },
+                "rx_max": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 256
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "minimum": 10,
+                  "maximum": 2000
+                }
+              },
+              "required": [
+                "baud",
+                "parity",
+                "stop_bits",
+                "tx_hex",
+                "rx_max",
+                "timeout_ms"
+              ],
+              "additionalProperties": false
+            },
+            "output_schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "succeeded",
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "additionalProperties": true
+            },
+            "evidence_schema": {
+              "type": "object"
+            },
+            "effect_semantics": "nonrepeatable_or_unobservable",
+            "execution_modes": [
+              "job"
+            ]
+          }
+        }
+      },
+      "reference": {
+        "capability_id": "serial.rs485",
+        "api_version": 1,
+        "contract_digest": "5ae18cf1778c5102f0233e6cd57df314a40fae549ea615751c5a9fc59c367134"
+      }
+    },
+    {
+      "contract": {
+        "capability_id": "sound.buzzer",
+        "api_version": 1,
+        "operations": {
+          "tone": {
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "frequency_hz": {
+                  "type": "integer",
+                  "minimum": 100,
+                  "maximum": 10000
+                },
+                "duration_ms": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5000
+                }
+              },
+              "required": [
+                "frequency_hz",
+                "duration_ms"
+              ],
+              "additionalProperties": false
+            },
+            "output_schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "succeeded",
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "additionalProperties": true
+            },
+            "evidence_schema": {
+              "type": "object"
+            },
+            "effect_semantics": "observable_effect",
+            "execution_modes": [
+              "job"
+            ]
+          }
+        }
+      },
+      "reference": {
+        "capability_id": "sound.buzzer",
+        "api_version": 1,
+        "contract_digest": "177bc586eb1db73816422a633620bd2d865653a0347d7582030ff2a96b4941e1"
+      }
+    },
+    {
+      "contract": {
+        "capability_id": "light.rgb",
+        "api_version": 1,
+        "operations": {
+          "set": {
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "red": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "green": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                },
+                "blue": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255
+                }
+              },
+              "required": [
+                "red",
+                "green",
+                "blue"
+              ],
+              "additionalProperties": false
+            },
+            "output_schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "succeeded",
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "additionalProperties": true
+            },
+            "evidence_schema": {
+              "type": "object"
+            },
+            "effect_semantics": "convergent_state",
+            "execution_modes": [
+              "job"
+            ]
+          }
+        }
+      },
+      "reference": {
+        "capability_id": "light.rgb",
+        "api_version": 1,
+        "contract_digest": "ec653437d9e3848573221cb91663317231a65e7205f37af106fb401a9ccc5a1c"
+      }
+    },
+    {
+      "contract": {
+        "capability_id": "device.outputs.batch",
+        "api_version": 1,
+        "operations": {
+          "apply": {
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 32,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "on": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 6,
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 6
+                        }
+                      },
+                      "off": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 6,
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 6
+                        }
+                      },
+                      "rgb": {
+                        "type": "array",
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 255
+                        }
+                      },
+                      "tone_hz": {
+                        "anyOf": [
+                          {
+                            "const": 0
+                          },
+                          {
+                            "type": "integer",
+                            "minimum": 100,
+                            "maximum": 10000
+                          }
+                        ]
+                      },
+                      "wait_ms": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 60000
+                      }
+                    },
+                    "additionalProperties": false,
+                    "anyOf": [
+                      {
+                        "required": [
+                          "on"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "off"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "rgb"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "tone_hz"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "wait_ms"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "steps"
+              ],
+              "additionalProperties": false
+            },
+            "output_schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "succeeded",
+                    "unknown"
+                  ]
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "additionalProperties": true
+            },
+            "evidence_schema": {
+              "type": "object"
+            },
+            "effect_semantics": "nonrepeatable_or_unobservable",
+            "execution_modes": [
+              "job"
+            ]
+          }
+        }
+      },
+      "reference": {
+        "capability_id": "device.outputs.batch",
+        "api_version": 1,
+        "contract_digest": "01095a358833a1cbc55d71a02ddf0390722b6df2b8601e314f7b8832e58a25cf"
+      }
+    }
+  ],
+  "providers": [
+    {
+      "provider": {
+        "provider_id": "waveshare-relay6ch-scheduler-drive",
+        "revision": 6,
+        "implementation_ref": {
+          "kind": "risc-native-static",
+          "profile": "waveshare-esp32-s3-relay-6ch",
+          "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+        },
+        "provides": [
+          {
+            "capability_id": "scheduler.drive",
+            "api_version": 1,
+            "contract_digest": "1f191cd4ba541a1b13e5ab122e25ce25891f7157ecaa48e1da5f6a449b63fe97"
+          }
+        ],
+        "requires": [],
+        "resource_bindings": [
+          {
+            "name": "tls",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "job",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "pending",
+            "amount": 2,
+            "lifetime": "invocation"
+          }
+        ],
+        "recovery_support": {
+          "checkpoint_formats": [
+            "infra.source/1"
+          ]
+        },
+        "cost_estimate": 1,
+        "cost_model": {
+          "network_transactions": 1,
+          "maximum_ms": 12000
+        },
+        "cost_evidence": "software_bounds_physical_qualification_pending"
+      },
+      "reference": {
+        "capability_id": "scheduler.drive",
+        "provider_id": "waveshare-relay6ch-scheduler-drive",
+        "revision": 6,
+        "definition_digest": "fdc35ec8c31a019cccf788375ed912581aa6c9ed50e65237c67bd2fd764942cc",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+      }
+    },
+    {
+      "provider": {
+        "provider_id": "waveshare-relay6ch-service-reconcile",
+        "revision": 6,
+        "implementation_ref": {
+          "kind": "risc-native-static",
+          "profile": "waveshare-esp32-s3-relay-6ch",
+          "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+        },
+        "provides": [
+          {
+            "capability_id": "service.reconcile",
+            "api_version": 1,
+            "contract_digest": "bf8c680a6667901ddc0e91f2bf982028b12a456679d50232d8b08ce88fdf3717"
+          }
+        ],
+        "requires": [],
+        "resource_bindings": [
+          {
+            "name": "tls",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "job",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "pending",
+            "amount": 2,
+            "lifetime": "invocation"
+          }
+        ],
+        "recovery_support": {
+          "checkpoint_formats": [
+            "infra.source/1"
+          ]
+        },
+        "cost_estimate": 1,
+        "cost_model": {
+          "network_transactions": 1,
+          "maximum_ms": 5000
+        },
+        "cost_evidence": "software_bounds_physical_qualification_pending"
+      },
+      "reference": {
+        "capability_id": "service.reconcile",
+        "provider_id": "waveshare-relay6ch-service-reconcile",
+        "revision": 6,
+        "definition_digest": "8e6e384bf420a6e68206606766869dcc61c69ccbf0e9afc1eff914b6af384617",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+      }
+    },
+    {
+      "provider": {
+        "provider_id": "waveshare-relay6ch-service-health-observe",
+        "revision": 6,
+        "implementation_ref": {
+          "kind": "risc-native-static",
+          "profile": "waveshare-esp32-s3-relay-6ch",
+          "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+        },
+        "provides": [
+          {
+            "capability_id": "service.health.observe",
+            "api_version": 1,
+            "contract_digest": "742a986d123ececf60ad6c715c5587b081f691adad992b04abbffe6aefcf998f"
+          }
+        ],
+        "requires": [],
+        "resource_bindings": [
+          {
+            "name": "tls",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "job",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "pending",
+            "amount": 2,
+            "lifetime": "invocation"
+          }
+        ],
+        "recovery_support": {
+          "checkpoint_formats": [
+            "infra.source/1"
+          ]
+        },
+        "cost_estimate": 1,
+        "cost_model": {
+          "network_transactions": 1,
+          "maximum_ms": 5000
+        },
+        "cost_evidence": "software_bounds_physical_qualification_pending"
+      },
+      "reference": {
+        "capability_id": "service.health.observe",
+        "provider_id": "waveshare-relay6ch-service-health-observe",
+        "revision": 6,
+        "definition_digest": "cfdb6de36d5ab744c17a084e068c7e5b4c10990f2942335a58b8680cd54647e6",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+      }
+    },
+    {
+      "provider": {
+        "provider_id": "waveshare-relay6ch-source-poll",
+        "revision": 6,
+        "implementation_ref": {
+          "kind": "risc-native-static",
+          "profile": "waveshare-esp32-s3-relay-6ch",
+          "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+        },
+        "provides": [
+          {
+            "capability_id": "source.poll",
+            "api_version": 1,
+            "contract_digest": "4f10b9ec48f8b47b43aed171d7b7074cf13663ae447c1a960026e52937a0e8c4"
+          }
+        ],
+        "requires": [],
+        "resource_bindings": [
+          {
+            "name": "tls",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "job",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "pending",
+            "amount": 2,
+            "lifetime": "invocation"
+          }
+        ],
+        "recovery_support": {
+          "checkpoint_formats": [
+            "infra.source/1"
+          ]
+        },
+        "cost_estimate": 1,
+        "cost_model": {
+          "network_transactions": 1,
+          "maximum_ms": 5000
+        },
+        "cost_evidence": "software_bounds_physical_qualification_pending"
+      },
+      "reference": {
+        "capability_id": "source.poll",
+        "provider_id": "waveshare-relay6ch-source-poll",
+        "revision": 6,
+        "definition_digest": "0d4783f9a4fbf9b9109dba192c05ec3daf4eb047aa176ea18b7928f270b59d41",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+      }
+    },
+    {
+      "provider": {
+        "provider_id": "waveshare-relay6ch-relay-bank",
+        "revision": 6,
+        "activation_policy": "independent_device_hardware/1",
+        "implementation_ref": {
+          "kind": "risc-native-static",
+          "profile": "waveshare-esp32-s3-relay-6ch",
+          "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+        },
+        "provides": [
+          {
+            "capability_id": "relay.bank",
+            "api_version": 1,
+            "contract_digest": "ac21aac12363429e7e84463265d1d1a75def14cd253376c043b4924b5d805bc5"
+          }
+        ],
+        "requires": [],
+        "resource_bindings": [
+          {
+            "name": "job",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "pending",
+            "amount": 2,
+            "lifetime": "invocation"
+          }
+        ],
+        "recovery_support": {
+          "checkpoint_formats": []
+        },
+        "cost_estimate": 1,
+        "cost_model": {
+          "maximum_ms": 8000
+        },
+        "cost_evidence": "software_bounds_physical_qualification_pending"
+      },
+      "reference": {
+        "capability_id": "relay.bank",
+        "provider_id": "waveshare-relay6ch-relay-bank",
+        "revision": 6,
+        "definition_digest": "2fb149b73705b4b1adb4726246372d2c2ee6a3f52aa6114922647a601689b743",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+      }
+    },
+    {
+      "provider": {
+        "provider_id": "waveshare-relay6ch-serial-rs485",
+        "revision": 6,
+        "activation_policy": "independent_device_hardware/1",
+        "implementation_ref": {
+          "kind": "risc-native-static",
+          "profile": "waveshare-esp32-s3-relay-6ch",
+          "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+        },
+        "provides": [
+          {
+            "capability_id": "serial.rs485",
+            "api_version": 1,
+            "contract_digest": "5ae18cf1778c5102f0233e6cd57df314a40fae549ea615751c5a9fc59c367134"
+          }
+        ],
+        "requires": [],
+        "resource_bindings": [
+          {
+            "name": "job",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "pending",
+            "amount": 2,
+            "lifetime": "invocation"
+          }
+        ],
+        "recovery_support": {
+          "checkpoint_formats": []
+        },
+        "cost_estimate": 1,
+        "cost_model": {
+          "maximum_ms": 8000
+        },
+        "cost_evidence": "software_bounds_physical_qualification_pending"
+      },
+      "reference": {
+        "capability_id": "serial.rs485",
+        "provider_id": "waveshare-relay6ch-serial-rs485",
+        "revision": 6,
+        "definition_digest": "82203bf8e4a0b35cb1b455500274e60dedc928e851214242e643e528f686938d",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+      }
+    },
+    {
+      "provider": {
+        "provider_id": "waveshare-relay6ch-sound-buzzer",
+        "revision": 6,
+        "activation_policy": "independent_device_hardware/1",
+        "implementation_ref": {
+          "kind": "risc-native-static",
+          "profile": "waveshare-esp32-s3-relay-6ch",
+          "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+        },
+        "provides": [
+          {
+            "capability_id": "sound.buzzer",
+            "api_version": 1,
+            "contract_digest": "177bc586eb1db73816422a633620bd2d865653a0347d7582030ff2a96b4941e1"
+          }
+        ],
+        "requires": [],
+        "resource_bindings": [
+          {
+            "name": "job",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "pending",
+            "amount": 2,
+            "lifetime": "invocation"
+          }
+        ],
+        "recovery_support": {
+          "checkpoint_formats": []
+        },
+        "cost_estimate": 1,
+        "cost_model": {
+          "maximum_ms": 8000
+        },
+        "cost_evidence": "software_bounds_physical_qualification_pending"
+      },
+      "reference": {
+        "capability_id": "sound.buzzer",
+        "provider_id": "waveshare-relay6ch-sound-buzzer",
+        "revision": 6,
+        "definition_digest": "ab85844701fb383981e65e0bc5c06388b94d497a1ce463c53610d1f2857a5c79",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+      }
+    },
+    {
+      "provider": {
+        "provider_id": "waveshare-relay6ch-light-rgb",
+        "revision": 6,
+        "activation_policy": "independent_device_hardware/1",
+        "implementation_ref": {
+          "kind": "risc-native-static",
+          "profile": "waveshare-esp32-s3-relay-6ch",
+          "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+        },
+        "provides": [
+          {
+            "capability_id": "light.rgb",
+            "api_version": 1,
+            "contract_digest": "ec653437d9e3848573221cb91663317231a65e7205f37af106fb401a9ccc5a1c"
+          }
+        ],
+        "requires": [],
+        "resource_bindings": [
+          {
+            "name": "job",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "pending",
+            "amount": 2,
+            "lifetime": "invocation"
+          }
+        ],
+        "recovery_support": {
+          "checkpoint_formats": []
+        },
+        "cost_estimate": 1,
+        "cost_model": {
+          "maximum_ms": 8000
+        },
+        "cost_evidence": "software_bounds_physical_qualification_pending"
+      },
+      "reference": {
+        "capability_id": "light.rgb",
+        "provider_id": "waveshare-relay6ch-light-rgb",
+        "revision": 6,
+        "definition_digest": "879c160a65c2610640010cb035017bfe025d5716c5edc00de196d080fb0315e6",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+      }
+    },
+    {
+      "provider": {
+        "provider_id": "waveshare-relay6ch-device-outputs-batch",
+        "revision": 6,
+        "activation_policy": "independent_device_hardware/1",
+        "implementation_ref": {
+          "kind": "risc-native-static",
+          "profile": "waveshare-esp32-s3-relay-6ch",
+          "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+        },
+        "provides": [
+          {
+            "capability_id": "device.outputs.batch",
+            "api_version": 1,
+            "contract_digest": "01095a358833a1cbc55d71a02ddf0390722b6df2b8601e314f7b8832e58a25cf"
+          }
+        ],
+        "requires": [],
+        "resource_bindings": [
+          {
+            "name": "job",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "pending",
+            "amount": 2,
+            "lifetime": "invocation"
+          }
+        ],
+        "recovery_support": {
+          "checkpoint_formats": []
+        },
+        "cost_estimate": 1,
+        "cost_model": {
+          "maximum_ms": 68000
+        },
+        "cost_evidence": "software_bounds_physical_qualification_pending"
+      },
+      "reference": {
+        "capability_id": "device.outputs.batch",
+        "provider_id": "waveshare-relay6ch-device-outputs-batch",
+        "revision": 6,
+        "definition_digest": "02e3195b0bf09dcb69e4064db04ea206502ca21497af01d8e576d22111545ab0",
+        "package_digest": "690643093d48aa52d602e0c63cc2c01178c40696960583069cffb75c24b53f73"
+      }
+    }
+  ]
+}

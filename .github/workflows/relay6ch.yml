@@ -1,0 +1,108 @@
+name: BiomeRTE relay6ch Wi-Fi firmware
+on:
+  push:
+    branches: [work/bounded-stream-relay6ch-20261110, work/relay6ch-biomerte-20261109, release/biomerte-relay6ch-v2.1.0]
+  pull_request:
+    paths: ['firmware/waveshare-relay6ch/**', 'Services/infra_node/**', 'Services/biome_node/**', 'test/biome_node/**', 'scripts/test_biome_node.sh', 'profiles/waveshare-esp32-s3-relay-6ch/**', 'scripts/*relay6ch*', 'test/infra_node/hardware.cpp', '.github/workflows/relay6ch.yml']
+permissions:
+  contents: read
+concurrency:
+  group: relay6ch-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: apps
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 2747b5907b1af06882e90a5a8d7ca355b34a7abf
+          path: 00-runtime
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Qualify streaming freshness independently of hardware
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror apps/test/relay6ch_host/stream.cpp -o /tmp/relay-stream
+          /tmp/relay-stream
+          g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined apps/test/relay6ch_host/stream.cpp -o /tmp/relay-stream-sanitize
+          ASAN_OPTIONS=detect_leaks=0 /tmp/relay-stream-sanitize
+      - run: |
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_infrastructure.sh
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_relay6ch.sh
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_biome_integration.sh
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_biome_node.sh
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" ASAN_OPTIONS=detect_leaks=0 SANITIZE=1 bash apps/scripts/test_biome_node.sh
+          RISC_RUNTIME_ROOT="$PWD/00-runtime" ASAN_OPTIONS=detect_leaks=0 SANITIZE=1 bash apps/scripts/test_relay6ch.sh
+  target:
+    runs-on: ubuntu-24.04
+    container: espressif/idf:v6.1@sha256:81893c71bb5e570088901f21def8684c25cd2a9020281bd01b843a7655edb18c
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: apps
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 2747b5907b1af06882e90a5a8d7ca355b34a7abf
+          path: 00-runtime
+          persist-credentials: false
+      - name: Build board firmware with no PSRAM
+        run: |
+          . "$IDF_PATH/export.sh"
+          export RISC_RUNTIME_ROOT="$PWD/00-runtime" RELAY6CH_OUTPUT="$PWD/delivery"
+          python apps/scripts/generate_relay6ch.py
+          python -c "import pathlib,base64; [print('GENERATED_POLICY:'+p+':'+base64.b64encode(pathlib.Path('apps',p).read_bytes()).decode()) for p in ['firmware/waveshare-relay6ch/main/Factory.h','profiles/waveshare-esp32-s3-relay-6ch/catalog.json','profiles/waveshare-esp32-s3-relay-6ch/node-policy.example.json']]"
+          # Confirm the clean build uses the same provider pins as the tested image.
+          git -C apps diff --exit-code -- firmware/waveshare-relay6ch/main/Factory.h profiles/waveshare-esp32-s3-relay-6ch
+          idf.py -C apps/firmware/waveshare-relay6ch -B "$PWD/relay-build" -D "RISC_RUNTIME_ROOT=$RISC_RUNTIME_ROOT" reconfigure
+          python - <<'PY'
+          import json, shlex
+          rows=json.load(open('relay-build/compile_commands.json'))
+          sntp=[r for r in rows if r['file'].replace('\\\\','/').endswith('/lwip/src/apps/sntp/sntp.c')]
+          assert len(sntp)==1, 'Expected the actual SDK lwIP SNTP translation unit'
+          args=sntp[0].get('arguments') or shlex.split(sntp[0]['command'])
+          required=['-DSNTP_COMP_ROUNDTRIP=1','-DSNTP_CHECK_RESPONSE=2']
+          assert all(flag in args for flag in required), args
+          print('SNTP_SDK_COMPILE_PROOF',json.dumps({'source':sntp[0]['file'],'required_flags':required}))
+          PY
+          cmake --build relay-build -- -j1
+          python apps/scripts/package_relay6ch.py --build relay-build --runtime 00-runtime --output delivery
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relay6ch-${{ github.event.pull_request.head.sha || github.sha }}
+          path: delivery/
+          if-no-files-found: error
+  publish:
+    needs: [test, target]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: relay6ch-${{ github.sha }}
+          path: delivery
+      - name: Publish exact tested candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd delivery
+          sha256sum --check SHA256SUMS
+          if gh release view biomerte-relay6ch-v2.1.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "This version has already been published."
+            exit 0
+          fi
+          gh release create biomerte-relay6ch-v2.1.0 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title 'BiomeRTE Wi-Fi relay6ch v2.1.0' --notes-file README.md *.bin *.json *.zip *LICENSE SHA256SUMS

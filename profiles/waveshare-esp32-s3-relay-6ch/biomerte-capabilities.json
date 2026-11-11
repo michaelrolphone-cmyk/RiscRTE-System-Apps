@@ -1,0 +1,142 @@
+{
+  "format": "biomerte-capabilities/1",
+  "firmware": "biomerte-relay6ch/2.1.0",
+  "transport": "https-signed-native-provider",
+  "contracts": [
+    {
+      "name": "relay.bank",
+      "version": 1,
+      "inputs": {
+        "channel": "int",
+        "on": "bool"
+      },
+      "outputs": {
+        "channel": "int",
+        "on": "bool",
+        "commanded_mask": "int",
+        "contact_feedback": "bool"
+      },
+      "description": "Set one physical relay channel, 1 through 6; reports commanded state.",
+      "usage": {
+        "example_inputs": {
+          "channel": 1,
+          "on": false
+        },
+        "before": "Acquire the board's shared resource. Channels are numbered 1 through 6; RC direction names depend on the physical wiring.",
+        "read_result": "Read channel, on and commanded_mask. contact_feedback=false means physical contacts are not instrumented."
+      }
+    },
+    {
+      "name": "device.outputs.batch",
+      "version": 1,
+      "inputs": {
+        "steps": "list"
+      },
+      "outputs": {
+        "steps_completed": "int",
+        "elapsed_ms": "int",
+        "commanded_mask": "int",
+        "tone_hz": "int",
+        "contact_feedback": "bool",
+        "rgb": "list",
+        "applied_at_ms": "list",
+        "relay_masks": "list"
+      },
+      "description": "Apply a locally timed sequence of relay, RGB and buzzer frames.",
+      "usage": {
+        "example_inputs": {
+          "steps": [
+            {
+              "off": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "tone_hz": 0
+            }
+          ]
+        },
+        "before": "Acquire the same board resource as relay.bank. Existing firmware limits are 1–32 frames, 3,072 input bytes and 60,000 ms total waits; all steps validate before any I/O.",
+        "read_result": "Read steps_completed, relay_masks, applied_at_ms and final output state. An uncertain result must be reconciled by operation ID without replaying the batch."
+      }
+    },
+    {
+      "name": "serial.rs485",
+      "version": 1,
+      "inputs": {
+        "baud": "int",
+        "parity": "str",
+        "stop_bits": "int",
+        "tx_hex": "str",
+        "rx_max": "int",
+        "timeout_ms": "int"
+      },
+      "outputs": {
+        "tx_accepted_bytes": "int",
+        "rx_hex": "str",
+        "timed_out": "bool",
+        "tx_completed": "bool"
+      },
+      "description": "Exchange raw bytes on the board's automatic-direction RS-485 UART.",
+      "usage": {
+        "before": "Acquire the shared board resource; provide the device's serial settings. Payload is lower-case hexadecimal. No Modbus validation is implied.",
+        "read_result": "Inspect tx_completed, rx_hex and timed_out. A partial or uncertain transmission must not be replayed."
+      }
+    },
+    {
+      "name": "sound.buzzer",
+      "version": 1,
+      "inputs": {
+        "frequency_hz": "int",
+        "duration_ms": "int"
+      },
+      "outputs": {
+        "frequency_hz": "int",
+        "duration_ms": "int"
+      },
+      "description": "Play one buzzer tone using the existing board driver.",
+      "usage": {
+        "before": "Acquire the shared board resource. The existing driver accepts 100–10000 Hz and 1–5000 ms.",
+        "read_result": "Successful output reports the requested frequency and duration."
+      }
+    },
+    {
+      "name": "light.rgb",
+      "version": 1,
+      "inputs": {
+        "red": "int",
+        "green": "int",
+        "blue": "int"
+      },
+      "outputs": {
+        "red": "int",
+        "green": "int",
+        "blue": "int"
+      },
+      "description": "Set the board RGB LED to three 8-bit channel values.",
+      "usage": {
+        "example_inputs": {
+          "red": 0,
+          "green": 0,
+          "blue": 0
+        },
+        "before": "Acquire the shared board resource. Each component is 0–255.",
+        "read_result": "Successful output reports commanded red, green and blue."
+      }
+    },
+    {
+      "name": "device.outputs.stream",
+      "version": 1,
+      "inputs": {},
+      "outputs": {},
+      "description": "Persistent fenced desired-output stream; discrete invocation is unsupported.",
+      "usage": {
+        "before": "Acquire a persistent native lease and use stream.open. Desired outputs contain mask (six bits), authority, generation, epoch, sequence, issued_at and expires_at. Heartbeats do not renew intent.",
+        "read_result": "Received and applied acks are distinct. contact_feedback=false. Provider neutralizes when intent expires or transport disconnects."
+      }
+    }
+  ]
+}

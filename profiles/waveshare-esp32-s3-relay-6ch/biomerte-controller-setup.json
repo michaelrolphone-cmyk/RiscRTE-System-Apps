@@ -1,0 +1,8 @@
+{
+  "format": "biomerte-relay-setup/1",
+  "biomerte": {
+    "url": "https://biomerte-controller.cantikash.chatgpt.site/api/provider/call",
+    "site": "f45540bf9910412680734d0613e84460",
+    "realm": "site"
+  }
+}

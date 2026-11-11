@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "installation_id": "example-installation",
+  "credential_generation": 1,
+  "credentials": {},
+  "participant_id": "",
+  "cursor": 0,
+  "pending": [],
+  "job": null,
+  "checkpoints": {},
+  "configuration_revision": 1
+}
