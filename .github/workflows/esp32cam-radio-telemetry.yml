@@ -54,7 +54,7 @@ jobs:
           PY
       - name: Test UDP collector
         working-directory: firmware/esp32cam-rtsp-radio/overlay
-        run: python -m unittest discover -s tests -p 'test_telemetry_receiver.py' -v
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Compile radio model tests
         working-directory: firmware/esp32cam-rtsp-radio/overlay
         run: c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude test/radio_telemetry_model/test_model.cpp -o "$RUNNER_TEMP/radio-model-test"
@@ -76,3 +76,8 @@ jobs:
         run: |
           c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude test/ahrs_model/test_model.cpp -o "$RUNNER_TEMP/ahrs-model-test"
           "$RUNNER_TEMP/ahrs-model-test"
+      - name: Compile and run ultrasonic model tests
+        working-directory: firmware/esp32cam-rtsp-radio/overlay
+        run: |
+          c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude test/ultrasonic_model/test_model.cpp -o "$RUNNER_TEMP/ultrasonic-model-test"
+          "$RUNNER_TEMP/ultrasonic-model-test"

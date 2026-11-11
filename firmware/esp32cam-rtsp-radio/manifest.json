@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.7",
+  "variant": "1.0-radio.8",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -15,7 +15,7 @@
     },
     {
       "path": "integration.patch",
-      "sha256": "25f732276426251ee3c2c8520495648b471a2ef9a1fc44ae63b02783ac9eaa9a"
+      "sha256": "446fd3c4802637a0b6cfe21e29d52ef9d658f0557c85eaf3f9d091e4c28aae03"
     },
     {
       "path": "LICENSE",
@@ -63,7 +63,7 @@
     },
     {
       "path": "overlay/src/radio_telemetry.cpp",
-      "sha256": "9dc2c3765d2d65f93bd5ff2912552cae413cc2d7190a47f94b6856345e88589d"
+      "sha256": "e3554898110a067d755f801e560e58e32b28dd49799b10b3379727dc7389c4bf"
     },
     {
       "path": "overlay/test/ahrs_model/test_model.cpp",
@@ -83,7 +83,7 @@
     },
     {
       "path": "overlay/tools/telemetry_receiver.py",
-      "sha256": "80ef185a02281b3ce9441830e5cceec9ec4d9a748d09d2c7da8b506a7b7b76a5"
+      "sha256": "193884d351d799f8045959dbbdff6be4070eecfb0a300227380695e8526f5329"
     },
     {
       "path": "prepare.py",
@@ -91,11 +91,35 @@
     },
     {
       "path": "README.md",
-      "sha256": "26a589b985a01fa1295fd18c42dd0bb3edad8e76d7a380fe367cad185932bb77"
+      "sha256": "ae39e0fa5fdb194b3d8be70fa613d24de7e4280cfb6e6b820420e444ebe3c96c"
     },
     {
       "path": "VALIDATION.md",
       "sha256": "d9265e05657390a23e683e494d480f00cad6a3c21b2e38dda0bb4b459385dec3"
+    },
+    {
+      "path": "ULTRASONIC.md",
+      "sha256": "b29a4d51acee405ab97c6a61efa62951d1bd838f208d8e63451b68d5d1185e2a"
+    },
+    {
+      "path": "overlay/include/ultrasonic_model.h",
+      "sha256": "b195cab2c17bced268eaf4991e45f3521362504ba628112a3ce4f92e3300c380"
+    },
+    {
+      "path": "overlay/include/ultrasonic_telemetry.h",
+      "sha256": "dc994a97418e67e0749db887a959c8b621479f4fa378cb0d134b8d116de3c867"
+    },
+    {
+      "path": "overlay/src/ultrasonic_telemetry.cpp",
+      "sha256": "0d22ea05b884c976f7714c7f482ad268da9ec2aecb3286728d0b7c9505faeeed"
+    },
+    {
+      "path": "overlay/test/ultrasonic_model/test_model.cpp",
+      "sha256": "8763f634902b042385f1577a5f7fd26621fb445684496132782a7890cf664738"
+    },
+    {
+      "path": "overlay/tests/test_ultrasonic_receiver.py",
+      "sha256": "4899cddb73c5d7869bc02bd7d73f44e59d0a663f0df63a0d156c90f88d2b5542"
     }
   ]
 }

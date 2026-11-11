@@ -1,6 +1,7 @@
 #include "radio_telemetry.h"
 #include "radio_telemetry_model.h"
 #include "ahrs_telemetry.h"
+#include "ultrasonic_telemetry.h"
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
@@ -456,6 +457,7 @@ void putSummary(JsonObject output, bool withConfig) {
     capabilities["ftm"] = static_cast<bool>(RADIO_HAS_FTM);
     capabilities["bluetooth_classic"] = false;
     capabilities["ahrs"] = true;
+    capabilities["ultrasonic"] = true;
     JsonObject counts = output.createNestedObject("counts");
     counts["wifi"] = wifiCount;
     counts["ble"] = bleCount;
@@ -480,6 +482,7 @@ void putSummary(JsonObject output, bool withConfig) {
     if (withConfig) {
         putConfig(output.createNestedObject("config"), config);
         ahrs_telemetry::writeJson(output.createNestedObject("ahrs"));
+        ultrasonic_telemetry::writeJson(output.createNestedObject("ultrasonic"));
     }
     putFtm(output.createNestedObject("ftm"), ftmCopy);
 }
@@ -783,8 +786,23 @@ void publishAhrs(WiFiUDP &udp, const Config &config, uint32_t now, uint32_t &las
     sendDatagram(udp, destination, config.udpPort, document);
 }
 
+void publishUltrasonic(WiFiUDP &udp, const Config &config, uint32_t now, uint32_t &lastPublish) {
+    if (pauseRequested() || !config.udpHost[0] || now - lastPublish < 260) return;
+    lastPublish = now;
+    IPAddress destination;
+    if (!destination.fromString(config.udpHost)) return;
+    DynamicJsonDocument document(6144);
+    JsonObject output = document.to<JsonObject>();
+    uint32_t sequence;
+    { Lock lock; sequence = ++packetSequence; }
+    putEnvelope(output, "ultrasonic", sequence);
+    ultrasonic_telemetry::writeJson(output.createNestedObject("ultrasonic"), true);
+    sendDatagram(udp, destination, config.udpPort, document);
+}
+
 void worker(void *) {
     WiFiUDP udp;
+    uint32_t lastUltrasonicPublish = 0;
     bool wifiOwned = false, wifiCancelled = false, publishing = false;
     uint32_t wifiStarted = 0;
     uint32_t nextWifi = millis() + 5000;
@@ -938,6 +956,7 @@ void worker(void *) {
         }
 #endif
         publishAhrs(udp, config, now, lastAhrsPublish);
+        publishUltrasonic(udp, config, now, lastUltrasonicPublish);
         publishStep(udp, config, now, publishing, publicationCursor, lastPublish);
         vTaskDelay(pdMS_TO_TICKS(20));
     }
@@ -967,11 +986,11 @@ void sendError(int code, const String &message) {
 
 void handleSnapshot() {
     if (!authorized()) return;
-    DynamicJsonDocument document(8192);
+    DynamicJsonDocument document(12288);
     putSummary(document.to<JsonObject>(), true);
     if (document.overflowed()) { sendError(503, "Telemetry summary allocation failed"); return; }
     String serialized;
-    serialized.reserve(8192);
+    serialized.reserve(12288);
     serializeJson(document, serialized);
     if (!serialized.length()) { sendError(503, "Telemetry serialization failed"); return; }
     serialized.remove(serialized.length() - 1);
@@ -1045,6 +1064,21 @@ void handleAhrs() {
     putEnvelope(output, "ahrs", sequence);
     ahrs_telemetry::writeJson(output.createNestedObject("ahrs"));
     if (document.overflowed()) { sendError(503, "AHRS snapshot allocation failed"); return; }
+    String serialized;
+    serializeJson(document, serialized);
+    httpServer->sendHeader("Cache-Control", "no-store");
+    httpServer->send(200, "application/json", serialized);
+}
+
+void handleUltrasonic() {
+    if (!authorized()) return;
+    DynamicJsonDocument document(6144);
+    JsonObject output = document.to<JsonObject>();
+    uint32_t sequence;
+    { Lock lock; sequence = packetSequence; }
+    putEnvelope(output, "ultrasonic", sequence);
+    ultrasonic_telemetry::writeJson(output.createNestedObject("ultrasonic"));
+    if (document.overflowed()) { sendError(503, "Ultrasonic allocation failed"); return; }
     String serialized;
     serializeJson(document, serialized);
     httpServer->sendHeader("Cache-Control", "no-store");
@@ -1188,6 +1222,8 @@ void begin(WebServer &server, bool (*authorize)()) {
     server.on("/api/ahrs", HTTP_GET, handleAhrs);
     server.on("/api/ahrs/calibrate", HTTP_POST, handleAhrsCalibration);
     ahrs_telemetry::begin();
+    ultrasonic_telemetry::begin();
+    server.on("/api/ultrasonic", HTTP_GET, handleUltrasonic);
     if (!stateMutex) return;
     loadConfig();
 #if RADIO_HAS_FTM
@@ -1207,6 +1243,7 @@ void loop() {
 
 void pause(bool paused) {
     ahrs_telemetry::pause(paused);
+    ultrasonic_telemetry::pause(paused);
     if (!stateMutex) return;
     Lock lock;
     isPaused = paused;

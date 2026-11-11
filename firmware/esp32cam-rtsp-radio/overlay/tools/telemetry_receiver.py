@@ -148,6 +148,42 @@ def _ahrs(data):
     _integer(calibration.get("samples"), "calibration samples")
 
 
+def _ultrasonic(data):
+    if not isinstance(data, dict) or data.get("schema") != "hcsr04.v1":
+        raise PacketError("unsupported ultrasonic schema")
+    for key in ("worker_ready", "paused"):
+        if type(data.get(key)) is not bool:
+            raise PacketError("ultrasonic state must be boolean")
+    sensors = data.get("sensors")
+    if not isinstance(sensors, list) or len(sensors) != 4:
+        raise PacketError("four ultrasonic slots required")
+    ids = set()
+    for sensor in sensors:
+        if not isinstance(sensor, dict):
+            raise PacketError("ultrasonic slot must be an object")
+        name = sensor.get("id")
+        if name not in ("front", "left", "right", "rear") or name in ids:
+            raise PacketError("duplicate or unknown ultrasonic id")
+        ids.add(name)
+        valid = sensor.get("valid")
+        if type(valid) is not bool:
+            raise PacketError("ultrasonic valid must be boolean")
+        _integer(sensor.get("sequence"), "ultrasonic sequence")
+        _text(sensor.get("status"), "ultrasonic status", 64)
+        for key in ("age_ms", "observed_uptime_ms"):
+            if sensor.get(key) is not None:
+                _integer(sensor[key], key)
+        if valid:
+            if data["paused"] or not data["worker_ready"] or sensor.get("age_ms") is None:
+                raise PacketError("ultrasonic validity contradicts device state")
+            _number(sensor.get("distance_m"), "ultrasonic distance", .02, 4)
+            _integer(sensor.get("echo_us"), "ultrasonic echo", 118, 23529)
+            if sensor["age_ms"] > 1000:
+                raise PacketError("ultrasonic stale sample marked valid")
+        elif sensor.get("distance_m") is not None or sensor.get("echo_us") is not None:
+            raise PacketError("invalid ultrasonic sample must have null values")
+
+
 def parse_datagram(data):
     """Validate schema 1 without discarding additive firmware metadata."""
     if not data or len(data) > MAX_DATAGRAM:
@@ -203,6 +239,8 @@ def parse_datagram(data):
             raise PacketError("calibrated must be boolean")
         if "tx_power_dbm" in item:
             _number(item["tx_power_dbm"], "tx_power_dbm", -127, 127, nullable=True)
+    elif kind == "ultrasonic":
+        _ultrasonic(message.get("ultrasonic"))
     elif kind == "ahrs":
         _ahrs(message.get("ahrs"))
     elif kind == "summary":
@@ -270,12 +308,14 @@ class LatestObservations:
         self.items = OrderedDict()
         self.summaries = OrderedDict()
         self.ahrs = OrderedDict()
+        self.ultrasonic = OrderedDict()
 
     def add(self, record, now):
         message = record["telemetry"]
         receiver = (record["source_ip"], message["receiver_id"])
-        if message["type"] in ("summary", "ahrs"):
-            collection = self.ahrs if message["type"] == "ahrs" else self.summaries
+        if message["type"] in ("summary", "ahrs", "ultrasonic"):
+            collection = {"ahrs": self.ahrs, "summary": self.summaries,
+                          "ultrasonic": self.ultrasonic}[message["type"]]
             previous = collection.get(receiver)
             if previous and not _is_newer_packet(message, previous[0]["telemetry"]):
                 return
@@ -303,7 +343,7 @@ class LatestObservations:
                 del self.items[key]
             else:
                 rows.append((record, age))
-        for collection in (self.summaries, self.ahrs):
+        for collection in (self.summaries, self.ahrs, self.ultrasonic):
             for key, (_record, arrived) in list(collection.items()):
                 if now - arrived > self.ttl:
                     del collection[key]
@@ -348,6 +388,16 @@ def render_view(cache, now, rejected):
                          (display_text(message["receiver_id"], 64),
                           record["source_ip"], display_text(ftm.get("status"), 80),
                           dist_text, age_text))
+    for record, arrived in cache.ultrasonic.values():
+        message = record["telemetry"]
+        lines.append("SONAR %s" % display_text(message["receiver_id"], 32))
+        for sensor in message["ultrasonic"]["sensors"]:
+            age = sensor["age_ms"]
+            age = None if age is None else age + max(0, now-arrived)*1000
+            valid = sensor["valid"] and age is not None and age <= 1000
+            value = "%.3f m" % sensor["distance_m"] if valid else "--"
+            lines.append("  %s: %s (%s)" % (sensor["id"], value,
+                         sensor["status"] if not sensor["valid"] or valid else "stale"))
     for record, arrived in cache.ahrs.values():
         message = record["telemetry"]
         data = message["ahrs"]
