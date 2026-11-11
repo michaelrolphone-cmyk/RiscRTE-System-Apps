@@ -32,3 +32,19 @@ target_sources(${bundle_lib} PRIVATE "${CMAKE_BINARY_DIR}/risc_esp_crt_bundle.c"
 # library itself; setting them only on the application would not change SNTP.
 idf_component_get_property(lwip_lib lwip COMPONENT_LIB)
 target_compile_definitions(${lwip_lib} PUBLIC SNTP_COMP_ROUNDTRIP=1 SNTP_CHECK_RESPONSE=2)
+
+# Pinned AES DMA driver: normal TLS records use bounded, aligned stack
+# descriptors rather than a per-record allocation from the busy shared heap.
+execute_process(COMMAND "${PYTHON}" "${CMAKE_CURRENT_LIST_DIR}/aes_dma_workspace.py"
+ "${bundle_dir}/port/aes/dma/esp_aes_dma_core.c" "${CMAKE_BINARY_DIR}/risc_relay_aes_dma.c"
+ COMMAND_ERROR_IS_FATAL ANY)
+get_target_property(aes_sources tfpsacrypto SOURCES)
+set(aes_original_sources "${aes_sources}")
+list(FILTER aes_original_sources INCLUDE REGEX "esp_aes_dma_core[.]c$")
+list(LENGTH aes_original_sources aes_original_count)
+if(NOT aes_original_count EQUAL 1)
+ message(FATAL_ERROR "Expected exactly one pinned AES DMA translation unit")
+endif()
+list(FILTER aes_sources EXCLUDE REGEX "esp_aes_dma_core[.]c$")
+set_property(TARGET tfpsacrypto PROPERTY SOURCES "${aes_sources}")
+target_sources(tfpsacrypto PRIVATE "${CMAKE_BINARY_DIR}/risc_relay_aes_dma.c")

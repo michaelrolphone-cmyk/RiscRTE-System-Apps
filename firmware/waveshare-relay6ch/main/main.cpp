@@ -162,7 +162,7 @@ extern "C" void app_main(){
    esp_task_wdt_reset();
   }
   const unsigned state=unsigned(node->phase);if(state!=last||now(nullptr)-report>=15000){
-   ESP_LOGI("relay6ch","state=%u reason=%s free=%llu largest=%llu stack=%u reset=%u",state,node->status.reason,(unsigned long long)m.internal_free,(unsigned long long)m.internal_largest,m.stack_headroom,unsigned(esp_reset_reason()));
+   ESP_LOGI("relay6ch","state=%u reason=%s free=%llu largest=%llu dma=%llu dma_largest=%llu stack=%u reset=%u",state,node->status.reason,(unsigned long long)m.internal_free,(unsigned long long)m.internal_largest,(unsigned long long)m.dma_free,(unsigned long long)m.dma_largest,m.stack_headroom,unsigned(esp_reset_reason()));
    JsonDocument identity;provider->publicIdentity(identity.to<JsonObject>());node->biomeTargetLocked|=identity["pairing"]=="enrolled";
    ESP_LOGI("relay6ch","biomerte=%s fingerprint=%s resource=%s error=%s",identity["pairing"]|"unconfigured",identity["fingerprint"]|"",identity["resource"]|"",identity["error"]|"");
    last=state;report=now(nullptr);
