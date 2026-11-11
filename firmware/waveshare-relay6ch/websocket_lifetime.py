@@ -77,7 +77,7 @@ static void relay_close_transport(esp_websocket_client_handle_t client)
             ESP_LOGI(TAG, "Control TCP_NODELAY enabled");
 """
     source=source.replace(anchor,fast+anchor)
-    source=source.replace('#include <stdio.h>', '#include <stdio.h>\\n#include "lwip/sockets.h"')
+    source=source.replace('#include <stdio.h>', '#include <stdio.h>' + chr(10) + '#include "lwip/sockets.h"')
     return source
 if __name__=="__main__":
     s=pathlib.Path(sys.argv[1]).read_text()
