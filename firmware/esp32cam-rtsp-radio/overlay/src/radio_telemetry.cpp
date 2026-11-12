@@ -78,6 +78,7 @@ struct Observation {
 struct Status {
     bool workerReady = false;
     bool wifiScan = false;
+    uint8_t wifiScanChannel = 0;
     bool bleScan = false;
     bool bleInitialized = false;
     bool bleInitializing = false;
@@ -464,6 +465,11 @@ void putSummary(JsonObject output, bool withConfig) {
     JsonObject report = output.createNestedObject("status");
     report["worker_ready"] = state.workerReady;
     report["wifi_scan"] = state.wifiScan;
+    report["wifi_scan_mode"] = "passive_interleaved_channels";
+    report["wifi_scan_result_scope"] = "single_channel";
+    report["wifi_scan_channel"] = state.wifiScanChannel;
+    report["wifi_scan_dwell_ms"] = static_cast<uint32_t>(radio_telemetry_model::PassiveWifiSweep::DWELL_MS);
+    report["wifi_channel_spacing_ms"] = static_cast<uint32_t>(radio_telemetry_model::PassiveWifiSweep::SPACING_MS);
     report["ble_scan"] = state.bleScan;
     report["ble_initialized"] = state.bleInitialized;
     report["ble_initializing"] = state.bleInitializing;
@@ -805,6 +811,7 @@ void worker(void *) {
     uint32_t lastUltrasonicPublish = 0;
     bool wifiOwned = false, wifiCancelled = false, publishing = false;
     uint32_t wifiStarted = 0;
+    radio_telemetry_model::PassiveWifiSweep wifiSweep;
     uint32_t nextWifi = millis() + 5000;
     uint32_t nextBle = millis() + 1000;
     uint32_t lastExpire = millis(), lastPublish = millis(), lastRevision = 0;
@@ -835,6 +842,7 @@ void worker(void *) {
             lastPublish = now - config.publishInterval;
             lastAhrsPublish = now - config.ahrsPublishInterval;
             lastRevision = revision;
+            wifiSweep.reset();
             nextWifi = now + 1000;
             nextBle = now + 1000;
         }
@@ -872,6 +880,7 @@ void worker(void *) {
             }
         }
         if (paused || !connected) {
+            wifiSweep.reset();
             if (wifiOwned && !wifiCancelled) {
                 esp_wifi_scan_stop();
                 wifiCancelled = true;
@@ -927,18 +936,35 @@ void worker(void *) {
                    config.wifiEnabled && static_cast<int32_t>(now - nextWifi) >= 0) {
             // Arduino owns its scan result allocation. Do not replace another active scan.
             if (!pauseRequested() && WiFi.scanComplete() != WIFI_SCAN_RUNNING) {
-                int result = WiFi.scanNetworks(true, true, true, 120);
-                nextWifi = now + config.wifiInterval;
-                if (result == WIFI_SCAN_RUNNING) {
-                    wifiOwned = true;
-                    wifiCancelled = false;
-                    wifiStarted = now;
-                    Lock lock;
-                    status.wifiScan = true;
-                    status.wifiError = 0;
-                } else {
-                    Lock lock;
-                    status.wifiError = result;
+                // Keep every passive channel dwell, interleaved with home-channel
+                // traffic. A full all-channel sweep otherwise stalls camera TCP.
+                if (!wifiSweep.active()) {
+                    wifi_country_t country = {};
+                    const esp_err_t error = esp_wifi_get_country(&country);
+                    if (error != ESP_OK || !wifiSweep.begin(country.schan, country.nchan, now)) {
+                        nextWifi = now + 1000;
+                        Lock lock;
+                        status.wifiError = error == ESP_OK ? ESP_ERR_INVALID_ARG : error;
+                    }
+                }
+                if (wifiSweep.active()) {
+                    const uint8_t channel = wifiSweep.channel();
+                    int result = WiFi.scanNetworks(true, true, true,
+                        radio_telemetry_model::PassiveWifiSweep::DWELL_MS, channel);
+                    if (result == WIFI_SCAN_RUNNING) {
+                        nextWifi = wifiSweep.advance(now, config.wifiInterval);
+                        wifiOwned = true;
+                        wifiCancelled = false;
+                        wifiStarted = now;
+                        Lock lock;
+                        status.wifiScan = true;
+                        status.wifiScanChannel = channel;
+                        status.wifiError = 0;
+                    } else {
+                        nextWifi = now + 1000; // Retry this channel; do not skip coverage.
+                        Lock lock;
+                        status.wifiError = result;
+                    }
                 }
             } else nextWifi = now + 1000;
         }
