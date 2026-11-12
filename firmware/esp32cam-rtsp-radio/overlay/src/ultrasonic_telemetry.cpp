@@ -1,6 +1,8 @@
 #include "ultrasonic_telemetry.h"
 #include "ultrasonic_model.h"
+#include "ultrasonic_capture_model.h"
 #include <Arduino.h>
+#include <esp_timer.h>
 #include <driver/gpio.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -15,12 +17,13 @@ constexpr uint8_t ECHO[4] = {47, 3, 45, 46};
 const char *const IDS[4] = {"front", "left", "right", "rear"};
 // ECHO GPIO3/45/46 are strapping pins. Read ULTRASONIC.md before wiring.
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
-struct Sample {
-    uint32_t at = 0, pulse = 0, sequence = 0;
-    bool sampled = false, valid = false;
-    const char *status = "not_sampled";
-};
+using ultrasonic_capture::Sample;
 Sample samples[4];
+// Eight seconds of per-transducer history at the 260ms revisit interval.
+// Camera capture selects causally, even if its HTTP request is served later.
+constexpr size_t HISTORY = 32;
+Sample history[4][HISTORY];
+size_t historyNext[4] = {};
 bool ready = false, isPaused = false;
 volatile int active = -1;
 volatile bool risen = false, done = false;
@@ -55,8 +58,10 @@ void worker(void *) {
         portEXIT_CRITICAL(&mux);
         bool complete = false, aborted = false;
         uint32_t pulse = 0;
+        uint64_t triggeredUs = esp_timer_get_time();
         if (!stuck) {
             digitalWrite(TRIG[index], HIGH);
+            triggeredUs = esp_timer_get_time();
             delayMicroseconds(12);
             digitalWrite(TRIG[index], LOW);
             const uint32_t triggered = micros();
@@ -77,12 +82,16 @@ void worker(void *) {
         active = -1;
         Sample &s = samples[index];
         s.sampled = true;
-        s.at = millis();
+        s.completedUs = esp_timer_get_time();
+        s.observedUs = complete ? triggeredUs + pulse / 2 : s.completedUs;
+        s.at = static_cast<uint32_t>(s.observedUs / 1000);
         ++s.sequence;
         s.pulse = pulse;
         s.valid = complete && ultrasonic_model::inRange(pulse) && !isPaused && !aborted;
         s.status = isPaused || aborted ? "paused" : stuck ? "echo_stuck_high" :
             !complete ? "timeout" : !ultrasonic_model::inRange(pulse) ? "out_of_range" : "ok";
+        history[index][historyNext[index]] = s;
+        historyNext[index] = (historyNext[index] + 1) % HISTORY;
         portEXIT_CRITICAL(&mux);
         // One transmitter at a time, >=65ms between all sensors' bursts.
         while (uint32_t(millis() - started) < ultrasonic_model::TRIGGER_INTERVAL_MS)
@@ -111,18 +120,23 @@ void pause(bool paused) {
         active = -1;
         // Resume cannot resurrect readings captured before an OTA pause.
         for (auto &s : samples) s.valid = false;
+        for (auto &sensor : history) for (auto &s : sensor) s = Sample{};
     }
     portEXIT_CRITICAL(&mux);
 }
-void writeJson(JsonObject output, bool compact) {
+void writeJsonAt(JsonObject output, uint64_t captureUs, bool compact) {
     Sample copy[4];
     bool paused, running;
     portENTER_CRITICAL(&mux);
-    for (int i = 0; i < 4; ++i) copy[i] = samples[i];
+    for (int i = 0; i < 4; ++i) {
+        copy[i] = ultrasonic_capture::selectAt(history[i], captureUs);
+    }
     paused = isPaused; running = ready;
     portEXIT_CRITICAL(&mux);
-    const uint32_t now = millis();
+    const uint32_t now = static_cast<uint32_t>(captureUs / 1000);
     output["schema"] = "hcsr04.v1";
+    output["sample_clock"] = "esp_timer";
+    output["capture_monotonic_us"] = captureUs;
     output["worker_ready"] = running;
     output["paused"] = paused;
     output["trigger_interval_ms"] = ultrasonic_model::TRIGGER_INTERVAL_MS;
@@ -143,6 +157,8 @@ void writeJson(JsonObject output, bool compact) {
         item["status"] = !running ? "worker_unavailable" : paused ? "paused" :
             s.valid && !valid ? "stale" : s.status;
         if (s.sampled) {
+            item["observed_monotonic_us"] = s.observedUs;
+            item["completed_monotonic_us"] = s.completedUs;
             item["observed_uptime_ms"] = s.at;
             item["age_ms"] = uint32_t(now - s.at);
         } else {
@@ -155,5 +171,8 @@ void writeJson(JsonObject output, bool compact) {
             item["distance_m"] = nullptr; item["echo_us"] = nullptr;
         }
     }
+}
+void writeJson(JsonObject output, bool compact) {
+    writeJsonAt(output, esp_timer_get_time(), compact);
 }
 }

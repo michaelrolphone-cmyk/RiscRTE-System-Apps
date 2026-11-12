@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.9-sonar-sync",
+  "variant": "1.0-radio.10-sonar-mapping",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -35,7 +35,7 @@
     },
     {
       "path": "integration.patch",
-      "sha256": "354c04e483b6634c6581a92f0c45541d04a4fa3844d37c5aee3ab31c12e514a5"
+      "sha256": "d4c694143bd2ffed270f907538f8990f9c260853729dc005709a791203a8270f"
     },
     {
       "path": "overlay/html/telemetry.html",
@@ -71,7 +71,7 @@
     },
     {
       "path": "overlay/include/ultrasonic_telemetry.h",
-      "sha256": "dc994a97418e67e0749db887a959c8b621479f4fa378cb0d134b8d116de3c867"
+      "sha256": "d0d97c9345a39978a4f3288be4b9091ee9cd7d4fae6035af3cff5f832a0794b5"
     },
     {
       "path": "overlay/platformio.ini",
@@ -87,11 +87,11 @@
     },
     {
       "path": "overlay/src/radio_telemetry.cpp",
-      "sha256": "f65493aa40da49aff27f17559c833bfafa39d0a4319f83a0daf0f983934e6553"
+      "sha256": "a80e9c0a0f1571e1929ddf409817b2c6a1fe2472a91e12d24772f6c87db96631"
     },
     {
       "path": "overlay/src/ultrasonic_telemetry.cpp",
-      "sha256": "0d22ea05b884c976f7714c7f482ad268da9ec2aecb3286728d0b7c9505faeeed"
+      "sha256": "205c82b520d1db7949f61c626e31f35da41448f0782f0bd69f80d4259c4a3b17"
     },
     {
       "path": "overlay/test/ahrs_model/test_model.cpp",
@@ -124,6 +124,14 @@
     {
       "path": "prepare.py",
       "sha256": "fa751b2263fecef9e4ab324656f493b04da649ca4bf9b3cdb6d8b7a35bdef25b"
+    },
+    {
+      "path": "overlay/include/ultrasonic_capture_model.h",
+      "sha256": "6e0faba0fb66c4ac641b5e869326ba14991bf0f05e2e4a48da05b14967a4ab17"
+    },
+    {
+      "path": "overlay/test/sonar_capture_model/test_model.cpp",
+      "sha256": "8b7dd90bda6265f36efd3b4f47dd57ff9064945e48de9ec499fd4895d36625b8"
     }
   ]
 }

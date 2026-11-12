@@ -1215,6 +1215,10 @@ bool writeFrameJson(JsonObject output, uint64_t captureUs) {
     JsonObject ahrs=output.createNestedObject("ahrs");
     putEnvelope(ahrs,"ahrs",sequence);ahrs["uptime_ms"]=static_cast<uint32_t>(captureUs/1000);
     if (!ahrs_telemetry::writeJsonAt(ahrs.createNestedObject("ahrs"),captureUs)) output["ahrs"]=nullptr;
+    JsonObject sonar=output.createNestedObject("ultrasonic");
+    putEnvelope(sonar,"ultrasonic",sequence);
+    sonar["uptime_ms"]=static_cast<uint32_t>(captureUs/1000);
+    ultrasonic_telemetry::writeJsonAt(sonar.createNestedObject("ultrasonic"),captureUs);
     JsonObject radio=output.createNestedObject("radio");
     putEnvelope(radio,nullptr,sequence);radio["uptime_ms"]=static_cast<uint32_t>(captureUs/1000);
     for (int kind=0;kind<2;++kind) {
