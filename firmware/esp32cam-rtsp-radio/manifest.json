@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "variant": "1.0-radio.11-camera-exposure",
+  "target": "esp32cam_s3_wroom_n16r8",
+  "upstream_repository": "rzeldent/esp32cam-rtsp",
+  "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "e57e790c419a3641ed79fd561adeafd68c331cf03fd3bc1d0e12afaf504f055e"
+    },
+    {
+      "path": "AHRS.md",
+      "sha256": "6b505cc5cc8a9e492e686365a312c12e0de0668d3c670374f3d7abb4a7b63705"
+    },
+    {
+      "path": "CAMERA_EXPOSURE.md",
+      "sha256": "db20670ac36ed91b69e39a76ff44f89c6e8dacfefd17377b96457d27c2c2d472"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "README.md",
+      "sha256": "ae39e0fa5fdb194b3d8be70fa613d24de7e4280cfb6e6b820420e444ebe3c96c"
+    },
+    {
+      "path": "SYNCHRONIZATION.md",
+      "sha256": "01ef433ee5154550c5035f4f00b71db64307f1984259680550054cde665a58de"
+    },
+    {
+      "path": "ULTRASONIC.md",
+      "sha256": "a92b9900ffc298d82e54c4509f84e222e68ecb7aeed13d3088397631d30cf333"
+    },
+    {
+      "path": "VALIDATION.md",
+      "sha256": "d9265e05657390a23e683e494d480f00cad6a3c21b2e38dda0bb4b459385dec3"
+    },
+    {
+      "path": "integration.patch",
+      "sha256": "d9fec0cb641181eb8030db116fa20c5d84fac5e5de5be8b55fbcf90b541d2edb"
+    },
+    {
+      "path": "overlay/html/telemetry.html",
+      "sha256": "68a0ed20c2985bc04b0c11b86d8d9ade4a4c6e18e2219ebe386b54ee2d3efeb2"
+    },
+    {
+      "path": "overlay/include/ahrs_telemetry.h",
+      "sha256": "b3740b1c0488b978a5156427ca8918484d785f7d651b44ee261896ed861b97af"
+    },
+    {
+      "path": "overlay/include/ahrs_telemetry_model.h",
+      "sha256": "dafbad970cdfaaaba0ae31d1de252d7d494f2e83b209a204f5226a308b266372"
+    },
+    {
+      "path": "overlay/include/camera_exposure.h",
+      "sha256": "801fcd4ffefe775264b9b8447e33cb3732627e24565db86fa056b3367841ed38"
+    },
+    {
+      "path": "overlay/include/camera_light.h",
+      "sha256": "c0c676b74ce90ed0134c4d82aea3591ed801c19cd0d14cae1fc519ef04c34b51"
+    },
+    {
+      "path": "overlay/include/camera_light_model.h",
+      "sha256": "3a3d980a112c94ef9b45bbbb3be002a04da258438f4de9218c776419f3406fe6"
+    },
+    {
+      "path": "overlay/include/radio_telemetry.h",
+      "sha256": "272059807fcdb1dde016c5c9663e566fae41714594d33c88ff169388e7a68c1b"
+    },
+    {
+      "path": "overlay/include/radio_telemetry_model.h",
+      "sha256": "d82a3751956d211c903da8fed79ff8ee4148c56b6f83358166a029e576aa7918"
+    },
+    {
+      "path": "overlay/include/ultrasonic_capture_model.h",
+      "sha256": "6e0faba0fb66c4ac641b5e869326ba14991bf0f05e2e4a48da05b14967a4ab17"
+    },
+    {
+      "path": "overlay/include/ultrasonic_model.h",
+      "sha256": "b195cab2c17bced268eaf4991e45f3521362504ba628112a3ce4f92e3300c380"
+    },
+    {
+      "path": "overlay/include/ultrasonic_telemetry.h",
+      "sha256": "d0d97c9345a39978a4f3288be4b9091ee9cd7d4fae6035af3cff5f832a0794b5"
+    },
+    {
+      "path": "overlay/platformio.ini",
+      "sha256": "8b55c23f0ca12f29547ecb3d25262b5cd2ac85a257d741ef7dc60d25a74454d1"
+    },
+    {
+      "path": "overlay/src/ahrs_telemetry.cpp",
+      "sha256": "a0b7f98a43bd037614db2b2081f9473e88542e4700d08eadb246fe49ada3842f"
+    },
+    {
+      "path": "overlay/src/camera_exposure.cpp",
+      "sha256": "912bb2dfa757742aaa8aabedc6d3b063bd30b480dbf05581ece8c214a1401e1c"
+    },
+    {
+      "path": "overlay/src/camera_light.cpp",
+      "sha256": "48787da311e2260a957cd4b598f2561597eae75aa44fad7cc7469fd5d8696636"
+    },
+    {
+      "path": "overlay/src/radio_telemetry.cpp",
+      "sha256": "a80e9c0a0f1571e1929ddf409817b2c6a1fe2472a91e12d24772f6c87db96631"
+    },
+    {
+      "path": "overlay/src/ultrasonic_telemetry.cpp",
+      "sha256": "205c82b520d1db7949f61c626e31f35da41448f0782f0bd69f80d4259c4a3b17"
+    },
+    {
+      "path": "overlay/test/ahrs_model/test_model.cpp",
+      "sha256": "c81055d7fc613704f995f7f6434ffc302b63061133bdc62731e974e3abd7c370"
+    },
+    {
+      "path": "overlay/test/camera_light_model/test_model.cpp",
+      "sha256": "0e191a640d7eb980b3416aa607bd9b5a79a1eee0a17c9ba9542732a5e76af1ce"
+    },
+    {
+      "path": "overlay/test/radio_telemetry_model/test_model.cpp",
+      "sha256": "6642fe3bb033b89657a40f80a6d7b28738d0baab975d3aa0320828909af50a91"
+    },
+    {
+      "path": "overlay/test/sonar_capture_model/test_model.cpp",
+      "sha256": "8b7dd90bda6265f36efd3b4f47dd57ff9064945e48de9ec499fd4895d36625b8"
+    },
+    {
+      "path": "overlay/test/ultrasonic_model/test_model.cpp",
+      "sha256": "8763f634902b042385f1577a5f7fd26621fb445684496132782a7890cf664738"
+    },
+    {
+      "path": "overlay/tests/test_telemetry_receiver.py",
+      "sha256": "718cd13df443ea6247ccb09e95aa413024dc3ed784f51bc08835101859570009"
+    },
+    {
+      "path": "overlay/tests/test_ultrasonic_receiver.py",
+      "sha256": "4899cddb73c5d7869bc02bd7d73f44e59d0a663f0df63a0d156c90f88d2b5542"
+    },
+    {
+      "path": "overlay/tools/telemetry_receiver.py",
+      "sha256": "193884d351d799f8045959dbbdff6be4070eecfb0a300227380695e8526f5329"
+    },
+    {
+      "path": "prepare.py",
+      "sha256": "fa751b2263fecef9e4ab324656f493b04da649ca4bf9b3cdb6d8b7a35bdef25b"
+    }
+  ]
+}

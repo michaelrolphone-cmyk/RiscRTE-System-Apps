@@ -1,0 +1,83 @@
+name: ESP32-S3 CAM radio telemetry
+on:
+  pull_request:
+    paths:
+      - 'firmware/esp32cam-rtsp-radio/**'
+      - '.github/workflows/esp32cam-radio-telemetry.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: esp32cam-radio-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  firmware:
+    name: ESP32-S3 CAM firmware
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install PlatformIO
+        run: python -m pip install platformio==6.1.19
+      - name: Prepare pinned S3 source
+        run: python firmware/esp32cam-rtsp-radio/prepare.py --output "$RUNNER_TEMP/esp32cam-radio"
+      - name: Build S3 firmware
+        run: pio run -d "$RUNNER_TEMP/esp32cam-radio" -e esp32cam_s3_wroom_n16r8
+      - name: Preserve S3 firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp32cam-radio-esp32cam_s3_wroom_n16r8
+          path: ${{ runner.temp }}/esp32cam-radio/.pio/build/esp32cam_s3_wroom_n16r8/*.bin
+          if-no-files-found: error
+          retention-days: 7
+  host-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check portal JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          page = Path('firmware/esp32cam-rtsp-radio/overlay/html/telemetry.html').read_text()
+          scripts = re.findall(r'<script>(.*?)</script>', page, re.S)
+          if not scripts:
+              raise SystemExit('No embedded portal script found')
+          for script in scripts:
+              subprocess.run(['node', '--check', '-'], input=script, text=True, check=True)
+          PY
+      - name: Test UDP collector
+        working-directory: firmware/esp32cam-rtsp-radio/overlay
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Compile radio model tests
+        working-directory: firmware/esp32cam-rtsp-radio/overlay
+        run: c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude test/radio_telemetry_model/test_model.cpp -o "$RUNNER_TEMP/radio-model-test"
+      - name: Run radio model tests
+        run: '"$RUNNER_TEMP/radio-model-test"'
+      - name: Check out pinned ArduinoJson for light API model tests
+        uses: actions/checkout@v4
+        with:
+          repository: bblanchon/ArduinoJson
+          ref: 40ee05c065ce248192c47eb37af7a70a6935dfa6
+          path: .ci-deps/ArduinoJson
+      - name: Compile and run light API model tests
+        working-directory: firmware/esp32cam-rtsp-radio/overlay
+        run: |
+          c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude -I"$GITHUB_WORKSPACE/.ci-deps/ArduinoJson/src" test/camera_light_model/test_model.cpp -o "$RUNNER_TEMP/camera-light-model-test"
+          "$RUNNER_TEMP/camera-light-model-test"
+      - name: Compile and run AHRS model tests
+        working-directory: firmware/esp32cam-rtsp-radio/overlay
+        run: |
+          c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude test/ahrs_model/test_model.cpp -o "$RUNNER_TEMP/ahrs-model-test"
+          "$RUNNER_TEMP/ahrs-model-test"
+      - name: Compile and run ultrasonic model tests
+        working-directory: firmware/esp32cam-rtsp-radio/overlay
+        run: |
+          c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude test/ultrasonic_model/test_model.cpp -o "$RUNNER_TEMP/ultrasonic-model-test"
+          "$RUNNER_TEMP/ultrasonic-model-test"
