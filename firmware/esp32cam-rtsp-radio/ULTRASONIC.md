@@ -1,15 +1,6 @@
 # Four HC-SR04 sensors — FORIOT ESP32-S3 CAM N16R8
-Firmware 1.0-radio.12-sonar-g40. This is the dual-USB, 20-pins-per-side S3 CAM profile
+Firmware 1.0-radio.8. This is the dual-USB, 20-pins-per-side S3 CAM profile
 already used by the rover, not the AI Thinker ESP32-CAM.
-
-## GPIO40 front-echo migration
-
-This revision moves only front ECHO from GPIO47 to GPIO40. Move the
-board-side, 3.3V level-shifted ECHO connection from G47 to G40 with power off.
-Keep the level converter, sensor-side ECHO, trigger and power wiring unchanged.
-Firmware and wiring must match; front sonar is unavailable until the wire moves.
-This is a pin separation workaround, not proof of the physical LED fault.
-Camera exposure, synchronized capture, sonar history, AHRS and radio are preserved.
 
 ## Wiring
 View the camera side with the antenna at the top and USB sockets at the bottom.
@@ -18,7 +9,7 @@ positions refer to the matching MB0184/FORIOT layout.
 
 | Sensor ID | TRIG GPIO | Physical position | ECHO GPIO | Physical position |
 | --- | --- | --- | --- | --- |
-| front | IO1 | right 3 | IO40 | right 7 |
+| front | IO1 | right 3 | IO47 | right 16 |
 | left | IO2 | right 4 | IO3 | left 12 |
 | right | IO14 | left 19 | IO45 | right 14 |
 | rear | IO21 | right 17 | IO46 | left 13 |
@@ -26,8 +17,7 @@ positions refer to the matching MB0184/FORIOT layout.
 The direction names are mounting conventions. They do not establish measured
 mount angles or sensor extrinsics; consumers must calibrate those separately.
 IO2 may also drive the board's status LED; its blinking during ranging is expected.
-This profile does not reassign the camera, AHRS, RGB light or either USB port. GPIO40 shares the microSD DATA line; leave
-the microSD slot unused for this profile.
+This profile does not reassign the camera, AHRS, RGB light, SD or either USB port.
 
 All four VCC pins -> regulated 5V (board 5V at left 20, provided that rail has
 adequate current); all four GND pins -> common ground (board GND at right 20).

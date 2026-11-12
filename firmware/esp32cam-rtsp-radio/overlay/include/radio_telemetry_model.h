@@ -57,29 +57,4 @@ inline bool decodeIBeacon(const uint8_t *data, size_t length, IBeacon &out) {
     out.referenceAtOneMeter = static_cast<int8_t>(power);
     return true;
 }
-// Each passive dwell keeps its original 120ms coverage. Home-channel gaps
-// prevent one uninterrupted all-channel RF blackout during camera delivery.
-class PassiveWifiSweep {
-public:
-    static constexpr uint32_t DWELL_MS = 120;
-    static constexpr uint32_t SPACING_MS = 1000;
-    bool active() const { return count_ != 0; }
-    uint8_t channel() const { return static_cast<uint8_t>(first_ + index_); }
-    void reset() { count_ = 0; }
-    bool begin(uint8_t first, uint8_t count, uint32_t now) {
-        if (first < 1 || count < 1 || unsigned(first) + count - 1 > 14) return false;
-        first_ = first; count_ = count; index_ = 0; started_ = now;
-        return true;
-    }
-    uint32_t advance(uint32_t now, uint32_t interval) {
-        const uint32_t spaced = now + SPACING_MS;
-        if (++index_ < count_) return spaced;
-        count_ = 0;
-        const uint32_t scheduled = started_ + interval;
-        return static_cast<int32_t>(scheduled - spaced) > 0 ? scheduled : spaced;
-    }
-private:
-    uint8_t first_ = 1, count_ = 0, index_ = 0;
-    uint32_t started_ = 0;
-};
 } // namespace radio_telemetry_model

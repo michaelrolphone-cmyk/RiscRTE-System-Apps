@@ -21,14 +21,14 @@ index b8db461..4ad565e 100644
  
  #define APP_TITLE "ESP32CAM-RTSP"
 -#define APP_VERSION "1.0"
-+#define APP_VERSION "1.0-radio.13-radio-slices"
++#define APP_VERSION "1.0-radio.10-sonar-mapping"
  
  #define WIFI_SSID "ESP32CAM-RTSP"
  #define WIFI_PASSWORD nullptr
 diff --git a/src/main.cpp b/src/main.cpp
 --- a/src/main.cpp
 +++ b/src/main.cpp
-@@ -17,13 +17,20 @@
+@@ -17,13 +17,19 @@
  #include <format_number.h>
  #include <moustache.h>
  #include <settings.h>
@@ -37,7 +37,6 @@ diff --git a/src/main.cpp b/src/main.cpp
 +#include <esp_timer.h>
 +#include <memory>
 +#include <camera_light.h>
-+#include <camera_exposure.h>
  
  #include <micro_rtsp_server.h>
  #include <micro_rtsp_source_video_camera.h>
@@ -129,14 +128,13 @@ diff --git a/src/main.cpp b/src/main.cpp
  
  #ifdef MICRO_RTSP_ENABLE_SRTP
    // Stream video over Secure RTP (RFC 3711), negotiated with "a=crypto"
-@@ -592,6 +638,18 @@
+@@ -592,6 +638,17 @@
    web_server.onNotFound([]()
                          { iotWebConf.handleNotFound(); });
  
 +  // Radio telemetry uses its own Preferences namespace, preserving camera configuration.
 +  radio_telemetry::begin(web_server, is_authenticated);
 +  camera_light::begin(web_server, is_authenticated);
-+  camera_exposure::begin(web_server, is_authenticated);
 +  web_server.on("/telemetry", HTTP_GET, []() {
 +    if (is_authenticated()) {
 +      web_server.sendHeader("Cache-Control", "no-store");

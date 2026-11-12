@@ -6,29 +6,6 @@
 using namespace radio_telemetry_model;
 
 int main() {
-    PassiveWifiSweep sweep;
-    assert(!sweep.begin(0, 13, 0));
-    assert(!sweep.begin(1, 15, 0));
-    assert(sweep.begin(1, 13, 100));
-    uint32_t now = 100;
-    for (unsigned channel = 1; channel <= 13; ++channel) {
-        assert(sweep.active() && sweep.channel() == channel);
-        const uint32_t next = sweep.advance(now, 60000);
-        assert(next - now >= PassiveWifiSweep::SPACING_MS);
-        now = next;
-    }
-    assert(!sweep.active() && now == 60100);
-    // Regulatory subranges and 32-bit uptime wrap must retain channel order.
-    assert(sweep.begin(6, 2, 0xffffff00u));
-    assert(sweep.channel() == 6);
-    now = sweep.advance(0xffffff00u, 60000);
-    assert(now == uint32_t(0xffffff00u + 1000u) && sweep.channel() == 7);
-    now = sweep.advance(now, 60000);
-    assert(!sweep.active() && now == uint32_t(0xffffff00u + 60000u));
-    assert(sweep.begin(1, 13, 0));
-    now = 0;
-    while (sweep.active()) { const uint32_t next = sweep.advance(now, 10000); assert(next - now >= 1000); now = next; }
-    assert(now == 13000); // Never eliminate home-channel gaps for short intervals.
     uint8_t mac[6] = {};
     assert(parseMac("AA:bb:01:02:03:fF", mac));
     assert(mac[0] == 0xaa && mac[5] == 0xff);
