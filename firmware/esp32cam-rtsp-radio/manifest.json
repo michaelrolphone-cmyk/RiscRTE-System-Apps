@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.13-radio-slices",
+  "variant": "1.0-radio.10-sonar-mapping",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -12,10 +12,6 @@
     {
       "path": "AHRS.md",
       "sha256": "6b505cc5cc8a9e492e686365a312c12e0de0668d3c670374f3d7abb4a7b63705"
-    },
-    {
-      "path": "CAMERA_EXPOSURE.md",
-      "sha256": "db20670ac36ed91b69e39a76ff44f89c6e8dacfefd17377b96457d27c2c2d472"
     },
     {
       "path": "LICENSE",
@@ -31,7 +27,7 @@
     },
     {
       "path": "ULTRASONIC.md",
-      "sha256": "12a4069c304bc82c5c5d4bafe26cbef0f0b7a6d95a925a58f656fc6389431b64"
+      "sha256": "a92b9900ffc298d82e54c4509f84e222e68ecb7aeed13d3088397631d30cf333"
     },
     {
       "path": "VALIDATION.md",
@@ -39,7 +35,7 @@
     },
     {
       "path": "integration.patch",
-      "sha256": "7a517928923d7338b8ea45244d62c99ed34c72cb58d0e17313894f16e67babec"
+      "sha256": "d4c694143bd2ffed270f907538f8990f9c260853729dc005709a791203a8270f"
     },
     {
       "path": "overlay/html/telemetry.html",
@@ -52,10 +48,6 @@
     {
       "path": "overlay/include/ahrs_telemetry_model.h",
       "sha256": "dafbad970cdfaaaba0ae31d1de252d7d494f2e83b209a204f5226a308b266372"
-    },
-    {
-      "path": "overlay/include/camera_exposure.h",
-      "sha256": "801fcd4ffefe775264b9b8447e33cb3732627e24565db86fa056b3367841ed38"
     },
     {
       "path": "overlay/include/camera_light.h",
@@ -71,11 +63,7 @@
     },
     {
       "path": "overlay/include/radio_telemetry_model.h",
-      "sha256": "5f3c752e847a2f5df3f0895862fa7506fded230d879f439e5ea362cf6b7feb9d"
-    },
-    {
-      "path": "overlay/include/ultrasonic_capture_model.h",
-      "sha256": "6e0faba0fb66c4ac641b5e869326ba14991bf0f05e2e4a48da05b14967a4ab17"
+      "sha256": "d82a3751956d211c903da8fed79ff8ee4148c56b6f83358166a029e576aa7918"
     },
     {
       "path": "overlay/include/ultrasonic_model.h",
@@ -94,20 +82,16 @@
       "sha256": "a0b7f98a43bd037614db2b2081f9473e88542e4700d08eadb246fe49ada3842f"
     },
     {
-      "path": "overlay/src/camera_exposure.cpp",
-      "sha256": "912bb2dfa757742aaa8aabedc6d3b063bd30b480dbf05581ece8c214a1401e1c"
-    },
-    {
       "path": "overlay/src/camera_light.cpp",
       "sha256": "48787da311e2260a957cd4b598f2561597eae75aa44fad7cc7469fd5d8696636"
     },
     {
       "path": "overlay/src/radio_telemetry.cpp",
-      "sha256": "9a60cdfcaaa6eaf64d8f38b4007c70f7a0116b72ec05e7586e5738e323d0efe5"
+      "sha256": "a80e9c0a0f1571e1929ddf409817b2c6a1fe2472a91e12d24772f6c87db96631"
     },
     {
       "path": "overlay/src/ultrasonic_telemetry.cpp",
-      "sha256": "b8c12790c0a9a032ccec48f4751b9c9e2863055819d1f277fe0f14729d48b27f"
+      "sha256": "205c82b520d1db7949f61c626e31f35da41448f0782f0bd69f80d4259c4a3b17"
     },
     {
       "path": "overlay/test/ahrs_model/test_model.cpp",
@@ -119,11 +103,7 @@
     },
     {
       "path": "overlay/test/radio_telemetry_model/test_model.cpp",
-      "sha256": "97e6011b8d5047d648fdf58b27220ff08f0ff083783a23f1c242da76f67eeef7"
-    },
-    {
-      "path": "overlay/test/sonar_capture_model/test_model.cpp",
-      "sha256": "8b7dd90bda6265f36efd3b4f47dd57ff9064945e48de9ec499fd4895d36625b8"
+      "sha256": "6642fe3bb033b89657a40f80a6d7b28738d0baab975d3aa0320828909af50a91"
     },
     {
       "path": "overlay/test/ultrasonic_model/test_model.cpp",
@@ -146,8 +126,12 @@
       "sha256": "fa751b2263fecef9e4ab324656f493b04da649ca4bf9b3cdb6d8b7a35bdef25b"
     },
     {
-      "path": "RADIO_STREAM_COEXISTENCE.md",
-      "sha256": "f0a7b5db36af51b53221fc87d7bc43d9919585a14c06fd342e755d21da8f83d9"
+      "path": "overlay/include/ultrasonic_capture_model.h",
+      "sha256": "6e0faba0fb66c4ac641b5e869326ba14991bf0f05e2e4a48da05b14967a4ab17"
+    },
+    {
+      "path": "overlay/test/sonar_capture_model/test_model.cpp",
+      "sha256": "8b7dd90bda6265f36efd3b4f47dd57ff9064945e48de9ec499fd4895d36625b8"
     }
   ]
 }

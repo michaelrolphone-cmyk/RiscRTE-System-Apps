@@ -13,7 +13,7 @@
 namespace ultrasonic_telemetry {
 namespace {
 constexpr uint8_t TRIG[4] = {1, 2, 14, 21};
-constexpr uint8_t ECHO[4] = {40, 3, 45, 46};
+constexpr uint8_t ECHO[4] = {47, 3, 45, 46};
 const char *const IDS[4] = {"front", "left", "right", "rear"};
 // ECHO GPIO3/45/46 are strapping pins. Read ULTRASONIC.md before wiring.
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
