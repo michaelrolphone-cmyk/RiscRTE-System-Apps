@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.11-camera-exposure",
+  "variant": "1.0-radio.12-sonar-g40",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -31,7 +31,7 @@
     },
     {
       "path": "ULTRASONIC.md",
-      "sha256": "a92b9900ffc298d82e54c4509f84e222e68ecb7aeed13d3088397631d30cf333"
+      "sha256": "12a4069c304bc82c5c5d4bafe26cbef0f0b7a6d95a925a58f656fc6389431b64"
     },
     {
       "path": "VALIDATION.md",
@@ -39,7 +39,7 @@
     },
     {
       "path": "integration.patch",
-      "sha256": "d9fec0cb641181eb8030db116fa20c5d84fac5e5de5be8b55fbcf90b541d2edb"
+      "sha256": "fe7f36256143927a75745cd8bcb6df830456ce8b6d5bf76f341fc4c1d32aac05"
     },
     {
       "path": "overlay/html/telemetry.html",
@@ -107,7 +107,7 @@
     },
     {
       "path": "overlay/src/ultrasonic_telemetry.cpp",
-      "sha256": "205c82b520d1db7949f61c626e31f35da41448f0782f0bd69f80d4259c4a3b17"
+      "sha256": "b8c12790c0a9a032ccec48f4751b9c9e2863055819d1f277fe0f14729d48b27f"
     },
     {
       "path": "overlay/test/ahrs_model/test_model.cpp",
