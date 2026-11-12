@@ -29,9 +29,9 @@ jobs:
           node-version: '24'
       - name: Qualify streaming freshness independently of hardware
         run: |
-          g++ -std=c++17 -Wall -Wextra -Werror apps/test/relay6ch_host/stream.cpp -o /tmp/relay-stream
+          g++ -std=c++17 -pthread -Wall -Wextra -Werror apps/test/relay6ch_host/stream.cpp -o /tmp/relay-stream
           /tmp/relay-stream
-          g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined apps/test/relay6ch_host/stream.cpp -o /tmp/relay-stream-sanitize
+          g++ -std=c++17 -pthread -Wall -Wextra -Werror -fsanitize=address,undefined apps/test/relay6ch_host/stream.cpp -o /tmp/relay-stream-sanitize
           ASAN_OPTIONS=detect_leaks=0 /tmp/relay-stream-sanitize
       - run: |
           RISC_RUNTIME_ROOT="$PWD/00-runtime" bash apps/scripts/test_infrastructure.sh
@@ -76,13 +76,24 @@ jobs:
           required=['-DSNTP_COMP_ROUNDTRIP=1','-DSNTP_CHECK_RESPONSE=2']
           assert all(flag in args for flag in required), args
           print('SNTP_SDK_COMPILE_PROOF',json.dumps({'source':sntp[0]['file'],'required_flags':required}))
+          aes=[r for r in rows if r['file'].endswith('/risc_relay_aes_dma.c')]
+          assert len(aes)==1, 'Expected the repaired AES DMA translation unit'
+          assert not any(r['file'].endswith('/esp_aes_dma_core.c') for r in rows), 'Unrepaired AES driver remains in the build'
+          print('AES_STACK_DMA_COMPILE_PROOF',json.dumps({'source':aes[0]['file']}))
+          ws=[r for r in rows if r['file'].endswith('/risc_relay_websocket.c')]
+          assert len(ws)==1, 'Expected repaired WebSocket lifetime translation unit'
+          assert not any(r['file'].endswith('/esp_websocket_client.c') for r in rows), 'Original WebSocket client remains'
+          print('WS_TLS_LIFETIME_COMPILE_PROOF',json.dumps({'source':ws[0]['file']}))
           PY
           cmake --build relay-build -- -j1
           python apps/scripts/package_relay6ch.py --build relay-build --runtime 00-runtime --output delivery
       - uses: actions/upload-artifact@v4
         with:
           name: relay6ch-${{ github.event.pull_request.head.sha || github.sha }}
-          path: delivery/
+          path: |
+            delivery/
+            relay-build/riscrte_relay6ch.elf
+            relay-build/riscrte_relay6ch.map
           if-no-files-found: error
   publish:
     needs: [test, target]

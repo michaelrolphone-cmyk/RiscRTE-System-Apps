@@ -1,5 +1,6 @@
 #include "OutputStream.h"
 #include "FreshIntent.h"
+#include "PendingAcks.h"
 #include "CompensatedClock.h"
 #include "esp_sntp.h"
 #include "lwip/apps/sntp_opts.h"
@@ -7,45 +8,69 @@
 #include <esp_websocket_client.h>
 #include <esp_crt_bundle.h>
 #include <esp_timer.h>
+#include <esp_task_wdt.h>
+#include <freertos/task.h>
 #include <esp_log.h>
 #include "sdkconfig.h"
 #include <esp_netif_sntp.h>
 #include <sys/time.h>
 #include <atomic>
-#include <new>
 #include <mutex>
+#include <new>
 namespace BiomeRelay {
 static_assert(SNTP_COMP_ROUNDTRIP==1&&SNTP_CHECK_RESPONSE>=2,"Control requires compensated, origin-checked SNTP");
 namespace {
 CompensatedClock streamClock;
 void clockSynchronized(timeval* value){
  const unsigned samples=streamClock.synchronized(value->tv_sec);
- ESP_LOGI("relay-stream","SNTP sync samples=%u utc=%lld.%06ld compensated_ready=%u",samples,
-  (long long)value->tv_sec,(long)value->tv_usec,unsigned(streamClock.ready()));
+ ESP_LOGI("relay-stream","SNTP sync samples=%u utc=%lld.%06ld compensated_ready=%u mono_ms=%llu",samples,
+  (long long)value->tv_sec,(long)value->tv_usec,unsigned(streamClock.ready()),(unsigned long long)(esp_timer_get_time()/1000));
 }
 }
+static_assert(CONFIG_ESP_WS_CLIENT_SEPARATE_TX_LOCK,"Control receive must not share the ACK transmit lock");
 static_assert(CONFIG_WS_BUFFER_SIZE>=6144,"Stream credentials require the bounded HTTP upgrade buffer");
 static_assert(CONFIG_WS_DYNAMIC_BUFFER,"Release the upgrade buffer after connection");
-static_assert(CONFIG_MBEDTLS_DYNAMIC_BUFFER&&CONFIG_ESP_WS_CLIENT_ENABLE_DYNAMIC_BUFFER,"Stream and HTTP TLS must share bounded internal RAM");
+#ifdef CONFIG_ESP_WS_CLIENT_ENABLE_DYNAMIC_BUFFER
+#error "Control RX/TX buffers must remain allocated for the attachment lifetime"
+#endif
+static_assert(CONFIG_MBEDTLS_DYNAMIC_BUFFER,"HTTP and stream TLS use bounded record buffers");
 struct OutputStream::State {
  esp_websocket_client_handle_t socket=nullptr;
- FreshIntent intent;JsonDocument grant;char url[1024]{},headers[4096]{},buffer[2049]{};
+ FreshIntent intent;char buffer[2049]{};
  size_t used=0;bool assembling=false,started=false;std::atomic<bool> connected{false},failed{false};
- uint64_t lastApplied=0,lastRejectedLog=0,lastAckFailureLog=0,ackDue=0;std::mutex ackMutex;
+ uint64_t lastRejectedLog=0,lastAckFailureLog=0,lastReceivedAt=0;PendingAcks pending;
+ std::atomic<bool> closing{false},feedbackRunning{false},feedbackStopped{false};bool feedbackStarted=false;std::mutex inputMutex;
+ struct InputTiming {uint64_t sequence=0,issuedUtc=0,expiryUtc=0,receivedUtc=0,receivedMono=0;uint32_t gap=0;};
+ InputTiming timing;
  bool ack(const char* stage,uint64_t sequence){
-  std::lock_guard<std::mutex> guard(ackMutex);
   if(!connected.load()||sequence>(UINT64_MAX-2)/2)return false;
   const bool applied=!strcmp(stage,"applied");
   if(sequence*2+(applied?2:1)<=intent.ackSequence)return true;
   return intent.acknowledge(sequence,applied,[&](uint64_t next){
+   InputTiming sample;{std::lock_guard<std::mutex> guard(inputMutex);sample=timing;}
    JsonDocument value;value["type"]="ack";value["stage"]=stage;value["sequence"]=next;
-   value["intent_sequence"]=sequence;value["epoch"]=grant["epoch"];value["authority"]=grant["authority"];
-   value["generation"]=grant["generation"];value["commanded_mask"]=RelayBoard::streamOutput();
+   value["intent_sequence"]=sequence;value["epoch"]=intent.epoch;value["authority"]=intent.authority;
+   value["generation"]=intent.generation;value["commanded_mask"]=RelayBoard::streamOutput();
+   value["output_transitions"]=RelayBoard::streamTransitions();value["intent_expirations"]=RelayBoard::streamExpirations();
+   value["intent_age_ms"]=sample.receivedUtc-sample.issuedUtc;value["receive_gap_ms"]=sample.gap;
+   value["timing_sequence"]=sample.sequence;value["issued_utc_ms"]=sample.issuedUtc;value["expires_utc_ms"]=sample.expiryUtc;
+   value["provider_received_utc_ms"]=sample.receivedUtc;value["provider_received_monotonic_ms"]=sample.receivedMono;
    value["contact_feedback"]=false;value["provider_monotonic_ms"]=esp_timer_get_time()/1000;
-   char data[512];const size_t n=serializeJson(value,data,sizeof(data));
-   const int sent=n<sizeof(data)?esp_websocket_client_send_text(socket,data,n,pdMS_TO_TICKS(20)):-1;
-   if(sent==int(n))return true;
+   char data[896];
+   if(measureJson(value)>=sizeof(data))return false;
+   const size_t n=serializeJson(value,data,sizeof(data));
+   // Feedback has its own task. Use the transport's existing I/O budget;
+   // a one-second ACK deadline must not abort a healthy held-input lane.
+   const uint64_t began=esp_timer_get_time()/1000;
+   const int sent=n<sizeof(data)?esp_websocket_client_send_text(socket,data,n,pdMS_TO_TICKS(10000)):-1;
    const uint64_t now=esp_timer_get_time()/1000;
+   if(sent==int(n)){
+    if(now-began>100&&now-lastAckFailureLog>=5000){
+     lastAckFailureLog=now;ESP_LOGW("relay-stream","ACK write delayed stage=%s sequence=%llu duration_ms=%llu",
+      stage,(unsigned long long)sequence,(unsigned long long)(now-began));
+    }
+    return true;
+   }
    if(now-lastAckFailureLog>=5000){
     lastAckFailureLog=now;ESP_LOGW("relay-stream","ACK write failed stage=%s sequence=%llu sent=%d expected=%u",
      stage,(unsigned long long)sequence,sent,unsigned(n));
@@ -53,7 +78,19 @@ struct OutputStream::State {
    return false;
   })!=0;
  }
+ static void feedbackTask(void* context){
+  auto* self=static_cast<State*>(context);
+  while(self->feedbackRunning.load(std::memory_order_acquire)){
+   if(self->connected.load())self->pending.drain(RelayBoard::streamApplied(),[&](bool applied,uint64_t sequence){
+    return self->ack(applied?"applied":"received",sequence);
+   });
+   vTaskDelay(pdMS_TO_TICKS(20));
+  }
+  self->feedbackStopped.store(true,std::memory_order_release);
+  vTaskDelete(nullptr);
+ }
  void data(const esp_websocket_event_data_t& event){
+  if(closing.load()||!connected.load())return;
   if(event.op_code==1&&event.payload_offset==0){used=0;assembling=true;}
   if(!assembling||event.payload_offset!=int(used)||event.data_len<0||
      event.payload_len>int(sizeof(buffer)-1)||used+event.data_len>=sizeof(buffer)){assembling=false;return;}
@@ -80,8 +117,13 @@ struct OutputStream::State {
     (long long)(int64_t(msg["expires_at"].as<double>()*1000)-int64_t(utc)));}
    return;
   }
-  RelayBoard::streamDesired(intent.desired,intent.deadline,intent.sequence);
-  ack("received",intent.sequence);
+  const uint32_t gap=lastReceivedAt?uint32_t(mono-lastReceivedAt):0;lastReceivedAt=mono;
+  {std::lock_guard<std::mutex> guard(inputMutex);
+   if(closing.load())return;
+   timing={intent.sequence,uint64_t(msg["issued_at"].as<double>()*1000),uint64_t(msg["expires_at"].as<double>()*1000),utc,mono,gap};
+   RelayBoard::streamDesired(intent.desired,intent.deadline,intent.sequence);
+   pending.accepted(intent.sequence);
+  }
  }
  static void event(void* context,esp_event_base_t,int32_t id,void* data){
   auto* self=static_cast<State*>(context);
@@ -99,9 +141,12 @@ bool OutputStream::attach(JsonObjectConst grant){
  const char* url=grant["url"];const char* key=grant["attachment_credential"];
  if(strncmp(url,"wss://",6)||strlen(url)>950||strlen(key)>3900||strchr(key,'\r')||strchr(key,'\n'))return false;
  auto* s=new(std::nothrow) State;if(!s)return false;
- s->grant.set(grant);s->intent=retainedIntent;
+ s->intent=retainedIntent;
  if(!s->intent.bind(grant["authority"]|"",grant["generation"],grant["epoch"]|"")||!RelayBoard::streamBegin()){delete s;return false;}
- snprintf(s->url,sizeof(s->url),"%s/control",url);snprintf(s->headers,sizeof(s->headers),"Authorization: Stream %s\r\n",key);
+ // The SDK copies URI and headers during init. Do not retain another full
+ // credential, grant document, or 5 KiB of header/URL storage per attachment.
+ char streamUrl[1024],streamHeaders[4096];
+ snprintf(streamUrl,sizeof(streamUrl),"%s/control",url);snprintf(streamHeaders,sizeof(streamHeaders),"Authorization: Stream %s\r\n",key);
  static bool ntp=false;
  if(!ntp){
   // Preserve subsecond SNTP time. HTTP/TLS session UTC never sets this clock.
@@ -110,8 +155,8 @@ bool OutputStream::attach(JsonObjectConst grant){
   if(esp_netif_sntp_init(&config)==ESP_OK)ntp=true;
  }
  if(!ntp){RelayBoard::streamEnd();delete s;return false;}
- esp_websocket_client_config_t config{};config.uri=s->url;config.headers=s->headers;
- config.crt_bundle_attach=esp_crt_bundle_attach;config.buffer_size=2048;config.network_timeout_ms=10000;config.disable_auto_reconnect=true;
+ esp_websocket_client_config_t config{};config.uri=streamUrl;config.headers=streamHeaders;
+ config.crt_bundle_attach=esp_crt_bundle_attach;config.buffer_size=1024;config.network_timeout_ms=10000;config.disable_auto_reconnect=true;
  s->socket=esp_websocket_client_init(&config);
  if(!s->socket||esp_websocket_register_events(s->socket,WEBSOCKET_EVENT_ANY,State::event,s)!=ESP_OK){
   if(s->socket)esp_websocket_client_destroy(s->socket);RelayBoard::streamEnd();delete s;return false;
@@ -126,19 +171,25 @@ void OutputStream::tick(){
   // A clock-qualified attachment can now become visible to router readiness.
   // If its signed credential expired while waiting, normal handshake failure
   // causes the provider to fetch a fresh attachment for the same binding.
+  state->feedbackRunning=true;
+  if(xTaskCreate(State::feedbackTask,"relay-feedback",4096,state,tskIDLE_PRIORITY+1,nullptr)!=pdPASS){
+   state->feedbackRunning=false;state->failed=true;return;
+  }
+  state->feedbackStarted=true;
   if(esp_websocket_client_start(state->socket)!=ESP_OK)state->failed=true;
   return;
  }
- const uint64_t applied=RelayBoard::streamApplied();
- const uint64_t now=esp_timer_get_time()/1000;
- if(applied!=state->lastApplied&&now>=state->ackDue){
-  if(state->ack("applied",applied))state->lastApplied=applied;
-  else state->ackDue=now+20;
- }
+
 }
 void OutputStream::close(){
  if(!state)return;
- RelayBoard::streamNeutral();
+ {std::lock_guard<std::mutex> guard(state->inputMutex);state->closing=true;RelayBoard::streamNeutral();}
+ state->feedbackRunning.store(false,std::memory_order_release);
+ // Wait for the bounded feedback write before destroying its socket or state.
+ // Receive callbacks reject input as soon as closing is set; GPIO stays neutral.
+ while(state->feedbackStarted&&!state->feedbackStopped.load(std::memory_order_acquire)){
+  esp_task_wdt_reset();vTaskDelay(1);
+ }
  if(state->socket){if(state->started)esp_websocket_client_stop(state->socket);esp_websocket_client_destroy(state->socket);}
  retainedIntent=state->intent;retainedIntent.detach();
  state->intent.revoke();RelayBoard::streamEnd();delete state;state=nullptr;

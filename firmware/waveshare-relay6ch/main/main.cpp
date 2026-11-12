@@ -97,6 +97,9 @@ extern "C" void app_main(){
  initialStateSize=Infra::frame(initialState,sizeof(initialState),seed,strlen(seed),1);uint8_t marker=0;auto markerRead=nvs_get_u8(store,"initialized",&marker);if(markerRead!=ESP_OK&&markerRead!=ESP_ERR_NVS_NOT_FOUND)fail("journal marker corrupt");initializedStore=markerRead==ESP_OK;
  if(esp_netif_init()!=ESP_OK||esp_event_loop_create_default()!=ESP_OK||!esp_netif_create_default_wifi_sta()||!esp_netif_create_default_wifi_ap())fail("network initialization failed");
  wifi_init_config_t wi=WIFI_INIT_CONFIG_DEFAULT();if(esp_wifi_init(&wi)!=ESP_OK||esp_wifi_set_storage(WIFI_STORAGE_RAM)!=ESP_OK)fail("Wi-Fi initialization failed");
+ // This powered relay endpoint receives short-lived driving intent. Modem sleep
+ // defers inbound packets to AP DTIM windows and can consume the intent lifetime.
+ if(esp_wifi_set_ps(WIFI_PS_NONE)!=ESP_OK)fail("Real-time Wi-Fi configuration failed");
  // Explicit AP address matches the existing captive DNS/portal contract.
  auto* ap=esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");esp_netif_dhcps_stop(ap);esp_netif_ip_info_t ip{};IP4_ADDR(&ip.ip,192,168,4,1);IP4_ADDR(&ip.gw,192,168,4,1);IP4_ADDR(&ip.netmask,255,255,255,0);if(esp_netif_set_ip_info(ap,&ip)!=ESP_OK||esp_netif_dhcps_start(ap)!=ESP_OK)fail("setup network unavailable");
  if(!RiscCpu::NativeTlsMemory::initialize())fail("internal TLS allocation policy unavailable");
@@ -159,7 +162,7 @@ extern "C" void app_main(){
    esp_task_wdt_reset();
   }
   const unsigned state=unsigned(node->phase);if(state!=last||now(nullptr)-report>=15000){
-   ESP_LOGI("relay6ch","state=%u reason=%s free=%llu largest=%llu stack=%u reset=%u",state,node->status.reason,(unsigned long long)m.internal_free,(unsigned long long)m.internal_largest,m.stack_headroom,unsigned(esp_reset_reason()));
+   ESP_LOGI("relay6ch","state=%u reason=%s free=%llu largest=%llu dma=%llu dma_largest=%llu stack=%u reset=%u",state,node->status.reason,(unsigned long long)m.internal_free,(unsigned long long)m.internal_largest,(unsigned long long)m.dma_free,(unsigned long long)m.dma_largest,m.stack_headroom,unsigned(esp_reset_reason()));
    JsonDocument identity;provider->publicIdentity(identity.to<JsonObject>());node->biomeTargetLocked|=identity["pairing"]=="enrolled";
    ESP_LOGI("relay6ch","biomerte=%s fingerprint=%s resource=%s error=%s",identity["pairing"]|"unconfigured",identity["fingerprint"]|"",identity["resource"]|"",identity["error"]|"");
    last=state;report=now(nullptr);
