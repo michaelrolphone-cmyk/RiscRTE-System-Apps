@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Camera light, AHRS and radio telemetry · ESP32CAM</title>
+<style>
+:root{color-scheme:dark;--bg:#101820;--panel:#182530;--line:#314351;--text:#edf3f5;--muted:#b4c5cd;--accent:#7bd5bc}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,sans-serif}main{max-width:1240px;margin:auto;padding:24px}
+a{color:var(--accent)}h1{font-size:28px;margin:8px 0}h2{font-size:20px;margin:0 0 14px}h3{font-size:16px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+p{max-width:90ch;color:var(--muted)}section,details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin:18px 0}
+.badge{border:1px solid var(--line);border-radius:40px;padding:7px 14px;color:var(--accent)}.metrics{display:flex;gap:12px;flex-wrap:wrap}.metric{padding:14px 18px;background:var(--panel);border:1px solid var(--line);border-radius:10px;flex:1;min-width:150px}.metric strong{display:block;font-size:25px}.metric span{color:var(--muted)}
+.table{overflow:auto}table{width:100%;border-collapse:collapse;text-align:left;font-size:14px;white-space:nowrap}th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}td,th{padding:11px 10px;border-bottom:1px solid var(--line)}td:first-child{white-space:normal;min-width:150px}td small{display:block;color:var(--muted)}.stale{opacity:.55}
+label{display:block;color:var(--muted)}input{display:block;background:var(--bg);border:1px solid #506775;border-radius:6px;color:var(--text);padding:9px;width:100%;font:inherit;margin-top:5px}input[type=checkbox]{display:inline;width:auto;margin-right:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}button{background:var(--accent);border:0;border-radius:6px;color:#10251f;padding:9px 15px;font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:default}button.secondary{background:transparent;border:1px solid var(--line);color:var(--text)}.actions{display:flex;gap:12px;align-items:center;margin-top:20px;flex-wrap:wrap}.notice{color:#ffd09b}.error{color:#ffafaf}.muted{color:var(--muted)}summary{cursor:pointer;font-weight:600}code{font-size:13px}#status{white-space:pre-wrap}.empty{color:var(--muted);padding:20px 10px}
+fieldset{border:0;padding:0;margin:0;min-width:0}.light-color-row{display:flex;gap:12px;align-items:center;margin:5px 0 8px}.light-color-row input{width:80px;height:44px;padding:4px;margin:0}input[type=range]{accent-color:var(--accent);padding:0;margin:12px 0}#light-message{min-height:1.5em}
+@media(max-width:600px){main{padding:14px}section,details{padding:14px}h1{font-size:24px}}
+</style></head>
+<body><main>
+<div class="top"><div><a href="/">← Camera</a><h1>Camera telemetry</h1><div id="receiver" class="muted">Connecting to receiver…</div></div><span class="badge" id="connection" role="status">Waiting</span></div>
+<section id="light" aria-labelledby="light-heading">
+<div class="top"><h2 id="light-heading">Camera light</h2><span class="badge" id="light-state" role="status">Reading state…</span></div>
+<p>Turn on uses the selected color and brightness. Apply color &amp; brightness keeps the current on/off state. Brightness 0 emits no light.</p>
+<form id="light-form"><fieldset id="light-controls" disabled>
+<div class="grid">
+<div><label for="light-brightness">Brightness (0–255)</label><input type="range" id="light-slider" min="0" max="255" step="1" value="128" aria-label="Brightness slider"><input type="number" id="light-brightness" min="0" max="255" step="1" value="128" required></div>
+<div><label for="light-color">Color</label><div class="light-color-row"><input type="color" id="light-color" value="#ffffff"><button class="secondary" id="light-white" type="button">White</button></div><span class="muted">White selects equal red, green and blue.</span></div>
+</div>
+<div class="actions"><button id="light-on" type="button">Turn on</button><button class="secondary" id="light-off" type="button">Turn off</button><button class="secondary" type="submit">Apply color &amp; brightness</button><button class="secondary" id="light-reload" type="button">Reload light state</button></div>
+</fieldset></form>
+<p id="light-message" role="status" aria-live="polite">Reading light settings…</p>
+<p id="light-detail" class="muted">No light state received yet.</p>
+<p class="muted">State is read when this page opens, after a command, or with Reload light state. It reports the driver's command; check the <a href="/">camera view</a> to confirm illumination. <a href="/api/light" target="_blank" rel="noopener">Open light JSON</a></p>
+</section>
+<section id="ahrs" aria-labelledby="ahrs-heading">
+<div class="top"><h2 id="ahrs-heading">Stratux AHRS</h2><span class="badge" id="ahrs-state" role="status">Reading sensor state…</span></div>
+<p>Live motion, magnetic-field and pressure readings from the connected sensor board. Values use the sensor's axes; account for its mounting orientation when using them on the robot.</p>
+<div class="metrics"><div class="metric"><strong class="ahrs-reading" id="ahrs-roll">—</strong><span>Roll</span></div><div class="metric"><strong class="ahrs-reading" id="ahrs-pitch">—</strong><span>Pitch</span></div><div class="metric"><strong class="ahrs-reading" id="ahrs-yaw">—</strong><span>Relative yaw</span></div><div class="metric"><strong class="ahrs-reading" id="ahrs-pressure">—</strong><span>Pressure</span></div></div>
+<div class="table"><table><thead><tr><th>Measurement</th><th>X</th><th>Y</th><th>Z</th></tr></thead><tbody>
+<tr><td>Acceleration (m/s², including gravity)</td><td class="ahrs-reading" id="ahrs-accel-0">—</td><td class="ahrs-reading" id="ahrs-accel-1">—</td><td class="ahrs-reading" id="ahrs-accel-2">—</td></tr>
+<tr><td>Angular velocity (rad/s)</td><td class="ahrs-reading" id="ahrs-gyro-0">—</td><td class="ahrs-reading" id="ahrs-gyro-1">—</td><td class="ahrs-reading" id="ahrs-gyro-2">—</td></tr>
+<tr><td>Magnetic field (µT)</td><td class="ahrs-reading" id="ahrs-mag-0">—</td><td class="ahrs-reading" id="ahrs-mag-1">—</td><td class="ahrs-reading" id="ahrs-mag-2">—</td></tr>
+</tbody></table></div>
+<p id="ahrs-environment" class="ahrs-reading muted">—</p>
+<p class="notice">Yaw is a relative gyro estimate and can drift; it is not a north-referenced compass heading. Magnetic readings have factory sensitivity correction only. Pressure altitude uses standard sea-level pressure, not a measured height above the floor.</p>
+<p id="ahrs-details" class="muted">Waiting for the sensor report…</p>
+<div class="actions"><button type="button" id="ahrs-calibrate" disabled>Calibrate gyro while still</button><span id="ahrs-calibration" role="status"></span></div>
+<p>Keep the board still for the calibration window. A rejected stationary window or pause preserves the previous gyro bias. Calibration is kept in RAM and resets on reboot or IMU reinitialization.</p>
+<p id="ahrs-error" class="error" role="status"></p>
+<p><a href="/api/ahrs" target="_blank" rel="noopener">Open AHRS JSON</a> · I²C wiring: SDA → GPIO41, SCL → GPIO42, plus the documented power and ground connections.</p>
+</section>
+<p>Nearby 2.4 GHz Wi-Fi access points and Bluetooth LE advertisers. Signal readings come from this camera's receiver. Each row shows its own observation age; Wi-Fi and Bluetooth samples are taken at different times.</p>
+<div class="metrics"><div class="metric"><strong id="wifi-count">—</strong><span>Wi-Fi access points</span></div><div class="metric"><strong id="ble-count">—</strong><span>BLE advertisers</span></div><div class="metric"><strong id="udp-count">—</strong><span>UDP packets sent</span></div><div class="metric"><strong id="heap">—</strong><span id="heap-label">Receiver uptime</span></div></div>
+<section><h2>Wi-Fi</h2><p id="wifi-state" class="muted">Waiting for the first scan.</p><div class="table"><table><thead><tr><th>Access point / BSSID</th><th>Channel</th><th>RSSI</th><th>Smoothed</th><th>Approx. range</th><th>Age</th><th>Samples</th><th>FTM</th></tr></thead><tbody id="wifi"></tbody></table></div></section>
+<section><h2>Bluetooth LE</h2><p id="ble-state" class="muted">Waiting for the first scan.</p><div class="table"><table><thead><tr><th>Advertiser / address</th><th>Address type</th><th>RSSI</th><th>Smoothed</th><th>Approx. range</th><th>Age</th><th>Samples</th><th>TX power</th></tr></thead><tbody id="ble"></tbody></table></div></section>
+<section><h2>Wi-Fi time-of-flight ranging</h2><p>FTM measures round-trip timing with a compatible responder. Use a Wi-Fi row's <b>Measure</b> button. Ordinary access points may not offer this service.</p><div id="ftm" role="status">No ranging request yet.</div></section>
+<details><summary>Scanning, output and range settings</summary>
+<p>Changes take effect without restarting the camera. UDP output is enabled by entering the receiver computer's IPv4 address. An empty address disables UDP; this page and the JSON API remain available.</p>
+<form id="config"><div class="grid">
+<label><input type="checkbox" id="wifi_enabled">Enable Wi-Fi scans</label>
+<label><input type="checkbox" id="ble_enabled">Enable BLE scans</label>
+<label>Wi-Fi scan interval (seconds)<input type="number" id="wifi_interval_ms" min="10" max="86400" step="1" required></label>
+<label>BLE scan interval (seconds)<input type="number" id="ble_interval_ms" min="1" max="86400" step="1" required></label>
+<label>BLE scan duration (seconds)<input type="number" id="ble_duration_ms" min="0.2" max="5" step="0.1" required></label>
+<label>UDP receiver IPv4<input id="udp_host" placeholder="192.168.1.60" maxlength="15"></label>
+<label>UDP port<input type="number" id="udp_port" min="1" max="65535" required></label>
+<label>AHRS UDP interval (seconds)<input type="number" id="ahrs_publish_interval_ms" min="0.05" max="86400" step="0.01" required></label>
+<label>Radio publish interval (seconds)<input type="number" id="publish_interval_ms" min="1" max="86400" step="1" required></label>
+<label>Wi-Fi reference RSSI at 1 m (dBm)<input type="number" id="wifi_reference_rssi_1m_dbm" min="-127" max="-1" step="0.1" required></label>
+<label>BLE reference RSSI at 1 m (dBm)<input type="number" id="ble_reference_rssi_1m_dbm" min="-127" max="-1" step="0.1" required></label>
+<label>Path-loss exponent<input type="number" id="path_loss_exponent" min="0.5" max="6" step="0.1" required></label>
+</div><p class="notice">RSSI ranges are estimates. Default reference values are assumptions, and walls, antenna orientation and transmitter power can change the result substantially. iBeacon advertisements can supply their own one-meter reference. Advertised TX power is shown separately.</p>
+<div class="actions"><button type="submit">Save settings</button><button class="secondary" id="reload" type="button">Reload settings</button><span id="saved" role="status"></span></div></form></details>
+<section><h2>Delivery and scan status</h2><div id="status" class="muted">Waiting for telemetry…</div><p><a href="/api/telemetry" target="_blank" rel="noopener">Open JSON telemetry</a> · <a href="/api/telemetry/config" target="_blank" rel="noopener">Open JSON configuration</a></p><p class="muted">The Wi-Fi scan lists access points, not every Wi-Fi client. Bluetooth lists advertising LE devices, not Classic Bluetooth connections. Short scan windows may miss broadcasts. Device addresses can change. There is no bearing or direction measurement.</p></section>
+</main><script>
+'use strict';
+const byId = id => document.getElementById(id);
+const secondFields = ['wifi_interval_ms','ble_interval_ms','ble_duration_ms','publish_interval_ms','ahrs_publish_interval_ms'];
+const numberFields = ['udp_port','wifi_reference_rssi_1m_dbm','ble_reference_rssi_1m_dbm','path_loss_exponent'];
+let configLoaded = false, lastTelemetry = null, pollTimer = null;
+function finite(value){return typeof value === 'number' && Number.isFinite(value);}
+function num(value, suffix='', digits=0){return finite(value) ? value.toFixed(digits)+suffix : '—';}
+function age(ms){return finite(ms) ? (ms<1000 ? '<1 s' : (ms/1000).toFixed(ms<10000?1:0)+' s') : '—';}
+async function api(path, options={}){
+ const response = await fetch(path, {cache:'no-store',credentials:'same-origin',...options});
+ let body;try{body=await response.json();}catch(e){throw new Error('Invalid JSON response (HTTP '+response.status+')');}
+ if(!response.ok)throw new Error(typeof body.error==='string'?body.error:JSON.stringify(body));
+ return body;
+}
+// Light requests are serialized, and inputs are disabled until each finishes.
+// Off preserves the draft; radio polling never touches these controls.
+let lightBusy = false;
+function lightByte(value){return Number.isInteger(value) && value>=0 && value<=255;}
+function lightState(data){
+ return data && typeof data.on==='boolean' && lightByte(data.brightness) &&
+  Array.isArray(data.rgb) && data.rgb.length===3 && data.rgb.every(lightByte) &&
+  typeof data.ready==='boolean' && typeof data.command_state_known==='boolean';
+}
+function lightMessage(message,error=false){
+ byId('light-message').textContent=message;
+ byId('light-message').className=error?'error':'muted';
+}
+function renderLight(data,replaceDraft){
+ if(!lightState(data))throw new Error('The light API returned an invalid state.');
+ const known=data.command_state_known && data.ready;
+ byId('light-state').textContent=!data.ready?'Driver unavailable':!known?'Output unknown':data.on?(data.brightness===0?'On · brightness 0':'On'):'Off';
+ byId('light-state').className='badge'+(known?'':' error');
+ byId('light-detail').textContent=(known?'Last accepted command: ':'Previous command (current output unknown): ')+(data.on?'on':'off')+' · brightness '+data.brightness+'/255 · RGB '+data.rgb.join(', ');
+ if(replaceDraft){
+  byId('light-brightness').value=data.brightness;
+  byId('light-slider').value=data.brightness;
+  byId('light-color').value='#'+data.rgb.map(value=>value.toString(16).padStart(2,'0')).join('');
+ }
+}
+function lightDraft(){
+ const brightness=byId('light-brightness'),color=byId('light-color').value;
+ if(brightness.value.trim()==='' || !lightByte(Number(brightness.value))){
+  lightMessage('Enter a whole-number brightness from 0 through 255.',true);
+  brightness.focus();brightness.reportValidity();return null;
+ }
+ if(!/^#[0-9a-f]{6}$/i.test(color)){lightMessage('Choose a valid RGB color.',true);return null;}
+ return {brightness:Number(brightness.value),rgb:[1,3,5].map(offset=>parseInt(color.slice(offset,offset+2),16))};
+}
+async function requestLight(update){
+ if(lightBusy)return;
+ const mutation=update!==undefined;
+ lightBusy=true;byId('light-controls').disabled=true;
+ lightMessage(mutation?'Sending light command…':'Reading light state…');
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),8000);
+ try{
+  const response=await fetch('/api/light',{
+   cache:'no-store',credentials:'same-origin',signal:controller.signal,
+   ...(mutation?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(update)}:{})
+  });
+  let data;try{data=await response.json();}catch(error){throw new Error('Invalid light response (HTTP '+response.status+').');}
+  if(!response.ok){
+   const error=new Error(response.status===401?'Authentication required. Sign in with the camera credentials and retry.':response.status===404?'The light API is unavailable. Check the installed firmware version.':data && typeof data.error==='string'?data.error:'Light request failed (HTTP '+response.status+').');
+   error.lightData=data;throw error;
+  }
+  renderLight(data,!mutation || Object.prototype.hasOwnProperty.call(update,'rgb'));
+  if(!data.ready || !data.command_state_known){
+   const fault=data.error;
+   lightMessage('Light output is unknown.'+(fault?' '+fault.name+' at '+fault.stage+'.':'')+' Retry a command or reload the light state.',true);
+  }else{
+   lightMessage(mutation?'Light command accepted.': 'Light state loaded.');
+  }
+ }catch(error){
+  if(lightState(error.lightData)){
+   renderLight(error.lightData,false);
+   const fault=error.lightData.error;
+   lightMessage(error.message+(fault && typeof fault==='object'?' '+fault.name+' at '+fault.stage+'.':'')+' Current output is unknown; reload state or retry.',true);
+  }else{
+   byId('light-state').textContent='State unavailable';
+   byId('light-state').className='badge error';
+   const message=error.name==='AbortError'?'The light request timed out.':error.message;
+   lightMessage(message+(mutation?' The command outcome is unconfirmed. Reload light state before retrying.':' Reload light state to try again.'),true);
+  }
+ }finally{
+  clearTimeout(timeout);lightBusy=false;byId('light-controls').disabled=false;
+ }
+}
+byId('light-slider').addEventListener('input',()=>{byId('light-brightness').value=byId('light-slider').value;lightMessage('Brightness selected. Turn on or apply the settings to use it.');});
+byId('light-brightness').addEventListener('input',()=>{
+ const value=byId('light-brightness').value;
+ if(value.trim()!=='' && lightByte(Number(value)))byId('light-slider').value=value;
+ lightMessage('Brightness edited. Turn on or apply the settings to use it.');
+});
+byId('light-color').addEventListener('input',()=>lightMessage('Color selected. Turn on or apply the settings to use it.'));
+byId('light-white').onclick=()=>{byId('light-color').value='#ffffff';lightMessage('White selected. Turn on or apply the settings to use it.');};
+byId('light-on').onclick=()=>{const draft=lightDraft();if(draft)requestLight({on:true,...draft});};
+byId('light-off').onclick=()=>requestLight({on:false});
+byId('light-form').addEventListener('submit',event=>{event.preventDefault();const draft=lightDraft();if(draft)requestLight(draft);});
+byId('light-reload').onclick=()=>requestLight();
+let ahrsPollTimer=null,ahrsCommandPending=false,lastAhrs=null,ahrsReceivedAt=0,ahrsCommandError='';
+function ageAhrs(data,elapsedMs){
+ const aged={...data};
+ for(const [name,limit] of [['imu',500],['mag',1000],['barometer',2000],['attitude',500]]){
+  const sensor={...(data[name]||{})};
+  if(finite(sensor.age_ms))sensor.age_ms+=Math.max(0,elapsedMs);
+  sensor.valid=!!sensor.valid&&finite(sensor.age_ms)&&sensor.age_ms<=limit;
+  aged[name]=sensor;
+ }
+ aged.attitude.valid=aged.attitude.valid&&aged.imu.valid;
+ return aged;
+}
+function refreshAhrs(){
+ if(lastAhrs)renderAhrs(ageAhrs(lastAhrs,performance.now()-ahrsReceivedAt));
+}
+function renderAhrs(data){
+ if(!data || !data.imu || !data.attitude || !data.barometer || !data.calibration)
+  throw new Error('Invalid AHRS response');
+ const imu=data.imu,mag=data.mag||{},barometer=data.barometer,attitude=data.attitude,calibration=data.calibration;
+ const state=byId('ahrs-state');
+ state.textContent=data.paused?'Sampling paused':!data.worker_ready?'Sensor worker unavailable':imu.valid?'IMU samples available':imu.present?'Waiting for fresh IMU data':'IMU not detected';
+ state.className='badge'+(imu.valid?'':' error');
+ for(const [key,label] of [['roll','roll_deg'],['pitch','pitch_deg'],['yaw','yaw_deg']])
+  byId('ahrs-'+key).textContent=num(attitude.valid?attitude[label]:null,'°',1);
+ byId('ahrs-pressure').textContent=num(barometer.valid?barometer.pressure_pa/100:null,' hPa',1);
+ for(const [name,valid,vector] of [['accel',imu.valid,imu.accel_m_s2],['gyro',imu.valid,imu.gyro_rad_s],['mag',mag.valid,mag.field_uT]])
+  for(let axis=0;axis<3;axis++)byId('ahrs-'+name+'-'+axis).textContent=num(valid&&Array.isArray(vector)?vector[axis]:null,'',3);
+ byId('ahrs-environment').textContent='IMU temperature: '+num(imu.valid?imu.temp_c:null,' °C',1)+' · Barometer temperature: '+num(barometer.valid?barometer.temp_c:null,' °C',1)+' · Standard pressure altitude: '+num(barometer.valid?barometer.pressure_altitude_m:null,' m',1);
+ byId('ahrs-details').textContent='IMU age: '+age(imu.age_ms)+' · Magnetometer: '+(mag.present?(mag.valid?'fresh':'no fresh reading'):'not detected')+' ('+age(mag.age_ms)+') · Barometer: '+(barometer.present?(barometer.valid?'fresh':'no fresh reading'):'not detected')+' ('+age(barometer.age_ms)+') · Attitude generation: '+(attitude.generation??'—');
+ byId('ahrs-calibration').textContent=ahrsCommandPending?'Requesting calibration. Keep the board still…':'Gyro calibration: '+calibration.status+' · '+(calibration.gyro_bias_valid?'measured bias applied':'uncalibrated')+(calibration.samples?' · '+calibration.samples+' samples':'');
+ const pending=['queued','collecting'].includes(calibration.status);
+ byId('ahrs-calibrate').disabled=ahrsCommandPending||pending||!imu.valid||!!data.paused;
+ const faults=[['IMU',imu],['Magnetometer',mag],['Barometer',barometer]].filter(([,sensor])=>sensor.error).map(([name,sensor])=>name+': '+(typeof sensor.error==='string'?sensor.error:JSON.stringify(sensor.error)));
+ byId('ahrs-error').textContent=[ahrsCommandError,...faults].filter(Boolean).join(' · ');
+}
+async function ahrsApi(options={}){
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),5000);
+ try{return await api('/api/ahrs'+(options.calibrate?'/calibrate':''),{signal:controller.signal,...(options.calibrate?{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}:{})});}
+ finally{clearTimeout(timeout);}
+}
+async function pollAhrs(){
+ clearTimeout(ahrsPollTimer);
+ try{const result=await ahrsApi();renderAhrs(result.ahrs);lastAhrs=result.ahrs;ahrsReceivedAt=performance.now();}
+ catch(error){
+  lastAhrs=null;byId('ahrs-state').textContent='AHRS connection unavailable';byId('ahrs-state').className='badge error';
+  for(const reading of document.querySelectorAll('.ahrs-reading'))reading.textContent='—';
+  byId('ahrs-calibrate').disabled=true;
+  byId('ahrs-details').textContent='No current sensor report. Readings will resume when the connection returns.';
+  byId('ahrs-error').textContent=error.name==='AbortError'?'AHRS request timed out.':error.message;
+ }
+ finally{ahrsPollTimer=setTimeout(pollAhrs,500);}
+}
+byId('ahrs-calibrate').onclick=async()=>{
+ if(ahrsCommandPending)return;
+ ahrsCommandPending=true;ahrsCommandError='';byId('ahrs-calibrate').disabled=true;
+ byId('ahrs-calibration').textContent='Requesting calibration. Keep the board still…';
+ try{await ahrsApi({calibrate:true});byId('ahrs-calibration').textContent='Calibration queued. Keep the board still…';}
+ catch(error){ahrsCommandError='Last calibration request: '+(error.name==='AbortError'?'request timed out; its outcome is unknown.':error.message)+' Check the calibration status before requesting again.';byId('ahrs-error').textContent=ahrsCommandError;}
+ finally{ahrsCommandPending=false;}
+};
+function addCell(row,text,sub){const cell=document.createElement('td');cell.textContent=text;if(sub){const small=document.createElement('small');small.textContent=sub;cell.appendChild(small);}row.appendChild(cell);return cell;}
+function distance(observation){if(!finite(observation.distance_m))return '—';return '≈ '+num(observation.distance_m,' m',1);}
+function rows(radio, observations, capabilities, config){
+ const body=byId(radio);body.replaceChildren();
+ const sorted=[...observations].sort((a,b)=>(b.rssi_filtered_dbm||-200)-(a.rssi_filtered_dbm||-200));
+ if(!sorted.length){const row=document.createElement('tr');const cell=addCell(row,'No observations yet.');cell.colSpan=8;cell.className='empty';body.appendChild(row);return;}
+ for(const observation of sorted){
+  const row=document.createElement('tr');
+  const interval=radio==='wifi'?config.wifi_interval_ms:config.ble_interval_ms;
+  if(finite(observation.age_ms)&&observation.age_ms>Math.max(30000,(interval||60000)*2))row.className='stale';
+  addCell(row,observation.name || (radio==='wifi'?'Hidden SSID':'Unnamed advertiser'),observation.address||observation.id);
+  addCell(row,radio==='wifi'?String(observation.channel??'—'):String(observation.address_type??'—'));
+  addCell(row,num(observation.rssi_dbm,' dBm'));
+  addCell(row,num(observation.rssi_filtered_dbm,' dBm',1));
+  addCell(row,distance(observation),observation.distance_method||'');
+  addCell(row,age(observation.age_ms));addCell(row,String(observation.sample_count??0));
+  if(radio==='wifi'){
+   const cell=addCell(row,'');if(observation.ftm_responder && capabilities.ftm){const button=document.createElement('button');button.textContent='Measure';button.disabled=!!lastTelemetry?.ftm?.busy;button.onclick=()=>range(observation,button);cell.appendChild(button);}else{cell.textContent=capabilities.ftm?'Not advertised':'Unsupported';}
+  }else{addCell(row,num(observation.tx_power_dbm,' dBm'));}
+  body.appendChild(row);
+ }
+}
+function loadConfig(config){
+ for(const key of ['wifi_enabled','ble_enabled'])byId(key).checked=!!config[key];
+ for(const key of secondFields)byId(key).value=(config[key]||0)/1000;
+ for(const key of numberFields)byId(key).value=config[key]??'';
+ byId('udp_host').value=config.udp_host||'';configLoaded=true;
+}
+function render(data){
+ lastTelemetry=data;const status=data.status||{},config=data.config||{},cap=data.capabilities||{};
+ byId('receiver').textContent='Receiver '+data.receiver_id+(data.boot_id?' · boot '+data.boot_id:'');
+ byId('connection').textContent=data.paused?'Scanning paused':status.worker_ready===false?'Telemetry worker unavailable':'Connected';
+ byId('connection').classList.remove('error');byId('wifi-count').textContent=(data.wifi||[]).length;
+ byId('ble-count').textContent=cap.ble?(data.ble||[]).length:'Unsupported';
+ byId('udp-count').textContent=status.udp_sent??0;
+ byId('heap').textContent=age(data.uptime_ms);
+ byId('wifi-state').textContent='Scan: '+(status.wifi_scan?'scanning':'idle')+' · last completed '+age(status.wifi_last_scan_age_ms)+' ago';
+ byId('ble-state').textContent=cap.ble?'Scan: '+(status.ble_initializing?'initializing':status.ble_scan?'scanning':'idle')+' · last completed '+age(status.ble_last_scan_age_ms)+' ago':'This board has no Bluetooth LE radio.';
+ rows('wifi',data.wifi||[],cap,config);rows('ble',data.ble||[],cap,config);
+ const ftm=data.ftm||{};
+ byId('ftm').textContent=!cap.ftm?'FTM is not supported by this board / SDK.':ftm.busy?'Measuring '+(ftm.target||'')+'…':'Status: '+(ftm.status||'idle')+(ftm.target?' · '+ftm.target:'')+(finite(ftm.distance_m)?' · '+num(ftm.distance_m,' m',2):'')+(finite(ftm.rtt_ns)?' · RTT '+num(ftm.rtt_ns,' ns'):'')+(finite(ftm.age_ms)?' · '+age(ftm.age_ms)+' ago':'')+(ftm.recovery?' · '+ftm.recovery:'');
+ byId('status').textContent='Wi-Fi error: '+(status.wifi_error||'none')+'\nBLE error: '+(status.ble_error||'none')+'\nUDP destination: '+(config.udp_host?config.udp_host+':'+config.udp_port:'disabled')+' · failed sends: '+(status.udp_failed||0)+'\nTable replacements: Wi-Fi '+(status.wifi_evictions||0)+' / BLE '+(status.ble_evictions||0);
+ byId('ble_enabled').disabled=!cap.ble;
+ if(!configLoaded)loadConfig(config);
+}
+async function poll(){
+ clearTimeout(pollTimer);
+ try{render(await api('/api/telemetry'));}
+ catch(error){byId('connection').textContent='Connection unavailable';byId('connection').classList.add('error');byId('status').textContent=error.message+' — displayed readings are from the last successful response.';}
+ finally{pollTimer=setTimeout(poll,2000);}
+}
+async function range(observation,button){
+ button.disabled=true;byId('ftm').textContent='Requesting measurement…';
+ try{await api('/api/telemetry/ftm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:observation.address,channel:observation.channel})});byId('ftm').textContent='Measurement requested. Waiting for the radio report.';}
+ catch(error){byId('ftm').textContent=error.message;}
+ finally{button.disabled=false;}
+}
+byId('config').addEventListener('submit',async event=>{
+ event.preventDefault();const settings={};
+ for(const key of ['wifi_enabled','ble_enabled'])settings[key]=byId(key).checked;
+ for(const key of secondFields)settings[key]=Math.round(Number(byId(key).value)*1000);
+ for(const key of numberFields)settings[key]=Number(byId(key).value);
+ settings.udp_host=byId('udp_host').value.trim();
+ const saved=byId('saved');saved.textContent='Saving…';
+ try{const result=await api('/api/telemetry/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(settings)});if(result.config)loadConfig(result.config);saved.textContent='Saved';saved.className='';}
+ catch(error){saved.textContent=error.message;saved.className='error';}
+});
+byId('reload').onclick=async()=>{try{const data=await api('/api/telemetry/config');loadConfig(data.config||data);byId('saved').textContent='Reloaded';}catch(error){byId('saved').textContent=error.message;}};
+setInterval(refreshAhrs,200);
+requestLight();
+pollAhrs();
+poll();
+</script></body></html>

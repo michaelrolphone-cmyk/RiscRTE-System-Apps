@@ -1,0 +1,7 @@
+{
+  "include/ultrasonic_capture_model.h": "6e0faba0fb66c4ac641b5e869326ba14991bf0f05e2e4a48da05b14967a4ab17",
+  "include/ultrasonic_telemetry.h": "d0d97c9345a39978a4f3288be4b9091ee9cd7d4fae6035af3cff5f832a0794b5",
+  "src/ultrasonic_telemetry.cpp": "205c82b520d1db7949f61c626e31f35da41448f0782f0bd69f80d4259c4a3b17",
+  "src/radio_telemetry.cpp": "a80e9c0a0f1571e1929ddf409817b2c6a1fe2472a91e12d24772f6c87db96631",
+  "firmware_sha256": "7afa71f0120edb012eb58167c47d90d1e594d1181a4e46b606117314b52a2803"
+}
