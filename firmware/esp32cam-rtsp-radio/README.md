@@ -1,4 +1,10 @@
-# ESP32-S3 CAM with RF and AHRS telemetry
+# ESP32-S3 CAM with RF, AHRS and ultrasonic telemetry
+
+Firmware `1.0-radio.8` adds four HC-SR04 channels. See [ULTRASONIC.md](ULTRASONIC.md)
+for wiring (including mandatory ECHO voltage dividers and boot-pin constraints),
+HTTP/UDP contracts, timing and qualification. This version preserves the Wi-Fi
+coexistence and embedded home-page fixes from `1.0-radio.7`.
+
 
 This version targets the ESP32-S3 CAM N16R8 camera only. It is based on
 [rzeldent/esp32cam-rtsp](https://github.com/rzeldent/esp32cam-rtsp), pinned to
