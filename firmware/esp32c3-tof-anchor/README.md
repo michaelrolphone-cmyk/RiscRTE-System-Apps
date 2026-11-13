@@ -24,7 +24,7 @@ Wi-Fi or SSH credentials.
 
 Without USB, join the device's open C3-TOF access point and use its gateway
 address to open the setup page. The gateway is reported by the Wi-Fi client.
-Configuration is accepted only over the anchor AP or USB; LAN status is read-only.
+Configuration is accepted over the anchor AP or USB. Firmware 1.0.3 also permits LAN configuration with the provisioned per-board OTA authentication; anonymous LAN writes remain rejected.
 All anchors and the rover should use the same 2.4 GHz LAN.
 
 Optional settings:
@@ -56,10 +56,10 @@ measurements through the rover camera's existing /api/telemetry/ftm endpoint.
 It writes one atomic latest.json file. It does not drive the rover, cancel
 other clients' measurements, replace the world map, or reset the camera.
 
-The deployed provider wrapper appends a tof object to the existing
-robot.radio.status:1 and robot.radio.localize:1 results. Original fields and
-other capabilities remain available. Its collector freshness is checked on
-every query.
+The current Biome vision provider exposes robot.tof.status:1 and
+robot.tof.localize:1 directly, with collector freshness checked on each query.
+The older wrapper is a legacy adapter for deployments predating retirement
+of RSSI/BLE robot.radio queries; do not restore retired radio capabilities.
 
 Anchor pair ranges construct a relative frame: A at the origin, B on +X, C
 on the +Y side. This does not establish world-map translation or heading.
@@ -106,3 +106,19 @@ reboots reset that node's observations. Latest attempt status stays visible.
 Rover range observation span is reported separately. Moving-rover localization
 requires motion compensation; asynchronous ranges are not asserted to be a
 simultaneous navigation pose.
+
+## Camera reboot recovery
+
+The coordinator reconciles pending requests against camera boot ID, uptime,
+and authoritative idle never_requested status. A reboot clears the old pending
+request and pre-reboot rover ranges. It preserves busy/retiring sessions from
+other consumers. Recovered request progress does not qualify position accuracy.
+
+## Transmit power trials (1.0.3)
+
+USB or authenticated LAN configuration accepts tx_power_dbm (2–19.5 dBm).
+Set tx_trial_ms to try a temporary setting; the saved setting is restored when
+the trial expires. commit_tx_power=true explicitly persists an active trial.
+Status reports the SDK-applied tx_power_dbm and tx_trial_active. Observe boot
+identity, association and distinct successful ranges before committing power.
+Changing power alone does not establish ranging accuracy or anchor geometry.
