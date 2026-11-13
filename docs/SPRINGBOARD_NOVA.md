@@ -111,20 +111,3 @@ placement is approximated in those reconstruction panels. Prototype glyphs and
 24-entry inventory differ deliberately from the real FA/catalog implementation.
 No physical Watch frame rate, touch alignment or installation is claimed by
 host/ELF evidence. Clock fade/handoff and bundle wiring are deployment work.
-
-## Busy-display frame admission
-
-The app keeps a due paint due when `frame_ready` refuses admission. Its 40ms
-cadence advances after a paint is admitted, or on an idle cadence tick, never
-because a busy display rejected a needed paint. Input and motion still advance
-on every poll, so the next admitted frame uses current state. The adapter's
-frame lease, retained raster/mailbox and completion ownership are unchanged.
-
-`python3 scripts/test_springboard_nova.py` exercises actual app and adapter
-code with asynchronous 55/75/95/115ms display completions. The next due paint
-must start on the first application poll after completion; raster cost is
-excluded from that admission metric. This matrix covers the ordinary launcher,
-retained full-frame handoff and native 410x502 catalog, plus normal and
-ASan/UBSan builds. Existing 40ms logical rate limits, input, launch, cancellation,
-30/60/120Hz motion and ownership checks remain. These simulated timings do not
-establish panel FPS or resolve the historical hardware stutter report.

@@ -23,9 +23,10 @@
     "sha256": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d"
   },
   "RiscDisplayOutputV1.h": {
-    "repository": "T5S3-Reader",
-    "commit": "3d9bc4f373679f5ae8dd184db6a8d0afa5a40231",
-    "sha256": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726"
+    "repository": "michaelrolphone-cmyk/RiscRTE-Drivers",
+    "path": "sdk/driver/RiscDisplayOutputV1.h",
+    "commit": "8800cb702428032796891656b465b955f8ea75f6",
+    "sha256": "11e747aecadcdfd0b37c79d057208ca9249714cb7482ca32b4a7a3296648c619"
   },
   "RiscBatteryGaugeV1.h": {
     "repository": "RiscRTE-Utilities",

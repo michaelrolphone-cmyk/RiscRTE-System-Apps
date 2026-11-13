@@ -1,6 +1,16 @@
 /* Shared compact presentation; all gesture and layout state stays in the app. */
 #include "springboard_motion.h"
+#ifdef PORTABLE_SPRINGBOARD_GESTURE_TRACE
+#include "PortableSpringboardGestureTrace.h"
+#endif
 #include <limits.h>
+#ifdef PORTABLE_NOVA_SLICED_FRAMES
+#include "PaperFrame.h"
+#include "PortableFrameReceipt.h"
+#if !defined(PORTABLE_RASTER_SNAPSHOT) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE) || !defined(PORTABLE_FRAME_RECEIPTS)
+#error "Sliced Nova requires immutable raster replay and native custody"
+#endif
+#endif
 #define NOVA_PAGE_APPS 19u
 #define NOVA_FRAME_MS 40u
 typedef struct { int16_t x, y; } nova_point;
@@ -16,6 +26,12 @@ typedef struct {
     uint32_t last_frame, last_clock, last_input, last_motion;
     uint8_t hour, minute;
     bool time_known;
+#ifdef PORTABLE_NOVA_SLICED_FRAMES
+    bool image_pending,visible_valid;
+    uint64_t submitted_receipt;
+    int submitted_x,submitted_y;
+    unsigned submitted_first,submitted_n,visible_first,visible_n;
+#endif
     char status[48];
 } nova_state;
 static unsigned nova_root(unsigned n) {
@@ -79,8 +95,26 @@ static uint32_t nova_color(nova_point p) {
     int color=(2*q+3*r)%7;
     return palette[color<0?color+7:color];
 }
-static bool nova_render(nova_state *s) {
-    if(!t5_app_frame_ready(api))return false;
+#ifdef PORTABLE_NOVA_SLICED_FRAMES
+static void nova_completed(nova_state *s) {
+    if(s->image_pending && paper_frame_idle()) {
+        if(s->submitted_receipt && portable_frame_completed_id()==s->submitted_receipt) {
+            s->visible_x=s->submitted_x;s->visible_y=s->submitted_y;
+            s->visible_first=s->submitted_first;s->visible_n=s->submitted_n;
+            s->visible_valid=true;
+        } else s->dirty=true; /* Idle can also mean a discarded/replaced plan. */
+        s->image_pending=false;
+    }
+}
+#endif
+static void nova_render(nova_state *s) {
+#ifdef PORTABLE_NOVA_SLICED_FRAMES
+    nova_completed(s);
+    /* One immutable image at a time: map metadata follows completed pixels,
+     * not capture or submit. Logical input/motion still runs between slices. */
+    if(s->image_pending || !paper_frame_idle())return;
+#endif
+    if(!t5_app_frame_ready(api))return;
     s->view->begin();
     int cx = api->screen_width()/2, cy = api->screen_height()/2;
     bool unavailable_icon=false;
@@ -114,14 +148,28 @@ static bool nova_render(nova_state *s) {
         char page[24];snprintf(page,sizeof(page),"%u / %u",s->first/NOVA_PAGE_APPS+1,(unsigned)((count+NOVA_PAGE_APPS-1)/NOVA_PAGE_APPS));
         s->view->caption(api->screen_height()-16,page,true,0x7d8c90);
     }
+#ifdef PORTABLE_NOVA_SLICED_FRAMES
+    api->present(false);
+    s->submitted_receipt=portable_frame_requested_id();
+    s->submitted_x=(int)(s->motion.x*16);s->submitted_y=(int)(s->motion.y*16);
+    s->submitted_first=s->first;s->submitted_n=s->n;s->image_pending=true;
+    s->dirty=false;nova_completed(s);
+#else
     api->present(false);s->visible_x=(int)(s->motion.x*16);s->visible_y=(int)(s->motion.y*16);s->dirty=false;
-    return true;
+#endif
 }
 static int nova_hit(nova_state *s,int x,int y) {
+#ifdef PORTABLE_NOVA_SLICED_FRAMES
+    if(!s->visible_valid || s->visible_first!=s->first || s->visible_n!=s->n)return -1;
+#endif
     int best=-1, nearest=10000;
     x=nova_logical(x-api->screen_width()/2);y=nova_logical(y-api->screen_height()/2);
     for (unsigned i=0;i<s->n;++i) {
+#ifdef PORTABLE_NOVA_SLICED_FRAMES
+        int dx=s->points[i].x+s->visible_x,dy=s->points[i].y+s->visible_y;
+#else
         int dx=s->points[i].x+(int)(s->motion.x*16),dy=s->points[i].y+(int)(s->motion.y*16);
+#endif
         int scale=nova_scale(abs(dx)>abs(dy)?abs(dx):abs(dy));
         int d=nova_distance(x-dx/16,y-dy/16);
         if (nova_alpha(api->screen_width()/2+nova_pixels(dx)/16,api->screen_height()/2+nova_pixels(dy)/16)<32) continue;
@@ -130,6 +178,9 @@ static int nova_hit(nova_state *s,int x,int y) {
     return best;
 }
 static void nova_cancel(nova_state *s) {
+#ifdef PORTABLE_SPRINGBOARD_GESTURE_TRACE
+    portable_springboard_gesture_cancel();
+#endif
     s->down=s->tap=s->initial=false;sb_motion_cancel(&s->motion);
     s->pending=-1;s->pulse=0;s->dirty=true;
 }
@@ -149,24 +200,37 @@ static void nova_contact_input(nova_state *s,const springboard_contact *c,uint32
             s->down=true;s->tap=c->tap_eligible;s->initial=false;
             s->last_x=c->x;s->last_y=c->y;s->moved=0;
             sb_motion_begin(&s->motion);s->pending=-1;s->pulse=0;
+#ifdef PORTABLE_SPRINGBOARD_GESTURE_TRACE
+            portable_springboard_gesture_dispatch(0,c->x,c->y,0,0);
+#endif
         } else {
             int dx=nova_limit(nova_logical(c->x)-nova_logical(s->last_x),256),dy=nova_limit(nova_logical(c->y)-nova_logical(s->last_y),256);
             s->last_x=c->x;s->last_y=c->y;
             unsigned travel=(unsigned)(abs(dx)+abs(dy));
             s->moved=s->moved+travel>1024?1024:s->moved+travel;
             sb_motion_drag(&s->motion,(float)dx,(float)dy,elapsed);s->dirty |= dx||dy;
+#ifdef PORTABLE_SPRINGBOARD_GESTURE_TRACE
+            portable_springboard_gesture_dispatch(1,c->x,c->y,dx,dy);
+#endif
         }
     } else {
         s->initial=false;
         if (c->released) {
             bool tap=(!s->down || (s->tap && s->moved<6)) && c->tap_eligible;
             s->down=false;sb_motion_release(&s->motion);
+#ifdef PORTABLE_SPRINGBOARD_GESTURE_TRACE
+            portable_springboard_gesture_dispatch(2,c->x,c->y,0,0);
+#endif
             if (tap) {
                 int hit=nova_hit(s,c->x,c->y);
                 if (hit>=0) {
                     unsigned center=0;int nearest=INT_MAX;
                     for(unsigned i=0;i<s->n;i++) {
+#ifdef PORTABLE_NOVA_SLICED_FRAMES
+                        int x=s->points[i].x+s->visible_x,y=s->points[i].y+s->visible_y,d=x*x+y*y;
+#else
                         int x=s->points[i].x+(int)(s->motion.x*16),y=s->points[i].y+(int)(s->motion.y*16),d=x*x+y*y;
+#endif
                         if(d<nearest){nearest=d;center=i;}
                     }
                     int dx=s->points[hit].x-s->points[center].x,dy=s->points[hit].y-s->points[center].y;
@@ -199,8 +263,14 @@ static void nova_tick(nova_state *s,uint32_t elapsed) {
 }
 static bool nova_run(void) {
     const springboard_presentation *v=springboard_presentation_get();
-    if (!v || v->struct_size<sizeof(*v) || !v->begin || !v->circle ||
+    if (!v || v->struct_size<offsetof(springboard_presentation,frame_period_ms) || !v->begin || !v->circle ||
         !v->icon || !v->caption || !v->contact || !v->clock) return false;
+    uint32_t frame_ms=NOVA_FRAME_MS;
+    if(v->struct_size>=sizeof(*v) && v->frame_period_ms) {
+        uint32_t advertised=v->frame_period_ms();
+        if(advertised && advertised<=NOVA_FRAME_MS)frame_ms=advertised;
+    }
+    const uint32_t poll_ms=frame_ms<20u?frame_ms:20u;
     nova_state s={.view=v,.initial=true,.pending=-1};
     nova_layout(&s);
     s.time_known=v->clock(&s.hour,&s.minute) && s.hour<24 && s.minute<60;
@@ -210,8 +280,11 @@ static bool nova_run(void) {
 #endif
     nova_render(&s);
     t5_app_input_t in;uint32_t previous=0;bool buttons_armed=false;
-    while(api->poll(&in,20)) {
+    while(api->poll(&in,poll_ms)) {
         if(in.exit_requested || (in.buttons&T5_APP_BUTTON_BACK)) break;
+#ifdef PORTABLE_NOVA_SLICED_FRAMES
+        nova_completed(&s);
+#endif
         uint32_t now=api->millis(),elapsed=now-s.last_motion;
         /* A slow valid display frame is not an input cancellation. Keep a
          * deliberate pending launch, while bounding only physics integration. */
@@ -234,11 +307,9 @@ static bool nova_run(void) {
             s.dirty|=known!=s.time_known||(known&&(hour!=s.hour||minute!=s.minute));
             s.hour=hour;s.minute=minute;s.time_known=known;s.last_clock=now;
         }
-        if((uint32_t)(now-s.last_frame)>=NOVA_FRAME_MS) {
-            /* A BUSY lease has not consumed an app frame. Keep the paint due
-             * so the next input poll can submit the latest state when ready. */
-            if(!(s.dirty || springboard_transition_active()) || nova_render(&s))
-                s.last_frame=now;
+        if((uint32_t)(now-s.last_frame)>=frame_ms) {
+            s.last_frame=now;
+            if(s.dirty || springboard_transition_active())nova_render(&s);
         }
         if(s.pending>=0 && !s.pulse) {
             selected=s.first+(unsigned)s.pending;

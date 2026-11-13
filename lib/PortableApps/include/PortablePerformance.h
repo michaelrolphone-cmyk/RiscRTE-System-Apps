@@ -2,7 +2,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 /* App-owned values. Runtime owns phase numbers. Never encode text, addresses,
- * coordinates, preference values, file paths or other user data in records. */
+ * coordinates, preference values, file paths or other user data in metrics.
+ * The separately selected PortableSpringboardGestureTrace diagnostic schema
+ * reuses transport only; its bounded terminal summaries are not metrics and
+ * never run for keyboard/modal ownership. */
 
 #ifdef PORTABLE_PERFORMANCE_TRACE
 enum {
