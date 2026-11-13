@@ -58,9 +58,15 @@ inline bool configuration(JsonObjectConst c,JsonArrayConst endpoints,uint32_t co
 }
 inline bool relayPolicy(JsonObjectConst);
 inline bool policy(JsonDocument& p){
- if(!keys(p.as<JsonObjectConst>(),{"schema_version","wifi","service","endpoints","configuration","low_water","provenance"},{"relay","allocation","memory_profile"})||p["schema_version"]!=1)return false;
+ if(!keys(p.as<JsonObjectConst>(),{"schema_version","wifi","service","endpoints","configuration","low_water","provenance"},{"relay","allocation"})||p["schema_version"]!=1)return false;
  if(!keys(p["wifi"],{"ssid","credential_ref"})||!text(p["wifi"]["ssid"],32)||!text(p["wifi"]["credential_ref"],128))return false;
- auto s=p["service"].as<JsonObjectConst>();if(!keys(s,{"url","credential_ref","site_credential_ref","time_server","contact_interval_ms","contracts","providers"})||!https(s["url"])||!text(s["credential_ref"],128)||!text(s["site_credential_ref"],128,true)||!text(s["time_server"],253)||!integer(s["contact_interval_ms"],15000,30000)||(s["contracts"].size()!=4&&s["contracts"].size()!=8&&s["contracts"].size()!=9)||s["providers"].size()!=s["contracts"].size())return false;
+ auto s=p["service"].as<JsonObjectConst>();if(!keys(s,{"url","credential_ref","site_credential_ref","time_server","contact_interval_ms","contracts","providers"},{"camera"})||!https(s["url"])||!text(s["credential_ref"],128)||!text(s["site_credential_ref"],128,true)||!text(s["time_server"],253)||!integer(s["contact_interval_ms"],15000,30000)||s["contracts"].size()!=4||s["providers"].size()!=4)return false;
+ if(!s["camera"].isNull()){
+  auto camera=s["camera"].as<JsonObjectConst>();auto c=camera["contract"];auto impl=camera["provider"];
+  if(!keys(camera,{"contract","provider"})||c["capability_id"]!="camera.capture"||c["api_version"]!=1||!digest(c["contract_digest"])||
+     impl["capability_id"]!="camera.capture"||impl["provider_id"]!="esp32s3-infra-camera-capture"||
+     !integer(impl["revision"],1,9007199254740991ULL)||!digest(impl["definition_digest"])||!digest(impl["package_digest"]))return false;
+ }
  for(auto pin:s["contracts"].as<JsonArrayConst>())if(!keys(pin,{"capability_id","api_version","contract_digest"})||pin["api_version"]!=1||!digest(pin["contract_digest"]))return false;
  for(auto pin:s["providers"].as<JsonArrayConst>())if(!keys(pin,{"capability_id","provider_id","revision","definition_digest","package_digest"})||!digest(pin["definition_digest"])||!digest(pin["package_digest"])||!integer(pin["revision"],1,9007199254740991ULL))return false;
  if(!p["endpoints"].is<JsonArray>()||p["endpoints"].size()>8)return false;
@@ -71,9 +77,7 @@ inline bool policy(JsonDocument& p){
   bool wake=e["capability"]=="scheduler.drive"||e["capability"]=="service.reconcile";
   if(wake?(e["method"]!="POST"||e["maintenance_qualified"]!=true):e["method"]!="GET")return false;
  }
- auto low=p["low_water"].as<JsonObjectConst>();if(!keys(low,{"internal_free","internal_largest","dma_free","dma_largest","psram_free","psram_largest","stack_headroom"}))return false;if(!p["memory_profile"].isNull()&&p["memory_profile"]!="internal-only")return false;
- for(auto kv:low){const bool external=!strcmp(kv.key().c_str(),"psram_free")||!strcmp(kv.key().c_str(),"psram_largest");if(!integer(kv.value(),p["memory_profile"]=="internal-only"&&external?0:1,16777216))return false;}
- if(p["memory_profile"]=="internal-only"&&(low["psram_free"]!=0||low["psram_largest"]!=0))return false;
+ auto low=p["low_water"].as<JsonObjectConst>();if(!keys(low,{"internal_free","internal_largest","dma_free","dma_largest","psram_free","psram_largest","stack_headroom"}))return false;for(auto kv:low)if(!integer(kv.value(),1,16777216))return false;
  return allocationPolicy(p["allocation"],p["configuration"])&&relayPolicy(p["relay"])&&configuration(p["configuration"],p["endpoints"],s["contact_interval_ms"]);
 }
 }

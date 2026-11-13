@@ -125,3 +125,27 @@ Failover is bounded by the 90–120 second contact lease and the next healthy
 check-in, plus any required custody drain. Software simulation covers placement,
 all 31 nonempty role combinations, lease/reboot fences and handoff. Physical
 ESP32-S3 resource, network and power-loss qualification remains required.
+
+## Optional camera on the GOOUUU ESP32-S3-CAM
+
+v1.10.1 probes the onboard camera socket after the participant establishes its
+infrastructure inventory. A board that returns a complete JPEG publishes its own
+`camera.capture@1` offer. The original four infrastructure providers use their
+existing inventory exchange. The camera offer has a separate 120-second expiry.
+The identification frame is discarded on the board. Once identified, the board
+renews its offer without taking pictures. An explicit capture failure clears
+the cached identification, and an empty socket is probed again after ten
+minutes. Only a granted capture job returns image bytes. Each probe or capture releases
+its framebuffer and deinitializes the driver.
+
+Submit a job for operation `capture` with `inputs: {}`, schema-only acceptance
+and effect class `repeatable_compute`. Target the desired camera participant.
+A successful result contains `media_type: "image/jpeg"`, width 160, height 120,
+the original byte length, and ordered `base64_chunks`. Concatenate those strings
+and Base64-decode once to recover the JPEG. Capture and offer availability are
+independent of the currently assigned infrastructure roles.
+
+Use the paired repair bundle on enrolled v1.9.0 boards. It preserves the original
+identity, local policy, credentials, and pending work. The initial image is for
+first installation. The pin mapping used here is documented in the
+[GOOUUU camera board reference](https://github.com/profharris/GOOUUU_ESP32-S3-CAM).

@@ -13,8 +13,12 @@ int32_t cancel(void* c){if(!valid(c))return INFRA_INVALID;node->drain=true;retur
 bool quiesce(){if(!node)return true;if(node->phase!=Infra::Phase::Stopped&&node->phase!=Infra::Phase::Cold)return false;if(node->portal.client||node->portal.listener||node->portal.dns||node->portal.fault||node->journal.writeToken||node->journal.retained||node->net.token||node->net.retained)return false;node->dispose();node->~Node();node=nullptr;api.context=nullptr;return true;}
 void stop(){(void)quiesce();}
 bool start(const risc_provider_dependency_v1* deps,size_t count){
- if(node||!deps||count!=7)return false;node=new(storage)Infra::Node();bool http=false,time=false,random=false,station=false,storageReady=false,portal=false,recovery=false;
+ if(node||!deps||(count!=7&&count!=8))return false;node=new(storage)Infra::Node();bool http=false,time=false,random=false,station=false,storageReady=false,portal=false,recovery=false;
  for(size_t i=0;i<count;++i){auto& d=deps[i];if(!d.capability_id||!d.api)continue;
+  if(!strcmp(d.capability_id,RISC_STILL_CAMERA_CAPABILITY)&&d.api_version==1){
+   auto c=static_cast<const risc_still_camera_v1*>(d.api);
+   if(c->api_version==1&&c->struct_size>=sizeof(*c)&&c->jpeg)node->camera=c;
+  }
   if(!strcmp(d.capability_id,"platform.recovery")&&d.api_version==1){auto b=static_cast<const risc_platform_recovery_v1*>(d.api);if(b->api_version==1&&b->struct_size>=sizeof(*b)&&b->feed&&b->snapshot&&b->restart){node->recovery=*b;recovery=true;}}
   if(!strcmp(d.capability_id,"platform.http-client")&&d.api_version==2){auto b=static_cast<const risc_http_client_v2*>(d.api);if(b->api_version==2&&b->struct_size>=sizeof(*b)&&b->open&&b->advance&&b->read&&b->info&&b->close){node->net.api=*b;http=true;}}
   if(!strcmp(d.capability_id,"platform.clock")&&d.api_version==1){auto b=static_cast<const risc_platform_clock_api_v1*>(d.api);if(b->api_version==1&&b->struct_size>=sizeof(*b)&&b->monotonic_ms){node->clock=*b;time=true;}}
