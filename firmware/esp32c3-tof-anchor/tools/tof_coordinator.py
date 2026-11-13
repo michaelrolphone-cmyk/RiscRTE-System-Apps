@@ -11,6 +11,7 @@ import time
 import urllib.request
 import urllib.error
 from tof_geometry import RangeGraph
+from tof_baseline import AnchorBaseline
 
 def http_json(base,path,payload=None):
     data=None if payload is None else json.dumps(payload).encode()
@@ -66,7 +67,8 @@ def main():
     sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
     sock.bind(("",args.port));sock.settimeout(.2)
-    graph=RangeGraph()
+    baseline=AnchorBaseline(state/"baseline.json")
+    graph=RangeGraph(baseline=baseline)
     last_rover=last_write=last_request=0.
     channel_cache={}
     last_requested={};error=None;request_state=RoverRequest();retired=False

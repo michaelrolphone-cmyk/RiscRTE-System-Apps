@@ -56,7 +56,8 @@ def trilaterate(points,ranges):
     return {"x_m":x,"y_m":y,"residual_rms_m":rms,"residuals_m":residuals}
 
 class RangeGraph:
-    def __init__(self):
+    def __init__(self,baseline=None):
+        self.baseline=baseline
         self.nodes={}
         self.rover={}
         self.anchor_limit=12
@@ -86,6 +87,7 @@ class RangeGraph:
                             "rtt_ns":r.get("rtt_ns"),"samples":r.get("samples"),
                             "sequence":r.get("range_seq"),"latest_attempt_status":r.get("status")}
         self.nodes[node]={"identity":identity,"received":now,"packet":packet,"ranges":ranges}
+        if self.baseline is not None:self.baseline.observe(packet)
         return True
 
     def ingest_rover(self,ftm,received=None):
@@ -99,7 +101,7 @@ class RangeGraph:
                            "samples":ftm.get("samples"),"rtt_ns":ftm.get("rtt_ns")}
         return True
 
-    def snapshot(self,now=None,rover_height_m=0.0635):
+    def _snapshot_instantaneous(self,now=None,rover_height_m=0.0635):
         now=time.monotonic() if now is None else now
         active={k:v for k,v in self.nodes.items() if now-v["received"]<TTL}
         result={"schema":"rover.tof.solution/1","status":"insufficient_anchors","valid":False,
@@ -169,4 +171,24 @@ class RangeGraph:
             result["navigation_authority"]=False
             result["uncertainty"]="FTM biases require physical calibration; residual is not an accuracy bound"
         except ValueError as e:result["status"]=str(e)
+        return result
+
+    def snapshot(self,now=None,rover_height_m=0.0635):
+        result=self._snapshot_instantaneous(now,rover_height_m)
+        if self.baseline is None:return result
+        from tof_baseline import localize_relative
+        baseline=self.baseline.update()
+        result["baseline"]=baseline
+        result["frame"]={"kind":"relative_anchor_frame","world_alignment":"unregistered",
+                         "frame_id":baseline["frame_id"],"baseline_epoch":baseline["epoch"],
+                         "orientation":"Persistent relative gauge; not registered to floor or world"}
+        result["anchor_geometry"]=baseline["positions"]
+        result["height_mode"]="relative_3d" if baseline["dimension"]==3 else "relative_anchor_plane"
+        result.pop("position_hypotheses",None);result.pop("ambiguity",None)
+        result.update(valid=False,position=None,navigation_authority=False)
+        if not baseline["valid"]:
+            result["status"]="baseline_"+baseline["status"]
+            return result
+        result["geometry_quality"]=None if baseline["condition_number"] is None else 1./baseline["condition_number"]
+        result.update(localize_relative(baseline,result["rover_ranges"]))
         return result
