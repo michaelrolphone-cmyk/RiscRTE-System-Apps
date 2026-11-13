@@ -1,0 +1,10 @@
+{
+  "source": "Utilities 38877fd5f7457db4da0cfbbf1f10effbed71e75a test/scanner_runtime",
+  "original_sha256": {
+    "runtime_test.cpp": "8e02cbca30deea926899d2f4a23ff96e844d32e91283f551bd2426ef95eac6c4",
+    "hardware.c": "fc30dcc7fda42042830efa13585e525d9f9e2dc8d67d977e3dfa4b91820998cf",
+    "provider.c": "3fcbbdcffbec4ea90f9a7a46846a754090fc1ab50aa097e6f0c18d7d7417edb9",
+    "launcher.c": "c028fba333a64a3f14055bd33a1f91f3beb1b38c5f5c616e7237dcc0541c86d3"
+  },
+  "adaptation": "Copied physical fixture and Runtime admission harness; removed Scanner sensor/action scenario; Files scene Home exit twice and unavailable UI; production Files root compiled unchanged."
+}

@@ -66,6 +66,9 @@ static void rows_case(unsigned format) {
  free(expected);free(initial);end_test();assert(!mock_bytes);
  printf("raster primitive rows: format=%u complete-buffer comparisons=%u PASS\n",format,checked);
 }
+#ifndef RASTER_ROW_BOUNDS_NO_MAIN
 int main(void) {
  setvbuf(stdout,NULL,_IONBF,0);rows_case(RISC_DISPLAY_FORMAT_RGB565);rows_case(RISC_DISPLAY_FORMAT_MONO1);return 0;
 }
+
+#endif

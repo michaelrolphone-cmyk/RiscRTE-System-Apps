@@ -16,6 +16,8 @@ typedef struct {
     void (*caption)(int y, const char *text, bool clock, uint32_t rgb);
     void (*contact)(springboard_contact *out);
     bool (*clock)(uint8_t *hour, uint8_t *minute);
+    /* Optional private suffix: redraw scheduling target, not measured FPS. */
+    uint32_t (*frame_period_ms)(void);
 } springboard_presentation;
 const springboard_presentation *springboard_presentation_get(void);
 /* App-local optional redraw request; weak false in the shared app. */
