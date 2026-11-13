@@ -41,41 +41,19 @@ static uint8_t stz_activate(void) {
     else if(input.buttons&T5_APP_BUTTON_RIGHT)redraw=stz_page_step(true);
     else if(input.buttons&T5_APP_BUTTON_CONFIRM)confirm=true;
     else if(input.tapped) {
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
       int x=input.touch_x,y=input.touch_y,w=stz_width(),margin=stz_margin();
-      int page_y=stz_page_y(),page_h=stz_page_h(),page_w=stz_page_w();
-      int foot_y=stz_footer_y(),foot_h=stz_footer_h(),gap=stz_gap();
-#else
-      int x=input.touch_x,y=input.touch_y,w=stz_width(),h=stz_height(),margin=stz_margin();
-      bool paper=pp_enabled();int page_y=paper?h-192:178,page_h=paper?56:24,page_w=paper?112:60;
-      int foot_y=paper?h-112:210,foot_h=paper?88:28,gap=paper?12:6;
-#endif
-      int columns=cities?3:2,foot_w=(w-2*margin-(columns-1)*gap)/columns;
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-      if(sn_enabled()) {
-        for(unsigned slot=0;slot<(unsigned)columns;slot++)if(sn_hit(stz_footer_rect(slot,cities),x,y)) {
-          if(slot==(unsigned)columns-1)confirm=true;else if(cities&&slot==0)back=true;else cancel=true;
-        }
-      }
-      if(!back&&!cancel&&!confirm&&x>=margin&&x<w-margin) {
-#else
+      bool paper=pp_enabled();int page_y=stz_page_y(),page_h=stz_page_h(),page_w=paper?112:60;
+      int foot_y=stz_foot_y(),foot_h=stz_foot_h(),gap=paper?12:6;
+      int foot_margin=stz_band_margin(foot_y,foot_h),page_margin=stz_band_margin(page_y,page_h);
+      int columns=cities?3:2,foot_w=(w-2*foot_margin-(columns-1)*gap)/columns;
       if(x>=margin&&x<w-margin) {
-#endif
 #ifdef PORTABLE_TOUCH_SCROLL
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-        if(pp_enabled()) {
-#else
         if(paper) {
-#endif
           if(portable_scroll_inside(&stz_scroll.view,x,y)) {
             if(stz_touch_row>=0){stz_choose((unsigned)stz_touch_row);if(!cities)confirm=true;}
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-          } else if(!sn_enabled()&&y>=foot_y&&y<foot_y+foot_h) {
-#else
-          } else if(y>=foot_y&&y<foot_y+foot_h) {
-#endif
-            int slot=(x-margin)/(foot_w+gap);
-            if((x-margin)%(foot_w+gap)<foot_w) {
+          } else if(y>=foot_y&&y<foot_y+foot_h&&x>=foot_margin&&x<w-foot_margin) {
+            int slot=(x-foot_margin)/(foot_w+gap);
+            if((x-foot_margin)%(foot_w+gap)<foot_w) {
               if(slot==columns-1)confirm=true;
               else if(cities&&slot==0)back=true;
               else cancel=true;
@@ -84,18 +62,14 @@ static uint8_t stz_activate(void) {
         } else
 #endif
         if(y>=stz_top()&&y<stz_top()+(int)stz_rows()*stz_step()) {
-          unsigned row=stz_first+(unsigned)(y-stz_top())/(unsigned)stz_step();
+          unsigned row=sv_action_timezone_first()+(unsigned)(y-stz_top())/(unsigned)stz_step();
           if(row<stz_count()){stz_choose(row);if(!cities)confirm=true;}
-        } else if(y>=page_y&&y<page_y+page_h) {
-          if(x<margin+page_w)redraw=stz_page_step(false);
-          else if(x>=w-margin-page_w)redraw=stz_page_step(true);
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-        } else if(!sn_enabled()&&y>=foot_y&&y<foot_y+foot_h) {
-#else
-        } else if(y>=foot_y&&y<foot_y+foot_h) {
-#endif
-          int slot=(x-margin)/(foot_w+gap);
-          if((x-margin)%(foot_w+gap)<foot_w) {
+        } else if(y>=page_y&&y<page_y+page_h&&x>=page_margin&&x<w-page_margin) {
+          if(x<page_margin+page_w)redraw=stz_page_step(false);
+          else if(x>=w-page_margin-page_w)redraw=stz_page_step(true);
+        } else if(y>=foot_y&&y<foot_y+foot_h&&x>=foot_margin&&x<w-foot_margin) {
+          int slot=(x-foot_margin)/(foot_w+gap);
+          if((x-foot_margin)%(foot_w+gap)<foot_w) {
             if(slot==columns-1)confirm=true;
             else if(cities&&slot==0)back=true;
             else cancel=true;

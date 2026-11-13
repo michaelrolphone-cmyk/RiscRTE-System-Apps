@@ -1,0 +1,76 @@
+[
+  {
+    "source": "Apps/file_browser_portable.inc",
+    "source_sha256": "69c098ecbdd35888a28463a64997322f88467928ddadbd9acab8d7ee337fcc1f",
+    "output": "Apps/files_scene_domain.h",
+    "sha256": "07239d1c1a03a2f72d7a57ec04a6ecb61494cd211fcb7da0bed9d6aa02fed11e",
+    "removed_functions": [
+      "fb_draw",
+      "fb_touch",
+      "fb_open",
+      "fb_close_for_return",
+      "file_browser_controller_main"
+    ]
+  },
+  {
+    "source": "Apps/file_browser_operations.inc",
+    "source_sha256": "24c1518edc072798a47c083473eb60297a56c570b5851fbf6d1ce827486dab12",
+    "output": "Apps/files_scene_operations.inc",
+    "sha256": "4935030833efa35da50ceac752a4d3857fda239a363e97e85f70e7a273fc5f21",
+    "removed_functions": []
+  },
+  {
+    "source": "Apps/file_browser_sharing.inc",
+    "source_sha256": "8a987b67380841fd43b4ddf678936e465cd7200334f07b208f0195612cca515a",
+    "output": "Apps/files_scene_sharing.inc",
+    "sha256": "9acd83181caba30f0511cddae3dc5db07263789ce40337c19d71618bfac47ff4",
+    "removed_functions": [
+      "fsh_draw",
+      "fsh_touch"
+    ]
+  },
+  {
+    "source": "Apps/file_browser_peer.inc",
+    "source_sha256": "c5349528ffcc574e0de4aefa20f1844e80b636b1df7faa01d30a883494911afb",
+    "output": "Apps/files_scene_peer.inc",
+    "sha256": "921a8b1d512ef5b2c06c1179703dd3d9213e52b2c5577e988b3395a12e50a9ac",
+    "removed_functions": [
+      "fpeer_draw",
+      "fpeer_touch",
+      "fpeer_label"
+    ]
+  },
+  {
+    "source": "Apps/file_browser_setup.inc",
+    "source_sha256": "09f23c804a89d722bccb981ab98f47448d07f1d0033c4602975c8d1bbcd5c23c",
+    "output": "Apps/files_scene_setup.inc",
+    "sha256": "1fc1c3cf9d99385a7126129355183b4cb005160b2ca90abd8522fca7f7b9a9f9",
+    "removed_functions": [
+      "fsh_setup_draw",
+      "fsh_setup_touch"
+    ]
+  },
+  {
+    "source": "Apps/file_browser_mount.inc",
+    "source_sha256": "f6b0f0479251fead850fe541eae770037b612a2cbc9c03255176ed1748eba7db",
+    "output": "Apps/files_scene_mount.inc",
+    "sha256": "b0458057a31c524b5ca169d79d8eb89c778e7df5f68c2a33877fc5c697a1d171",
+    "removed_functions": []
+  },
+  {
+    "source": "Apps/file_browser_source.inc",
+    "source_sha256": "1938e8e49226d7bfb3a3e7ce8a739c2faa62870473b662d2ecab150fbae83cec",
+    "output": "Apps/files_scene_source.inc",
+    "sha256": "42a53dd4a6d6a01f703e5e2c981900d17f5652ae4d00c47f33576918b35ccee7",
+    "removed_functions": []
+  },
+  {
+    "source": "Apps/file_browser_shared_input.inc",
+    "source_sha256": "6d4ddb3ef601aa6b016b9957784f3183b1ea86ba83121111396e2f8522b62489",
+    "output": "Apps/files_scene_shared_input.inc",
+    "sha256": "cb0bbcec712dee1bea16319d8a003b04b7e9a154895e1749804b31a89f663a59",
+    "removed_functions": [
+      "fb_text_draw"
+    ]
+  }
+]

@@ -1,0 +1,27 @@
+name: Paper provider contract
+on:
+  pull_request:
+    paths: ['Services/scene_host/**', 'Services/scene_profile/**', 'scripts/build_scene_services.py', 'scripts/scene_sdk.py', 'test/scene/**', 'scripts/test_paper_provider_contract.py', '.github/workflows/paper-provider-contract.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 318d77283ba707b6f2820d2833e5d7ea3ff3f7e8
+          path: Runtime
+          persist-credentials: false
+      - run: python3 System/scripts/test_paper_provider_contract.py --runtime Runtime --output evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paper-provider-contract-${{ github.sha }}
+          path: evidence/

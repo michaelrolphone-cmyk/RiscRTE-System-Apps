@@ -1,0 +1,124 @@
+{
+  "type": "application",
+  "id": "shared-home-clock",
+  "version": "1.0.0",
+  "architecture": "xtensa-esp32s3",
+  "file_name": "default.elf",
+  "entry": "app_main",
+  "requires": [
+    {
+      "capability": "display.output",
+      "api": 1
+    },
+    {
+      "capability": "runtime.realtime-control",
+      "api": 1
+    },
+    {
+      "capability": "runtime.provider-promotion",
+      "api": 1
+    },
+    {
+      "capability": "ui.home-presentation",
+      "api": 1
+    },
+    {
+      "capability": "ui.canvas.raster",
+      "api": 1
+    }
+  ],
+  "optional": [
+    {
+      "capability": "ui.canvas-input",
+      "api": 1
+    },
+    {
+      "capability": "board.battery",
+      "api": 1
+    },
+    {
+      "capability": "rtc.clock",
+      "api": 2
+    },
+    {
+      "capability": "storage.key-value",
+      "api": 1
+    },
+    {
+      "capability": "runtime.retained-wake",
+      "api": 1
+    },
+    {
+      "capability": "alarm.service.facade",
+      "api": 2
+    },
+    {
+      "capability": "motion.accel",
+      "api": 1
+    },
+    {
+      "capability": "net.wifi",
+      "api": 1
+    },
+    {
+      "capability": "bluetooth.hci",
+      "api": 1
+    },
+    {
+      "capability": "telemetry.broadcast",
+      "api": 1
+    },
+    {
+      "capability": "contexts.service",
+      "api": 1
+    },
+    {
+      "capability": "power.sleep",
+      "api": 1
+    },
+    {
+      "capability": "input.power-key",
+      "api": 1
+    },
+    {
+      "capability": "display.power",
+      "api": 1
+    },
+    {
+      "capability": "storage.preferences",
+      "api": 1
+    },
+    {
+      "capability": "storage.app-data",
+      "api": 1
+    },
+    {
+      "capability": "storage.files",
+      "api": 1
+    },
+    {
+      "capability": "software.installed-apps",
+      "api": 1
+    },
+    {
+      "capability": "storage.volume",
+      "api": 1
+    },
+    {
+      "capability": "time.civil",
+      "api": 1
+    },
+    {
+      "capability": "storage.key-value.atomic",
+      "api": 1
+    },
+    {
+      "capability": "storage.key-value.availability",
+      "api": 1
+    },
+    {
+      "capability": "storage.shared-data",
+      "api": 1
+    }
+  ]
+}

@@ -227,26 +227,7 @@ def image_source(p, row):
     return item
 
 
-def mirror_assets(p, records, files, base_url, mirror_volume_instance=None):
-    # Selection belongs to the already-admitted product graph, never this
-    # publisher. Check the exact existing rows without adding/rebinding grants.
-    selected = mirror_volume_instance
-    policies = [image_source(p, row) for _, row, _, _ in records]
-    volumes = {item['volume_instance'] for item in policies
-               if item is not None and item.get('internal_fallback') is True}
-    if selected is None:
-        require(not volumes, 'fallback mirrors require an explicit product volume')
-    else:
-        require(type(selected) is int and 1 <= selected <= 0x7fffffff,
-                'mirror volume must be a concrete positive instance')
-        providers = [manifest for driver, row, manifest, _ in records
-                     if driver and row.get('instance_id', 0) == selected and
-                     any(isinstance(cap, dict) and cap.get('capability') == 'storage.volume'
-                         and type(cap.get('api')) is int and cap['api'] == 1
-                         for cap in manifest.get('provides', []))]
-        require(len(providers) == 1, 'mirror volume requires one admitted storage.volume provider')
-    require(len(volumes) <= 1, 'ambiguous fallback mirror volumes')
-    require(not volumes or volumes == {selected}, 'mirror volume differs from admitted source policy')
+def mirror_assets(p, records, files, base_url):
     mirrors = {}
     assets = {}
     for driver, row, manifest, internal in records:
@@ -255,6 +236,7 @@ def mirror_assets(p, records, files, base_url, mirror_volume_instance=None):
         # They do not authorize publication of a new internal-fallback mirror.
         if item is None or item.get('internal_fallback') is not True:
             continue
+        require(item['volume_instance'] == 12, 'mirror requires SD12 and explicit internal fallback')
         data = files[internal]
         require(0 < len(data) <= MAX_MIRROR_BYTES, 'mirror image exceeds consumer bound')
         require(matches(r'[a-z0-9_-]+', manifest['id']), 'unsupported mirror package ID')
@@ -275,8 +257,7 @@ def mirror_assets(p, records, files, base_url, mirror_volume_instance=None):
     return [mirrors[path] for path in sorted(mirrors)], assets
 
 
-def build(runtime, store, image, firmware, base_url, product, profile, servers, output,
-          mirror_volume_instance=None):
+def build(runtime, store, image, firmware, base_url, product, profile, servers, output):
     require(matches(r'[a-z0-9][a-z0-9.-]{0,62}', product), 'explicit product identity required')
     require(profile == 'core', 'only the explicit core profile is supported')
     helpers = load_runtime(runtime)
@@ -311,7 +292,7 @@ def build(runtime, store, image, firmware, base_url, product, profile, servers, 
     profile_size = len(p.encode(public_profile))
     require(profile_size <= MAX_PROFILE - WIFI_HEADROOM,
             'public profile leaves insufficient owner Wi-Fi headroom')
-    mirrors, assets = mirror_assets(p, records, files, base_url, mirror_volume_instance)
+    mirrors, assets = mirror_assets(p, records, files, base_url)
     assets[image_name] = raw
     feed = {'schema': 'riscrte.native-packages', 'version': 1, 'product': product,
             'apps': [], 'profiles': {profile: []},
@@ -326,7 +307,6 @@ def build(runtime, store, image, firmware, base_url, product, profile, servers, 
                'feed_sha256': p.sha(encoded), 'feed_bytes': len(encoded),
                'assets': {name: {'size': len(data), 'sha256': p.sha(data)}
                           for name, data in sorted(assets.items())},
-               'mirror_volume_instance': mirror_volume_instance, 'mirror_count': len(mirrors),
                'credential_free': True, 'published': False}
     # Refuse a changed input snapshot before creating any output.
     require(p.store_files(store) == files and p.read(image, 8 * 1024 * 1024) == raw and
@@ -358,8 +338,6 @@ def main(argv=None):
     parser.add_argument('--product', required=True)
     parser.add_argument('--profile', required=True, choices=['core'])
     parser.add_argument('--time-server', action='append', required=True, dest='servers')
-    parser.add_argument('--mirror-volume-instance', type=int,
-                        help='Explicit boot-admitted storage.volume instance; required for fallback mirrors')
     args = parser.parse_args(argv)
     try:
         receipt = build(**vars(args))

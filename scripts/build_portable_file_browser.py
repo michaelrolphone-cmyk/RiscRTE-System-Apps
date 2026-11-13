@@ -6,6 +6,7 @@ from pathlib import Path
 import portable_broadcast_build
 import portable_quick_build
 import portable_idle_build
+import portable_foreground_idle_build
 import portable_native_toolbar_build
 import portable_paper_build
 import portable_file_sharing_build
@@ -37,6 +38,11 @@ def operation_options(args):
 def build(args,parser=None):
     parser=parser or argparse.ArgumentParser(description=__doc__)
     portable_file_sharing_build.validate(args,parser)
+    portable_foreground_idle_build.validate(args,parser)
+    if getattr(args,"watch_native_ui",False):
+        if args.display_rotation not in (None,0) or getattr(args,"touch_scrolling",False) or getattr(args,"paper_transitions",False):
+            parser.error("Watch native Files requires rotation zero and non-paper input")
+        args.display_rotation=0
     portable_native_toolbar_build.validate(args,parser)
     portable_broadcast_build.validate(args,parser,portable_native_toolbar_build.selected(args))
     text_policy=getattr(args,'shared_text_policy',False)
@@ -53,7 +59,8 @@ def build(args,parser=None):
     out=args.output_dir or ROOT/'dist/portable/file-browser';out.mkdir(parents=True,exist_ok=True)
     flags=['-DPORTABLE_FILE_BROWSER_APP','-DPORTABLE_NOVA_UI','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_FORCE_FULL_FRAMES',f'-DPORTABLE_TOUCH_ROTATION={args.touch_rotation}',f'-DPORTABLE_DISPLAY_ROTATION={args.display_rotation}',f'-DFILE_BROWSER_RETURN_APP=\"{args.return_app}\"']
     flags+=storage_flags+operation_options(args)
-    if getattr(args,'native_ui',False):flags += ['-DPORTABLE_FILES_NATIVE_UI','-DPORTABLE_NATIVE_CANVAS','-DPORTABLE_ASYNC_RGB565']
+    if getattr(args,"watch_native_ui",False):
+        flags += ["-DPORTABLE_WATCH_NATIVE_HEIGHT","-DPORTABLE_WATCH_COLOR_ONLY","-DPORTABLE_WATCH_SAFE_INSETS","-DPORTABLE_SAFE_VIEWPORT"]
     if getattr(args,'shared_text_input',False):flags+=['-DPORTABLE_FILE_BROWSER_SHARED_INPUT','-DPORTABLE_TEXT_INPUT_CLIENT']
     if text_policy:flags.append('-DPORTABLE_TEXT_INPUT_POLICY')
     if scrolling:flags.append('-DPORTABLE_TOUCH_SCROLL')
@@ -71,22 +78,26 @@ def build(args,parser=None):
     includes,native_flags,native_sources,native_receipt=portable_native_toolbar_build.configure(args,parser,ROOT,out,'file-browser');flags+=native_flags
     # All portable profiles share this controller fix; stage logging does not
     # allocate another version. Explicit future motion profiles may override it.
-    if native_receipt:native_receipt['version']=json.loads((ROOT/'Apps/native/file_browser.json').read_text())['version']
+    if native_receipt and not getattr(args,'watch_native_ui',False):native_receipt['version']=json.loads((ROOT/'Apps/native/file_browser.json').read_text())['version']
     if native_receipt and args.paper_transitions:native_receipt['version']=portable_paper_build.CORE_MOTION_VERSIONS['file_browser']
     if scrolling:native_receipt['version']='1.5.9'
     if native_receipt:native_receipt['version']=portable_broadcast_build.version(args,'file_browser',native_receipt['version'])
     flags+=portable_broadcast_build.flags(args)
     # Native X4 paper must retain damage history, including Quick over Files.
-    if native_receipt:flags.remove('-DPORTABLE_FORCE_FULL_FRAMES')
+    if native_receipt and not getattr(args,'watch_native_ui',False):flags.remove('-DPORTABLE_FORCE_FULL_FRAMES')
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out,includes);flags+=quick_flags
     sharing_flags,sharing_sources,sharing_files=portable_file_sharing_build.configure(args,ROOT,out,includes,cc);flags+=sharing_flags
+    includes,idle_flags,idle_sources=portable_foreground_idle_build.configure(args,parser,ROOT,out,includes)
+    flags+=idle_flags
+    quick_sources+=idle_sources
     exports=portable_quick_build.exports(args,{'app_main','app_module_init','app_module_fini'})
     mapping=out/'file_browser.map';mapping.write_text('{ global: '+'; '.join(sorted(exports))+'; local: *; };\n')
     catalog=out/'catalog.c';catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
     sources=[ROOT/'Apps/file_browser.c',ROOT/'lib/PortableApps/src/adapter.c',catalog]
     sources+=quick_sources+native_sources+sharing_sources
     elf=out/'file_browser.elf'
-    subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--no-relax','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),*map(str,sources),'-lgcc','-o',str(elf)],check=True)
+    compile_command=[cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--no-relax','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),*map(str,sources),'-lgcc','-o',str(elf)]
+    subprocess.run(compile_command,check=True)
     symbols=subprocess.check_output([cc.removesuffix('gcc')+'nm','-D',str(elf)],text=True)
     imports={x.split()[-1] for x in symbols.splitlines() if ' U ' in ' '+x}
     actual={x.split()[-1] for x in symbols.splitlines() if len(x.split())>=3 and x.split()[-2] in ('T','D','B','R')}
@@ -109,6 +120,9 @@ def build(args,parser=None):
     portable_native_toolbar_build.requirements(args,manifest['requires'])
     portable_broadcast_build.requirements(args,manifest['requires'])
     portable_file_sharing_build.requirements(args,manifest['requires'])
+    portable_foreground_idle_build.requirements(args,manifest['requires'])
+    if portable_foreground_idle_build.selected(args) and {'capability':'board.battery','api':1} not in manifest['requires']:
+        manifest['requires'].append({'capability':'board.battery','api':1})
     if native_receipt:manifest['version']=native_receipt['version']
     manifest['version']=portable_quick_build.version(args,'file_browser',portable_idle_build.version(args,'file_browser',manifest['version']))
     if getattr(args,'webdav_sharing',False) or getattr(args,'source_handoff',False):manifest['version']=portable_file_sharing_build.selected_version(args)
@@ -117,14 +131,14 @@ def build(args,parser=None):
     if native_receipt:native_receipt['version']=manifest['version']
     (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n')
     files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/file_browser_paper.inc',ROOT/'Apps/file_browser_operations.inc',ROOT/'Apps/file_browser_rgb_operations.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'Apps/PaperFrame.h',ROOT/'lib/NativeApps/include/T5FileOpenApi.h',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]
+    if getattr(args,'watch_native_ui',False):files.append(ROOT/'Apps/file_browser_native_layout.inc')
     files+=sharing_files
-    if getattr(args,'native_ui',False):files.append(ROOT/'Apps/file_browser_native_ui.inc')
     if getattr(args,'shared_text_input',False):files.append(ROOT/'Apps/file_browser_shared_input.inc')
     if getattr(args,'source_handoff',False):files.append(ROOT/'Apps/file_browser_source.inc')
     if scrolling:files += [ROOT/'Apps/file_browser_scroll_model.inc',ROOT/'Apps/file_browser_scroll_view.inc']
     files += [p for p in (ROOT/'lib/PortableApps').rglob('*') if p.is_file()]
     if args.paper_transitions:files.append(ROOT/'scripts/portable_paper_build.py')
-    record={'schema':1,'version':manifest['version'],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True)),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'defines':flags,'imports':sorted(imports),'exports':sorted(exports),'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'source_sha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(files))}}
+    record={'watch_native_ui':getattr(args,'watch_native_ui',False),'safe_content_native_raster':getattr(args,'watch_native_ui',False),'schema':1,'version':manifest['version'],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True)),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'defines':flags,'imports':sorted(imports),'exports':sorted(exports),'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'source_sha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(files))}}
     record['protected_settings']={'root':'/RTECFG','component_match':'case-insensitive-fat-aliases','listing_open_mutation_copy':True,'helper_sha256':hashlib.sha256((ROOT/'lib/PortableApps/include/RiscProtectedSettingsPath.h').read_bytes()).hexdigest(),'hardware_qualified':False}
     record['source_sha256']['lib/PortableApps/include/RiscProtectedSettingsPath.h']=record['protected_settings']['helper_sha256']
     if text_policy:record['shared_text_policy']={'enabled':True,'checkpoint_required':True,'sharing_idle_guard':True,'network_owned_resident_guard':True}
@@ -140,6 +154,7 @@ def build(args,parser=None):
     portable_idle_build.record(args,record,flags)
     portable_quick_build.record(args,record)
     portable_file_sharing_build.record(args,ROOT,out,manifest,record)
+    portable_foreground_idle_build.record(args,record,flags,compile_command=compile_command)
     portable_native_toolbar_build.write_admission(ROOT,out,manifest,record)
     portable_quick_build.record(args,record)
     (out/'file_browser-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
@@ -152,4 +167,4 @@ def build(args,parser=None):
         if source.exists():shutil.copyfile(source,destination/source.name)
     print('Portable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed')
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--native-ui',action='store_true',help='Capability-sized native color Files; paper and defaults remain unchanged');p.add_argument('--shared-text-policy',action='store_true',help='Preserve modal lifecycle with the checked shared input host');p.add_argument('--shared-text-input',action='store_true',help='Shared plaintext host for all Files drafts, preserving 128-byte names');p.add_argument('--touch-scrolling',action='store_true',help='Selected paper lists with bounded touch momentum');p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=None);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--secondary-storage-capability',default='storage.volume');p.add_argument('--read-copy-only',action='store_true',help='Read/preview/copy profile for volumes with no remove/rename/mkdir and no declared file handlers');p.add_argument('--rgb-only',action='store_true',help='Explicit color-only presentation; retains all volume operations');p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--source-handoff',action='store_true',help='Explicit Runtime disk-backed non-SD file source handoff');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true',help='Legacy Watch radio+Denver profile');p.add_argument('--wall-time',action='store_true');portable_quick_build.options(p);portable_broadcast_build.options(p);portable_native_toolbar_build.options(p);portable_file_sharing_build.options(p);build(p.parse_args(),p)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument("--watch-native-ui",action="store_true",help="Capability-native color glyph raster within reported safe insets, with matched touch inverse");portable_foreground_idle_build.options(p);p.add_argument('--shared-text-policy',action='store_true',help='Preserve modal lifecycle with the checked shared input host');p.add_argument('--shared-text-input',action='store_true',help='Shared plaintext host for all Files drafts, preserving 128-byte names');p.add_argument('--touch-scrolling',action='store_true',help='Selected paper lists with bounded touch momentum');p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=None);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--secondary-storage-capability',default='storage.volume');p.add_argument('--read-copy-only',action='store_true',help='Read/preview/copy profile for volumes with no remove/rename/mkdir and no declared file handlers');p.add_argument('--rgb-only',action='store_true',help='Explicit color-only presentation; retains all volume operations');p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--source-handoff',action='store_true',help='Explicit Runtime disk-backed non-SD file source handoff');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true',help='Legacy Watch radio+Denver profile');p.add_argument('--wall-time',action='store_true');portable_quick_build.options(p);portable_broadcast_build.options(p);portable_native_toolbar_build.options(p);portable_file_sharing_build.options(p);build(p.parse_args(),p)

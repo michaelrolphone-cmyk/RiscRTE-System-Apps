@@ -1,8 +1,0 @@
-test_color_only_preserves_rgb_replay_and_omits_paper_dispatch (test_native_overlay_replay_guard.ReplayGuard.test_color_only_preserves_rgb_replay_and_omits_paper_dispatch) ... ok
-test_frozen_original (test_native_overlay_replay_guard.ReplayGuard.test_frozen_original) ... ok
-test_paper_and_resident_tokens_are_unchanged (test_native_overlay_replay_guard.ReplayGuard.test_paper_and_resident_tokens_are_unchanged) ... ok
-
-----------------------------------------------------------------------
-Ran 3 tests in 0.758s
-
-OK

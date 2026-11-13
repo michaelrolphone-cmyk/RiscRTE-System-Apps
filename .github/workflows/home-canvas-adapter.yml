@@ -1,0 +1,20 @@
+name: Overview shared Canvas adapter
+on:
+  pull_request:
+    paths: ['lib/PortableApps/include/PortableHomeCanvas*.h', 'lib/PortableApps/src/*adapter*', 'lib/PortableApps/src/paper.inc', 'test/home_canvas/adapter_test.c', 'scripts/test_home_canvas_adapter.py', 'Services/canvas_host/**', 'sdk/app/RiscCanvasV1.h', '.github/workflows/home-canvas-adapter.yml']
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - run: python3 scripts/test_home_canvas_adapter.py --output out/home-canvas-adapter
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-canvas-adapter-${{ github.event.pull_request.head.sha }}
+          path: out/
