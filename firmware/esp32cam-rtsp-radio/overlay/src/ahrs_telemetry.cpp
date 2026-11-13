@@ -701,22 +701,74 @@ void writeJson(JsonObject output, bool compact) {
 }
 
 bool writeJsonAt(JsonObject output, uint64_t captureUs) {
+    // Export overlapping dense IMU history with the camera packet. Snapshot
+    // storage and the compact export scratch live in PSRAM; no I2C here.
+    struct CompactImu {
+        uint64_t us;
+        uint32_t generation, sequence;
+        float accel[3], gyro[3], q[4], yaw;
+        bool valid, attitudeValid;
+    };
+    constexpr size_t limit=32;
+    auto samples=static_cast<CompactImu *>(heap_caps_calloc(limit,sizeof(CompactImu),
+        MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
     Snapshot state;
-    uint64_t selected = 0;
+    uint64_t selected=0;
+    size_t count=0;
+    uint32_t previousSequence=0;
+    bool haveSequence=false;
     if (snapshotMutex && captureHistory) {
         Lock lock;
         for (size_t i=0;i<captureHistoryCount;++i) {
             const size_t index=(captureHistoryNext+CAPTURE_HISTORY-1-i)%CAPTURE_HISTORY;
-            if (captureHistoryTime[index] <= captureUs) {
-                state=captureHistory[index];selected=captureHistoryTime[index];break;
-            }
+            const uint64_t published=captureHistoryTime[index];
+            if (published>captureUs) continue;
+            if (!selected) { state=captureHistory[index];selected=published; }
+            if (!samples || count>=limit || captureUs-published>650000) continue;
+            const Snapshot &entry=captureHistory[index];
+            if (haveSequence && entry.imu.samples==previousSequence) continue;
+            previousSequence=entry.imu.samples;haveSequence=true;
+            const uint32_t age=static_cast<uint32_t>(published/1000)-entry.imu.observed;
+            if (age>100 || entry.attitude.generation()!=state.attitude.generation()) continue;
+            CompactImu &sample=samples[count++];
+            sample.us=published-static_cast<uint64_t>(age)*1000;
+            sample.sequence=entry.imu.samples;
+            sample.generation=entry.attitude.generation();
+            sample.valid=entry.workerReady && !entry.paused && entry.imu.valid &&
+                entry.imu.seen && !entry.imuValue.saturated;
+            sample.attitudeValid=sample.valid && entry.attitude.valid() &&
+                entry.attitude.observedMs()==entry.imu.observed;
+            sample.accel[0]=entry.imuValue.accel.x;sample.accel[1]=entry.imuValue.accel.y;sample.accel[2]=entry.imuValue.accel.z;
+            sample.gyro[0]=entry.correctedGyro.x;sample.gyro[1]=entry.correctedGyro.y;sample.gyro[2]=entry.correctedGyro.z;
+            const model::Quaternion q=entry.attitude.quaternion();
+            sample.q[0]=q.w;sample.q[1]=q.x;sample.q[2]=q.y;sample.q[3]=q.z;
+            sample.yaw=entry.attitude.anglesDeg().z;
         }
     }
-    if (!selected) return false;
+    if (!selected) { heap_caps_free(samples);return false; }
     renderSnapshot(output,false,state,static_cast<uint32_t>(captureUs/1000));
-    output["history_publish_monotonic_us"] = selected;
-    output["association"] = "last_sensor_state_published_before_camera_capture";
+    output["history_publish_monotonic_us"]=selected;
+    output["association"]="last_sensor_state_published_before_camera_capture";
+    output["imu_history_capacity"]=limit;
+    output["imu_history_window_ms"]=650;
+    JsonArray history=output.createNestedArray("imu_samples");
+    for (size_t i=count;i>0;--i) {
+        const CompactImu &sample=samples[i-1];
+        JsonObject row=history.createNestedObject();
+        row["monotonic_us"]=sample.us;row["sample_count"]=sample.sequence;
+        row["generation"]=sample.generation;row["valid"]=sample.valid;
+        row["attitude_valid"]=sample.attitudeValid;
+        JsonArray accel=row.createNestedArray("accel_m_s2");
+        JsonArray gyro=row.createNestedArray("gyro_rad_s");
+        JsonArray quaternion=row.createNestedArray("quaternion_wxyz");
+        for (int j=0;j<3;++j) {
+            accel.add(rounded(sample.accel[j],1000));
+            gyro.add(rounded(sample.gyro[j],10000));
+        }
+        for (int j=0;j<4;++j) quaternion.add(rounded(sample.q[j],100000));
+        row["yaw_deg"]=rounded(sample.yaw,1000);
+    }
+    heap_caps_free(samples);
     return true;
 }
 } // namespace ahrs_telemetry
-

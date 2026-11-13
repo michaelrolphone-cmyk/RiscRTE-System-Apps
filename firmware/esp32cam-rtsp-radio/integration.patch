@@ -59,7 +59,7 @@ diff --git a/src/main.cpp b/src/main.cpp
    web_server.send(200, "text/html", html);
  }
  
-@@ -273,6 +279,42 @@
+@@ -273,6 +279,64 @@
    log_v("client disconnected");
    client.stop();
    log_v("stopped streaming");
@@ -71,6 +71,28 @@ diff --git a/src/main.cpp b/src/main.cpp
 +  void *reallocate(void *ptr,size_t size){return heap_caps_realloc(ptr,size,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);}
 +};
 +// One response binds actual camera-driver capture time and sensor samples.
++// Sensor delivery remains available when the camera probe or JPEG path fails.
++void handle_sensor_tick() {
++  const uint64_t tickUs=static_cast<uint64_t>(esp_timer_get_time());
++  BasicJsonDocument<CaptureJsonAllocator> document(65536);
++  JsonObject packet=document.to<JsonObject>();
++  if(!radio_telemetry::writeFrameJson(packet,tickUs)) {
++    web_server.send(503,"application/json","{\"error\":\"sensor_metadata_unavailable\"}");return;
++  }
++  packet["schema"]="biome.sensor_tick.v1";
++  packet["image_available"]=false;
++  packet["capture_timestamp_semantics"]="sensor_snapshot_tick_no_camera_frame";
++  JsonObject camera=packet.createNestedObject("camera");
++  camera["available"]=camera_init_result==ESP_OK;
++  camera["init_result"]=static_cast<int>(camera_init_result);
++  camera["init_error"]=esp_err_to_name(camera_init_result);
++  packet["served_monotonic_us"]=static_cast<uint64_t>(esp_timer_get_time());
++  if(document.overflowed()){web_server.send(503,"text/plain","Sensor metadata allocation failed");return;}
++  String body;serializeJson(document,body);
++  web_server.sendHeader("Cache-Control","no-store");
++  web_server.send(200,"application/json",body);
++}
++
 +void handle_synchronized_capture() {
 +  if (camera_init_result != ESP_OK) { web_server.send(503,"text/plain","Camera unavailable");return; }
 +  // Hold a separate SDK buffer; do not overwrite the RTSP streamer's JPEG copy.
@@ -129,7 +151,7 @@ diff --git a/src/main.cpp b/src/main.cpp
  
  #ifdef MICRO_RTSP_ENABLE_SRTP
    // Stream video over Secure RTP (RFC 3711), negotiated with "a=crypto"
-@@ -592,6 +638,18 @@
+@@ -592,6 +638,19 @@
    web_server.onNotFound([]()
                          { iotWebConf.handleNotFound(); });
  
@@ -145,6 +167,7 @@ diff --git a/src/main.cpp b/src/main.cpp
 +  });
 +
 +  web_server.on("/api/capture",HTTP_GET,[](){if(is_authenticated())handle_synchronized_capture();});
++  web_server.on("/api/sensors/capture",HTTP_GET,[](){if(is_authenticated())handle_sensor_tick();});
    // Start the ArduinoOTA (espota) service for network firmware uploads.
    setup_ota();
  }
