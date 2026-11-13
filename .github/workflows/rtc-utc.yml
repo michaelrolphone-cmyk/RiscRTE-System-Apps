@@ -1,0 +1,28 @@
+name: Read-only RTC UTC contracts
+on:
+  pull_request:
+    paths: ['sdk/app/RiscRtcUtcV1.h', 'sdk/driver/RiscRtcUtcCalendarV1.h', 'scripts/*rtc_utc*', 'test/rtc_utc/**', 'docs/RTC-UTC-SUFFIX.md', '.github/workflows/rtc-utc.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python test/rtc_utc/build_guard_test.py
+      - run: python scripts/test_rtc_utc.py --output rtc-normal
+      - run: python scripts/test_rtc_utc.py --output rtc-sanitized --sanitize
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rtc-utc-contracts-${{ github.sha }}
+          path: |
+            rtc-*/receipt.json
+            rtc-*/run.log
+          retention-days: 30

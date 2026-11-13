@@ -118,7 +118,7 @@ State VolumeTransaction::step(){
  if(phase_==Phase::WriteOpen){
   if(!api_->file_open_write||!api_->file_write||!ext_->file_sync){fail(405);return state_;}
   const char*dst=copy_?destinationPath():request_.path;const char*slash=std::strrchr(dst,'/');static uint32_t sequence=0;
-  int n=std::snprintf(temporary_,sizeof(temporary_),"%.*s/.risc-webdav-%08x.tmp",int(slash-dst),dst,++sequence);
+  int n=std::snprintf(temporary_,sizeof(temporary_),"%.*s/.risc-webdav-%08x.tmp",int(slash-dst),dst,static_cast<unsigned>(++sequence));
   if(n<0||size_t(n)>=sizeof(temporary_)){fail(400);return state_;}writer_=api_->file_open_write(c,temporary_);if(!after())return state_;if(!writer_){fail(507);return state_;}temporaryOwned_=true;offset_=0;phase_=copy_?Phase::CopyRead:Phase::WriteData;return state_;
  }
  if(phase_==Phase::WriteData){if(upload_)return state_;if(offset_==inputSize_){phase_=Phase::WriteSync;return state_;}size_t n=std::min<size_t>(RISC_STORAGE_VOLUME_IO_MAX,inputSize_-offset_);size_t wrote=api_->file_write(c,writer_,static_cast<const unsigned char*>(input_)+offset_,n);if(!after())return state_;if(wrote!=n){fail(507);return state_;}offset_+=n;return state_;}

@@ -1,10 +1,15 @@
 #include "PortableApps.h"
+#include "PortableFrameCadence.h"
 #include "RiscDisplayOutputV1.h"
 #include "RiscRuntimeV1.h"
 #include "RiscAppCatalogV1.h"
 #include "RiscBatteryGaugeV1.h"
 #include "RiscTouchV1.h"
 #include "PortableRtcClock.h"
+#ifdef TEST_NATIVE_TIME
+#include "RiscRealtimeV1.h"
+#include "PortableTimeZonePreference.h"
+#endif
 #include "../../Apps/SpringboardPresentation.h"
 #include <assert.h>
 #include <stdio.h>
@@ -43,41 +48,24 @@ static uint16_t pixels[TEST_WIDTH*TEST_HEIGHT];static char launched[128];
 /* App frames are rate-limited at their logical present boundary. Deferred
  * raster completion and an explicit ownership drain may submit closer together. */
 static unsigned logical_presents,last_logical_present,launch_ms;
-static bool slow_paint_blocked;
-static unsigned slow_completed_at, slow_available_poll_at, slow_followup_frames, slow_max_ready_delay;
+static bool get_info(void *,risc_display_info_v1 *);
+static unsigned frame_test_interval(void){
+ /* Capability expectation only: presentation_get initializes handoff state and
+  * must never be re-entered merely to observe an expected test interval. */
+ risc_display_info_v1 info={0};(void)get_info(NULL,&info);
+ return portable_frame_cadence_ms(RISC_DISPLAY_FORMAT_RGB565,info.flags,info.nominal_refresh_millihz,40u);
+}
 static void (*original_present)(bool);
 static void logical_present(bool full){
- if(logical_presents && scenario!=22)assert(ms-last_logical_present>=40);
+ if(logical_presents && scenario!=22)assert(ms-last_logical_present>=frame_test_interval());
  last_logical_present=ms;++logical_presents;original_present(full);
-}
-/* Measure the first app opportunity after completion, not raster cost or
- * provider polling time: a large catalog can finish a token while drawing. */
-static bool (*original_frame_ready)(void);
-static bool observed_frame_ready(void){
- bool ready=original_frame_ready();
- if(!ready)slow_paint_blocked=true;
- if(ready && scenario>=39 && scenario<=42 && slow_available_poll_at){
-  unsigned delay=ms-slow_available_poll_at;
-  if(delay>slow_max_ready_delay)slow_max_ready_delay=delay;
-  ++slow_followup_frames;
- }
- if(ready){slow_paint_blocked=false;slow_completed_at=slow_available_poll_at=0;}
- return ready;
-}
-static bool (*original_poll)(t5_app_input_t *,uint32_t);
-static bool observed_poll(t5_app_input_t *input,uint32_t wait){
- bool ok=original_poll(input,wait);
- if(slow_paint_blocked&&slow_completed_at&&!slow_available_poll_at)slow_available_poll_at=ms;
- return ok;
 }
 const t5_app_api_v1 *__real_t5_app_get_api(uint32_t version);
 const t5_app_api_v1 *__wrap_t5_app_get_api(uint32_t version){
  const t5_app_api_v1 *source=__real_t5_app_get_api(version);
  if(!source)return NULL;
  static t5_app_api_v1 observed;observed=*source;
- original_present=source->present;observed.present=logical_present;
- original_poll=source->poll;observed.poll=observed_poll;
- original_frame_ready=source->frame_ready;observed.frame_ready=observed_frame_ready;return &observed;
+ original_present=source->present;observed.present=logical_present;return &observed;
 }
 /* Physical reports advance with time, never with capture-only raster polls.
  * The explicit scheduler stall leaves the finger script held across the gap. */
@@ -90,7 +78,7 @@ static unsigned script_step(void){
  return script_ms/20u;
 }
 static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;
-#ifdef NOVA_WATCH_CATALOG
+#if defined(NOVA_WATCH_CATALOG) || defined(TEST_NATIVE_TIME)
  return true; /* Test completion is an orderly exit, not a failed Runtime. */
 #else
  return script_step()<350;
@@ -102,7 +90,17 @@ static void yield_ms(uint32_t n){
 }
 static bool diagnostic(const char *s){(void)s;return true;}
 static bool launch_app(const char *s){launch_ms=ms;++launches;if(scenario==11)return false;strcpy(launched,s);return true;}
-static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=TEST_WIDTH;o->height=TEST_HEIGHT;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565);o->nominal_refresh_millihz=scenario==22?0:60000;o->typical_present_latency_us=16000;if((scenario>=39&&scenario<=42))o->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;return true;}
+static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=TEST_WIDTH;o->height=TEST_HEIGHT;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565);o->nominal_refresh_millihz=scenario==22?0:60000;
+#ifdef TEST_UNKNOWN_REFRESH
+ o->nominal_refresh_millihz=0;
+#endif
+#ifdef TEST_SLOW_REFRESH
+ o->nominal_refresh_millihz=10000;
+#endif
+#ifdef TEST_RETAINING_PANEL
+ o->flags|=RISC_DISPLAY_INFO_RETAINS_IMAGE;
+#endif
+o->typical_present_latency_us=16000;return true;}
 static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c;assert(!frames);frames=1;*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.size_bytes=sizeof(pixels),.width=TEST_WIDTH,.height=scenario==10?200:TEST_HEIGHT,.stride_bytes=TEST_WIDTH*2,.pixel_format=f};return true;}
 static void release_frame(void *c,risc_display_frame_v1 f){(void)c;assert(f==1&&frames);frames=0;}
 static void save_frame(void){
@@ -114,15 +112,7 @@ static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r
 #endif
  if(presents){assert(ms>=last_present);}
  last_present=ms;*token=++presents;present_started=ms;save_frame();return true;}
-static bool present_status(void *c,risc_display_present_token_v1 t,risc_display_present_status_v1 *s){
- (void)c;(void)t;
- unsigned latency=scenario==36?120u:scenario==37?600u:(scenario>=39&&scenario<=42)?(55u+20u*(scenario-39)):0u;
- s->state=latency&&presents>1&&ms-present_started<latency?RISC_DISPLAY_PRESENT_ACTIVE:RISC_DISPLAY_PRESENT_COMPLETE;
- if((scenario>=39&&scenario<=42)&&presents>1&&s->state==RISC_DISPLAY_PRESENT_COMPLETE&&!slow_completed_at)
-  slow_completed_at=ms;
- return true;
-}
-
+static bool present_status(void *c,risc_display_present_token_v1 t,risc_display_present_status_v1 *s){(void)c;(void)t;s->state=(scenario==36||scenario==37)&&presents>1&&ms-present_started<(scenario==36?120u:600u)?RISC_DISPLAY_PRESENT_ACTIVE:RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static risc_touch_snapshot_v1 touch_state;
 static risc_touch_event_v1 touch_events[RISC_TOUCH_QUEUE_LENGTH];
 static unsigned touch_head,touch_count,last_script_step;
@@ -137,7 +127,7 @@ static risc_touch_contact_v1 script_contact(unsigned id,unsigned x,unsigned y){
 static void script_snapshot(unsigned step,risc_touch_snapshot_v1 *s){
  memset(s,0,sizeof(*s));s->width=TEST_WIDTH;s->height=TEST_HEIGHT;int x=120,y=120;bool down=false;
  if(scenario==1||scenario==2||scenario==16){down=step<=3;if(scenario==2){x=120+(int)step*20;y=120+(int)step*10;}}
- else if(scenario==6||scenario==7||scenario==14||scenario==15||scenario==23||scenario==24||(scenario>=39&&scenario<=42)){down=step>=2&&step<=6;if(step>=3){x=120+(int)(step-2)*20;y=120+(int)(step-2)*12;}}
+ else if(scenario==6||scenario==7||scenario==14||scenario==15||scenario==23||scenario==24){down=step>=2&&step<=6;if(step>=3){x=120+(int)(step-2)*20;y=120+(int)(step-2)*12;}}
  else if(scenario==18){down=step>=2&&step<=6;x=120+(int)(step>3?step-3:0)*20;}
  else down=step==2;
  if(scenario==8||scenario==13||scenario==21||scenario==32||scenario==33)down=false;
@@ -208,9 +198,11 @@ static const risc_display_output_api_v1 d={.api_version=1,.struct_size=sizeof(d)
 static bool clock_read(void *c,twatch_rtc_time_v1 *out){(void)c;*out=(twatch_rtc_time_v1){2026,10,4,0,0,40,0};return scenario!=33;}
 static const twatch_rtc_api_v1 clock_api={.api_version=2,.struct_size=sizeof(clock_api),.read=clock_read};
 static const risc_touch_api_v1 t={1,sizeof(t),NULL,subscribe,unsubscribe,poll_touch,next_touch,snapshot};
-#ifdef NOVA_WATCH_CATALOG
+#if defined(NOVA_WATCH_CATALOG) || defined(TEST_NATIVE_TIME)
 static bool battery_read(void*c,risc_battery_sample_v1*out){(void)c;*out=(risc_battery_sample_v1){.millivolts=4000,.percent=80};return true;}
 static const risc_battery_gauge_api_v1 battery_api={1,sizeof(battery_api),NULL,battery_read};
+#endif
+#ifdef NOVA_WATCH_CATALOG
 static int32_t catalog_snapshot(void*c,risc_app_catalog_snapshot_v1*out){(void)c;out->count=CATALOG_COUNT;out->generation=1;return 0;}
 static int32_t catalog_get(void*c,uint64_t generation,uint32_t index,risc_app_catalog_entry_v1*out){
  (void)c;assert(generation==1);if(index>=CATALOG_COUNT)return RISC_APP_CATALOG_NOT_FOUND;
@@ -221,7 +213,39 @@ static const risc_app_catalog_v1 catalog_api={1,sizeof(catalog_api),NULL,catalog
 static bool exit_requested(void){return script_step()>=350;}
 static bool retain(void){assert(!"unexpected retained fixture invocation");return true;}
 #endif
-static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capability_v1 *g){assert(!id&&g->struct_size==sizeof(*g));
+#ifdef TEST_NATIVE_TIME
+static unsigned native_reads,zone_reads;
+static int32_t native_read(void *context,risc_realtime_snapshot_v1 *out){
+ assert(context==&native_reads);++native_reads;
+ *out=(risc_realtime_snapshot_v1){.struct_size=sizeof(*out),.validity=RISC_REALTIME_VALID,
+  .epoch_seconds=1767268800+ms/1000,.monotonic_before_us=(uint64_t)ms*1000,.monotonic_after_us=(uint64_t)ms*1000};
+ if(scenario==40){out->validity=RISC_REALTIME_UNSET;out->epoch_seconds=0;}
+ return RISC_REALTIME_OK;
+}
+static int32_t zone_get(void *context,const char *key,void *out,uint32_t capacity,uint32_t *size){
+ (void)context;++zone_reads;assert(!strcmp(key,"time_zone"));*size=0;
+ if(scenario==41)return RISC_KEY_VALUE_IO;
+ if(scenario==42){
+  uint8_t record[44]={'T','Z',1,0};memcpy(record+4,"America/Denver",15);
+  uint8_t sum=0xa5;for(unsigned i=0;i<44;++i)if(i!=3)sum^=record[i];record[3]=sum;
+  assert(capacity>=sizeof(record));memcpy(out,record,sizeof(record));*size=sizeof(record);return RISC_KEY_VALUE_OK;
+ }
+ return RISC_KEY_VALUE_NOT_FOUND;
+}
+static const risc_realtime_api_v1 native_api={1,sizeof(native_api),&native_reads,native_read};
+static const risc_key_value_v1 zone_api={.api_version=1,.struct_size=sizeof(zone_api),.get=zone_get};
+static bool native_exit(void){return script_step()>=350;}
+static bool native_retain(void){assert(!"unexpected native time custody retention");return true;}
+#endif
+static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capability_v1 *g){assert(g->struct_size==sizeof(*g));
+#ifdef TEST_NATIVE_TIME
+ g->slot=grants+1;g->generation=1;
+ if(!strcmp(name,"board.battery")){assert(id==0&&v==1);g->api=&battery_api;++grants;return true;}
+ if(!strcmp(name,"storage.key-value")){assert(id==1&&v==1);g->api=&zone_api;++grants;return true;}
+ if(!strcmp(name,"runtime.realtime")){assert(id==0&&v==1);g->api=&native_api;++grants;return true;}
+ assert(strcmp(name,"runtime.realtime-control")&&strcmp(name,"rtc.clock"));
+#endif
+ assert(!id);
 #ifdef NOVA_WATCH_CATALOG
  g->slot=grants+1;g->generation=1;
  if(!strcmp(name,"board.battery")){g->api=&battery_api;++grants;return true;}
@@ -232,27 +256,40 @@ static bool release(risc_runtime_capability_v1 *g){assert(grants&&g->api);--gran
 static const risc_runtime_api_v1 rt={.api_version=1,.struct_size=sizeof(rt),.health=health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=acquire,.release=release
 #ifdef NOVA_WATCH_CATALOG
  ,.retain_invocation=retain,.exit_requested=exit_requested
+#elif defined(TEST_NATIVE_TIME)
+ ,.retain_invocation=native_retain,.exit_requested=native_exit
 #endif
  };
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&rt:NULL;}
 int main(int argc,char **argv){
  assert(argc==2);scenario=(unsigned)atoi(argv[1]);assert(app_module_init()==0);
+#ifdef TEST_WATCH_PRESENTATION
+ assert((springboard_presentation_get()!=NULL)==TEST_WATCH_PRESENTATION);
+ if(scenario==39){app_module_fini();assert(!frames&&!grants&&!subs);return 0;}
+#endif
 #ifdef PORTABLE_RTC_UTC8_DENVER
  const springboard_presentation *v=springboard_presentation_get();uint8_t hour=99,minute=99;assert(v);
  if(scenario!=33){assert(v->clock(&hour,&minute));assert(hour==10&&minute==40);}else assert(!v->clock(&hour,&minute));
+#endif
+#ifdef TEST_NATIVE_TIME
+ const springboard_presentation *view=springboard_presentation_get();assert(view);
+ unsigned before=grants;uint8_t h=99,m=99;bool available=view->clock(&h,&m);
+ assert(available==(scenario!=40&&scenario!=41));
+ if(available)assert(h==(scenario==42?5:12)&&m==0);
+ assert(zone_reads&&(!available||native_reads));assert(grants==before);
+ if(scenario>=40){app_module_fini();assert(!frames&&!grants&&!subs);return 0;}
 #endif
  app_main();app_module_fini();assert(!frames&&!grants&&!subs);
  bool expect=CATALOG_COUNT>0&&(scenario==0||scenario==16||scenario==19||scenario==20||scenario==22||scenario==26||scenario==30||scenario==36||scenario==37);
  assert(!!launched[0]==expect);
  assert(launches==((expect||scenario==11)&&CATALOG_COUNT?1u:0u));
- max_presents=ms/40+1;assert(presents<=max_presents);assert(logical_presents<=max_presents);
+ max_presents=ms/frame_test_interval()+1;assert(presents<=max_presents);assert(logical_presents<=max_presents);
  #ifndef PORTABLE_RETAINED_RGB565_HANDOFF
- if(scenario==1||scenario==3||scenario==4||scenario==5||scenario==17||scenario==18||scenario==25)assert(presents<=2);
+ if(scenario==1||scenario==3||scenario==4||scenario==5||scenario==17||scenario==18||scenario==25)assert(presents<=2u*((40u+frame_test_interval()-1u)/frame_test_interval()));
 #else
- if(scenario==1||scenario==3||scenario==4||scenario==5||scenario==17||scenario==18||scenario==25)assert(presents<=7);
+ if(scenario==1||scenario==3||scenario==4||scenario==5||scenario==17||scenario==18||scenario==25)assert(presents<=7u*((40u+frame_test_interval()-1u)/frame_test_interval()));
 #endif
  if(scenario==6||scenario==7||scenario==14||scenario==15||scenario==23||scenario==24)assert(presents<100);
  if(scenario==36||scenario==37)assert(max_touch_gap<=32);
- if((scenario>=39&&scenario<=42)){printf("slow followups=%u max_ready_delay=%u\n",slow_followup_frames,slow_max_ready_delay);assert(slow_followup_frames>2);assert(slow_max_ready_delay==0);}
  printf("NOVA real app scenario %u, catalog %u: %u bounded frames, %u logical frames, %u launch requests at %u ms, clean teardown\n",scenario,portable_catalog_count,presents,logical_presents,launches,launch_ms);
 }

@@ -58,14 +58,19 @@ static const char *sleep_message;
 static bool sleep_unconfirmed;
 #else
 #define SETTINGS_SLEEP_MODES PORTABLE_SLEEP_MASK_ALL
-#define SETTINGS_SLEEP_DEFAULT PORTABLE_SLEEP_HYBRID
+#ifdef PORTABLE_SETTINGS_DEFAULT_SLEEP_MODE
+#define PORTABLE_SETTINGS_CONFIGURED_SLEEP_DEFAULT
+#endif
+#ifndef PORTABLE_SETTINGS_DEFAULT_SLEEP_MODE
+#define PORTABLE_SETTINGS_DEFAULT_SLEEP_MODE PORTABLE_SLEEP_HYBRID
+#endif
+#if PORTABLE_SETTINGS_DEFAULT_SLEEP_MODE < PORTABLE_SLEEP_LIGHT || PORTABLE_SETTINGS_DEFAULT_SLEEP_MODE > PORTABLE_SLEEP_HYBRID
+#error "Invalid Settings sleep fallback"
+#endif
+#define SETTINGS_SLEEP_DEFAULT PORTABLE_SETTINGS_DEFAULT_SLEEP_MODE
 #endif
 static int settings_sleep_load(unsigned *mode) {
-#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
   return portable_sleep_load_profile(settings_store,SETTINGS_SLEEP_MODES,SETTINGS_SLEEP_DEFAULT,mode);
-#else
-  return portable_sleep_load(settings_store,mode);
-#endif
 }
 static unsigned settings_sleep_count(void) {
   unsigned n=0;for(unsigned mode=0;mode<=PORTABLE_SLEEP_HYBRID;++mode)
@@ -141,10 +146,16 @@ static bool face_unconfirmed;
 #else
 #define SETTINGS_CORE_ROW_COUNT SETTINGS_NON_FACE_ROW_COUNT
 #endif
-#if defined(PORTABLE_LOW_BATTERY) || (defined(PORTABLE_RESIDENT_SHELL_CLIENT) && defined(PORTABLE_RESIDENT_POLICY))
+#if (defined(PORTABLE_SETTINGS_IDLE_TIMER) || defined(PORTABLE_SETTINGS_BOTH_TIMERS)) && (!defined(PORTABLE_SLEEP_SETTINGS) || defined(PORTABLE_SETTINGS_X4_DESK_CLOCK))
+#error "Generic idle timer Settings requires sleep settings without a desk-clock profile"
+#endif
+#if defined(PORTABLE_SETTINGS_BOTH_TIMERS) && (defined(PORTABLE_SETTINGS_IDLE_TIMER) || defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_SHELL_CLIENT))
+#error "Independent sleep timers cannot replace an idle-only profile"
+#endif
+#if defined(PORTABLE_SETTINGS_BOTH_TIMERS) || defined(PORTABLE_SETTINGS_IDLE_TIMER) || defined(PORTABLE_LOW_BATTERY) || (defined(PORTABLE_RESIDENT_SHELL_CLIENT) && defined(PORTABLE_RESIDENT_POLICY))
 #define PORTABLE_SETTINGS_SLEEP_TIMER
 #define SETTINGS_TIMER_ROW SETTINGS_CORE_ROW_COUNT
-#if defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_SHELL_CLIENT)
+#if defined(PORTABLE_SETTINGS_IDLE_TIMER) || defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_SHELL_CLIENT)
 #define SETTINGS_ORDINARY_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+1u)
 #else
 #define SETTINGS_ORDINARY_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+2u)
@@ -152,6 +163,18 @@ static bool face_unconfirmed;
 static bool timer_deep;
 static uint32_t timer_choice;
 static const char *timer_message="";
+#ifndef PORTABLE_SETTINGS_DEFAULT_IDLE_SECONDS
+#define PORTABLE_SETTINGS_DEFAULT_IDLE_SECONDS 60u
+#endif
+#if PORTABLE_SETTINGS_DEFAULT_IDLE_SECONDS < 5 || PORTABLE_SETTINGS_DEFAULT_IDLE_SECONDS > 3600
+#error "Settings idle fallback must be between 5 and 3600 seconds"
+#endif
+static int settings_timer_load(bool deep,uint32_t *milliseconds) {
+  int loaded=portable_sleep_timer_load(settings_store,deep,milliseconds);
+  if(milliseconds && !deep && loaded!=PORTABLE_SLEEP_LOADED)
+    *milliseconds=PORTABLE_SETTINGS_DEFAULT_IDLE_SECONDS*1000u;
+  return loaded;
+}
 #else
 #define SETTINGS_ORDINARY_ROW_COUNT SETTINGS_CORE_ROW_COUNT
 #endif
@@ -255,7 +278,7 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
 #else
     ,"Idle sleep timer"
 #endif
-#if !defined(PORTABLE_X4_IDLE_POLICY) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)
+#if !defined(PORTABLE_SETTINGS_IDLE_TIMER) && !defined(PORTABLE_X4_IDLE_POLICY) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)
     ,"Deep sleep timer"
 #endif
 #endif
@@ -264,7 +287,7 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
 #ifdef PORTABLE_SETTINGS_SLEEP_TIMER
   if(index>=SETTINGS_TIMER_ROW) {
     uint32_t milliseconds=0;
-    int loaded=portable_sleep_timer_load(settings_store,index==SETTINGS_TIMER_ROW+1u,&milliseconds);
+    int loaded=settings_timer_load(index==SETTINGS_TIMER_ROW+1u,&milliseconds);
     out->type=T5_APP_SETTING_ACTION;
     if(loaded==PORTABLE_SLEEP_INVALID || loaded==PORTABLE_SLEEP_UNAVAILABLE)strcpy(out->value,"Unconfirmed");
     else snprintf(out->value,sizeof(out->value),"%lu seconds",(unsigned long)(milliseconds/1000u));
@@ -457,20 +480,9 @@ static void settings_render(uint32_t category,int32_t selected) {
   sp_root_touch_selection=false;
 #endif
   if(changed && selected>0 && selected<=(int32_t)SETTINGS_ROW_COUNT) {
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-    if(sn_enabled())sv_scroll[0]=sn_reveal((unsigned)selected-1,sv_scroll[0]);
-    else {
-#endif
     int y=sv_row_y((unsigned)selected-1)-sv_scroll[0];
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-    int top=sn_enabled()?sn_geometry().top:52,bottom=sn_enabled()?sn_geometry().bottom:174;
-    if(y<top)sv_scroll[0]=sv_row_y((unsigned)selected-1)-top;
-    else if(y+SV_ROW_HEIGHT>bottom)sv_scroll[0]=sv_row_y((unsigned)selected-1)-(bottom-SV_ROW_HEIGHT);
-    }
-#else
     if(y<52)sv_scroll[0]=sv_row_y((unsigned)selected-1)-52;
     else if(y+SV_ROW_HEIGHT>174)sv_scroll[0]=sv_row_y((unsigned)selected-1)-(174-SV_ROW_HEIGHT);
-#endif
   }
   if(sv_page!=SV_ROOT)sv_switch(SV_ROOT);else settings_view_redraw();
 }
@@ -519,23 +531,11 @@ static void editor_select_field(unsigned field) {
   if(pp_enabled()&&field<6){unsigned rows=sp_rows();if(field<sp_field_first)sp_field_first=field;else if(field>=sp_field_first+rows)sp_field_first=field-rows+1;}
 #endif
   if(field<6) {
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-    if(sn_enabled())sv_scroll[1]=sn_reveal(field,sv_scroll[1]);
-    else {
-    int top=sn_enabled()?sn_geometry().top:60,bottom=sn_enabled()?sn_geometry().bottom:SV_FIELD_BOTTOM;
-    int y=top+(int)field*SV_ROW_HEIGHT-sv_scroll[1];
-    if(y<top)sv_scroll[1]=(int)field*SV_ROW_HEIGHT;
-    else if(y+SV_ROW_HEIGHT>bottom)sv_scroll[1]=top+(int)field*SV_ROW_HEIGHT-(bottom-SV_ROW_HEIGHT);
-#else
     int y=60+(int)field*SV_ROW_HEIGHT-sv_scroll[1];
     if(y<60)sv_scroll[1]=(int)field*SV_ROW_HEIGHT;
     else if(y+SV_ROW_HEIGHT>SV_FIELD_BOTTOM)sv_scroll[1]=60+(int)field*SV_ROW_HEIGHT-(SV_FIELD_BOTTOM-SV_ROW_HEIGHT);
-#endif
     if(sv_scroll[1]<0)sv_scroll[1]=0;
     if(sv_scroll[1]>sv_max_scroll())sv_scroll[1]=sv_max_scroll();
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-    }
-#endif
   }
 }
 static bool editor_try_save(void) {
@@ -585,25 +585,35 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
 #ifdef PORTABLE_SETTINGS_SLEEP_TIMER
   if(index>=SETTINGS_TIMER_ROW) {
     timer_deep=index==SETTINGS_TIMER_ROW+1u;
-    int loaded=portable_sleep_timer_load(settings_store,timer_deep,&timer_choice);
+    int loaded=settings_timer_load(timer_deep,&timer_choice);
     timer_message=loaded==PORTABLE_SLEEP_UNAVAILABLE?"Storage unavailable":loaded==PORTABLE_SLEEP_INVALID?"Invalid: default shown":"";
-    sv_switch(SV_TIMER);bool armed=false;t5_app_input_t input;uint8_t result=T5_APP_SETTING_NO_CHANGE;
+    sv_switch(SV_TIMER);bool armed=false,save_pending=false;t5_app_input_t input;uint8_t result=T5_APP_SETTING_NO_CHANGE;
     while(poll(&input,20)) {
       if(input.exit_requested||(input.buttons&T5_APP_BUTTON_BACK))break;
-      if(!input.buttons&&!input.tapped){armed=true;continue;}
-      if(!armed)continue;
-      armed=false;
-      bool save=!!(input.buttons&T5_APP_BUTTON_CONFIRM);
-      bool down=!!(input.buttons&(T5_APP_BUTTON_LEFT|T5_APP_BUTTON_DOWN));
-      bool up=!!(input.buttons&(T5_APP_BUTTON_RIGHT|T5_APP_BUTTON_UP));
-      if(input.tapped&&sv_inside(input.touch_x,input.touch_y,20,88,64,44))down=true;
-      if(input.tapped&&sv_inside(input.touch_x,input.touch_y,156,88,64,44))up=true;
-      if(down||up) {
-        uint32_t step=timer_deep?60000u:5000u;
-        timer_choice=down?(timer_choice<=2u*step?step:timer_choice-step):
-            (timer_choice>=3600000u-step?3600000u:timer_choice+step);
+      if(!save_pending) {
+        if(!input.buttons&&!input.tapped){armed=true;continue;}
+        if(!armed)continue;
+        armed=false;
+        bool save=!!(input.buttons&T5_APP_BUTTON_CONFIRM);
+        bool down=!!(input.buttons&(T5_APP_BUTTON_LEFT|T5_APP_BUTTON_DOWN));
+        bool up=!!(input.buttons&(T5_APP_BUTTON_RIGHT|T5_APP_BUTTON_UP));
+        if(input.tapped&&sv_inside(input.touch_x,input.touch_y,SV_TIMER_DEC_X,SV_TIMER_Y,SV_TIMER_W,SV_TIMER_H))down=true;
+        if(input.tapped&&sv_inside(input.touch_x,input.touch_y,SV_TIMER_INC_X,SV_TIMER_Y,SV_TIMER_W,SV_TIMER_H))up=true;
+        if(down||up) {
+          uint32_t step=timer_deep?60000u:5000u;
+          timer_choice=down?(timer_choice<=2u*step?step:timer_choice-step):
+              (timer_choice>=3600000u-step?3600000u:timer_choice+step);
+        }
+        if(save) {
+          /* Render uncertainty before writing. Busy/async panels defer the
+           * write, while the existing poll path progresses presentation. */
+          timer_message="Saving - not confirmed";save_pending=true;settings_view_redraw();
+        }
       }
-      if(save) {
+      if(save_pending) {
+        if(failed)break;
+        if(!sv_save_frame_ready())continue;
+        save_pending=false;
         if(
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
            settings_atomic_timer(timer_deep?PORTABLE_SLEEP_DEEP_KEY:PORTABLE_SLEEP_IDLE_KEY,timer_choice,&timer_message)
@@ -611,13 +621,17 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
            portable_sleep_timer_save(settings_store,timer_deep,timer_choice)
 #endif
         ) {
+#ifdef PORTABLE_FOREGROUND_IDLE
+          if(!foreground_idle_live())break;
+          if(!timer_deep){portable_foreground_idle_timeout_changed(timer_choice);foreground_idle_confirmed();}
+#endif
 #ifdef PORTABLE_LOW_BATTERY
           if(!pqa_session_load(&quick,rt)){failed=true;break;}
 #endif
           result=T5_APP_SETTING_UPDATED;break;
         }
 #ifndef PORTABLE_SETTINGS_AVAILABILITY
-        (void)portable_sleep_timer_load(settings_store,timer_deep,&timer_choice);
+        (void)settings_timer_load(timer_deep,&timer_choice);
 #endif
 #ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
         timer_message="Save unconfirmed - retry";
@@ -682,20 +696,36 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
                   loaded==PORTABLE_SLEEP_MISSING?"Missing: Light default":"";
 #else
     sleep_message=loaded==PORTABLE_SLEEP_UNAVAILABLE?"Storage unavailable":
-                  loaded==PORTABLE_SLEEP_INVALID?"Invalid: Hybrid default":"";
+                  loaded==PORTABLE_SLEEP_INVALID?
+#if defined(PORTABLE_SETTINGS_CONFIGURED_SLEEP_DEFAULT) || defined(PORTABLE_SETTINGS_IDLE_TIMER) || defined(PORTABLE_SETTINGS_BOTH_TIMERS)
+                  "Invalid: default shown"
+#else
+                  "Invalid: Hybrid default"
 #endif
-    sv_switch(SV_SLEEP);bool armed=false;t5_app_input_t input;
+                  :"";
+#endif
+    sv_switch(SV_SLEEP);bool armed=false,save_pending=false;t5_app_input_t input;
     uint8_t result=T5_APP_SETTING_NO_CHANGE;
     while(poll(&input,20)) {
       if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK))break;
-      if(!input.buttons && !input.tapped){armed=true;continue;}
-      if(!armed)continue;
-      armed=false;
-      bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
-      if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN|T5_APP_BUTTON_LEFT|T5_APP_BUTTON_RIGHT))sleep_choice=settings_sleep_next(sleep_choice);
-      else if(input.tapped)for(unsigned row=0;row<settings_sleep_count();++row)
-        if(sv_inside(input.touch_x,input.touch_y,28,66+(int)row*38,184,30))sleep_choice=settings_sleep_at(row);
-      if(save) {
+      if(!save_pending) {
+        if(!input.buttons && !input.tapped){armed=true;continue;}
+        if(!armed)continue;
+        armed=false;
+        bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
+        if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN|T5_APP_BUTTON_LEFT|T5_APP_BUTTON_RIGHT))sleep_choice=settings_sleep_next(sleep_choice);
+        else if(input.tapped)for(unsigned row=0;row<settings_sleep_count();++row)
+          if(sv_inside(input.touch_x,input.touch_y,28,66+(int)row*38,184,30))sleep_choice=settings_sleep_at(row);
+        if(save) {
+          /* Render uncertainty before writing. Busy/async panels defer the
+           * write, while the existing poll path progresses presentation. */
+          sleep_message="Saving - not confirmed";save_pending=true;settings_view_redraw();
+        }
+      }
+      if(save_pending) {
+        if(failed)break;
+        if(!sv_save_frame_ready())continue;
+        save_pending=false;
         if(
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
            settings_atomic_choice(PORTABLE_SLEEP_KEY,0x53,sleep_choice,3,&sleep_message)
@@ -968,18 +998,8 @@ T5_APP_SETTING_UPDATED;break;}
     }
     if(input.buttons&T5_APP_BUTTON_UP)editor_select_field((editor_field+7)%8);
     else if(input.buttons&T5_APP_BUTTON_DOWN)editor_select_field((editor_field+1)%8);
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-    else if(input.tapped && (sn_enabled() || (input.touch_y>=50 && input.touch_y<184))) {
-      if(sn_enabled()) {
-        bool found=false;
-        for(unsigned i=0;i<6;i++)if(sn_hit(sn_row(i,sv_scroll[1]),input.touch_x,input.touch_y)){editor_field=i;found=true;break;}
-        if(found){sv_switch(SV_VALUE);continue;}
-        continue;
-      }
-#else
-    else if(input.tapped && input.touch_y>=50 && input.touch_y<184) {
-#endif
-      int y=input.touch_y+sv_scroll[1]-60;
+    else if(input.tapped && input.touch_y>=50 && input.touch_y<(sv_round()?SV_FIELD_BOTTOM:184)) {
+      int y=input.touch_y+sv_action_scroll(1)-60;
       if(y>=0 && y<6*SV_ROW_HEIGHT){editor_field=(unsigned)y/SV_ROW_HEIGHT;sv_switch(SV_VALUE);continue;}
     } else if(input.buttons&T5_APP_BUTTON_CONFIRM) {
       if(editor_field==7)break;
@@ -1060,34 +1080,21 @@ static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *se
 #endif
     *category=0;*selected=(int32_t)row+1;return settings_activate(0,row);
   }
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-  if(sn_enabled()) {
-    if(!category||!selected)return T5_APP_SETTING_NO_CHANGE;
-    for(unsigned i=0;i<SETTINGS_ROW_COUNT;i++)if(sn_hit(sn_row(i,sv_scroll[0]),x,y)){
-      *category=0;*selected=(int32_t)i+1;return settings_activate(0,i);
-    }
-    return T5_APP_SETTING_NO_CHANGE;
-  }
-#endif
-  if(!category || !selected || x<20 || x>=220 || y<0 || y>=190)return T5_APP_SETTING_NO_CHANGE;
+  if(!category || !selected || x<20 || x>=220 || y<(sv_round()?40:0) || y>=190)return T5_APP_SETTING_NO_CHANGE;
   *category=0;
-  for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i)if(y+sv_scroll[0]>=sv_row_y(i) && y+sv_scroll[0]<sv_row_y(i)+SV_ROW_HEIGHT) {
+  for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i)if(y+sv_action_scroll(0)>=sv_row_y(i) && y+sv_action_scroll(0)<sv_row_y(i)+SV_ROW_HEIGHT) {
     *selected=(int32_t)i+1;return settings_activate(0,i);
   }
   return T5_APP_SETTING_NO_CHANGE;
 }
 static bool settings_open(void) {
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-  if(sn_enabled()? !sn_fits() : (width()<240 || height()<240))return false;
-  #ifdef PORTABLE_SETTINGS_TIME_ZONE
-  if(!stz_native_fits())return false;
-#endif
-  if(sn_enabled()){sv_scroll[0]=sv_scroll[1]=0;sn_choice_scroll=0;sn_sequence_valid=false;sn_gesture_page=~0u;}
-#else
   if(width()<240 || height()<240)return false;
-#endif
 #ifndef PORTABLE_SETTINGS_NATIVE_TIME
   rtc_grant.struct_size=sizeof(rtc_grant);
+#endif
+#ifdef PORTABLE_SETTINGS_SLICED_FRAMES
+  sv_submitted_map=sv_visible_map=sv_gesture_map=sv_action_map=(sv_frame_map){0};
+  sv_submitted_receipt=0;sv_map_epoch=0;sv_image_pending=sv_visible_valid=false;
 #endif
   back_exits_app=true;settings_message="";
   sv_active=false;sv_need_neutral=true;sv_page=SV_ROOT;sp_first=sp_field_first=0;sp_clean=true;sp_dirty=false;
