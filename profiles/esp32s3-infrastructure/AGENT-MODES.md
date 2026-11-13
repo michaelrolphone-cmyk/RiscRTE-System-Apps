@@ -125,3 +125,30 @@ Failover is bounded by the 90–120 second contact lease and the next healthy
 check-in, plus any required custody drain. Software simulation covers placement,
 all 31 nonempty role combinations, lease/reboot fences and handoff. Physical
 ESP32-S3 resource, network and power-loss qualification remains required.
+
+## Optional camera on the GOOUUU ESP32-S3-CAM
+
+v1.10.2 probes the onboard camera socket after the participant establishes its
+infrastructure inventory. A board that returns a complete JPEG publishes its own
+`camera.capture@1` offer. The original four infrastructure providers use their
+existing inventory exchange. The camera offer has a separate 120-second expiry.
+The identification frame is discarded on the board. Once identified, the board
+renews its offer without taking pictures. An explicit capture failure clears
+the cached identification, and an empty socket is probed again after ten
+minutes. Only a granted capture job returns image bytes. Each probe or capture releases
+its framebuffer and deinitializes the driver.
+
+With v1.11.0, submit a `camera.capture@2` job for operation `capture` with
+`{}` for the detected sensor maximum or e.g. `{"width":317,"height":193}`
+for exact pixel dimensions. Both dimensions must be positive integers within
+the native frame. Scaling samples the full field of view into the requested
+rectangle, including when its aspect ratio differs. Target the camera
+participant and use schema-only acceptance and the repeatable_compute effect.
+The accepted candidate references a verified JPEG artifact. Use artifact
+download_grant and fetch its returned path with the same principal. Verify the
+SHA-256, byte count and dimensions against the candidate output.
+
+Use the paired repair bundle on enrolled v1.9.0 boards. It preserves the original
+identity, local policy, credentials, and pending work. The initial image is for
+first installation. The pin mapping used here is documented in the
+[GOOUUU camera board reference](https://github.com/profharris/GOOUUU_ESP32-S3-CAM).

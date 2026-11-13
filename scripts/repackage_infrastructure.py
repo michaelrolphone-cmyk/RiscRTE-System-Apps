@@ -28,6 +28,7 @@ def main():
   if sha(f)!=record['sha256'] or f.stat().st_size!=record['size_bytes'] or f.read_bytes()[:6]!=b'\x7fELF\x01\x01':raise ValueError('ELF evidence mismatch')
  if set(builds['files'])!={'infra-node.elf','infra-station.elf','default.elf'}:raise ValueError('Incomplete ELF cohort')
  out.mkdir(parents=True,exist_ok=False);shutil.copytree(a.elf,out/'elf')
+ if b"platform.camera-still" not in fw:raise ValueError("Camera firmware requires a freshly built camera-enabled native runtime")
  policy,state=generate(out/'fixtures',sha(out/'elf/infra-node.elf'));policy['allocation']={'automatic':True};(out/'fixtures/node-policy.example.json').write_text(json.dumps(policy,indent=2)+'\n');shutil.copytree(out/'fixtures/bootfs',out/'bootfs')
  for f in (out/'elf').glob('*.elf'):shutil.copy2(f,out/'bootfs'/f.name)
  subprocess.run([sys.executable,str(a.spiffsgen),'0x510000',str(out/'bootfs'),str(out/'store.bin'),'--page-size','256','--block-size','4096','--obj-name-len','32','--meta-len','4','--use-magic','--use-magic-len'],check=True)
