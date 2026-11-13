@@ -1,0 +1,58 @@
+name: Settled resident alarm contracts
+on:
+  pull_request:
+    paths:
+      - 'sdk/app/RiscResidentAlarmV1.h'
+      - 'sdk/app/RiscResidentIdleV1.h'
+      - 'scripts/test_resident_alarm_contract.py'
+      - 'test/resident_alarm/**'
+      - 'docs/RESIDENT-ALARM-CONTRACT.md'
+      - '.github/workflows/resident-alarm-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: .source/runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Strict C11 and C++17 contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification
+          for mode in normal sanitized; do
+            flags=(); [ "$mode" = normal ] || flags=(--sanitize)
+            python3 scripts/test_resident_alarm_contract.py --runtime .source/runtime --output "qualification/$mode" "${flags[@]}" 2>&1 | tee "qualification/$mode.log"
+          done
+      - name: Preserve source bytes
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/source
+          git rev-parse HEAD > qualification/source/system.head
+          git archive HEAD | gzip -n > qualification/source/system.tar.gz
+          git -C .source/runtime rev-parse HEAD > qualification/source/runtime.head
+          git -C .source/runtime archive HEAD | gzip -n > qualification/source/runtime.tar.gz
+          sha256sum qualification/source/*.tar.gz > qualification/source/archives.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resident-alarm-contracts-${{ github.sha }}
+          path: qualification/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30

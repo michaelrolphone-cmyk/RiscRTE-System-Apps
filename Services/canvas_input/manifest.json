@@ -1,0 +1,28 @@
+{
+  "architecture": "xtensa-esp32s3",
+  "driver_abi": 2,
+  "file_name": "driver.elf",
+  "id": "canvas-input",
+  "provides": [
+    {
+      "api": 1,
+      "capability": "ui.canvas-input"
+    }
+  ],
+  "requires": [
+    {
+      "api": 1,
+      "capability": "ui.canvas"
+    },
+    {
+      "api": 1,
+      "capability": "input.touch.raw"
+    },
+    {
+      "api": 1,
+      "capability": "input.navigation"
+    }
+  ],
+  "type": "driver",
+  "version": "0.1.0"
+}

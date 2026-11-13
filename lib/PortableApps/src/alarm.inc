@@ -3,8 +3,17 @@
  * Its saved frame is app-owned; no lease or callback crosses service calls. */
 #include "PortableAlarmClient.h"
 static portable_alarm_client alarms;
-#ifdef PORTABLE_HOME_PROVISION
-static bool home_provision_alarm_busy(void){return portable_alarm_cue(&alarms);}
+#ifdef PORTABLE_ALARM_READY_DRAIN
+#ifndef PORTABLE_ALARM_READY_BUDGET_MS
+#define PORTABLE_ALARM_READY_BUDGET_MS 8u
+#endif
+static int32_t alarm_last_step_result=ALARM_PENDING;
+static bool alarm_pump_step(void) {
+    alarm_last_step_result=ALARM_PENDING;
+    return portable_alarm_pump_step(&alarms,&alarm_last_step_result);
+}
+#else
+#define alarm_pump_step() portable_alarm_pump(&alarms)
 #endif
 #if defined(PORTABLE_WIFI_SESSION_APP) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))
 #define PORTABLE_WIFI_SERVICE_LEASE
@@ -12,10 +21,10 @@ static bool alarm_refresh_pending,alarm_ack_pending,alarm_service_deferred;
 static alarm_token_v1 alarm_ack_token;
 static bool alarm_commit_pending(void);
 #endif
-#if defined(PORTABLE_CONTEXTS_CLIENT) || (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
+#if defined(PORTABLE_CONTEXTS_CLIENT) || (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT) && !defined(PORTABLE_FOREGROUND_ALARM_SLEEP)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
 static const alarm_service_v1 *alarm_sleep_api(void) { return alarms.api; }
 #endif
-#if (defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_CONTEXTS_CLIENT)) && defined(ALARM_SERVICE_TAGGED_V2)
+#if ((defined(PORTABLE_QUICK_ACTIONS) && !defined(PORTABLE_WATCH_COLOR_ONLY)) || defined(PORTABLE_CONTEXTS_CLIENT)) && defined(ALARM_SERVICE_TAGGED_V2)
 static uint32_t alarm_output_modes(void) { return portable_alarm_output_modes(&alarms); }
 #endif
 #if (defined(PORTABLE_QUICK_ACTIONS) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))) || defined(PORTABLE_WIFI_SERVICE_LEASE)
@@ -129,7 +138,7 @@ static bool alarm_audio_pump_unleased(void) {
     if(!alarm_sessions_safe() || !portable_alarm_status(&alarms))return false;
     if((portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) &&
        !alarm_sessions_suspend())return false;
-    if(!portable_alarm_pump(&alarms))return false;
+    if(!alarm_pump_step())return false;
     return !(portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) ||
         alarm_sessions_suspend();
 }
@@ -140,7 +149,7 @@ static bool alarm_audio_pump_unleased(void) {
 #endif
     if(native_sleep_retained)return false;
 #if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
-    if(!portable_alarm_pump(&alarms) || alarms.status.output_uncertain) {
+    if(!alarm_pump_step() || alarms.status.output_uncertain) {
 #ifdef PORTABLE_WIFI_SERVICE_LEASE
         return false; /* End the lease before the caller's failure handling. */
 #else
@@ -155,7 +164,7 @@ static bool alarm_audio_pump_unleased(void) {
     return true;
 }
 #else
-#define alarm_audio_pump_unleased() portable_alarm_pump(&alarms)
+#define alarm_audio_pump_unleased() alarm_pump_step()
 #endif
 #ifdef PORTABLE_WIFI_SERVICE_LEASE
 /* A real native resource lease covers the whole non-yielding service call.
@@ -200,9 +209,6 @@ static const char *alarm_title(const alarm_status_v1 *s,char out[24]) {
     }
     return s->occurrence.kind==ALARM_KIND_COUNTDOWN?"COUNTDOWN FINISHED":"ALARM";
 }
-#ifdef PORTABLE_ALARM_NATIVE
-#include "alarm_native.inc"
-#endif
 static void alarm_draw(void) {
     const alarm_status_v1 *s=&alarms.status;
     char title[24];
@@ -222,10 +228,6 @@ static void alarm_draw(void) {
         }
         present(false);return;
     }
-#ifdef PORTABLE_ALARM_NATIVE
-    alarm_native_draw(s,alarm_title(s,title));
-    present(false);return;
-#endif
 #ifdef PORTABLE_NOVA_UI
     portable_nova_begin();
     portable_nova_center(0,16,34,208,alarm_title(s,title),NOVA_CYAN);
@@ -348,25 +350,56 @@ static bool alarm_foreground(bool *consumed) {
     /* Reconciliation is bounded by service phases, not provider poll. Input
        waits until the snapshot says READY or gives an alert/error. */
     bool cue_seen=false;
+#ifdef PORTABLE_ALARM_READY_DRAIN
+    uint32_t ready_start=0,ready_previous=0;
+#endif
     for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING || portable_alarm_cue(&alarms);n++) {
         if(n>=64){failed=true;return alarm_failure();}
         if(portable_alarm_cue(&alarms)){
-#ifdef PORTABLE_HOME_PROVISION
-            int rc=home_provision_close();
-            if(rc!=INSTALLED_APPS_OK){*consumed=true;return rc==INSTALLED_APPS_WORKING;}
-#endif
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
             if(!portable_background_stop())return false;
 #endif
             cue_seen=true;*consumed=true;
         }
+#ifdef PORTABLE_ALARM_READY_DRAIN
+        uint32_t ready_now=millis_now();
+        if(failed)return false;
+        /* A short serialized work interval may wrap, but cannot legitimately
+         * move backward by less than half the uint32 clock domain. */
+        if(!n)ready_start=ready_previous=ready_now;
+        else if((uint32_t)(ready_now-ready_previous)>UINT32_MAX/2u)return alarm_failure();
+        ready_previous=ready_now;
+        input_service();
+        if(failed)return false;
+        ready_now=millis_now();
+        if(failed)return false;
+        if((uint32_t)(ready_now-ready_previous)>UINT32_MAX/2u)return alarm_failure();
+        ready_previous=ready_now;
+        if(portable_alarm_cue(&alarms) || alarm_last_step_result!=ALARM_OK ||
+           (uint32_t)(ready_now-ready_start)>=PORTABLE_ALARM_READY_BUDGET_MS) {
+            if(!paper_present_progress())return alarm_failure();
+            rt->yield_ms(portable_alarm_cue(&alarms)?4:1);
+            if(failed)return false;
+            ready_now=millis_now();
+            if(failed)return false;
+            if((uint32_t)(ready_now-ready_previous)>UINT32_MAX/2u)return alarm_failure();
+            ready_start=ready_previous=ready_now;
+        }
+#else
         input_service();
         if(!paper_present_progress())return alarm_failure();
         rt->yield_ms(portable_alarm_cue(&alarms)?4:1);
+#endif
 #if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return !failed;
 #endif
         if(!alarm_audio_pump()){failed=true;return alarm_failure();}
+#ifdef PORTABLE_ALARM_READY_DRAIN
+        ready_now=millis_now();
+        if(failed)return false;
+        if((uint32_t)(ready_now-ready_previous)>UINT32_MAX/2u)return alarm_failure();
+        ready_previous=ready_now;
+#endif
 #ifdef PORTABLE_WIFI_SERVICE_LEASE
         if(alarm_service_deferred)return true;
 #endif
@@ -418,10 +451,8 @@ static bool alarm_foreground(bool *consumed) {
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
 #endif
         portable_touch_sample sample;input_take(&sample);
-#if defined(PORTABLE_WATCH_NATIVE_HEIGHT) && !defined(PORTABLE_ALARM_NATIVE)
-        /* Paper draws and hits in native coordinates; only the legacy RGB
-         * alarm view needs the native-height sample projected to 240 units. */
-        if(!pp_enabled() && info.width){sample.x=(uint32_t)sample.x*240u/info.width;sample.y=(uint32_t)sample.y*240u/info.width;}
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+        if(info.width){sample.x=(uint32_t)sample.x*240u/info.width;sample.y=(uint32_t)sample.y*240u/info.width;}
 #endif
         uint32_t buttons=navigation_pending;navigation_pending=0;
         bool tap=sample.valid && sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled;
@@ -437,14 +468,6 @@ static bool alarm_foreground(bool *consumed) {
             retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && sample.y>=height()-92);
             dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=height()-188 && sample.y<height()-100);
         }
-#ifdef PORTABLE_ALARM_NATIVE
-        else {
-            portable_alarm_layout l;
-            if(!portable_alarm_layout_for(width(),height(),alarms.status.state==ALARM_STATE_BLOCKED,&l))return alarm_failure();
-            retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && portable_alarm_hit(l.retry,sample.x,sample.y));
-            dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && portable_alarm_hit(l.dismiss,sample.x,sample.y));
-        }
-#endif
         if(alarms.status.state==ALARM_STATE_BLOCKED && retry) {
 #if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
 #ifdef PORTABLE_WIFI_SERVICE_LEASE
