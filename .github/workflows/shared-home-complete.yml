@@ -1,0 +1,634 @@
+name: Complete shared Home ELF
+on:
+  pull_request:
+    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/build_home_dependencies.py', 'scripts/stage_home_native_dependencies.py', 'scripts/test_stage_home_native_dependencies.py', 'scripts/join_home_packages.py', 'scripts/build_home_delivery.py', 'scripts/archive_home_evidence.py', 'scripts/verify_home_owning_ci.py', 'scripts/stage_home_x4_bridge.py', 'scripts/test_stage_home_x4_bridge.py', 'scripts/test_home_overview_adapter_compile.py', 'scripts/shared_home_sdk.py', 'scripts/test_shared_home_sdk.py', 'scripts/test_shared_home_common_sdk.py', 'scripts/prepare_home_cohort_plan.py', 'scripts/compact_home_dependency_packages.py', 'scripts/stage_home_published_dependencies.py', 'docs/shared-home/**', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/assemble_shared_home_cohort.py', 'scripts/test_shared_home_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', 'lib/PortableApps/include/PortableAlarm*.h', 'scripts/test_home_alarm_facade_client.py', 'test/native_apps/portable_alarm_v2_test.c', 'scripts/test_home_points_custody.py', 'test/native_apps/home_points_custody_test.c', 'scripts/test_home_crash_bindings.py', 'scripts/test_home_product_admission.py', 'scripts/test_home_admission_binding.py', 'scripts/publish_home_shared.py', 'scripts/test_publish_home_shared.py', '.github/workflows/shared-home-complete.yml']
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: c4f4927a6a45790a3326e00eead406a9f17654e2
+          path: Watch
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: bb0cadf3cec3445a64e11513b47b2676f3fdd92d
+          path: WatchSystem
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 4fdcad2495c33fe63f5f6faca9b11ced3c739a5b
+          path: WatchUtilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: c98e4222048244b1e729869ed47aa99130025fd3
+          path: Reader
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: 6b7d1abe9b2dcc236f6086d07c0f619244c907cb
+          path: Interfaces
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 452c57bd4f59f3c1d1463763e6ea5b0f90e7d012
+          fetch-depth: 0
+          path: AlarmUtilities
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Independent delivered-product delta conflict regressions
+        run: |
+          python3 System/scripts/test_shared_app_cohort.py
+          python3 System/scripts/test_shared_home_cohort.py
+          python3 System/scripts/test_shared_home_manifest.py
+          python3 System/scripts/test_image_envelope.py
+          python3 System/scripts/test_image_storage.py
+          python3 System/scripts/test_stage_home_upgrade_qualification.py
+          python3 System/scripts/test_shared_home_sdk.py
+          python3 System/scripts/test_shared_home_common_sdk.py --runtime Runtime --output out/common-sdk-host
+          python3 System/scripts/test_stage_home_native_dependencies.py
+          python3 System/scripts/test_home_admission_binding.py
+          python3 System/scripts/test_publish_home_shared.py
+          python3 -m py_compile System/scripts/archive_home_evidence.py System/scripts/verify_home_owning_ci.py System/scripts/join_home_packages.py System/scripts/build_home_delivery.py System/scripts/build_home_dependencies.py System/scripts/prepare_home_cohort_plan.py System/scripts/stage_home_published_dependencies.py System/scripts/compact_home_dependency_packages.py
+      - name: Exact owning source and compiler
+        run: |
+          set -euo pipefail
+          mkdir -p out/source toolchain
+          for repo in System Watch WatchSystem WatchUtilities Runtime Reader Interfaces AlarmUtilities; do
+            git -C "$repo" archive HEAD | gzip -n > "out/source/$repo.tar.gz"
+            git -C "$repo" rev-parse HEAD > "out/source/$repo.head"
+          done
+          curl --fail --location --retry 2 --max-time 180 https://github.com/espressif/crosstool-NG/releases/download/esp-15.2.0_20251204/xtensa-esp-elf-15.2.0_20251204-x86_64-linux-gnu.tar.xz -o "$RUNNER_TEMP/toolchain.tar.xz"
+          echo "3d50f5cd5f173acfd524e07c1cd69bc99585731a415ca2e5bce879997fe602b8  $RUNNER_TEMP/toolchain.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/toolchain.tar.xz" -C toolchain
+          python3 -m pip install platformio==6.1.19 pyelftools==0.32
+          python3 -m pip install -r Watch/scripts/requirements.txt
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Complete one-ELF build and exact repeat
+        run: |
+          set -euo pipefail
+          CC_TARGET="$PWD/toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc"
+          LD_TARGET="$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-ld"
+          for target in target repeat; do
+            python3 System/scripts/build_shared_home.py --watch Watch --watch-system WatchSystem --watch-utilities WatchUtilities --runtime Runtime --reader Reader --interfaces Interfaces/minimal/interfaces --alarm-utilities AlarmUtilities --catalog Interfaces/minimal/sd-app-catalog.json --compiler "$CC_TARGET" --legacy-linker "$LD_TARGET" --output "out/$target" 2>&1 | tee "out/$target.log"
+          done
+          python3 System/scripts/test_home_overview_adapter_compile.py --view-receipt out/target/overview/view.json --output out/overview-adapter-compile
+          cmp out/target/default.elf out/repeat/default.elf
+          sha256sum out/target/default.elf out/repeat/default.elf > out/byte-identity.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: complete-shared-home-${{ github.event.pull_request.head.sha }}
+          path: |
+            out/
+            !out/**/compiler/**
+            !out/**/linker-only/**
+          include-hidden-files: true
+          if-no-files-found: error
+  delivered-cohort:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify independent delta conflicts
+        run: |
+          python scripts/test_shared_app_cohort.py
+          python scripts/test_shared_home_cohort.py
+      - name: Retrieve exact completed app qualification archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p archives
+          gh api repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/artifacts/13118207859/zip > archives/files.zip
+          gh api repos/michaelrolphone-cmyk/RiscRTE-Productivity/actions/artifacts/13120780374/zip > archives/lists.zip
+          gh api repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/artifacts/13122108650/zip > archives/viewer.zip
+          python scripts/prepare_delivered_app_cohort.py --archives archives --output cohort
+          python scripts/assemble_shared_home_cohort.py --cohort cohort/composed --inventory-output cohort/home-authority-inventory.json
+          cat cohort/home-authority-inventory.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: preserved-shared-app-cohort-${{ github.event.pull_request.head.sha }}
+          path: |
+            cohort/inputs/
+            cohort/composed/
+            cohort/sources.json
+            cohort/inventory.json
+            cohort/baseline-inventory.json
+            cohort/home-authority-inventory.json
+          include-hidden-files: true
+          if-no-files-found: error
+  admission-harness:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 712ecc3f894dba99d9c9638941778a82f5856b97
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: e361e73de14314bb4b8d2fb3a24eb81e2390b0ee
+          path: X4Product
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: c69d7914935fccdc04749f7bfa429c74219bf88a
+          path: WatchProduct
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06
+          ref: 97ca6157aa9c3bba7c7fee3858aa7d0ff896d13b
+          path: WaveProduct
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: X4Runtime
+          persist-credentials: false
+      - name: Compile exact final admission harnesses only
+        run: |
+          set -euo pipefail
+          python3 System/scripts/test_home_admission_binding.py
+          for mode in normal sanitized; do
+            flags=(); if [ "$mode" = sanitized ]; then flags+=(--sanitize); fi
+            python3 System/scripts/test_home_product_admission.py --runtime Runtime --x4-runtime X4Runtime --x4-product X4Product --watch-product WatchProduct --wave-product WaveProduct --assembly not-yet-assembled --output "out/$mode" --prepare-only "${flags[@]}"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-admission-harness-only-${{ github.event.pull_request.head.sha }}
+          path: out/
+          if-no-files-found: error
+  client-contracts:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 452c57bd4f59f3c1d1463763e6ea5b0f90e7d012
+          path: AlarmUtilities
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Actual alarm facade clients and custody faults
+        run: |
+          python3 System/scripts/test_home_alarm_facade_client.py --runtime Runtime --utilities AlarmUtilities --output out/alarm-client
+          python3 System/scripts/test_home_points_custody.py --runtime Runtime --utilities AlarmUtilities --output out/points-client
+          python3 System/scripts/test_home_crash_bindings.py --runtime Runtime --output-dir out/crash-bindings
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-client-contracts-${{ github.event.pull_request.head.sha }}
+          path: out/
+          if-no-files-found: error
+  dependencies:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: c4f4927a6a45790a3326e00eead406a9f17654e2
+          path: Watch
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: bb0cadf3cec3445a64e11513b47b2676f3fdd92d
+          path: WatchSystem
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 4fdcad2495c33fe63f5f6faca9b11ced3c739a5b
+          path: WatchUtilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: c98e4222048244b1e729869ed47aa99130025fd3
+          path: Reader
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: 6b7d1abe9b2dcc236f6086d07c0f619244c907cb
+          path: Interfaces
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 452c57bd4f59f3c1d1463763e6ea5b0f90e7d012
+          fetch-depth: 0
+          path: AlarmUtilities
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Dependency packaging preflight
+        run: |
+          python3 System/scripts/test_shared_app_cohort.py
+          python3 System/scripts/test_shared_home_cohort.py
+          python3 System/scripts/test_shared_home_manifest.py
+          python3 System/scripts/test_image_envelope.py
+          python3 System/scripts/test_image_storage.py
+          python3 System/scripts/test_stage_home_upgrade_qualification.py
+          python3 System/scripts/test_home_admission_binding.py
+          python3 System/scripts/test_publish_home_shared.py
+      - name: Exact owning source and compiler
+        run: |
+          set -euo pipefail
+          mkdir -p out/source toolchain
+          for repo in System Watch WatchSystem WatchUtilities Runtime Reader Interfaces AlarmUtilities; do
+            git -C "$repo" archive HEAD | gzip -n > "out/source/$repo.tar.gz"
+            git -C "$repo" rev-parse HEAD > "out/source/$repo.head"
+          done
+          curl --fail --location --retry 2 --max-time 180 https://github.com/espressif/crosstool-NG/releases/download/esp-15.2.0_20251204/xtensa-esp-elf-15.2.0_20251204-x86_64-linux-gnu.tar.xz -o "$RUNNER_TEMP/toolchain.tar.xz"
+          echo "3d50f5cd5f173acfd524e07c1cd69bc99585731a415ca2e5bce879997fe602b8  $RUNNER_TEMP/toolchain.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/toolchain.tar.xz" -C toolchain
+          python3 -m pip install platformio==6.1.19 pyelftools==0.32
+          python3 -m pip install -r Watch/scripts/requirements.txt
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Build exact owning providers and repeat bytes
+        run: |
+          set -euo pipefail
+          python3 System/scripts/build_home_dependencies.py --runtime Runtime --watch Watch --utilities AlarmUtilities --legacy-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" --native-cc "$PWD/toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc" --output out/dependencies
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-dependencies-${{ github.event.pull_request.head.sha }}
+          path: out/
+          include-hidden-files: true
+          if-no-files-found: error
+  published-dependencies:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify final public dependency assets
+        run: python3 scripts/stage_home_published_dependencies.py --output out/published
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-published-dependencies-${{ github.event.pull_request.head.sha }}
+          path: out/
+          if-no-files-found: error
+  x4-bridge:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retrieve exact owning qualified singleton providers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO/actions/artifacts/13144852409/zip > "$RUNNER_TEMP/x4-bridge.zip"
+          python3 scripts/test_stage_home_x4_bridge.py
+          python3 scripts/stage_home_x4_bridge.py --archive "$RUNNER_TEMP/x4-bridge.zip" --output out/x4
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-x4-bridge-${{ github.event.pull_request.head.sha }}
+          path: out/
+          if-no-files-found: error
+  native-dependencies:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact owning native and application qualification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_home_owning_ci.py --lock docs/shared-home/owning-qualification.json --output out/owning-ci.json
+          mkdir -p archives
+          python3 - <<'PY' > "$RUNNER_TEMP/native-artifacts.txt"
+          import json
+          for lane,row in json.load(open('docs/shared-home/native-dependencies.json')).items():
+              print(lane,row['artifact']['repository'],row['artifact']['id'])
+          PY
+          while read -r lane repository artifact; do
+            gh api "repos/$repository/actions/artifacts/$artifact/zip" > "archives/$lane.zip"
+          done < "$RUNNER_TEMP/native-artifacts.txt"
+          python3 scripts/stage_home_native_dependencies.py --archives archives --lock docs/shared-home/native-dependencies.json --output out/native
+          python3 scripts/stage_home_upgrade_qualification.py --lock docs/shared-home/upgrade-qualification.json --output out/upgrade
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-native-dependencies-${{ github.event.pull_request.head.sha }}
+          path: out/
+          if-no-files-found: error
+  product-assembly:
+    needs: [qualify, dependencies, published-dependencies, x4-bridge, native-dependencies, delivered-cohort, client-contracts]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 712ecc3f894dba99d9c9638941778a82f5856b97
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: X4Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: c69d7914935fccdc04749f7bfa429c74219bf88a
+          path: WatchProduct
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06
+          ref: 97ca6157aa9c3bba7c7fee3858aa7d0ff896d13b
+          path: WaveProduct
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: e361e73de14314bb4b8d2fb3a24eb81e2390b0ee
+          path: X4Product
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: 8f2bd2bf0b1ce7a84084d6194d47c389b7441e61
+          path: X4Bridge
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: c4f4927a6a45790a3326e00eead406a9f17654e2
+          path: Watch
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: ab9ff33975680c5bb8d9a2e7ed346d0300732a4e
+          path: Bootfs
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: complete-shared-home-${{ github.event.pull_request.head.sha }}
+          path: incoming/home
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-home-dependencies-${{ github.event.pull_request.head.sha }}
+          path: incoming/built
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-home-published-dependencies-${{ github.event.pull_request.head.sha }}
+          path: incoming/published
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-home-x4-bridge-${{ github.event.pull_request.head.sha }}
+          path: incoming/x4
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-home-native-dependencies-${{ github.event.pull_request.head.sha }}
+          path: incoming/native
+      - uses: actions/download-artifact@v4
+        with:
+          name: preserved-shared-app-cohort-${{ github.event.pull_request.head.sha }}
+          path: incoming/cohort
+      - uses: actions/download-artifact@v4
+        with:
+          name: home-client-contracts-${{ github.event.pull_request.head.sha }}
+          path: incoming/clients
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Join exact packages and retain owning source
+        run: |
+          set -euo pipefail
+          python3 -m pip install platformio==6.1.19 pyelftools==0.32
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          mkdir -p closure/application closure/dependencies closure/qualification
+          cp incoming/home/target/{default.elf,default.json,build.json} closure/application/
+          cp -a incoming/home/source closure/source
+          cp -a incoming/built/dependencies closure/dependencies/built
+          cp -a incoming/published/published closure/dependencies/published
+          cp -a incoming/x4/x4 closure/dependencies/x4
+          cp -a incoming/native/native closure/dependencies/native
+          cp -a incoming/native/upgrade closure/upgrade
+          cp incoming/native/owning-ci.json closure/qualification/
+          python3 System/scripts/join_home_packages.py --built closure/dependencies/built --published closure/dependencies/published --x4 closure/dependencies/x4 --native closure/dependencies/native --output closure/raw-packages
+          python3 System/scripts/compact_home_dependency_packages.py --packages closure/raw-packages --watch Watch --compiler "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" --output closure/packages
+      - name: Preserve product metadata and pack original fixed-size stores
+        run: |
+          set -euo pipefail
+          python3 System/scripts/prepare_home_cohort_plan.py --cohort incoming/cohort/composed --packages closure/packages --output closure/plan.json
+          python3 System/scripts/assemble_shared_home_cohort.py --cohort incoming/cohort/composed --plan closure/plan.json --home closure/application --packages closure/packages --output closure/assembly --inputs incoming/cohort/inputs --bootfs-tools Bootfs/scripts --encoded-storage
+      - name: Measure hypothetical lossless store fit only
+        if: ${{ !cancelled() && hashFiles('closure/assembly/assembly.json') != '' }}
+        run: python3 System/scripts/measure_home_image_storage.py --elf closure/application/default.elf --assembly closure/assembly --bootfs-tools Bootfs/scripts --output closure/storage-measurement/image.json
+      - name: Actual candidate Runtime graph and ELF admission (independent of packing)
+        if: ${{ !cancelled() && hashFiles('closure/assembly/assembly.json') != '' }}
+        run: |
+          set -euo pipefail
+          for mode in normal sanitized; do
+            flags=(); if [ "$mode" = sanitized ]; then flags+=(--sanitize); fi
+            python3 System/scripts/test_home_product_admission.py --runtime Runtime --x4-runtime X4Runtime --watch-product WatchProduct --wave-product WaveProduct --x4-product X4Product --assembly closure/assembly --output "closure/admission/$mode" "${flags[@]}"
+            ASAN_OPTIONS=detect_leaks=0 python3 X4Bridge/minimal/scripts/test_shared_home_power_graph.py --admission "closure/admission/$mode/x4" --before closure/assembly/x4/before --after closure/assembly/x4/after --output "closure/qualification/x4-graph-$mode"
+          done
+      - name: Build exact delivery closure
+        env:
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 System/scripts/archive_home_evidence.py --incoming incoming --closure closure --system System
+          python3 System/scripts/build_home_delivery.py --root closure --system System
+          python3 System/scripts/publish_home_shared.py --build closure --expected-source '${{ github.event.pull_request.head.sha }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-qualified-products-${{ github.event.pull_request.head.sha }}
+          path: closure/
+          include-hidden-files: true
+          if-no-files-found: error
+
+  legacy-metadata-measurement:
+    needs: [delivered-cohort]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: c4f4927a6a45790a3326e00eead406a9f17654e2
+          path: Watch
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: preserved-shared-app-cohort-${{ github.event.pull_request.head.sha }}
+          path: incoming/cohort
+      - name: Measure only retained legacy ELF metadata
+        run: |
+          set -euo pipefail
+          python3 -m pip install platformio==6.1.19 pyelftools==0.32
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python3 System/scripts/measure_home_legacy_metadata.py --cohort incoming/cohort/composed --watch Watch --compiler "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" --output measurement
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-legacy-metadata-measurement-${{ github.event.pull_request.head.sha }}
+          path: measurement/
+
+  image-storage-measurement:
+    needs: [qualify]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: complete-shared-home-${{ github.event.pull_request.head.sha }}
+          path: incoming/home
+      - name: Measure lossless storage representation only
+        run: python3 System/scripts/measure_home_image_storage.py --elf incoming/home/target/default.elf --output measurement/image.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-image-storage-measurement-${{ github.event.pull_request.head.sha }}
+          path: measurement/
+
+  publish:
+    needs: [product-assembly]
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-home-qualified-products-${{ github.event.pull_request.head.sha }}
+          path: closure
+      - name: Publish only complete byte-verified three-product closure
+        env:
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 System/scripts/publish_home_shared.py --build closure --publish --expected-source '${{ github.event.pull_request.head.sha }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-publication-${{ github.event.pull_request.head.sha }}
+          path: |
+            closure/publication-plan.json
+            closure/publication.json
+          if-no-files-found: error

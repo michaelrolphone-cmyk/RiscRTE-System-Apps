@@ -11,6 +11,7 @@ from pathlib import Path
 import portable_broadcast_build
 import portable_alarm_build
 import portable_performance_build
+import portable_foreground_idle_build
 
 RUNTIME_COMMIT = '274bc66f193cbe29018d2a85c9400cb0dce8aacc'
 SDK_HEADERS = ('RiscRuntimeV1.h', 'RiscRealtimeV1.h')
@@ -20,34 +21,44 @@ SOURCES = tuple('lib/PortableApps/src/' + name for name in (
 
 
 def options(parser):
-    parser.add_argument('--time-profile', choices=['default', 'x4-native-time'], default='default',
-                        help='Explicit native UTC/selected-IANA paper toolbar and tagged alarm API2')
+    parser.add_argument('--time-profile', choices=['default', 'x4-native-time', 'watch-native-time'], default='default',
+                        help='Explicit readonly native UTC/selected-IANA toolbar; Watch color or X4 paper')
     parser.add_argument('--native-time-runtime-repo', type=Path,
                         help='Local Runtime checkout containing pinned ' + RUNTIME_COMMIT)
     portable_alarm_build.options(parser)
 
 
 def selected(args):
-    return getattr(args, 'time_profile', 'default') == 'x4-native-time'
+    return getattr(args, 'time_profile', 'default') in ('x4-native-time', 'watch-native-time')
 
 
 def validate(args, parser):
     portable_performance_build.validate(args, parser)
     native = selected(args)
+    watch = getattr(args, 'time_profile', 'default') == 'watch-native-time'
     performance = portable_performance_build.selected(args)
     if performance and not native:
         parser.error('--performance-runtime-repo requires --time-profile x4-native-time')
     if args.display_rotation is None:
-        args.display_rotation = 90 if native else 0
+        args.display_rotation = 90 if native and not watch else 0
     if not native:
-        if getattr(args, 'native_time_runtime_repo', None) or getattr(args, 'tagged_alarm_utilities', None):
+        if getattr(args, 'native_time_runtime_repo', None) or (getattr(args, 'tagged_alarm_utilities', None) and not getattr(args, 'foreground_alarm_sleep', False)):
             parser.error('Pinned native SDK options require --time-profile x4-native-time')
         return
-    if (not args.native_time_runtime_repo and not performance) or not args.tagged_alarm_utilities:
+    if watch:
+        if not getattr(args, 'watch_native_ui', False) or args.display_rotation != 0:
+            parser.error('watch-native-time requires --watch-native-ui and --display-rotation 0')
+        if performance or getattr(args, 'paper_transitions', False) or getattr(args, 'resident_shell_client', False) or getattr(args, 'resident_shell_host', False) or getattr(args, 'paper_crossfade', False):
+            parser.error('watch-native-time cannot select paper/performance/resident profiles')
+        if not args.native_time_runtime_repo:
+            parser.error('watch-native-time requires --native-time-runtime-repo')
+        if bool(args.alarm_client) != bool(args.tagged_alarm_utilities):
+            parser.error('Watch native alarms require both --alarm-client and --tagged-alarm-utilities')
+    elif (not args.native_time_runtime_repo and not performance) or not args.tagged_alarm_utilities:
         parser.error('x4-native-time requires --native-time-runtime-repo and --tagged-alarm-utilities')
-    if not args.alarm_client:
+    if not watch and not args.alarm_client:
         parser.error('x4-native-time requires --alarm-client (tagged API2)')
-    if args.display_rotation != 90 or getattr(args, 'nova_ui', False):
+    if not watch and (args.display_rotation != 90 or getattr(args, 'nova_ui', False)):
         parser.error('x4-native-time requires portrait paper (--display-rotation 90, no --nova-ui)')
     if any(getattr(args, flag, False) for flag in ('wall_time', 'denver', 'quick_controls')):
         parser.error('x4-native-time cannot combine with legacy RTC or Watch quick-control policies')
@@ -69,9 +80,13 @@ def configure(args, parser, root, out, app):
         commit = portable_performance_build.RUNTIME_COMMIT
     else:
         try:
-            sdk = {name: subprocess.check_output(['git', '-C', str(args.native_time_runtime_repo),
-                   'show', RUNTIME_COMMIT + ':' + ('LICENSE' if name == 'LICENSE' else 'sdk/app/' + name)],
-                   stderr=subprocess.PIPE) for name in (*SDK_HEADERS, 'LICENSE')}
+            if portable_foreground_idle_build.selected(args):
+                sdk = portable_foreground_idle_build.runtime_app_sdk(args, parser, SDK_HEADERS)
+                commit = portable_foreground_idle_build.RUNTIME_COMMIT
+            else:
+                sdk = {name: subprocess.check_output(['git', '-C', str(args.native_time_runtime_repo),
+                       'show', RUNTIME_COMMIT + ':' + ('LICENSE' if name == 'LICENSE' else 'sdk/app/' + name)],
+                       stderr=subprocess.PIPE) for name in (*SDK_HEADERS, 'LICENSE')}
         except (OSError, subprocess.CalledProcessError) as error:
             parser.error('Cannot read pinned native Runtime SDK: ' + str(error))
         includes = out/'native-time-sdk/include'
@@ -80,7 +95,7 @@ def configure(args, parser, root, out, app):
         for name in SDK_HEADERS:
             (includes/name).write_bytes(sdk[name])
     tagged = portable_alarm_build.stage(args, parser, out, includes)
-    profile_path = 'lib/PortableApps/profiles/x4-native-time-' + app + '.json'
+    profile_path = 'lib/PortableApps/profiles/' + args.time_profile + '-' + app + '.json'
     profile = json.loads((root/profile_path).read_text())
     if performance:
         profile['version'] = portable_performance_build.version(app,args)
@@ -97,8 +112,9 @@ def configure(args, parser, root, out, app):
     shutil.copyfile(root/'LICENSE', notices/'System-Apps-LICENSE.txt')
     receipt = dict(profile, native_time_sdk=runtime, tagged_alarm_sdk=tagged,
                    profile_source=profile_path)
+    if args.time_profile == 'watch-native-time':receipt['alarm_api'] = 2 if tagged else None
     flags = ['-DPORTABLE_NATIVE_TIME_TOOLBAR', '-DPORTABLE_NATIVE_CUSTODY_FENCE',
-             '-DALARM_SERVICE_TAGGED_V2']
+             *(['-DALARM_SERVICE_TAGGED_V2'] if tagged else []), *(['-DALARM_SERVICE_CLOCK_EDIT_V2'] if getattr(args,'clock_edit_authority',False) else [])]
     if performance:
         receipt['performance_trace'] = performance
         flags.extend(portable_performance_build.defines(performance,getattr(args,'stage_logs',False),out))
@@ -111,7 +127,7 @@ def requirements(args, needs):
     needs[:] = [item for item in needs if item['capability'] not in
                 ('rtc.clock', 'runtime.realtime-control', 'alarm.service')]
     needs += [{'capability': name, 'api': api} for name, api in (
-              ('alarm.service', 2), ('runtime.realtime', 1),
+              *([('alarm.service', 2)] if args.alarm_client else []), ('runtime.realtime', 1),
               ('storage.key-value', 1), ('board.battery', 1))]
     needs[:] = list({(item['capability'], item['api']): item for item in needs}.values())
 
@@ -133,7 +149,7 @@ def record(args, record, manifest, receipt):
         bindings.setdefault('net.wifi', [15]); bindings['bluetooth.hci'] = [16]
     grants = [dict(item, instance_id=instance) for item in manifest['requires']
               for instance in bindings.get(item['capability'], [0])]
-    record.update(receipt, time_profile='x4-native-time', clock_policy='native-utc-selected-iana',
+    record.update(receipt, time_profile=args.time_profile, clock_policy='native-utc-selected-iana',
                   time_policy='native-realtime-iana', required_grants=grants,
                   requested_capabilities=manifest['requires'], grant_count=len(grants),
                   grant_bindings=bindings, native_realtime_access='readonly', rtc_access='none',
@@ -141,15 +157,17 @@ def record(args, record, manifest, receipt):
 
 
 def write_admission(root, out, manifest, record):
-    if record.get('time_profile') != 'x4-native-time':
+    if record.get('time_profile') not in ('x4-native-time', 'watch-native-time'):
         return
     performance = record.get('performance_trace')
     includes = out/('performance-sdk/include' if performance else 'native-time-sdk/include')
     paper = record.get('paper_transition')
     if paper:includes=Path(paper['compiled_include_directory'])
+    foreground=record.get('foreground_idle')
+    if foreground:includes=Path(foreground['compiled_include_directory'])
     idle=record.get('idle_policy')
     if idle:includes=Path(idle['compiled_include_directory'])
-    names = set((*SDK_HEADERS, *portable_alarm_build.HEADERS))
+    names = set((*SDK_HEADERS, *(tuple(n for n in record['tagged_alarm_sdk']['sha256'] if n!='LICENSE') if record.get('tagged_alarm_sdk') else ())))
     if performance:
         names.update(performance['sdk_headers'])
         names.update(performance.get('display_metrics', {}).get('sha256', {}))
@@ -159,7 +177,7 @@ def write_admission(root, out, manifest, record):
     if resident:names.update(resident['sdk_sha256'])
     headers = {name: hashlib.sha256((includes/name).read_bytes()).hexdigest()
                for name in sorted(names)}
-    expected = dict(record['native_time_sdk']['sha256'], **record['tagged_alarm_sdk']['sha256'])
+    expected = dict(record['native_time_sdk']['sha256'], **(record['tagged_alarm_sdk']['sha256'] if record.get('tagged_alarm_sdk') else {}))
     if performance:
         expected.update(performance['sdk_headers'])
         expected.update(performance.get('display_metrics', {}).get('sha256', {}))
@@ -172,8 +190,8 @@ def write_admission(root, out, manifest, record):
                'source_revision': record['repository_commit'],
                'system_source_revision': record['repository_commit'],
                'runtime_source_revision': record['native_time_sdk']['commit'],
-               'alarm_source_revision': portable_alarm_build.UTILITIES_COMMIT,
-               'alarm_api': 2, 'time_policy': 'native-realtime-iana',
+               'alarm_source_revision': record['tagged_alarm_sdk']['commit'] if record.get('tagged_alarm_sdk') else None,
+               'alarm_api': 2 if record.get('tagged_alarm_sdk') else None, 'time_policy': 'native-realtime-iana',
                'elf_sha256': record['sha256'], 'elf_bytes': record['size_bytes'],
                'requires': manifest['requires'], 'sdk_sha256': headers,
                'working_tree_dirty': record['working_tree_dirty']}
@@ -190,6 +208,7 @@ def write_admission(root, out, manifest, record):
     portable_broadcast_build.admission_fields(record,receipt)
     if idle:receipt['idle_policy']=idle
     if resident:receipt['resident_shell']=resident
+    if foreground:receipt['foreground_idle']=foreground
     if manifest['id'] in ('ota_update','app_store') and record.get('touch_scrolling'):
         receipt['touch_scrolling']=record['touch_scrolling']
-    (out/'x4-native-app.json').write_text(json.dumps(receipt, indent=2) + '\n')
+    (out/('watch-native-app.json' if record['time_profile']=='watch-native-time' else 'x4-native-app.json')).write_text(json.dumps(receipt, indent=2) + '\n')

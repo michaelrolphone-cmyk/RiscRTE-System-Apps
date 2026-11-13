@@ -6,38 +6,6 @@ import shutil
 import portable_idle_build
 
 RESIDENT_CLIENT_VERSIONS={'springboard': '1.7.30', 'settings': '1.3.28', 'file_browser': '1.5.21', 'wifi_settings': '1.1.27', 'ota_update': '1.2.14', 'app_store': '1.2.14', 'usb_sd_transfer': '0.1.11'}
-QUICK_NATIVE_SOURCES=(
-    'scripts/portable_quick_build.py',
-    'lib/PortableApps/include/PortableQuickActions.h',
-    'lib/PortableApps/include/PortableQuickLayout.h',
-    'lib/PortableApps/include/PortableQuickRender.h',
-    'lib/PortableApps/include/PortableQuickSession.h',
-    'lib/PortableApps/src/adapter.c',
-    'lib/PortableApps/src/foreground_adapter_open.inc',
-    'lib/PortableApps/src/quick_adapter.inc',
-    'lib/PortableApps/src/quick_actions.c',
-    'lib/PortableApps/src/quick_actions_assets.inc',
-    'lib/PortableApps/src/quick_render.c',
-    'lib/PortableApps/src/quick_native_render.inc',
-    'lib/PortableApps/src/quick_native_fonts.inc',
-    'lib/PortableApps/src/quick_session.c',
-    'lib/PortableApps/src/raster_snapshot_replay.inc')
-ALARM_NATIVE_SOURCES=(
-    'scripts/portable_quick_build.py',
-    'lib/PortableApps/include/PortableAlarmClient.h',
-    'lib/PortableApps/include/PortableAlarmLayout.h',
-    'lib/PortableApps/include/PortableDisplayGeometry.h',
-    'lib/PortableApps/include/PortableNativeCanvas.h',
-    'lib/PortableApps/include/PortableNovaUi.h',
-    'lib/PortableApps/src/adapter.c',
-    'lib/PortableApps/src/foreground_adapter_open.inc',
-    'lib/PortableApps/src/alarm.inc',
-    'lib/PortableApps/src/alarm_native.inc',
-    'lib/PortableApps/src/nova.inc',
-    'lib/PortableApps/src/nova_ui.inc',
-    'lib/PortableApps/src/nova_native.inc',
-    'lib/PortableApps/src/raster_snapshot_state.inc',
-    'lib/PortableApps/src/raster_snapshot_replay.inc')
 
 def version(args,app,current):
     if app=='wifi_settings':return '1.1.30'
@@ -54,6 +22,7 @@ def version(args,app,current):
 
 def options(parser):
     portable_idle_build.options(parser)
+    parser.add_argument('--native-copied-quick',action='store_true',help='Explicit temporary app-local native Quick with copied namespace1 preferences; resident ownership remains separate')
     parser.add_argument('--raster-snapshot',action='store_true',help='Opt-in immutable command recording and bounded app-local raster replay; direct/OOM compatibility remains available')
     group=parser.add_mutually_exclusive_group()
     group.add_argument('--resident-shell-host',action='store_true',help='Own shared X4 Quick Actions in the one resident default ELF')
@@ -64,8 +33,6 @@ def options(parser):
     parser.add_argument('--stage-logs',action='store_true',help='Automatic plain timestamped app/input/render diagnostic statements')
     parser.add_argument('--home-app',help='Explicit physical Home root .elf; independent of local Back')
     parser.add_argument('--quick-actions',action='store_true',help='Shared QuickActions, capability-selected Watch or paper sheet; requires --alarm-client and namespace 1 read/write')
-    parser.add_argument('--quick-native',action='store_true',help='Opt-in native RGB Quick Controls geometry and input; requires --quick-actions, adds no grants or app profile selection')
-    parser.add_argument('--alarm-native',action='store_true',help='Opt-in native RGB alarm geometry and input; requires --alarm-client and a profile supplying Nova UI/native canvas, adds no dependencies or grants')
     parser.add_argument('--paper-transitions',action='store_true',help='Opt-in paper Quick Controls pull-down motion; independent of app crossfade')
     parser.add_argument('--quick-usb-transfer',action='store_true',help='Paper sheet launch to the separately granted USB SD transfer app')
     parser.add_argument('--quick-radios',action='store_true',help='Explicit Wi-Fi/Bluetooth quick-control selection; requires --quick-actions and exact radio grants')
@@ -76,26 +43,24 @@ def options(parser):
     parser.add_argument('--display-settled-sdk',type=Path,help='Optional token-bound display settling SDK for the sleep overlay')
 
 def configure(args,parser,root,output,includes=None):
-    alarm_native=getattr(args,'alarm_native',False)
-    if alarm_native:
-        if not getattr(args,'alarm_client',False):parser.error('--alarm-native requires --alarm-client')
-        if getattr(args,'sparse_start',False):parser.error('--alarm-native does not support --sparse-start initialization')
-        # App profiles supply Nova/native canvas explicitly. The adapter checks
-        # their compile defines; no common native_canvas argparse option exists.
-        if not all((root/name).is_file() for name in ALARM_NATIVE_SOURCES):
-            parser.error('--alarm-native requires the native alarm implementation in selected System source')
-        args.alarm_native_receipt={'selected':True,'grants_added':False,'input_coordinates':'native-provider',
-            'hardware_verified':False,
-            'source_sha256':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in ALARM_NATIVE_SOURCES}}
-    native=getattr(args,'quick_native',False)
-    if native:
-        if not args.quick_actions:parser.error('--quick-native requires --quick-actions')
-        if getattr(args,'sparse_start',False):parser.error('--quick-native does not support --sparse-start initialization')
-        if not all((root/name).is_file() for name in QUICK_NATIVE_SOURCES):
-            parser.error('--quick-native requires the native Quick implementation in selected System source')
-        args.quick_native_receipt={'selected':True,'grants_added':False,'input_coordinates':'native-provider',
-            'hardware_verified':False,
-            'source_sha256':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in QUICK_NATIVE_SOURCES}}
+    native_quick=getattr(args,'native_copied_quick',False)
+    if native_quick:
+        if not args.quick_actions or not args.alarm_client or not getattr(args,'watch_native_ui',False) or getattr(args,'time_profile',None)!='watch-native-time':
+            parser.error('--native-copied-quick requires Quick, alarms and Watch native-time geometry')
+        if args.quick_radios or getattr(args,'resident_shell_host',False) or getattr(args,'resident_shell_client',False):
+            parser.error('Native copied local Quick does not select legacy radio or resident ownership')
+        sdk=getattr(args,'native_time_runtime_repo',None)
+        if not sdk or not includes:parser.error('Native copied Quick requires the selected native Runtime SDK')
+        hashes={}
+        for header in ('RiscKeyValueAtomicV1.h','RiscPreferenceStoreV1.h'):
+            source=sdk/'sdk/app'/header
+            if not source.is_file():parser.error('Missing copied preference SDK: '+header)
+            shutil.copyfile(source,includes/header);hashes[header]=hashlib.sha256(source.read_bytes()).hexdigest()
+        args.native_copied_quick_receipt={'selected':True,'ownership':'temporary-app-local','resident_architecture_complete':False,
+            'preference_capability':'storage.preferences','preference_api':1,'preference_instance':1,
+            'completed_pending_frame_before_submit':True,'sliced_frame_identity':True,
+            'wifi_action':'setup-launch','wifi_destination':'wifi_settings.elf','radio_control_grants':False,
+            'sdk_sha256':hashes,'physical_verified':False}
     host=getattr(args,'resident_shell_host',False)
     client=getattr(args,'resident_shell_client',False)
     tone=getattr(args,'frontlight_tone',False)
@@ -202,11 +167,13 @@ def configure(args,parser,root,output,includes=None):
     if args.home_app:
         if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*\.elf',args.home_app):parser.error('Invalid Home filename')
         flags+=['-DPORTABLE_HOME_APP="'+args.home_app+'"']
-    if alarm_native:flags.append('-DPORTABLE_ALARM_NATIVE')
     if not args.quick_actions:return flags,[]
     if getattr(args,'quick_usb_transfer',False):flags+=['-DPORTABLE_QUICK_USB_TRANSFER']
+    if native_quick:
+        flags += ['-DPORTABLE_QUICK_NATIVE_GEOMETRY','-DPORTABLE_QUICK_SAFE_CONTENT','-DPORTABLE_QUICK_CAPABILITY_SAFE',
+                  '-DPORTABLE_QUICK_ATOMIC_PREFERENCES','-DPORTABLE_PREFERENCE_STORE','-DPORTABLE_QUICK_PENDING_FRAME',
+                  '-DPORTABLE_QUICK_SLICED_NATIVE','-DPORTABLE_FRAME_RECEIPTS']
     flags+=['-DPORTABLE_QUICK_ACTIONS'];names=['quick_actions.c','quick_render.c','quick_session.c']
-    if native:flags.append('-DPORTABLE_QUICK_NATIVE')
     if args.quick_radios:flags+=['-DPORTABLE_QUICK_RADIOS'];names+=['quick_radios.c']
     target=output/'licenses/quick-controls';target.mkdir(parents=True,exist_ok=True)
     for name in ['FAClassic-LICENSE.txt','Orbitron-OFL.txt','Rajdhani-OFL.txt','SOURCES.json']:
@@ -233,6 +200,10 @@ def requirements(args,needs):
         for name,version in [('storage.key-value',1),('rtc.clock',2),('board.battery',1)]:
             item={'capability':name,'api':version}
             if item not in needs:needs.append(item)
+    if getattr(args,'native_copied_quick',False):
+        needs[:]=[item for item in needs if item['capability']!='rtc.clock']
+        for item in [{'capability':'storage.preferences','api':1},{'capability':'runtime.realtime','api':1}]:
+            if item not in needs:needs.append(item)
     if args.quick_radios:
         needs.extend({'capability':name,'api':1} for name in ['net.wifi','bluetooth.hci'])
     if getattr(args,'crash_report_sd',False):
@@ -247,10 +218,14 @@ def exports(args, names):
 
 
 def record(args, value):
-    alarm_native=getattr(args,'alarm_native_receipt',None)
-    if alarm_native:value['alarm_native']=alarm_native
-    native=getattr(args,'quick_native_receipt',None)
-    if native:value['quick_native']=native
+    native=getattr(args,'native_copied_quick_receipt',None)
+    if native:
+        value['native_copied_quick']=native
+        value.setdefault('grant_bindings',{})['storage.preferences']=[1]
+        if 'required_grants' in value:
+            row={'capability':'storage.preferences','api':1,'instance_id':1}
+            value['required_grants']=[g for g in value['required_grants'] if g['capability']!='storage.preferences']+[row]
+            value['grant_count']=len(value['required_grants'])
     raster=getattr(args,'raster_snapshot_receipt',None)
     if raster:value['raster_snapshot']=raster
     receipt=getattr(args,'resident_shell_receipt',None)

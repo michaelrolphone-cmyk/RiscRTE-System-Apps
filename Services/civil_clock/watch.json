@@ -3,7 +3,7 @@
   "type": "driver",
   "driver_abi": 2,
   "id": "civil-clock-watch",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "file_name": "driver.elf",
   "provides": [
     {

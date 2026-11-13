@@ -155,14 +155,15 @@ static int interpretation(const portable_realtime_recovery_policy *p,
  if(r->interpretation.mode_changed && !p->allow_basis_change)return PORTABLE_REALTIME_BASIS_CHOICE;
  return PORTABLE_REALTIME_OK;
 }
-static int read_external_rtc(portable_realtime_client *c,
- const portable_realtime_recovery_policy *p,portable_realtime_recovery_result *out) {
+static int read_external_rtc_with(portable_realtime_client *c,
+ const portable_realtime_recovery_policy *p,portable_realtime_recovery_result *out,
+ portable_realtime_rtc_interpreter interpret,void *context,uint64_t instance) {
  int rc;
  portable_timezone_civil check;
- if(!p || !portable_rtc_basis_valid(&p->basis) || p->fold_choice< -1 || p->fold_choice>1 ||
-    portable_timezone_utc_to_local(&p->rule,PORTABLE_TIMEZONE_VALID_EPOCH,&check,0)!=PORTABLE_TIMEZONE_OK)
+ if(!interpret&&(!p || !portable_rtc_basis_valid(&p->basis) || p->fold_choice< -1 || p->fold_choice>1 ||
+    portable_timezone_utc_to_local(&p->rule,PORTABLE_TIMEZONE_VALID_EPOCH,&check,0)!=PORTABLE_TIMEZONE_OK))
   return out->reason=PORTABLE_REALTIME_INVALID;
- rc=acquire(c,TWATCH_RTC_CAPABILITY,TWATCH_RTC_API_V1,p->rtc_instance,&c->rtc_grant);
+ rc=acquire(c,TWATCH_RTC_CAPABILITY,TWATCH_RTC_API_V1,interpret?instance:p->rtc_instance,&c->rtc_grant);
  if(rc) {
   out->reason=rc;
   /* The bool broker cannot distinguish denied RTC from failed activation /
@@ -187,7 +188,19 @@ static int read_external_rtc(portable_realtime_client *c,
     if(!rc)rc=halt(c,PORTABLE_REALTIME_UNCERTAIN);
     out->cleanup=rc;return rc;
    }
-   if(!rc)rc=interpretation(p,&calendar,out);
+   if(!rc&&interpret){
+    portable_timezone_civil value={calendar.year,calendar.month,calendar.day,calendar.hour,calendar.minute,calendar.second,calendar.weekday};
+    int64_t epoch=0;
+    rc=interpret(context,&value,&epoch);
+    if(rc>0||rc<PORTABLE_REALTIME_VERIFY)rc=PORTABLE_REALTIME_UNCERTAIN;
+    int guard=safe(c);if(guard)rc=guard;
+    if(rc==PORTABLE_REALTIME_RETAINED||rc==PORTABLE_REALTIME_CONTEXT||rc==PORTABLE_REALTIME_UNCERTAIN)
+     rc=halt(c,rc);
+    if(!rc){
+     if(epoch<0||epoch>PORTABLE_REALTIME_MAX_EPOCH)rc=PORTABLE_REALTIME_RANGE;
+     else{out->interpreted=true;out->interpretation.epoch=epoch;out->timezone_status=PORTABLE_TIMEZONE_OK;}
+    }
+   }else if(!rc)rc=interpretation(p,&calendar,out);
   }
  }
  out->reason=rc;
@@ -196,6 +209,9 @@ static int read_external_rtc(portable_realtime_client *c,
  if(cleanup)return cleanup;
  if(rc)return rc;
  return PORTABLE_REALTIME_OK;
+}
+static int read_external_rtc(portable_realtime_client*c,const portable_realtime_recovery_policy*p,portable_realtime_recovery_result*out){
+ return read_external_rtc_with(c,p,out,NULL,NULL,0);
 }
 int portable_realtime_recover_rtc(portable_realtime_client *c,
  const portable_realtime_recovery_policy *p,portable_realtime_recovery_result *out) {
@@ -215,9 +231,9 @@ int portable_realtime_recover_rtc(portable_realtime_client *c,
  else if(rc==PORTABLE_REALTIME_UNSET)rc=PORTABLE_REALTIME_IO;
  return out->reason=rc;
 }
-int portable_realtime_reconcile_rtc(portable_realtime_client *c,
+static int reconcile_with(portable_realtime_client *c,
  const portable_realtime_recovery_policy *p,portable_realtime_reconcile_state *state,
- portable_realtime_recovery_result *out) {
+ portable_realtime_recovery_result *out,portable_realtime_rtc_interpreter interpret,void*context,uint64_t instance) {
  if(!state || !out)return PORTABLE_REALTIME_INVALID;
  *out=(portable_realtime_recovery_result){0};
  int rc=portable_realtime_read(c,&out->snapshot);out->reason=rc;
@@ -231,8 +247,16 @@ int portable_realtime_reconcile_rtc(portable_realtime_client *c,
  /* Rate-limit attempts, including safely closed bad-calendar/slow samples.
   * The counter schedules I/O only; it never increments displayed wall time. */
  state->checked=true;state->checked_at_us=now;
- if(rc==PORTABLE_REALTIME_UNSET)return portable_realtime_recover_rtc(c,p,out);
- rc=read_external_rtc(c,p,out);if(rc)return rc;
+ if(rc==PORTABLE_REALTIME_UNSET&&!interpret)return portable_realtime_recover_rtc(c,p,out);
+ bool unset=rc==PORTABLE_REALTIME_UNSET;
+ rc=read_external_rtc_with(c,p,out,interpret,context,instance);if(rc)return rc;
+ if(unset){
+  portable_realtime_seed_result seeded;
+  rc=portable_realtime_seed_confirmed(c,out->interpretation.epoch,250000u,&seeded);
+  out->seeded=seeded.seeded;
+  if(!rc){out->snapshot=seeded.snapshot;return out->reason=PORTABLE_REALTIME_RECOVERED;}
+  return out->reason=rc;
+ }
  risc_realtime_snapshot_v1 after;
  rc=portable_realtime_read(c,&after);if(rc)return out->reason=rc;
  if(after.monotonic_after_us<before || after.monotonic_after_us-before>250000u)
@@ -248,6 +272,16 @@ int portable_realtime_reconcile_rtc(portable_realtime_client *c,
  out->seeded=seeded.seeded;
  if(!rc){out->snapshot=seeded.snapshot;rc=PORTABLE_REALTIME_RECOVERED;}
  return out->reason=rc;
+}
+int portable_realtime_reconcile_rtc(portable_realtime_client*c,const portable_realtime_recovery_policy*p,
+ portable_realtime_reconcile_state*state,portable_realtime_recovery_result*out){
+ return reconcile_with(c,p,state,out,NULL,NULL,0);
+}
+int portable_realtime_reconcile_policy(portable_realtime_client*c,uint64_t instance,
+ portable_realtime_rtc_interpreter interpret,void*context,portable_realtime_reconcile_state*state,
+ portable_realtime_recovery_result*out){
+ if(!interpret)return PORTABLE_REALTIME_INVALID;
+ return reconcile_with(c,NULL,state,out,interpret,context,instance);
 }
 int portable_realtime_close(portable_realtime_client *c) {
  if(!c)return PORTABLE_REALTIME_INVALID;
