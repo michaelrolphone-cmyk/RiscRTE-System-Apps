@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <WebServer.h>
+#include <HTTPUpdateServer.h>
 #include <Preferences.h>
 #include <ArduinoJson.h>
 #include <esp_wifi.h>
@@ -10,10 +11,12 @@
 #error FTM initiator and responder support are required
 #endif
 
-static const char *VERSION="1.0.1";
+static const char *VERSION="1.0.2";
 static const uint16_t PORT=7446;
 static const uint32_t MAX_AGE=30000;
 WebServer web(80);
+HTTPUpdateServer updater;
+String otaPassword;
 WiFiUDP udp;
 Preferences prefs;
 String nodeId, apName, wifiSSID, wifiPass, targetHost;
@@ -70,6 +73,7 @@ void statusDoc(JsonDocument &d) {
  d["wifi_status_code"]=int(WiFi.status());d["disconnect_reason"]=disconnectReason;d["low_tx_power"]=lowTx;d["last_ftm_code"]=ftmCode;
  d["connected"]=WiFi.status()==WL_CONNECTED; d["ftm_responder"]=true;
  d["ftm_state"]=retiring?"retirement_stalled":radioBusy?"measuring":scanning?"scanning":"idle";
+ d["ota_available"]=otaPassword.length()>=16;
  d["offset_m"]=offsetM; d["height_known"]=heightKnown;
  if(heightKnown)d["height_m"]=heightM;
  auto a=d.createNestedArray("ranges");
@@ -103,6 +107,7 @@ bool applyConfig(JsonDocument &d,String &error) {
  if(d.containsKey("offset_m")&&(!isfinite(d["offset_m"].as<float>())||fabs(d["offset_m"].as<float>())>100)){error="invalid offset";return false;}
  if(d.containsKey("height_m")&&(!isfinite(d["height_m"].as<float>())||fabs(d["height_m"].as<float>())>100)){error="invalid height";return false;}
  prefs.begin("tof-anchor",false);
+ if(d.containsKey("ota_password")){String key=d["ota_password"].as<String>();if(key.length()<16||key.length()>64){prefs.end();error="OTA key length";return false;}otaPassword=key;prefs.putString("ota_key",key);updater.setup(&web,"/update","admin",otaPassword.c_str());}
  if(d.containsKey("low_tx_power")){lowTx=d["low_tx_power"];prefs.putBool("low_tx",lowTx);WiFi.setTxPower(lowTx?WIFI_POWER_8_5dBm:WIFI_POWER_19_5dBm);}
  if(d.containsKey("ssid")){wifiSSID=d["ssid"].as<String>();prefs.putString("ssid",wifiSSID);provisionPending=true;}
  if(d.containsKey("password")){wifiPass=d["password"].as<String>();prefs.putString("password",wifiPass);provisionPending=true;}
@@ -117,6 +122,7 @@ void setup() {
  bootId=esp_random();
  resultQueue=xQueueCreate(4,sizeof(Result));
  prefs.begin("tof-anchor",true);
+ otaPassword=prefs.getString("ota_key","");
  wifiSSID=prefs.getString("ssid","");wifiPass=prefs.getString("password","");
  targetHost=prefs.getString("target","");offsetM=prefs.getFloat("offset",0);
  lowTx=prefs.getBool("low_tx",false);
@@ -140,6 +146,7 @@ void setup() {
   if(deserializeJson(d,web.arg("plain"))||!applyConfig(d,err)){web.send(400,"application/json","{\"error\":\"invalid configuration\"}");return;}
   web.send(200,"application/json","{\"saved\":true}");
  });
+ if(otaPassword.length()>=16)updater.setup(&web,"/update","admin",otaPassword.c_str());
  web.begin();
  Serial.print("{\"ready\":true,\"firmware\":\"");Serial.print(VERSION);Serial.println("\"}");
 }

@@ -81,3 +81,21 @@ Physical qualification must separately check flash verification, normal boot,
 LAN association, responder discovery, rover FTM success, peer ranges, and
 three-anchor geometry after deployment. Compilation alone establishes none
 of those hardware results.
+
+## Authenticated wireless updates (1.0.2)
+
+After one USB provisioning, an optional per-board ota_password (16–64 characters)
+enables /update with HTTP Basic authentication as admin. Use unique random
+keys saved in a private local file, never committed or embedded in the image.
+The configuration endpoint remains restricted to USB or a direct anchor-AP
+connection. Anonymous update access is rejected. Verify a new boot ID,
+firmware version and retained configuration after upload; never blindly retry
+an uncertain update.
+
+tools/provision_anchor.py selects an exact USB MAC, uses a private Wi-Fi
+profile and per-MAC key file, flashes the project, and verifies network,
+OTA availability and configured low TX power before reporting ready.
+The private profile/key files live outside this repository with mode 0600.
+A4:30 may remain on 1.0.0 as an existing responder; wireless updating is not
+available on that version. RF coverage and peer ranging must be qualified
+at the actual installed positions. An update alone is not proof of coverage.
