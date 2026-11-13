@@ -13,3 +13,7 @@ an empty history, which consumers must treat as insufficient evidence.
 
 Camera exposure controls, sonar histories, pin mapping, radio and light control
 remain from the current camera-exposure base.
+
+## Sensor continuity without an image
+
+Authenticated GET /api/sensors/capture returns the same causal 50 Hz IMU history and sonar/radio snapshot at a device sensor tick, even if camera initialization fails. It uses schema biome.sensor_tick.v1, image_available=false, and sensor_snapshot_tick_no_camera_frame semantics. Camera initialization result is reported separately. It does not obtain a JPEG or issue drive outputs. The ordinary /api/capture image contract is unchanged.

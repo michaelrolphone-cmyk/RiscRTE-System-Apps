@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.14-imu-event-history",
+  "variant": "1.0-radio.15-independent-sensor-ticks",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -39,7 +39,7 @@
     },
     {
       "path": "integration.patch",
-      "sha256": "7a517928923d7338b8ea45244d62c99ed34c72cb58d0e17313894f16e67babec"
+      "sha256": "f71ec531e86bc039db17c0b519371828d76d50b29dea467137e7ed36432ad5ee"
     },
     {
       "path": "overlay/html/telemetry.html",
