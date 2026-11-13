@@ -48,6 +48,13 @@ class RoverRequest:
         self.pending = address.lower()
         self.started = now
 
+def choose_target(nodes, last_requested):
+    # Rotating an index over a changing idle list can repeatedly skip a node.
+    # Request age is stable across eligibility changes and failed measurements.
+    return min(nodes, key=lambda node: (
+        last_requested.get(node["bssid"].lower(), float("-inf")),
+        node["bssid"].lower()))
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--camera",required=True)
@@ -62,7 +69,7 @@ def main():
     graph=RangeGraph()
     last_rover=last_write=last_request=0.
     channel_cache={}
-    cursor=0;error=None;request_state=RoverRequest();retired=False
+    last_requested={};error=None;request_state=RoverRequest();retired=False
     while True:
         now=time.monotonic()
         try:
@@ -95,10 +102,10 @@ def main():
                 if not ftm.get("busy") and not ftm.get("retiring") and request_state.pending is None and now-last_request>=2:
                     nodes=[v["packet"] for k,v in sorted(graph.nodes.items()) if now-v["received"]<30 and v["packet"].get("ftm_state")=="idle"]
                     if nodes:
-                        target=nodes[cursor%len(nodes)];cursor+=1
+                        target=choose_target(nodes,last_requested)
                         address=target["bssid"].lower()
                         http_json(args.camera,"/api/telemetry/ftm",{"address":address,"channel":channel_cache.get(address,target["channel"])})
-                        request_state.submitted(address,now);last_request=now;retired=False
+                        request_state.submitted(address,now);last_requested[address]=now;last_request=now;retired=False
                 if not retired:error=None
             except (OSError,ValueError,urllib.error.HTTPError) as e:
                 error=type(e).__name__+": "+str(e)
@@ -107,7 +114,7 @@ def main():
         if now-last_write>=1:
             last_write=now
             out=graph.snapshot(now,args.rover_height)
-            out.update(updated_at=time.time(),camera=args.camera,camera_error=error,pending_target=request_state.pending,camera_boot_id=request_state.boot_id)
+            out.update(updated_at=time.time(),camera=args.camera,camera_error=error,pending_target=request_state.pending,camera_boot_id=request_state.boot_id,request_age_s={k:now-v for k,v in last_requested.items()})
             temp=state/"latest.json.tmp";temp.write_text(json.dumps(out,allow_nan=False))
             os.replace(temp,state/"latest.json")
 if __name__=="__main__":main()

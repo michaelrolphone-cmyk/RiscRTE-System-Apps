@@ -1,5 +1,5 @@
 import unittest
-from tof_coordinator import RoverRequest
+from tof_coordinator import RoverRequest, choose_target
 
 class RequestReconciliationTests(unittest.TestCase):
     def test_completed_target_releases_pending(self):
@@ -29,5 +29,15 @@ class RequestReconciliationTests(unittest.TestCase):
         r=RoverRequest();r.observe({"uptime_ms":1000});r.submitted("a",1)
         self.assertTrue(r.observe({"uptime_ms":20}))
         self.assertIsNone(r.pending)
+
+class RequestFairnessTests(unittest.TestCase):
+    def test_changing_idle_list_does_not_starve_returning_anchor(self):
+        a,b,c=[{"bssid":x} for x in ["a","b","c"]]
+        last={};chosen=[]
+        for now,nodes in enumerate([[a,b],[a,b],[a,b,c],[a,c],[a,b,c]],1):
+            target=choose_target(nodes,last)["bssid"]
+            last[target]=now;chosen.append(target)
+        self.assertEqual(chosen[:3],["a","b","c"])
+        self.assertEqual(set(chosen),{"a","b","c"})
 
 if __name__=="__main__":unittest.main()
