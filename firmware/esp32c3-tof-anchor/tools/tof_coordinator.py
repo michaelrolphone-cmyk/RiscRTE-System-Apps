@@ -18,6 +18,36 @@ def http_json(base,path,payload=None):
     with urllib.request.urlopen(request,timeout=3) as response:
         return json.load(response)
 
+class RoverRequest:
+    """Reconcile local request custody with the camera's authoritative boot."""
+    def __init__(self):
+        self.boot_id = None
+        self.uptime_ms = None
+        self.pending = None
+        self.started = 0.
+
+    def observe(self, snapshot):
+        ftm = snapshot.get("ftm", {})
+        boot = snapshot.get("boot_id")
+        uptime = snapshot.get("uptime_ms")
+        rebooted = ((boot is not None and self.boot_id is not None and boot != self.boot_id)
+                    or (isinstance(uptime, (int, float)) and isinstance(self.uptime_ms, (int, float))
+                        and uptime < self.uptime_ms))
+        if boot is not None:
+            self.boot_id = boot
+        if isinstance(uptime, (int, float)):
+            self.uptime_ms = uptime
+        idle = not ftm.get("busy") and not ftm.get("retiring")
+        reset = idle and ftm.get("status") == "never_requested" and not ftm.get("target")
+        completed = idle and self.pending and str(ftm.get("target") or "").lower() == self.pending
+        if rebooted or reset or completed:
+            self.pending = None
+        return rebooted
+
+    def submitted(self, address, now):
+        self.pending = address.lower()
+        self.started = now
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--camera",required=True)
@@ -32,7 +62,7 @@ def main():
     graph=RangeGraph()
     last_rover=last_write=last_request=0.
     channel_cache={}
-    cursor=0;error=None;pending=None;pending_started=0.;retired=False
+    cursor=0;error=None;request_state=RoverRequest();retired=False
     while True:
         now=time.monotonic()
         try:
@@ -46,6 +76,9 @@ def main():
             last_rover=now
             try:
                 snapshot=http_json(args.camera,"/api/telemetry")
+                if request_state.observe(snapshot):
+                    # Do not combine measurements from different camera boots.
+                    graph.rover.clear()
                 ftm=snapshot.get("ftm",{})
                 for observation in snapshot.get("wifi",[]):
                     address=str(observation.get("address") or observation.get("bssid") or observation.get("mac") or "").lower()
@@ -55,19 +88,17 @@ def main():
                 if ftm.get("status")=="success" and isinstance(ftm.get("channel"),int):
                     channel_cache[str(ftm.get("target","")).lower()]=ftm["channel"]
                 graph.ingest_rover(ftm,now)
-                if pending and not ftm.get("busy") and str(ftm.get("target","")).lower()==pending:
-                    pending=None
                 # Existing camera requests from other consumers are never cancelled.
                 # A stuck FTM driver is reported, not reset under another controller.
-                if pending and now-pending_started>15:
+                if request_state.pending and now-request_state.started>15:
                     error="rover_ftm_pending";retired=True
-                if not ftm.get("busy") and not ftm.get("retiring") and pending is None and now-last_request>=2:
+                if not ftm.get("busy") and not ftm.get("retiring") and request_state.pending is None and now-last_request>=2:
                     nodes=[v["packet"] for k,v in sorted(graph.nodes.items()) if now-v["received"]<30 and v["packet"].get("ftm_state")=="idle"]
                     if nodes:
                         target=nodes[cursor%len(nodes)];cursor+=1
                         address=target["bssid"].lower()
                         http_json(args.camera,"/api/telemetry/ftm",{"address":address,"channel":channel_cache.get(address,target["channel"])})
-                        pending=address;pending_started=now;last_request=now;retired=False
+                        request_state.submitted(address,now);last_request=now;retired=False
                 if not retired:error=None
             except (OSError,ValueError,urllib.error.HTTPError) as e:
                 error=type(e).__name__+": "+str(e)
@@ -76,7 +107,7 @@ def main():
         if now-last_write>=1:
             last_write=now
             out=graph.snapshot(now,args.rover_height)
-            out.update(updated_at=time.time(),camera=args.camera,camera_error=error,pending_target=pending)
+            out.update(updated_at=time.time(),camera=args.camera,camera_error=error,pending_target=request_state.pending,camera_boot_id=request_state.boot_id)
             temp=state/"latest.json.tmp";temp.write_text(json.dumps(out,allow_nan=False))
             os.replace(temp,state/"latest.json")
 if __name__=="__main__":main()
