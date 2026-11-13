@@ -245,7 +245,7 @@ static void recoverable_faults(void) {
   reset();event(RISC_TOUCH_EVENT_DOWN,1,100,200,1);assert(step() && sample.began);
   event(RISC_TOUCH_EVENT_MOVE,1,120,220,2);provider.poll_ok=false;
   assert(!portable_touch_collect(&touch));assert(step() && sample.cancelled && !touch.down && !sample.tap_eligible);
-  /* Continued failed collection must not starve drain/snapshot recovery. */
+  /* Continued failed collection must drain; authoritative snapshot waits for a successful service. */
   assert(!portable_touch_collect(&touch));(void)step();assert(!provider.count && !touch.neutral);
   provider.poll_ok=true;assert(portable_touch_collect(&touch));drain();event(RISC_TOUCH_EVENT_UP,1,120,220,3);assert(step() && !sample.released);assert(!step());fresh_tap(2,4);
   reset();event(RISC_TOUCH_EVENT_DOWN,1,100,200,1);assert(step());
@@ -264,6 +264,23 @@ static void recoverable_faults(void) {
   assert(step() && sample.cancelled);assert(!step());event(RISC_TOUCH_EVENT_UP,1,100,200,2);assert(step() && !tap());assert(!step());fresh_tap(2,3);
   reset();provider.state.width=0;assert(step() && sample.cancelled);assert(!step() && sample.cancelled);
   provider.state.width=480;assert(!step() && touch.neutral);fresh_tap(2,1);
+}
+static void failed_poll_snapshot_deferral(void) {
+  for(unsigned gap=0;gap<2;++gap)for(unsigned boundary=0;boundary<2;++boundary) {
+    reset();event(RISC_TOUCH_EVENT_DOWN,1,100,200,1);assert(step()&&sample.began);
+    event(RISC_TOUCH_EVENT_MOVE,1,110,200,2);provider.poll_ok=false;provider.snapshot_ok=false;provider.gap=gap;
+    assert(!portable_touch_collect(&touch));unsigned snapshots=provider.snapshots;
+    if(boundary)portable_touch_reset(&touch);
+    drain();assert(!touch.terminal&&!retains&&touch.resync&&!touch.neutral&&provider.snapshots==snapshots);
+    for(unsigned n=0;n<12;++n){assert(!portable_touch_collect(&touch));assert(!step());assert(provider.snapshots==snapshots&&!retains);}
+    /* A successful report can still say held: never synthesize a tap. */
+    provider.poll_ok=provider.snapshot_ok=true;assert(portable_touch_collect(&touch));drain();assert(!touch.neutral&&!touch.terminal);
+    event(RISC_TOUCH_EVENT_UP,1,110,200,3);assert(step()&&!tap());assert(!step());fresh_tap(2,4);
+  }
+  /* Provider terminal faults are not demoted to deferred recovery. */
+  reset();provider.poll_ok=false;assert(!portable_touch_collect(&touch));provider.next_error=-2;assert(!step()&&touch.terminal);
+  reset();provider.poll_ok=false;provider.snapshot_ok=false;assert(!portable_touch_collect(&touch));drain();
+  provider.poll_ok=true;assert(portable_touch_collect(&touch));assert(!step()&&touch.terminal);
 }
 static void terminal_faults(void) {
   for(unsigned which=0;which<5;++which) {
@@ -286,7 +303,7 @@ static void terminal_faults(void) {
   }
 }
 int main(void) {
-  bursts();ordered_recontacts();malformed_recontact();moves_and_identity();multiple_contacts();same_report_motion_cancel();home_and_inherited();boundaries();page_and_drag();recoverable_faults();terminal_faults();
+  bursts();ordered_recontacts();malformed_recontact();moves_and_identity();multiple_contacts();same_report_motion_cancel();home_and_inherited();boundaries();page_and_drag();recoverable_faults();failed_poll_snapshot_deferral();terminal_faults();
   reset();assert(portable_touch_close(&touch,&runtime));assert(provider.unsubscribes==1 && provider.releases==1);
   puts("Ordered touch: bursts, equal-timestamp recontacts, full queue, compatibility, identity/time, excursion, multi-contact, Home, inherited holds, page/reset boundaries, snapshot race, malformed recontact recovery, and terminal snapshot freeze PASS");return 0;
 }
