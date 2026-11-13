@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "task": "1e273e87-0e24-4fd5-9770-78e97806858c",
+  "status": "integration-in-progress",
+  "sources": {
+    "retained_power": "f06e95f9067b2da42a6a36876df64bcdcc30ea10",
+    "presentation_time": "c2389d8efb8fa8ef429e14d5045b167537c077e3",
+    "radio": "e8ddef6af78c2e28a232a4b2aae65385b3d42c73"
+  },
+  "purpose": "One authoritative source tree for shared Home controllers and provider support; original source parents retained, no product completion claimed."
+}

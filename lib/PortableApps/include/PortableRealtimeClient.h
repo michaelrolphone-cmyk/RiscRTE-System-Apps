@@ -100,6 +100,15 @@ typedef struct { uint64_t checked_at_us; bool checked; } portable_realtime_recon
 int portable_realtime_reconcile_rtc(portable_realtime_client *,
  const portable_realtime_recovery_policy *,portable_realtime_reconcile_state *,
  portable_realtime_recovery_result *);
+/* Optional provider-policy interpretation. The client still owns the exact
+ * checked RTC grant, cadence, release-before-seed and native readback. The
+ * callback is pure conversion, returns PortableRealtime status, and must not
+ * write clocks/preferences or retain the borrowed calendar pointer. */
+typedef int (*portable_realtime_rtc_interpreter)(void *,const portable_timezone_civil *,int64_t *);
+int portable_realtime_reconcile_policy(portable_realtime_client *,uint64_t rtc_instance,
+ portable_realtime_rtc_interpreter,void *,portable_realtime_reconcile_state *,
+ portable_realtime_recovery_result *);
+
 /* Idempotent clean close. A failed release is never retried. */
 int portable_realtime_close(portable_realtime_client *);
 /* Pure sticky stop: call before holds/retention; does not attempt cleanup.

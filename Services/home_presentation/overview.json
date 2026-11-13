@@ -1,0 +1,15 @@
+{
+  "architecture": "xtensa-esp32s3",
+  "type": "driver",
+  "driver_abi": 2,
+  "id": "home-presentation-overview",
+  "version": "0.1.0",
+  "file_name": "driver.elf",
+  "provides": [
+    {
+      "capability": "ui.home-presentation",
+      "api": 1
+    }
+  ],
+  "requires": []
+}
