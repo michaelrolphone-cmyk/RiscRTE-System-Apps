@@ -96,7 +96,7 @@ def build(args,parser=None):
   return elf
  for firmware,kind in ([] if getattr(args,'apps_only',False) else [(1,'firmware'),(0,'apps')]):
   manifest=json.loads((ROOT/'Services/update'/kind/'manifest.json').read_text())
-  if policy.get('feed_configured'):manifest['version']='0.1.6'
+  if policy.get('feed_configured') and manifest['version']=='0.1.4':manifest['version']='0.1.6'
   compile_artifact('software-update-'+kind,cxx,[ROOT/'Services/update/service.cpp'],['-std=c++17','-fno-exceptions','-fno-rtti','-DUPDATE_FIRMWARE='+str(firmware),*service_flags],{'t5_driver_get'},manifest)
  if args.services_only:return
  catalog=out/'catalog.c';catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')

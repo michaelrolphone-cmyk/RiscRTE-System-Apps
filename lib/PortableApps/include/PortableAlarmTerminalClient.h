@@ -8,14 +8,21 @@
 #include "AlarmServiceV1.h"
 #endif
 #include "RiscRuntimeV1.h"
+#ifndef PORTABLE_ALARM_CAPABILITY
+#define PORTABLE_ALARM_CAPABILITY ALARM_SERVICE_CAPABILITY
+#endif
 #include <string.h>
-#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#if defined(PORTABLE_NATIVE_CUSTODY_FENCE) || defined(PORTABLE_ALARM_ACQUISITION_CUSTODY)
 #include "PortableNativeCustody.h"
 #endif
 typedef struct {
     risc_runtime_capability_v1 grant;
     const alarm_service_v1 *api;
     alarm_status_v1 status;
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+    bool malformed; /* Successful acquisition rejected before callback dispatch. */
+    const risc_runtime_api_v1 *native_owner;
+#endif
 #ifdef PORTABLE_ALARM_BUSY_DEFER
     /* Current step result only, never an inferred READY state. */
     bool deferred;
@@ -24,17 +31,36 @@ typedef struct {
     bool retained;
 #endif
 } portable_alarm_client;
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+static inline bool portable_alarm_context(portable_alarm_client *c) {
+    if(c->retained || portable_adapter_retained())return false;
+    if(c->native_owner && risc_runtime_get_api(1)==c->native_owner)return true;
+    c->retained=true;
+    if(!portable_adapter_retained())portable_adapter_retain_silent();
+    return false;
+}
+#endif
 static inline bool portable_alarm_open(portable_alarm_client *c,const risc_runtime_api_v1 *r) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
     if(portable_adapter_retained())return false;
 #endif
     memset(c,0,sizeof(*c));c->grant.struct_size=sizeof(c->grant);
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+    c->native_owner=risc_runtime_get_api(1);
+    if(!portable_alarm_context(c))return false;
+#endif
 #ifdef ALARM_SERVICE_TAGGED_V2
-    bool acquired=r->acquire(ALARM_SERVICE_CAPABILITY,ALARM_SERVICE_API_V2,0,&c->grant);
+    bool acquired=r->acquire(PORTABLE_ALARM_CAPABILITY,ALARM_SERVICE_API_V2,0,&c->grant);
 #else
-    bool acquired=r->acquire(ALARM_SERVICE_CAPABILITY,1,0,&c->grant);
+    bool acquired=r->acquire(PORTABLE_ALARM_CAPABILITY,1,0,&c->grant);
+#endif
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+    if(!portable_alarm_context(c))return false;
 #endif
     if(!acquired) {
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+        if(c->grant.api||c->grant.slot||c->grant.generation||c->grant.struct_size!=sizeof(c->grant)){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
+#endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
         if(!risc_runtime_get_api(1)){c->retained=true;portable_adapter_retain_silent();}
 #endif
@@ -42,7 +68,17 @@ static inline bool portable_alarm_open(portable_alarm_client *c,const risc_runti
     }
     const alarm_service_v1 *a=c->grant.api;
 #ifdef ALARM_SERVICE_TAGGED_V2
-    if(!alarm_service_descriptor(a))return false;
+    if(!alarm_service_descriptor(a)){
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+        c->malformed=true;
+        bool released=r->release(&c->grant);
+        if(!portable_alarm_context(c))return false;
+        if(!released||c->grant.api||c->grant.slot||c->grant.generation||c->grant.struct_size!=sizeof(c->grant)){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
+        const risc_runtime_api_v1 *owner=c->native_owner;
+        memset(c,0,sizeof(*c));c->grant.struct_size=sizeof(c->grant);c->native_owner=owner;c->malformed=true;
+#endif
+        return false;
+    }
 #else
     if(!a || a->api_version!=1 || a->struct_size<sizeof(*a) || !a->status || !a->step ||
        !a->refresh || !a->acknowledge || !a->prepare_sleep || !a->stop_only)return false;
@@ -62,6 +98,9 @@ static inline bool portable_alarm_retained(const portable_alarm_client *c) {
 /* Only explicit custody/output uncertainty pins resources. Typed storage/RTC
  * failures remain copied service states, so the foreground can show/retry them. */
 static inline bool portable_alarm_result(portable_alarm_client *c,int32_t result) {
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+    if(!portable_alarm_context(c))return false;
+#endif
     if(portable_alarm_retained(c))return false;
     if(result==ALARM_RETAINED || result==ALARM_OUTPUT ||
        result<ALARM_FOREGROUND || result>ALARM_PENDING) {
@@ -73,7 +112,10 @@ static inline bool portable_alarm_result(portable_alarm_client *c,int32_t result
     }
     return true;
 }
-static inline bool portable_alarm_callable(const portable_alarm_client *c) {
+static inline bool portable_alarm_callable(portable_alarm_client *c) {
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+    if(!portable_alarm_context(c))return false;
+#endif
     if(portable_alarm_retained(c))return false;
 #ifdef ALARM_SERVICE_TAGGED_V2
     return alarm_service_descriptor(c->api)!=NULL;
@@ -83,6 +125,9 @@ static inline bool portable_alarm_callable(const portable_alarm_client *c) {
 }
 #ifdef ALARM_SERVICE_TAGGED_V2
 static inline uint32_t portable_alarm_output_modes(const portable_alarm_client *c) {
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+    if(!c->native_owner || risc_runtime_get_api(1)!=c->native_owner || portable_adapter_retained())return ALARM_MODE_VISUAL;
+#endif
     const alarm_service_descriptor_v2 *d=portable_alarm_retained(c)?NULL:alarm_service_descriptor(c->api);
     return d?d->output_modes:ALARM_MODE_VISUAL;
 }
@@ -109,6 +154,33 @@ static inline bool portable_alarm_status(portable_alarm_client *c) {
         c->status.api_version==1 && c->status.struct_size>=sizeof(c->status) &&
         c->status.state<=ALARM_STATE_CUE;
 }
+#ifdef PORTABLE_ALARM_READY_DRAIN
+#ifndef ALARM_SERVICE_TAGGED_V2
+#error "Ready-step drain requires typed tagged alarm results"
+#endif
+/* App-local result observation only; no service ABI or client-layout change.
+ * Commit the result only after both step and copied status remain callable. */
+static inline bool portable_alarm_pump_step(portable_alarm_client *c,int32_t *out) {
+    /* This opt-in boundary also honors retention installed outside the client. */
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(portable_adapter_retained())return false;
+#endif
+    if(!out || !portable_alarm_callable(c))return false;
+    int32_t result=(PORTABLE_LAST_ATTEMPT("alarm.step"),c->api->step(c->api->context));
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(portable_adapter_retained())return false;
+#endif
+    if(!portable_alarm_result(c,result))return false;
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+    c->deferred=result==ALARM_PENDING;
+#endif
+    if(!portable_alarm_status(c))return false;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(portable_adapter_retained())return false;
+#endif
+    *out=result;return true;
+}
+#endif
 static inline bool portable_alarm_pump(portable_alarm_client *c) {
 #ifdef PORTABLE_ALARM_BUSY_DEFER
 #if !defined(ALARM_SERVICE_TAGGED_V2)
@@ -157,6 +229,15 @@ static inline bool portable_alarm_failure_stop(portable_alarm_client *c) {
     return result==ALARM_OK;
 }
 static inline bool portable_alarm_close(portable_alarm_client *c,const risc_runtime_api_v1 *r) {
+#ifdef PORTABLE_ALARM_ACQUISITION_CUSTODY
+    if(!portable_alarm_context(c))return false;
+    if(c->grant.api){
+        bool released=r->release(&c->grant);
+        if(!portable_alarm_context(c))return false;
+        if(!released||c->grant.api||c->grant.slot||c->grant.generation||c->grant.struct_size!=sizeof(c->grant)){c->retained=true;if(!portable_adapter_retained())portable_adapter_retain_silent();return false;}
+    }
+    memset(c,0,sizeof(*c));return true;
+#else
 #if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_NATIVE_CUSTODY_FENCE)
     if(portable_alarm_retained(c))return false;
 #endif
@@ -167,4 +248,5 @@ static inline bool portable_alarm_close(portable_alarm_client *c,const risc_runt
         return false;
     }
     memset(c,0,sizeof(*c));return true;
+#endif
 }

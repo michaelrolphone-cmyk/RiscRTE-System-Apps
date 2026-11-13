@@ -1,0 +1,41 @@
+#define PORTABLE_RASTER_CUSTODY_MAIN original_custody_main
+#include "portable_raster_custody_test.c"
+static void scene(uint16_t c){assert(portable_paper_frame_ready());clear_color(c);fill(17,19,41,43,(uint16_t)(c^0xffff));present(false);}
+static void settle(void){assert(portable_paper_frame_drain());assert(!memcmp(framebuffer,alarm_pixels,sizeof framebuffer));assert(alarm_pixels_valid);assert(portable_frame_completed_id()==portable_frame_requested_id());}
+static void repeated(void){
+ void *a=alarm_pixels,*b=NULL;
+ for(unsigned i=0;i<12;i++){void*old=alarm_pixels;scene((uint16_t)(0x1234+i));settle();assert(alarm_pixels!=old);assert(raster_offscreen==old);if(!b)b=alarm_pixels;assert((alarm_pixels==a&&raster_offscreen==b)||(alarm_pixels==b&&raster_offscreen==a));assert(alarm_pixels!=(void*)framebuffer && raster_offscreen!=(void*)framebuffer);assert(!raster_copied_source&&!raster_copied_frame);}
+ cleanup();puts("exchange repeated roles/exact pixels/cleanup PASS");
+}
+static void pinned(bool partial){
+ scene(0x1357);assert(raster_sealed);if(partial){assert(raster_progress());assert(raster_sealed&&raster_offscreen);}uint16_t*saved=NULL;assert(alarm_save_frame(&saved));assert(saved==alarm_pixels&&alarm_modal);assert(portable_paper_frame_drain());assert(saved==alarm_pixels);static uint16_t expected[240*240];memcpy(expected,framebuffer,sizeof expected);assert(!memcmp(saved,expected,sizeof expected));
+ assert(portable_paper_frame_ready());clear_color(0xeeee);present(false);assert(portable_paper_frame_drain());assert(saved==alarm_pixels);assert(!memcmp(saved,expected,sizeof expected));assert(alarm_restore(saved));assert(!memcmp(framebuffer,expected,sizeof expected));alarm_modal=false;cleanup();puts("exchange pending raster pinned modal restore PASS");
+}
+static bool hold_status;
+static bool status_hold(void*c,risc_display_present_token_v1 t,risc_display_present_status_v1*out){if(hold_status){out->state=RISC_DISPLAY_PRESENT_ACTIVE;return true;}return frame_status(c,t,out);}
+static void pending(void){
+ info.flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;quick_display_api.present_status=status_hold;hold_status=true;void*old=alarm_pixels;scene(0x4567);for(unsigned n=0;n<1000&&!paper_token;n++)assert(raster_progress());assert(paper_token&&!raster_sealed&&alarm_pixels!=old&&!alarm_pixels_valid);uint16_t*saved;assert(alarm_save_frame(&saved));assert(saved==alarm_pixels);hold_status=false;assert(portable_paper_frame_drain());assert(alarm_pixels_valid);assert(alarm_restore(saved));assert(!memcmp(framebuffer,saved,sizeof framebuffer));alarm_modal=false;cleanup();puts("exchange accepted pending validity and pinned restoration PASS");
+}
+static void fallback(void){
+ void*old=alarm_pixels;clear_color(0x3333);present(false);assert(alarm_pixels==old);assert(!memcmp(framebuffer,alarm_pixels,sizeof framebuffer));
+ scene(0x4444);custody_fail_offscreen=true;assert(portable_paper_frame_drain());assert(alarm_pixels==old&&!raster_offscreen);assert(!memcmp(framebuffer,alarm_pixels,sizeof framebuffer));
+ scene(0x5555);quick_modal=true;assert(portable_paper_frame_drain());assert(alarm_pixels==old);quick_modal=false;assert(!memcmp(framebuffer,alarm_pixels,sizeof framebuffer));cleanup();puts("exchange immediate/OOM/modal fallback PASS");
+}
+static bool submit_reject(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*t){(void)c;(void)f;(void)r;(void)n;(void)o;(void)t;return false;}
+static void rejected(void){quick_runtime.retain_invocation=retain_during_band;native_custody_runtime=&quick_runtime;void*old=alarm_pixels;quick_display_api.submit=submit_reject;scene(0x5678);assert(!portable_paper_frame_drain());assert(failed&&alarm_pixels==old&&raster_offscreen!=old&&!alarm_pixels_valid);assert(!raster_copied_source&&!raster_copied_frame);puts("exchange rejected submission leaves roles unchanged PASS");}
+static bool retained_submit_true;
+static bool submit_retained(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*t){(void)c;(void)f;(void)r;(void)n;(void)o;*t=99;portable_adapter_retain_silent();return retained_submit_true;}
+static void retained_submit(bool yes){quick_runtime.retain_invocation=retain_during_band;native_custody_runtime=&quick_runtime;void*old=alarm_pixels;quick_display_api.submit=submit_retained;retained_submit_true=yes;scene(0x6789);assert(!portable_paper_frame_drain());assert(failed&&native_custody_retained&&alarm_pixels==old&&raster_offscreen!=old&&!alarm_pixels_valid);unsigned frees=custody_free_calls;app_module_fini();assert(custody_free_calls==frees&&alarm_pixels==old);puts("exchange retained callback no exchange/free PASS");}
+static bool status_failed(void*c,risc_display_present_token_v1 t,risc_display_present_status_v1*out){(void)c;(void)t;out->state=RISC_DISPLAY_PRESENT_FAILED;return true;}
+static void completion_failed(void){quick_runtime.retain_invocation=retain_during_band;native_custody_runtime=&quick_runtime;info.flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;void*old=alarm_pixels;scene(0x7654);for(unsigned n=0;n<1000&&!paper_token;n++)assert(raster_progress());assert(alarm_pixels!=old&&raster_offscreen==old&&!alarm_pixels_valid);quick_display_api.present_status=status_failed;assert(!paper_token_progress());assert(failed&&native_custody_retained&&!alarm_pixels_valid);unsigned frees=custody_free_calls;app_module_fini();assert(custody_free_calls==frees&&raster_offscreen==old);puts("exchange completed failure retains exchanged allocations PASS");}
+static void quick_alarm_restore(void){
+ scene(0x2468);settle();memcpy(expected_background,framebuffer,sizeof expected_background);
+ opening(3);tap(80,193,185);inject_alarm_at=95;tap(110,100,165);drain_to(170);background_unchanged();
+ assert(alarm_injected&&acks==1&&alarm_fake.state==ALARM_STATE_READY);assert(!quick.ui.torch&&hardware_brightness==40&&!quick_modal);cleanup();puts("exchange Quick alarm exact ACK and app restore PASS");
+}
+static bool submit_zero(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*t){bool ok=frame_submit(c,f,r,n,o,t);*t=0;return ok;}
+static void zero_token(void){quick_runtime.retain_invocation=retain_during_band;native_custody_runtime=&quick_runtime;void*old=alarm_pixels;quick_display_api.submit=submit_zero;scene(0x789a);assert(!portable_paper_frame_drain());assert(failed&&native_custody_retained&&alarm_pixels==old&&!alarm_pixels_valid);puts("exchange invalid accepted token retains before exchange PASS");}
+static bool inject_pointer_change;
+static bool submit_mutation(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*t){bool ok=frame_submit(c,f,r,n,o,t);if(inject_pointer_change)raster_offscreen=alarm_pixels;else alarm_modal=true;return ok;}
+static void mutated_submit(bool pointer){quick_runtime.retain_invocation=retain_during_band;native_custody_runtime=&quick_runtime;void*old=alarm_pixels;inject_pointer_change=pointer;quick_display_api.submit=submit_mutation;scene(0x89ab);unsigned frees=custody_free_calls;assert(!portable_paper_frame_drain());assert(failed&&native_custody_retained&&alarm_pixels==old&&!alarm_pixels_valid);frees=custody_free_calls;app_module_fini();assert(custody_free_calls==frees&&alarm_pixels==old);puts("exchange post-copy callback identity/pin violation retains without exchange/free PASS");}
+int main(int argc,char**argv){assert(argc==2);setup();if(!strcmp(argv[1],"repeated"))repeated();else if(!strcmp(argv[1],"pinned"))pinned(false);else if(!strcmp(argv[1],"pinned-partial"))pinned(true);else if(!strcmp(argv[1],"pending"))pending();else if(!strcmp(argv[1],"fallback"))fallback();else if(!strcmp(argv[1],"reject"))rejected();else if(!strcmp(argv[1],"retained-false"))retained_submit(false);else if(!strcmp(argv[1],"retained-true"))retained_submit(true);else if(!strcmp(argv[1],"completion-failed"))completion_failed();else if(!strcmp(argv[1],"quick-alarm"))quick_alarm_restore();else if(!strcmp(argv[1],"zero-token"))zero_token();else if(!strcmp(argv[1],"post-copy-modal"))mutated_submit(false);else if(!strcmp(argv[1],"post-copy-pointer"))mutated_submit(true);else assert(0);return 0;}

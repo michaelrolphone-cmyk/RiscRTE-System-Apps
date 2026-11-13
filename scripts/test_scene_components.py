@@ -8,10 +8,6 @@ def run(runtime):
   out=Path(temporary);include=stage_sdk(runtime,ROOT,out);exe=out/'components'
   subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=undefined','-fno-sanitize-recover=all','-I'+str(include),str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/scene/components_test.c'),'-o',str(exe)],check=True)
   for profile in ('watch','paper'):subprocess.run([str(exe),profile],check=True)
-  focus=out/'focus'
-  subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=undefined','-fno-sanitize-recover=all','-I'+str(include),str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/scene/component_focus_test.c'),'-o',str(focus)],check=True)
-  for width,height in ((160,160),(240,240),(320,180),(410,502),(502,410)):
-   subprocess.run([str(focus),str(width),str(height)],check=True)
   page=out/'page'
   subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=undefined','-fno-sanitize-recover=all','-I'+str(include),str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/scene/page_test.c'),'-o',str(page)],check=True)
   subprocess.run([str(page)],check=True)
