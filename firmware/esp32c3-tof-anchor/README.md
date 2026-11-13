@@ -7,9 +7,10 @@ existing ESP32-S3 camera is the ranging initiator; it needs no new radio.
 
 ## Setup
 
-Flash c3-tof-anchor-v1.0.0-factory.bin at **0x0**. This factory image includes
-bootloader, partitions and application. It replaces the selected board's
-firmware and NVS. Alternatively use PlatformIO upload, which preserves NVS.
+Build the current source with PlatformIO, then use pio run -t upload with
+the exact USB port. This writes the bootloader, partitions and current
+application while preserving NVS. A standalone application image belongs at
+0x10000; only a correctly merged factory image belongs at 0x0.
 
 After flashing, press RESET once if native USB leaves the board in download
 mode. Do not hold BOOT. Each device generates a unique C3-TOF-<AP MAC> SSID.
@@ -82,20 +83,26 @@ LAN association, responder discovery, rover FTM success, peer ranges, and
 three-anchor geometry after deployment. Compilation alone establishes none
 of those hardware results.
 
-## Authenticated wireless updates (1.0.2)
+## Authenticated wireless updating (1.0.2)
 
-After one USB provisioning, an optional per-board ota_password (16–64 characters)
-enables /update with HTTP Basic authentication as admin. Use unique random
-keys saved in a private local file, never committed or embedded in the image.
-The configuration endpoint remains restricted to USB or a direct anchor-AP
-connection. Anonymous update access is rejected. Verify a new boot ID,
-firmware version and retained configuration after upload; never blindly retry
-an uncertain update.
+A unique per-board ota_password (16–64 characters), provisioned over USB or
+the direct anchor AP, enables /update with HTTP Basic authentication as admin.
+Keys are generated and stored outside the repository in a mode-0600 file;
+no credentials are embedded in this source or image. Anonymous requests
+are rejected. Verify the new boot ID, version, network and retained settings
+after upload; never blindly retry an uncertain update.
 
-tools/provision_anchor.py selects an exact USB MAC, uses a private Wi-Fi
-profile and per-MAC key file, flashes the project, and verifies network,
-OTA availability and configured low TX power before reporting ready.
-The private profile/key files live outside this repository with mode 0600.
-A4:30 may remain on 1.0.0 as an existing responder; wireless updating is not
-available on that version. RF coverage and peer ranging must be qualified
-at the actual installed positions. An update alone is not proof of coverage.
+The exact-MAC tools/provision_anchor.py reads a private Wi-Fi profile and a
+per-MAC key file, uploads the firmware, and confirms association, OTA enablement
+and the selected low-power profile. Firmware 1.0.0 remains a functioning FTM
+responder but has no wireless update endpoint.
+
+## Measurement retention
+
+The collector keeps one last successful anchor observation per directed edge
+until its original 30-second expiry, including during a pending or failed new
+attempt. The timestamp is never refreshed by a retry or repeated packet;
+reboots reset that node's observations. Latest attempt status stays visible.
+Rover range observation span is reported separately. Moving-rover localization
+requires motion compensation; asynchronous ranges are not asserted to be a
+simultaneous navigation pose.

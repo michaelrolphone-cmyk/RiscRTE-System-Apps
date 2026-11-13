@@ -70,15 +70,21 @@ class RangeGraph:
         prev=self.nodes.get(node)
         identity=(packet.get("boot_id"),packet.get("seq"))
         if prev and prev["identity"][0]==identity[0] and identity[1]<=prev["identity"][1]:return False
+        # Retain the last real successful observation while a new attempt is
+        # pending/failed. Its timestamp never refreshes without a new success.
         ranges={}
+        if prev and prev["identity"][0]==identity[0]:
+            ranges={k:dict(v) for k,v in prev["ranges"].items() if now-v["observed"]<TTL}
         for r in packet.get("ranges",[])[:12]:
+            target=str(r.get("target_bssid","")).lower()
+            if target in ranges:ranges[target]["latest_attempt_status"]=r.get("status")
             age=r.get("age_ms")
             if not r.get("valid") or r.get("status")!="ok" or not finite_positive(r.get("distance_m")):continue
             if not isinstance(age,(int,float)) or age<0 or age>TTL*1000:continue
             target=str(r.get("target_bssid","")).lower()
             ranges[target]={"distance_m":r["distance_m"],"observed":now-age/1000,
                             "rtt_ns":r.get("rtt_ns"),"samples":r.get("samples"),
-                            "sequence":r.get("range_seq")}
+                            "sequence":r.get("range_seq"),"latest_attempt_status":r.get("status")}
         self.nodes[node]={"identity":identity,"received":now,"packet":packet,"ranges":ranges}
         return True
 
@@ -133,6 +139,10 @@ class RangeGraph:
             r=self.rover.get(k)
             if not r or now-r["observed"]>=TTL:result["status"]="awaiting_rover_ranges";return result
             rr.append(r["distance_m"])
+        sample_times=[self.rover[k]["observed"] for k in ids]
+        result["rover_range_time_span_s"]=max(sample_times)-min(sample_times)
+        result["motion_compensated"]=False
+        result["moving_rover_requires_motion_compensation"]=True
         if not heights_known:
             # Three spheres produce two points reflected through the anchor plane.
             ab=points[1][0];cx,cy=points[2]

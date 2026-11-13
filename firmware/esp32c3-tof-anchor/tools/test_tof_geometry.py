@@ -35,4 +35,17 @@ class GeometryTests(unittest.TestCase):
  def test_inconsistent_rover_distances_reported(self):
   p,_=triangle(4,3,5)
   with self.assertRaises(ValueError):trilaterate(p,[.1,.1,20])
+ def test_pending_and_failed_attempts_do_not_refresh_last_success(self):
+  g=RangeGraph();a="aa:00:00:00:00:01";b="aa:00:00:00:00:02"
+  p={"schema":"rover.tof.anchor/1","bssid":a,"ftm_responder":True,"boot_id":1,"seq":1,
+     "ranges":[{"target_bssid":b,"valid":True,"status":"ok","age_ms":0,"distance_m":3}]}
+  g.ingest(p,100)
+  p["seq"]=2;p["ranges"]=[{"target_bssid":b,"valid":False,"status":"measuring"}]
+  g.ingest(p,101);self.assertEqual(g.nodes[a]["ranges"][b]["observed"],100)
+  p["seq"]=3;p["ranges"][0]["status"]="ftm_failed"
+  g.ingest(p,110);self.assertEqual(g.nodes[a]["ranges"][b]["latest_attempt_status"],"ftm_failed")
+  p["seq"]=4;g.ingest(p,131);self.assertNotIn(b,g.nodes[a]["ranges"])
+  p["seq"]=5;p["ranges"]=[{"target_bssid":b,"valid":True,"status":"ok","age_ms":0,"distance_m":3}]
+  g.ingest(p,200);p["boot_id"]=2;p["seq"]=1;p["ranges"]=[]
+  g.ingest(p,201);self.assertEqual(g.nodes[a]["ranges"],{})
 if __name__=="__main__":unittest.main()
