@@ -113,3 +113,8 @@ static void reset(){
 }
 static garden_radio_scan_result_v1 poll(){garden_radio_scan_result_v1 value{};value.struct_size=sizeof(value);assert(scanPoll(&value));return value;}
 static uint8_t status(){uint8_t value=99;int8_t rssi=99;assert(state(&value,&rssi));assert((value==2 && rssi==-42) || (value!=2 && !rssi));return value;}
+/* Current Runtime also links AP cleanup/initialization; this fixture exercises
+ * station scans only. Fail explicitly if an AP path is accidentally invoked. */
+esp_err_t esp_netif_dhcps_stop(esp_netif_t*){assert(!"unexpected AP DHCP path in station fixture");return ESP_FAIL;}
+esp_err_t esp_netif_attach_wifi_ap(esp_netif_t*){assert(!"unexpected AP attach path in station fixture");return ESP_FAIL;}
+esp_err_t esp_wifi_set_default_wifi_ap_handlers(){assert(!"unexpected AP handlers in station fixture");return ESP_FAIL;}

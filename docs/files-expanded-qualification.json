@@ -1,0 +1,101 @@
+{
+  "production_commit": "f3427703ca4a805d26e1bd87a3edae5b81b0265e",
+  "production_changed": false,
+  "prior_manifest_verified_files": 52,
+  "hardware": "not_tested",
+  "receipts": {
+    "home-composed-normal-4": {
+      "receipt": "/workspace/files-lane/home-composed-normal-4/receipt.json",
+      "receipt_sha256": "382e50507372fb7569899f5a330bcdf6530016f93964b3593f1053ce62fb060f",
+      "commands": "/workspace/files-lane/home-composed-normal-4/commands.json",
+      "commands_sha256": "f501072ccce526cfa93540fe313dca3e321d8e34aff0e17c73a79d2a859a6e6f",
+      "compiled_inputs_reverified": 330,
+      "cases": 4,
+      "actual_runtime": false,
+      "scope": "Actual Files, scene and Home controllers; Runtime/hardware endpoints doubled"
+    },
+    "home-composed-sanitized-4": {
+      "receipt": "/workspace/files-lane/home-composed-sanitized-4/receipt.json",
+      "receipt_sha256": "93f281bd13eb2c32cf597da667837cd65904dca385b7061b71ca5e2017de7509",
+      "commands": "/workspace/files-lane/home-composed-sanitized-4/commands.json",
+      "commands_sha256": "29023862d0fb36ce2f4cbf874bf93c0003a8151eeb5870ffe4a55f2eeda0aa94",
+      "compiled_inputs_reverified": 330,
+      "cases": 4,
+      "actual_runtime": false,
+      "scope": "Actual Files, scene and Home controllers; Runtime/hardware endpoints doubled"
+    },
+    "storage-composed-normal-6": {
+      "receipt": "/workspace/files-lane/storage-composed-normal-6/receipt.json",
+      "receipt_sha256": "2ec7138982810b14a65baf01cc5f513972ed032ad2181ed478a2ab9067cc421d",
+      "commands": "/workspace/files-lane/storage-composed-normal-6/commands.json",
+      "commands_sha256": "0c1f9e604e83d94d83f6cc8317038bddbd8fc4bca7d3222f48fd8dd6836a5eae",
+      "compiled_inputs_reverified": 181,
+      "cases": 30,
+      "actual_runtime": false,
+      "scope": "Actual Files, scene and text provider; memory volume, Runtime and physical input endpoints doubled"
+    },
+    "storage-composed-sanitized-6": {
+      "receipt": "/workspace/files-lane/storage-composed-sanitized-6/receipt.json",
+      "receipt_sha256": "e1aa87940c30fc88e6c63cad3b3f2ee919ec46ae219facb69610273507551245",
+      "commands": "/workspace/files-lane/storage-composed-sanitized-6/commands.json",
+      "commands_sha256": "247935d01b4e3820bb39f072b36e9a2361320ec8df531b598a896aac0750931b",
+      "compiled_inputs_reverified": 181,
+      "cases": 30,
+      "actual_runtime": false,
+      "scope": "Actual Files, scene and text provider; memory volume, Runtime and physical input endpoints doubled"
+    }
+  },
+  "new_sources": {
+    "scripts/prepare_files_selections.py": {
+      "bytes": 3246,
+      "sha256": "7178e730ba7b336e97b97ef2f4087de18e5225e0bf5a9bad819ee5fb7ae2cf4b"
+    },
+    "scripts/test_files_home.py": {
+      "bytes": 6693,
+      "sha256": "765474c42c2bf2d5b8b2c01ccf569914ada4004e346d642cb70d1837dbb71158"
+    },
+    "scripts/test_files_storage_composed.py": {
+      "bytes": 5885,
+      "sha256": "15b66f6b5229d085be1a38b442d62e325cb739d098e9e9023bba75c9cb268ca8"
+    },
+    "test/files_home/home_bridge.inc": {
+      "bytes": 2422,
+      "sha256": "1f57073570f7fbcccb2a6316bc80d63f2e435c7a0356a3af3ba1df7c5d7b4a4d"
+    },
+    "test/files_home/root_bridge.inc": {
+      "bytes": 4653,
+      "sha256": "6927247ad7a390a5da058c4c5e2a334b83aecfeb1d759953d0336000a80b2b51"
+    },
+    "test/files_scene/storage_composed.inc": {
+      "bytes": 11238,
+      "sha256": "490728f1657881a07d673315f8c28cccb19f21baf70c64cdc6f14f2a1a3e1ec7"
+    },
+    "docs/files-x4-recipe-resolution.json": {
+      "bytes": 8403,
+      "sha256": "067d60f6e41e26e2560a402eba84971cec5ee7b2321a2f91e19d6d3ccde90061"
+    }
+  },
+  "target": {
+    "path": "/workspace/files-lane/link-runtime-fix/file_browser.elf",
+    "bytes": 390848,
+    "sha256": "5279f61841fea3e68312ed37fac4dd0f0cf9a2c1ef61a1a847b2e83a4fbd154f",
+    "repeat_and_validator": "Preserved f3427703 proof; no production source changed"
+  },
+  "selections": {
+    "receipt": "/workspace/files-lane/selections-f3427703/receipt.json",
+    "sha256": "59e3bc3ee4f6d9ed20f3f0b142a9c6cdc940413227f7f2d2bbc81117e6594c6f",
+    "scope": "Three identical ELF selections and declaration-parser checks; proposed ui.scene-only grant delta; no complete product mutation/admission"
+  },
+  "remaining": [
+    "Complete retained product boot/store/provider inputs are in parent native lane; not materialized here. Complete product admission and unrelated-byte preservation comparison remain pending.",
+    "Watch/Wave Context physical settings effects require the new Home settings-effects contract; X4 original authority has no Context grants and requires no added Context authority.",
+    "Positive selected-source handoff, peer discovery/consent, sharing/direct/LAN/setup need broader composed qualification beyond existing focused and root lifecycle proofs.",
+    "External archive upload/inspection and Scanner publication remain stopped."
+  ],
+  "clarifications": [
+    "Storage runner receipt scope string predates expanded cases; commands and assertions prove preview/delete/cancel/copy/move/rename-cancel/rename/new-folder/handler/handlers-page across three profiles.",
+    "Home log label mentions brightness even for radios; radio case assertions verify Wi-Fi disconnect and Bluetooth enable, persistence/report ordering and no repeated physical effect.",
+    "Earlier failed test attempts remain at their original qualification paths; no evidence overwritten.",
+    "X4 missing-recipe report was incorrect: exact published receipt already existed below minimal/. Corrected source chain and checked missing-zone behavior are in files-x4-recipe-resolution.json."
+  ]
+}

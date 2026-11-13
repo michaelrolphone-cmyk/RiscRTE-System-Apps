@@ -7,16 +7,23 @@ HEADERS=('RiscDisplayOutputV1.h','RiscDisplayOutputPowerV1.h','RiscTouchV1.h','R
 FLAGS=['-DPORTABLE_X4_IDLE_POLICY','-DPORTABLE_LOW_BATTERY','-DPORTABLE_APP_SLEEP_LOCAL']
 
 def options(p):
+ p.add_argument('--shared-idle-source',type=Path,help='Generic shared Home idle helper over public power capabilities; no physical bindings')
  p.add_argument('--x4-idle-source',type=Path,help='Explicit X4 typed reversible Light helper; enables automatic idle and low-battery policy')
  p.add_argument('--x4-idle-sdk',type=Path,help='Canonical typed panel/touch/storage driver SDK')
  p.add_argument('--x4-idle-runtime-sdk',type=Path,help='Canonical Runtime driver SDK containing timed/Light sleep headers')
 
-def selected(a):return bool(getattr(a,'x4_idle_source',None))
+def selected(a):return bool(getattr(a,'x4_idle_source',None) or getattr(a,'shared_idle_source',None))
 def version(a,app,current):
  if getattr(a,"touch_scrolling",False) and app in ("ota_update","app_store"):return "1.2.4"
  return VERSIONS[app] if selected(a) else current
 
 def configure(a,p,root,out,base):
+ if getattr(a,'shared_idle_source',None):
+  if getattr(a,'x4_idle_source',None):p.error('Choose one idle helper')
+  if not getattr(a,'shared_view_output',None):p.error('Shared idle is selected only by complete shared Home assembly')
+  if a.shared_idle_source.resolve()!=(root/'lib/PortableApps/src/PortableHomeIdle.c').resolve():p.error('Use the owning generic idle source')
+  a.x4_idle_receipt={'enabled':True,'mode':'provider-owned generic light/deep','source':str(a.shared_idle_source.resolve()),'helper_sha256':hashlib.sha256(a.shared_idle_source.read_bytes()).hexdigest(),'physical_instances':{},'preferences_instance':1,'hardware_qualification':False}
+  return [*FLAGS],[a.shared_idle_source]
  values=[getattr(a,n,None) for n in ('x4_idle_source','x4_idle_sdk','x4_idle_runtime_sdk')]
  if not any(values):return [],[]
  if not all(values):p.error('X4 idle requires --x4-idle-source, --x4-idle-sdk and --x4-idle-runtime-sdk')
@@ -44,7 +51,7 @@ def configure(a,p,root,out,base):
 
 def requirements(a,needs):
  if not selected(a):return
- for name in ('x4.power','storage.volume'):
+ for name in (('power.sleep',) if getattr(a,'shared_idle_source',None) else ('x4.power','storage.volume')):
   item={'capability':name,'api':1}
   if item not in needs:needs.append(item)
 
