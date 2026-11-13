@@ -15,7 +15,7 @@ void portable_text_adapter_retain(void) {
     if(text_input_retained)return;
     text_input_retained=true;
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_FOREGROUND_IDLE)
     /* Runtime or the text host may already have retained custody. The stage
      * logger calls health/diagnostic, so terminal handoff must latch silently. */
     portable_adapter_retain_silent();

@@ -38,14 +38,14 @@ SharingState Sharing::tick(uint64_t now){
  if(status_.state==SharingState::Starting){
   uint64_t handle=0;const int32_t rc=tcp_.listen(tcp_.context,&bind_,&handle);
   if(!valid())return status_.state;
-  if(rc==RISC_TCP_CONNECTION_CONTEXT||rc==RISC_TCP_CONNECTION_RETAINED||(!rc&&!handle)||(rc&&handle)){retained(rc?rc:RISC_TCP_CONNECTION_RETAINED);return status_.state;}
+  if(rc==RISC_TCP_CONNECTION_CONTEXT||rc==RISC_TCP_CONNECTION_RETAINED||(!rc&&!handle)||(rc&&handle)){retained(rc?rc:static_cast<int32_t>(RISC_TCP_CONNECTION_RETAINED));return status_.state;}
   if(rc){fail(rc);return status_.state;}
   listener_=handle;status_.transportOpen=true;status_.state=SharingState::Listening;return status_.state;
  }
  if(status_.state==SharingState::Listening){
   uint64_t handle=0;const int32_t rc=tcp_.accept(tcp_.context,listener_,&handle);
   if(!valid())return status_.state;
-  if(rc==RISC_TCP_CONNECTION_CONTEXT||rc==RISC_TCP_CONNECTION_RETAINED||(!rc&&!handle)||(rc&&handle)){retained(rc?rc:RISC_TCP_CONNECTION_RETAINED);return status_.state;}
+  if(rc==RISC_TCP_CONNECTION_CONTEXT||rc==RISC_TCP_CONNECTION_RETAINED||(!rc&&!handle)||(rc&&handle)){retained(rc?rc:static_cast<int32_t>(RISC_TCP_CONNECTION_RETAINED));return status_.state;}
   if(rc==RISC_TCP_CONNECTION_WOULD_BLOCK)return status_.state;
   if(rc){fail(rc);return status_.state;}
   client_=handle;
@@ -71,11 +71,11 @@ SharingState Sharing::tick(uint64_t now){
  if(status_.state==SharingState::Stopping){
   if(client_){
    if(sessionStarted_){if(!session_.stop()){retained(RISC_TCP_CONNECTION_RETAINED);return status_.state;}}
-   else {const int32_t rc=tcp_.close(tcp_.context,client_);if(!valid()||rc){retained(rc?rc:RISC_TCP_CONNECTION_CONTEXT);return status_.state;}}
+   else {const int32_t rc=tcp_.close(tcp_.context,client_);if(!valid()||rc){retained(rc?rc:static_cast<int32_t>(RISC_TCP_CONNECTION_CONTEXT));return status_.state;}}
    if(!valid())return status_.state;
    client_=0;sessionStarted_=false;return status_.state;
   }
-  if(listener_){const int32_t rc=tcp_.close(tcp_.context,listener_);if(!valid()||rc){retained(rc?rc:RISC_TCP_CONNECTION_CONTEXT);return status_.state;}listener_=0;return status_.state;}
+  if(listener_){const int32_t rc=tcp_.close(tcp_.context,listener_);if(!valid()||rc){retained(rc?rc:static_cast<int32_t>(RISC_TCP_CONNECTION_CONTEXT));return status_.state;}listener_=0;return status_.state;}
   if(authentication_)authentication_->clear();
   authentication_=nullptr;files_=nullptr;tcp_={};status_.transportOpen=false;
   status_.state=status_.error?SharingState::Error:SharingState::Off;return status_.state;

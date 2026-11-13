@@ -1,0 +1,125 @@
+{
+  "base_commit": "ac44a3cd87595f6d6cebadf3cdccf9fa5e0f3365",
+  "hardware_tested": false,
+  "target": {
+    "bytes": 391232,
+    "sha256": "8f9860dc07c65345a9bb20ac7686e4d4eca39694f00345b6f87e44e2a89692d9",
+    "repeat_identical": true,
+    "selection_count": 3
+  },
+  "receipts": {
+    "qualification-final": {
+      "path": "/workspace/files-lane/qualification-final/qualification.json",
+      "sha256": "4d2e86ff10659539e6dc25a2bc0ea3364c14f6a4095f860e6d8ebed7871eba45"
+    },
+    "storage-final-normal": {
+      "path": "/workspace/files-lane/storage-final-normal/receipt.json",
+      "sha256": "7e6b91df1cf6fdeb203f9050ec63c2b26897d525af4b77907ee3f11a6ac693e6"
+    },
+    "storage-final-sanitized": {
+      "path": "/workspace/files-lane/storage-final-sanitized/receipt.json",
+      "sha256": "636729fa428c63b8c20d81b8ef0905e5ed9c3119f9e314472b696783958cb7db"
+    },
+    "peer-final-normal": {
+      "path": "/workspace/files-lane/peer-final-normal/receipt.json",
+      "sha256": "fc5cf65b18f04e21e10406b223f40d762e9ea3542a25229bdb6d09ab2168af6e"
+    },
+    "peer-final-sanitized": {
+      "path": "/workspace/files-lane/peer-final-sanitized/receipt.json",
+      "sha256": "556c4bc00f005cc36ec011e67231bc1ee907b6b70efd71a94cf5b918fbf388eb"
+    },
+    "sharing-final-normal": {
+      "path": "/workspace/files-lane/sharing-final-normal/receipt.json",
+      "sha256": "9e09469f5d2e91554ece7057d31fb29f9858040670290a7bf4ebd5d37d2a8109"
+    },
+    "sharing-final-sanitized": {
+      "path": "/workspace/files-lane/sharing-final-sanitized/receipt.json",
+      "sha256": "db4be4edfacfb55fb79b95afbe8540d0f5478e9d7defa79775d5809871d29571"
+    },
+    "home-final-normal": {
+      "path": "/workspace/files-lane/home-final-normal/receipt.json",
+      "sha256": "c2dbfb814d9f82d02270d202ecef23ad281a65456578352475f778848fd9c48d"
+    },
+    "home-final-sanitized": {
+      "path": "/workspace/files-lane/home-final-sanitized/receipt.json",
+      "sha256": "fcff2ed3f943758377d4cdbcb12f2300a6604c6ec8fb7354cf372e1c81676829"
+    },
+    "runtime-final-normal": {
+      "path": "/workspace/files-lane/runtime-final-normal/receipt.json",
+      "sha256": "4e1a0fe9e8f05298c95922a695f37f78d9d14d19e4dd945eec8880d90da22f8b"
+    },
+    "runtime-final-sanitized": {
+      "path": "/workspace/files-lane/runtime-final-sanitized/receipt.json",
+      "sha256": "b63ba05d62fbc3649bda4094394ef9139c0337ad5b602e59e7a7fe87b80c1894"
+    },
+    "runtime-final-retained-normal": {
+      "path": "/workspace/files-lane/runtime-final-retained-normal/receipt.json",
+      "sha256": "4152c0601f250df8975fabbe9d9f6a2c5fa81e3206f594316c5df019a10463a8"
+    },
+    "runtime-final-retained-sanitized": {
+      "path": "/workspace/files-lane/runtime-final-retained-sanitized/receipt.json",
+      "sha256": "4d402ca8a3185f3dc1a786ad0f710cde9752fe8257850de5d691590401715cd9"
+    },
+    "admission-final-x4-normal": {
+      "path": "/workspace/files-lane/admission-final-x4-normal/receipt.json",
+      "sha256": "d9515d991b45d0699827f12e3136769445aa410273777494c2bf7a8450694077"
+    },
+    "admission-final-x4-sanitized": {
+      "path": "/workspace/files-lane/admission-final-x4-sanitized/receipt.json",
+      "sha256": "b4c03efa1d1f07bc7d3820f69759709a7ea38517cb165a9db670c55c31cfe7ee"
+    }
+  },
+  "changed_source_sha256": {
+    "Apps/files_scene.c": "1887264e608f6586521ecedce4243f56ff95c5451e035966a7a387aae18e2339",
+    "Apps/files_scene_direct.inc": "9958d09197a039b080bdd106e2e32e7bc877fe2a717220b423920ea26c0e24a9",
+    "Apps/files_scene_reset.inc": "aa6898c48f5c08410098106e81710513b87d534b5cde7391a41bd603c99b8758",
+    "Apps/files_scene_sharing.inc": "59af835b557c4cccaa8aa10fa11aaa0d8c75a86e911304272f137e4cf92a46cd",
+    "Apps/files_scene_source.inc": "0a2a4cf68eca2fc658756b59dc21ca3d2166b9e4b1e8bb0fad142a38800f7e6a",
+    "docs/files-home-effects-source-pins.json": "261eca284b9da604a3b51c1d9f9d90336cb90c4e307a67578b329541d05a001f",
+    "docs/files-native-replay-source-pins.json": "a8f22ca06aedbef9a5bd4f978de36689215091b6d689726d00a015101f4372ff",
+    "docs/files-product-runtime-source-pins.json": "79515a5fdb2c801c097991193dc0198f93b45c6b12573f670c3ea02d9009a829",
+    "scripts/assemble_files_products.py": "8419fb1cf7999aee20ce7a0c29ad66ceb49dac94718462b18005ea0b69496fde",
+    "scripts/build_files_effects_home.py": "0cede1a2c087349f9658a035bfbc2b247b4bd701aadbf1339c745f30533854e3",
+    "scripts/prepare_files_selections.py": "0b91fd588c7023ab99a229a97dd1f19520a97abd44b71e2614c96026caac6b3a",
+    "scripts/qualify_files_scene.py": "51520602000f6b4eddada49545c9c0324b9ef2231ce7c98ea7cc993e3ef6c34b",
+    "scripts/replay_files_native.sh": "cc8b1105482709d063bb931e86cc2f0a37c14e949867a72da00f4a679bc3665d",
+    "scripts/test_files_home.py": "8799cf1c9ccbe3f1d49d00ec630edf5f3a8d5cd725eae7e3d23142bc1cdf6161",
+    "scripts/test_files_peer_composed.py": "14be872226f079d6c39d444de4d9558667d31ee40edf90bde654e41aea73c8b1",
+    "scripts/test_files_product_admission.py": "092c273556ac6e26df7eca8b0945723bc2c49d8bb24b9e6eea163622fa961c71",
+    "scripts/test_files_sharing_composed.py": "7c5868311ad145d648320f41d036de2cfeda0b9471f4de7510576a46f8aa70d1",
+    "scripts/test_files_storage_composed.py": "549b403c033e2e5e8efab1644e7d91c889db5a3b79edc9635500e689e218aa43",
+    "test/files_products/native/app_data_admission_backend.h": "cc854d0c9d083272b09c031f404a5c8b1c9ed3a8fa3c2271ed99efd3233aef26",
+    "test/files_products/native/cohort_elf_admission.h": "525e956fab608220414cba9822603b59dc5087e06e02edf4060623f0a30c4525",
+    "test/files_products/native/commands.json": "981be485cfb62bc5a507cffac6a92ef98cdce521a3c3b311c7cddcde553b45ce",
+    "test/files_products/native/files-origins.json": "703a06ef7b7f7ada32d995d7f8989e6a3dd3eec2daf7051807e7e4fc6609534f",
+    "test/files_products/native/origins.json": "b8d597e1241962f23394d13e31bdbcd6eb58cd330a4b9538a53a99da072c2e86",
+    "test/files_products/native/watch.cpp": "6e40f296492a59405c0c642206ba944bc06940846376bac3c283c1240a88c13a",
+    "test/files_products/native/wave-settings.h": "37ddfd9feb4b70fbcd9f87b523dec3847a77d4c4bcb6d9b9da5f7fc39fb5382b",
+    "test/files_products/native/wave.cpp": "df9cda13bb63b2536e8bb6b3c0c550730076c714f03c05250f19e45cfb987ef7",
+    "test/files_products/native/x4-settings.h": "6768be378495a2925094c10830a2586ab65a7087e1434f256ea5afe307e12b9c",
+    "test/files_products/native/x4.cpp": "47a21b17fe6a67d3b900b30cf4e2f2fe624371d5569ac4b27a3eaf3016b76ebc",
+    "test/files_scene/peer_composed.inc": "fa26fad5b44b2ada2a3a830128f6e70b58589a3ddd958053f75491ad2c06986a",
+    "test/files_scene/sharing_composed.inc": "fb9de40183b6ac1bbf337f4cbc2510b72bd533506db3229fd3e2d54478ca1414",
+    "test/files_scene/storage_composed.inc": "ab5eaa990ee102d388c5a6050d2f336b119df16d72b2e157019539ee92945e40"
+  },
+  "scope": {
+    "storage_text_source": "66 normal +66 ASan/UBSan, actual Files/scene/text controller; Runtime/storage endpoints doubled",
+    "peer": "18+18, actual Files/peer/WebDAV; radio/network endpoints doubled",
+    "sharing_setup": "12+12, including slow-frame consent input; endpoints doubled",
+    "home": "4+4 actual Files/Home controllers; Runtime/hardware doubled",
+    "runtime": "9+9 current and 9+9 retained provider, actual Runtime lifecycle; hardware doubled",
+    "product": "X4 before/after actual Runtime graph and target ELF cohort admission, normal/sanitized; Watch/Wave native replay pending"
+  },
+  "preserved_failures": [
+    "storage-source-negative-2",
+    "source-malformed-negative/negative-cases.json",
+    "sharing-composed-normal-9",
+    "sharing-composed-normal-10",
+    "sharing-composed-normal-11",
+    "product-admission-prepare-2/watch-compile.log"
+  ],
+  "remaining": [
+    "Parent materialization of final source/pins and offline Watch/Wave product replay",
+    "External archive custody and publication remain stopped; no retry performed"
+  ]
+}

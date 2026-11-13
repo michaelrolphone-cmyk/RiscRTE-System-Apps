@@ -1,0 +1,115 @@
+name: Shared Home retained controller
+on:
+  pull_request:
+    paths: ['Apps/paper_sparse_clock.inc', 'lib/PortableApps/include/PortableHomeRetainedClock.h', 'test/native_apps/home_retained_clock_test.c', 'scripts/test_home_retained_clock.py', 'scripts/build_paper_clock.py', '.github/workflows/shared-home-retained.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: fa08d9716843ce629b2f8c94c7a0fc3d26dd9998
+          path: Baseline
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: a91edf3fada6a559ec107186dd163d0c8da10d29
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: 6b7d1abe9b2dcc236f6086d07c0f619244c907cb
+          path: X4
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: c98e4222048244b1e729869ed47aa99130025fd3
+          path: Reader
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: dcbad832cff91f7988a8e43d84725650b9815953
+          path: Utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 8f690e51b8c5f2a1756066879c40636469023639
+          path: Tooling
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Source archive and shared controller boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification/source
+          for repo in System Baseline Runtime X4 Reader Utilities Tooling; do
+            git -C "$repo" archive HEAD | gzip -n > "qualification/source/$repo.tar.gz"
+            git -C "$repo" rev-parse HEAD > "qualification/source/$repo.head"
+          done
+          python System/scripts/test_home_retained_clock.py --runtime Runtime --utilities Utilities --output qualification/controller
+          python System/scripts/test_sparse_rtc_reconcile.py --runtime Runtime --x4 X4 --sdk Reader/sdk/driver
+          python System/scripts/test_sparse_rtc_reconcile.py --runtime Runtime --x4 X4 --sdk Reader/sdk/driver --sanitizer address,undefined
+      - name: Pinned compiler and cumulative source profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C Utilities fetch --no-tags --depth=1 origin e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d
+          git -C Utilities archive e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d lib/Alarm/include Apps/alarm_writer.h LICENSE | gzip -n > qualification/source/Utilities-selected-alarm-sdk.tar.gz
+          pip install platformio==6.1.19 pyelftools==0.32 Pillow==11.3.0
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          CC_TARGET="$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc"
+          "$CC_TARGET" --version | tee qualification/delivered-compiler-version.txt
+          sha256sum "$CC_TARGET" > qualification/delivered-compiler-sha256.txt
+          for source in System Baseline; do
+            python X4/minimal/recovery-107/build_clock.py --system "$source" --x4 X4 --runtime Runtime --sdk Reader/sdk/driver --utilities Utilities --reader-scripts Reader/scripts --compiler "$CC_TARGET" --output "qualification/$source-target"
+          done
+          python X4/minimal/recovery-107/build_clock.py --system System --x4 X4 --runtime Runtime --sdk Reader/sdk/driver --utilities Utilities --reader-scripts Reader/scripts --compiler "$CC_TARGET" --output qualification/System-repeat
+          cmp qualification/System-target/home/default.elf qualification/System-repeat/home/default.elf
+      - name: Actual complete Home timer lifecycle and preserved pixels
+        shell: bash
+        run: |
+          set -euo pipefail
+          for source in System Baseline; do
+            python System/scripts/test_sparse_points_expiry.py --source-root "$source" --timer-storage --candidate "qualification/$source-target/home" --sleep-source X4/minimal/apps/portable_sleep.c --output "qualification/$source-expiry"
+            python "$source/scripts/test_context_sparse_timer.py" --candidate "qualification/$source-target/home" --runtime-sdk Runtime/sdk/app --sleep-source X4/minimal/apps/portable_sleep.c --timer-storage --output "qualification/$source-timer"
+          done
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          compared=[]
+          for suite in ('expiry','timer'):
+            after=Path('qualification/System-'+suite);before=Path('qualification/Baseline-'+suite)
+            for mode in ('normal','asan-ubsan'):
+              for path in sorted((after/mode).glob('*.pbm*')):
+                original=before/mode/path.name
+                assert path.read_bytes()==original.read_bytes(),str(path)
+                compared.append({'path':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
+          assert compared
+          Path('qualification/preserved-pixels-and-records.json').write_text(json.dumps(compared,indent=2)+'\n')
+          print(len(compared),'exact baseline/candidate pixel and retained-record comparisons PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-retained-${{ github.event.pull_request.head.sha || github.sha }}
+          path: qualification/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30

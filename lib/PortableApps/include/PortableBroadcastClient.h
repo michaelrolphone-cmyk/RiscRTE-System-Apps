@@ -1,4 +1,5 @@
 #pragma once
+#include "RiscRuntimeClockV1.h"
 #include "TelemetryBroadcastV1.h"
 #include "PortableRadioPolicy.h"
 #include <string.h>
@@ -48,9 +49,9 @@ static inline bool portable_broadcast_step(portable_broadcast_client *c,bool all
         /* Retained app storage admits only cleanup before normal service I/O. */
         if(!portable_broadcast_pause(c)||!portable_broadcast_release_storage(c))return false;
     }
-    risc_runtime_health_v1 health={.struct_size=sizeof(health)};
-    if(!c->runtime->health(&health))return portable_broadcast_pause(c);
-    if(!c->save_failed && (!c->loaded||(uint32_t)(health.uptime_ms-c->loaded_at)>=1000u)) {
+    uint32_t now=0;
+    if(!risc_runtime_monotonic_ms_v1(c->runtime,&now))return portable_broadcast_pause(c);
+    if(!c->save_failed && (!c->loaded||(uint32_t)(now-c->loaded_at)>=1000u)) {
 #ifdef PORTABLE_BROADCAST_PAUSE_POLICY_READS
         if(!portable_broadcast_pause(c))return false;
 #endif
@@ -63,7 +64,7 @@ static inline bool portable_broadcast_step(portable_broadcast_client *c,bool all
             if(!portable_broadcast_release_storage(c)){(void)portable_broadcast_pause(c);return false;}
         }
         if(!PORTABLE_BROADCAST_CUSTODY_SAFE())return false;
-        c->loaded=true;c->loaded_at=health.uptime_ms;
+        c->loaded=true;c->loaded_at=now;
     }
     return c->api->step(c->api->context,allow,&c->policy);
 }
