@@ -243,7 +243,11 @@ static bool session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const ris
    }else{s->ui.volume=(uint8_t)s->volume;s->ui.last_nonzero_volume=(uint8_t)s->restore_volume;s->ui.error_flags|=PQA_ERROR_SAVE;}
    if(s->retained)return false;
   }
-  if((actions&PQA_CONTEXTS)&&s->ui.contexts_controls) {
+  if((actions&PQA_CONTEXTS)&&s->ui.contexts_controls
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+      &&s->ui.contexts_available
+#endif
+  ) {
    uint8_t enabled=s->ui.action_contexts?1:0;
    const uint8_t bytes[]={'C',1,enabled,(uint8_t)(enabled^0xa5u)};
    if(s->save_user&&s->save_user(s->save_context,PORTABLE_CONTEXT_ENABLED_KEY,bytes,4,NULL)) {
@@ -281,7 +285,11 @@ static bool session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const ris
     s->ui.volume_valid=true;s->ui.error_flags&=~(PQA_ERROR_VOLUME|PQA_ERROR_SAVE);*alerts_changed=true;
    } else {s->ui.volume=(uint8_t)s->volume;s->ui.last_nonzero_volume=(uint8_t)s->restore_volume;s->ui.error_flags|=PQA_ERROR_SAVE;}
   }
-  if((actions&PQA_CONTEXTS)&&s->ui.contexts_controls) {
+  if((actions&PQA_CONTEXTS)&&s->ui.contexts_controls
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+      &&s->ui.contexts_available
+#endif
+  ) {
    if(portable_context_enabled_save(kv,s->ui.action_contexts)){
     s->ui.contexts_enabled=s->ui.action_contexts;s->ui.contexts_valid=true;
     s->ui.error_flags&=~(PQA_ERROR_CONTEXTS|PQA_ERROR_SAVE);

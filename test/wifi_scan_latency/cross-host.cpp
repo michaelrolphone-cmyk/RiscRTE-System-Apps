@@ -162,7 +162,10 @@ int main(int argc,char** argv){
   cross_app_scan();assert(cross_app_policy_reads()==reads+2);assert(!cross_app_retained()&&RiscCpu::NativeRadio::idle()&&!scanAllocation);
   assert(!strcmp(cross_app_result_message(),mode=="policy-off"?"Wi-Fi is off in Quick Controls":"Radio settings unavailable; retry"));
  }else if(mode=="prior-wifi-lease"){
-  assert(w->connect(nullptr,"prior-owner",""));assert(!cpu->appExitSafe()&&!runtime->promotionSafe());
+  assert(w->connect(nullptr,"prior-owner",""));
+  /* Current promotion admission uses provider-storage safety, not app-exit
+   * safety: a healthy station lease blocks exit but permits shared metadata. */
+  assert(!cpu->appExitSafe()&&cpu->providerStorageSafe()&&runtime->promotionSafe());
   cross_app_connect();assert(!cross_app_retained()&&w->status(nullptr)==WIFI_LINK_JOINING&&connects==2);
  }else assert(false);
  if(!cross_app_retained()){

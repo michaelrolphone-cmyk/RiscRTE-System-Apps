@@ -13,6 +13,7 @@ import re
 import portable_broadcast_build
 import portable_quick_build
 import portable_idle_build
+import portable_foreground_idle_build
 import portable_native_toolbar_build
 import portable_paper_build
 from pathlib import Path
@@ -20,9 +21,28 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
+# Complete dependency closure of the shared sampler and native clock client.
+# The clock client references timezone conversion even when this workflow seeds UTC.
+TIME_SYNC_SOURCES = ('PortableTimeSync.c', 'PortableRealtimeClient.c',
+                     'PortableTimeZone.c', 'PortableTimeZoneCatalog.c')
 
 def build(args, parser=None):
     parser = parser or argparse.ArgumentParser(description=__doc__)
+    time_sync=getattr(args,'time_server_sync',False)
+    if time_sync and (not getattr(args,'foreground_alarm_sleep',False) or not getattr(args,'clock_edit_authority',False)):
+        parser.error('--time-server-sync requires --foreground-alarm-sleep and --clock-edit-authority')
+    server=getattr(args,'time_server','pool.ntp.org')
+    if time_sync and (not re.fullmatch(r'[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?',server)):
+        parser.error('--time-server must be a bounded DNS name or IPv4 address')
+    native_ui=getattr(args,'watch_native_ui',False)
+    if native_ui:
+        if (args.display_rotation not in (None,0) or args.touch_rotation != 0 or args.nova_ui or
+            args.paper_transitions or args.resident_shell_client or getattr(args,'touch_scrolling',False) or
+            getattr(args,'shared_text_input',False) or portable_native_toolbar_build.selected(args)):
+            parser.error('--watch-native-ui requires unrotated Watch local keyboard, without legacy Nova/paper/resident/native-time profiles')
+        args.display_rotation=0
+        args.safe_viewport=True
+    portable_foreground_idle_build.validate(args,parser)
     portable_native_toolbar_build.validate(args,parser)
     portable_broadcast_build.validate(args,parser,portable_native_toolbar_build.selected(args))
     atomic=getattr(args,'experimental_atomic_wifi',False)
@@ -40,7 +60,8 @@ def build(args, parser=None):
         parser.error('--touch-scrolling requires --time-profile x4-native-time and --paper-transitions')
     cc = resolve_compiler()
     out = args.output_dir or ROOT/'dist/portable/wifi'
-    flags=['-DPORTABLE_WIFI_SETTINGS_APP', '-DPORTABLE_WIFI_INSTANCE='+str(args.wifi_instance), '-DPORTABLE_WIFI_STORAGE_INSTANCE=6']
+    flags=(['-DPORTABLE_SAFE_VIEWPORT'] if getattr(args,'safe_viewport',False) else [])+['-DPORTABLE_WIFI_SETTINGS_APP', '-DPORTABLE_WIFI_INSTANCE='+str(args.wifi_instance), '-DPORTABLE_WIFI_STORAGE_INSTANCE=6']
+    if native_ui: flags += ['-DPORTABLE_WIFI_NATIVE_PRESENTATION','-DPORTABLE_NOVA_UI','-DPORTABLE_RF_NATIVE_CANVAS','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_WATCH_NATIVE_HEIGHT','-DPORTABLE_WATCH_COLOR_ONLY','-DPORTABLE_WATCH_SAFE_INSETS']
     if args.resident_shell_client: flags.append('-DPORTABLE_WIFI_REMEMBER_CONNECTED')
     if atomic: flags+=['-DPORTABLE_WIFI_ATOMIC_EXPERIMENTAL','-I'+str(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2')]
     if availability: flags.append('-DPORTABLE_SETTINGS_AVAILABILITY')
@@ -67,10 +88,41 @@ def build(args, parser=None):
     flags+=portable_broadcast_build.flags(args)
     version=portable_quick_build.version(args,'wifi_settings',portable_idle_build.version(args,'wifi_settings',version))
     if policy: version='1.1.30'
+    if native_ui: version='1.1.41'
+    if time_sync:version='1.1.42'
     if native_receipt:native_receipt['version']=version
     flags.append('-DPORTABLE_WIFI_VERSION=\"'+version+'\"')
     quick_flags, quick_sources = portable_quick_build.configure(args,parser,ROOT,out,includes)
     flags += quick_flags
+    includes,idle_flags,idle_sources=portable_foreground_idle_build.configure(args,parser,ROOT,out,includes)
+    flags+=idle_flags
+    quick_sources+=idle_sources
+    time_sync_receipt=None
+    if time_sync:
+        key='sdk/driver/RiscTimeSampleV1.h'
+        repo=args.foreground_idle_runtime_dir
+        try:
+            sample_pin=subprocess.check_output(['git','-C',str(repo),'rev-parse','HEAD'],text=True).strip()
+            canonical_header=subprocess.check_output(['git','-C',str(repo),'show',sample_pin+':'+key])
+        except subprocess.CalledProcessError as error:
+            parser.error('Time sync requires committed canonical sampler header: '+str(error))
+        if (ROOT/'lib/PortableApps/include/RiscTimeSampleV1.h').read_bytes()!=canonical_header:
+            parser.error('Bundled sampler header differs from selected canonical Runtime')
+        (includes/'RiscTimeSampleV1.h').write_bytes(canonical_header)
+        flags+=['-DPORTABLE_WIFI_TIME_SYNC','-DPORTABLE_TIME_SYNC_SERVER='+json.dumps(server)]
+        for name in TIME_SYNC_SOURCES:
+            source=ROOT/'lib/PortableApps/src'/name
+            if source not in quick_sources+native_sources:quick_sources.append(source)
+        time_sync_receipt={'capability':'net.time-sample@1','server':server,'timeout_ms':5000,
+            'sample_max_age_ms':1000,'transport':'unauthenticated SNTP','timezone_changed':False,
+            'clock_commit':'shared AlarmClockEditV2 + native seed/readback',
+            'header_source':key,'header_commit':sample_pin,
+            'header_sha256':hashlib.sha256(canonical_header).hexdigest()}
+        args.foreground_idle_receipt['header_origins']['RiscTimeSampleV1.h']={
+            'source':key,'layer':'runtime-driver-addition','commit':sample_pin,
+            'sha256':time_sync_receipt['header_sha256']}
+        (out/'licenses/foreground-idle/SOURCES.json').write_text(json.dumps(args.foreground_idle_receipt,indent=2)+'\n')
+
     exports=portable_quick_build.exports(args,{'app_main', 'app_module_init', 'app_module_fini'})
     mapping = out/'wifi_settings.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
@@ -106,6 +158,8 @@ def build(args, parser=None):
     version=native_receipt['version'] if native_receipt else json.loads((ROOT/'Apps/wifi_settings.json').read_text())['version']
     version=portable_quick_build.version(args,'wifi_settings',portable_idle_build.version(args,'wifi_settings',version))
     if policy: version='1.1.30'
+    if native_ui: version='1.1.41'
+    if time_sync:version='1.1.42'
     if native_receipt:native_receipt['version']=version
     manifest={'type':'application','id':'wifi_settings','version':version,'architecture':'xtensa-esp32s3',
         'file_name':'wifi_settings.elf','entry':'app_main','requires':[
@@ -114,6 +168,7 @@ def build(args, parser=None):
     if shared_text: manifest['requires'].append({'capability':'ui.text-input','api':1})
     if atomic: manifest['requires'].append({'capability':'storage.key-value.atomic','api':1})
     if availability: manifest['requires'].append({'capability':'storage.key-value.availability','api':1})
+    if time_sync: manifest['requires'] += [{'capability':'net.time-sample','api':1},{'capability':'runtime.realtime-control','api':1}]
     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':1})
     manifest['requires'].append({'capability':'storage.key-value','api':1})
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
@@ -121,12 +176,14 @@ def build(args, parser=None):
     manifest['requires'] = list({(item['capability'], item['api']): item for item in manifest['requires']}.values())
     portable_native_toolbar_build.requirements(args,manifest['requires'])
     portable_broadcast_build.requirements(args,manifest['requires'])
+    portable_foreground_idle_build.requirements(args,manifest['requires'])
     (out/'wifi_settings.json').write_text(json.dumps(manifest,indent=2)+'\n')
     inputs=['Apps/wifi_settings.c','Apps/wifi_settings_portable.inc','Apps/wifi_settings.json','lib/NativeApps/include/T5AppApi.h', 'lib/NativeApps/include/T5UiApi.h', 'lib/NativeApps/include/T5StorageApi.h', 'lib/NativeApps/include/T5VideoApi.h', 'scripts/build_portable_wifi.py']
     # Include all shared-client inputs: the adapter can also carry the shared
     # Springboard presentation/fonts after the coordinated integration.
     inputs += [str(p.relative_to(ROOT)) for p in sorted((ROOT/'lib/PortableApps').rglob('*')) if p.is_file()]
     if (ROOT/'Apps/SpringboardPresentation.h').exists(): inputs.append('Apps/SpringboardPresentation.h')
+    if time_sync:inputs.append('Apps/wifi_time_sync.inc')
     inputs += ['Apps/PaperPresentation.h', 'Apps/PaperFrame.h', 'scripts/portable_quick_build.py']
     if atomic:
         inputs+=['Apps/wifi_atomic.inc']
@@ -159,6 +216,8 @@ def build(args, parser=None):
         'requested_capabilities':manifest['requires'],
         'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
+    if time_sync: record['time_server_sync']=time_sync_receipt
+    if native_ui: record.update(watch_native_ui=True,safe_content_native_raster=True)
     record['shared_settings']={'busy_reload':'draft-safe-250ms','save_acknowledges':'native-journal','sd_checkpoint_confirmed':False,'hardware_qualified':False}
     if atomic:
         record['atomic_wifi']={'experimental':True,'capability':'storage.key-value.atomic@1','namespace':6,'copied_async':True,'native_map_and_intent_atomic':True,'sd_checkpoint_confirmed':False,'production_broker_connected':False}
@@ -193,11 +252,16 @@ def build(args, parser=None):
         record['grant_count']=len(record['required_grants'])
     portable_native_toolbar_build.write_admission(ROOT,out,manifest,record)
     portable_quick_build.record(args,record)
+    portable_foreground_idle_build.record(args,record,flags,private_kv=() if atomic else (6,),compile_command=compile_command)
     (out/'wifi_settings-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
     print('Portable Wi-Fi: target layout, ELF validator, import/export checks passed')
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--time-server-sync',action='store_true',help='Sync UTC after owned Wi-Fi connection using checked shared alarm clock transaction')
+    parser.add_argument('--time-server',default='pool.ntp.org',help='Explicit SNTP request server; only used with --time-server-sync')
+    parser.add_argument('--watch-native-ui',action='store_true',help='Native safe-content Wi-Fi geometry and local keyboard; original font pixels')
+    parser.add_argument('--safe-viewport',action='store_true',help='Use provider content bounds with full physical RGB565 raster')
     parser.add_argument('--shared-text-policy',action='store_true',help='X4 shared editor checkpoint progression; selected availability profile only')
     parser.add_argument('--experimental-settings-availability',action='store_true',help='Default-off exact namespace-6 availability; requires the experimental atomic X4 profile')
     parser.add_argument('--experimental-atomic-wifi',action='store_true',help='Disconnected X4 native atomic map+intent capability; never falls back to KV1')
@@ -208,6 +272,7 @@ if __name__ == '__main__':
     parser.add_argument('--wall-time',action='store_true',help='Explicit unchanged RTC wall-time policy')
     portable_broadcast_build.options(parser)
     portable_quick_build.options(parser)
+    portable_foreground_idle_build.options(parser)
     portable_native_toolbar_build.options(parser)
     parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')

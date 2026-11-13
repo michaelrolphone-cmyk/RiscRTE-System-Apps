@@ -30,6 +30,16 @@ int portable_desk_points_catalog_refresh(portable_points_catalog_view *out) {
  return -1;
 }
 #endif
+#ifdef RISC_RUNTIME_MONOTONIC_V1_SIZE
+static bool desk_guard_monotonic(uint32_t *out) {
+ if(native_sleep_retained)return false;
+ uint32_t value;
+ if(!out || !desk_runtime || desk_runtime->struct_size<RISC_RUNTIME_MONOTONIC_V1_SIZE ||
+    !desk_runtime->monotonic_ms)return false;
+ if(!desk_runtime->monotonic_ms(&value)){portable_desk_adapter_retain();return false;}
+ *out=value;return true;
+}
+#endif
 static bool desk_guard_health(risc_runtime_health_v1 *out) {
  if(native_sleep_retained)return false;
  if(!desk_runtime->health(out)){portable_desk_adapter_retain();return false;}
@@ -125,15 +135,6 @@ static bool desk_acquire(const char *name,uint32_t version,uint64_t instance,
                          risc_runtime_capability_v1 *grant) {
  if(native_sleep_retained || desk_phase==DESK_FINALIZED)return false;
  if(!desk_runtime->acquire(name,version,instance,grant)) {
-#ifdef PORTABLE_HOME_PROVISION
-  /* Runtime resolves one app-authorized optional volume at instance zero.
-   * Only a clean refusal is absent/ambiguous; partial custody stays fenced. */
-  if(!strcmp(name,"storage.volume") && version==1 && instance==0 &&
-     grant->struct_size==sizeof(*grant) && !grant->api && !grant->slot && !grant->generation) {
-   if(risc_runtime_get_api(1)!=desk_runtime)portable_desk_adapter_retain();
-   return false;
-  }
-#endif
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
   if(!strcmp(name,"storage.key-value.atomic")&&version==1&&instance==1&&
      grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {

@@ -195,9 +195,26 @@ static bool terminal_band_health(risc_runtime_health_v1 *out) {
  if(++terminal_health_calls<terminal_health_limit)return true;
  portable_adapter_retain_silent();return false;
 }
-static void terminal_band_restore(bool watch_row) {
+static void terminal_band_restore(unsigned primitive) {
  quick_runtime.retain_invocation=retain_during_band;native_custody_runtime=&quick_runtime;
- if(watch_row) {
+ static uint16_t circle_before[240*240];
+ if(primitive==4) {
+  assert(portable_paper_frame_ready());clear_color(0x1357);nova_mask_pending=true;np_mask();present(false);
+  assert(raster_progress());assert(raster_cursor && raster_cursor->kind==RS_NP_MASK);
+  raster_band_top=16;terminal_health_limit=2;
+  memcpy(circle_before,raster_offscreen,sizeof(circle_before));
+ } else if(primitive==3) {
+  assert(portable_paper_frame_ready());clear();np_circle(120,120,60,0x189abe,255);present(false);
+  assert(raster_progress());assert(raster_cursor && raster_cursor->kind==RS_NP_CIRCLE);
+  /* Enter the opaque run exactly at its checkpoint-before-first-pixel. */
+  raster_band_top=120;raster_pixels=511;terminal_health_limit=2;
+  memcpy(circle_before,raster_offscreen,sizeof(circle_before));
+ } else if(primitive==2) {
+  assert(portable_paper_frame_ready());clear();np_caption(100,"10:40 AM",true,0xffffff);present(false);
+  assert(raster_progress());
+  assert(raster_cursor && raster_cursor->kind==RS_NP_CAPTION);
+  terminal_health_limit=2;
+ } else if(primitive==1) {
   retained_background();quick.ui.position_q8=quick.ui.target_q8=PQA_OPEN_Q8;
   assert(portable_paper_frame_ready());assert(quick_copy_background());
   assert(quick_render_watch("12:34",true,63));present(false);
@@ -213,6 +230,7 @@ static void terminal_band_restore(bool watch_row) {
  quick_runtime.health=terminal_band_health;
  assert(!raster_progress());
  assert(terminal_calls==1 && terminal_health_calls==terminal_health_limit && native_custody_retained && failed);
+ if(primitive==3||primitive==4)assert(!memcmp(circle_before,raster_offscreen,sizeof(circle_before)));
  assert(!surface.frame && !surface.pixels && !frame_count);
  assert(native_custody_surface.frame==0 && native_custody_surface.pixels==raster_offscreen);
  assert(raster_offscreen && raster_commands && raster_sealed);
@@ -296,7 +314,10 @@ static void text_scene_handoff(bool submitted) {
  assert(portable_paper_frame_drain());assert_image(0x3579);cleanup();
 }
 #endif
-int main(int argc,char **argv) {
+#ifndef PORTABLE_RASTER_CUSTODY_MAIN
+#define PORTABLE_RASTER_CUSTODY_MAIN main
+#endif
+int PORTABLE_RASTER_CUSTODY_MAIN(int argc,char **argv) {
  assert(argc==2);const char *name=argv[1];
  if(!strcmp(name,"failed-cleanup")) {
   char *args[]={argv[0],"9",NULL};return base_alarm_fixture_main(2,args);
@@ -328,6 +349,9 @@ int main(int argc,char **argv) {
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
  else if(!strcmp(name,"terminal-band-restore"))terminal_band_restore(false);
  else if(!strcmp(name,"terminal-watch-row"))terminal_band_restore(true);
+ else if(!strcmp(name,"terminal-caption-row"))terminal_band_restore(2);
+ else if(!strcmp(name,"terminal-circle-span"))terminal_band_restore(3);
+ else if(!strcmp(name,"terminal-mask-row"))terminal_band_restore(4);
  else if(!strcmp(name,"terminal-offscreen-fallback"))terminal_fallback(0);
  else if(!strcmp(name,"terminal-quick-orphan"))terminal_fallback(1);
  else if(!strcmp(name,"terminal-bitmap-orphan"))terminal_fallback(2);

@@ -8,9 +8,6 @@
  * #else branch of wifi_settings.c. No firmware UI, sockets or network stack. */
 #include "T5AppApi.h"
 #include "PortableWifiView.h"
-#if defined(PORTABLE_NOVA_UI) && defined(PORTABLE_WATCH_NATIVE_HEIGHT)
-#include "WatchViewLayout.h"
-#endif
 #include "PaperFrame.h"
 #include "PortableWifiCredentials.h"
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
@@ -132,18 +129,10 @@ static const char *wifi_message;
 static unsigned page, choice, key_page;
 #if defined(PORTABLE_TOUCH_SCROLL)
 static unsigned wifi_view_identity;
-#ifdef PORTABLE_WIFI_NATIVE_UI
-#define WIFI_NEW_VIEW() (++wifi_view_identity,portable_wifi_native_invalidate())
-#else
 #define WIFI_NEW_VIEW() (++wifi_view_identity)
-#endif
 #define WIFI_SCROLL_CANCEL() portable_wifi_scroll_interrupt()
 #else
-#ifdef PORTABLE_WIFI_NATIVE_UI
-#define WIFI_NEW_VIEW() portable_wifi_native_invalidate()
-#else
 #define WIFI_NEW_VIEW() ((void)0)
-#endif
 #define WIFI_SCROLL_CANCEL() ((void)0)
 #endif
 static bool wifi_back_return,wifi_scan_back;
@@ -218,8 +207,17 @@ static bool wifi_acquire(void) {
 #endif
   portable_stage_log(wr,"wifi-provider","result=ready connect=not-requested");return true;
 }
+#ifdef PORTABLE_WIFI_TIME_SYNC
+bool portable_wifi_services_begin(void);
+bool portable_wifi_services_end(void);
+#include "wifi_time_sync.inc"
+#endif
 static bool wifi_disconnect(void) {
  if(PORTABLE_APP_RETAINED())return false;
+#ifdef PORTABLE_WIFI_TIME_SYNC
+ if(!wifi_time_cancel()){wifi_time_disconnect_pending=true;return false;}
+ wifi_time_disconnect_pending=false;wifi_time_ip=wifi_time_attempted=false;
+#endif
 #ifdef PORTABLE_BLE_BROADCAST
   if(!portable_broadcast_stop())return false;
 #endif
@@ -302,6 +300,9 @@ bool portable_wifi_services_end(void) {
   return true;
 }
 bool portable_wifi_stop_pending(void) {
+#ifdef PORTABLE_WIFI_TIME_SYNC
+ if((wifi_time_cancelling || wifi_time_disconnect_pending || wifi_time_radio_stop) && !PORTABLE_APP_RETAINED())return true;
+#endif
 #ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
  if(!cleanup_pending&&!PORTABLE_APP_RETAINED()&&(remember_pending||profile_work==WIFI_PROFILE_SAVE
 #ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
@@ -395,6 +396,9 @@ static void wifi_page(unsigned next_page) {
   page=next_page;choice=0;armed=false;dirty=true;
 }
 static void wifi_edit(unsigned field) {
+#ifdef PORTABLE_WIFI_TIME_SYNC
+  if(wifi_time_lease){if(!wifi_time_cancel())return;wifi_time_notice="Time sync cancelled";}
+#endif
   wifi_zero(editor,sizeof(editor));
   const char *source=field==WP_SSID?credentials.ssid:credentials.password;
   size_t n=wifi_length(source,field==WP_SSID?32:63);memcpy(editor,source,n);
@@ -571,6 +575,10 @@ static bool wifi_async_begin(uint32_t kind) {
   return wifi_async_submit();
 }
 static bool wifi_async_stop(void) {
+#ifdef PORTABLE_WIFI_TIME_SYNC
+  if(!wifi_time_cancel()){wifi_time_radio_stop=true;return false;}
+  wifi_time_radio_stop=false;wifi_time_ip=wifi_time_attempted=false;
+#endif
   if(!wifi_operation)return true;
   int rc=wifi_async->cancel(wifi->context,wifi_operation);
   if(PORTABLE_APP_RETAINED())return false;
@@ -637,12 +645,22 @@ static void wifi_async_tick(void) {
       if(remember_join){remember_join=false;remember_pending=true;wifi_message="Connected; saving network";}
 #endif
     }
+#ifdef PORTABLE_WIFI_TIME_SYNC
+    wifi_time_ip=(progress.station[0]|progress.station[1]|progress.station[2]|progress.station[3])!=0;
+#endif
     link_state=WIFI_LINK_UP;joining=false;strcpy(status_text,state);strcpy(ip_text,ip);
   }
 }
 #endif
 static void wifi_tick(void) {
  if(PORTABLE_APP_RETAINED())return;
+#ifdef PORTABLE_WIFI_TIME_SYNC
+ if(wifi_time_disconnect_pending){(void)wifi_disconnect();return;}
+#ifdef WIFI_ASYNC_V1_SIZE
+ if(wifi_time_radio_stop){(void)wifi_async_stop();return;}
+#endif
+ if(wifi_time_lease)return; /* Provider service lease owns the live network. */
+#endif
   uint32_t now=wa->millis();
   if((uint32_t)(now-last_status)<250)return;
   last_status=now;
@@ -692,6 +710,9 @@ static void wifi_tick(void) {
     wifi_ipv4_v1 ip={0},access_point={0};
     if(wifi->addresses(wifi->context,&ip,&access_point))snprintf(address,sizeof(address),"IPv4 %u.%u.%u.%u",ip.address[0],ip.address[1],ip.address[2],ip.address[3]);
     else {if(wifi_disconnect())wifi_message="Address read failed - retry Connect";dirty=true;return;}
+#ifdef PORTABLE_WIFI_TIME_SYNC
+    wifi_time_ip=(ip.address[0]|ip.address[1]|ip.address[2]|ip.address[3])!=0;
+#endif
   } else {strcpy(status,joining?"Connecting...":"Disconnected");address[0]=0;}
   if(strcmp(status,status_text) || strcmp(address,ip_text))dirty=true;
   strcpy(status_text,status);strcpy(ip_text,address);
@@ -896,11 +917,7 @@ static void wifi_make_view(void) {
     if(page==WP_PASSWORD){memset(masked,'*',n);masked[n]=0;view.entry=masked;}
     else view.entry=editor;
     /* Show the tail so length-limited fields can still be edited on a watch. */
-#ifndef PORTABLE_WIFI_NATIVE_UI
     if(n>25)view.entry+=n-25;
-#else
-    if(portable_wifi_paper()&&n>25)view.entry+=n-25;
-#endif
     view.message=page==WP_SSID?"32 bytes max; < cancels":"63 chars max; < cancels";
     return;
   }
@@ -973,6 +990,9 @@ static void wifi_make_view(void) {
   view.count=12;view.rows[11]="Saved-network storage";view.values[11]=wifi_storage_notice();
   if(!wifi_storage_ready()){view.values[6]="Storage unavailable; draft kept in RAM";view.values[7]="Unavailable; saved sources preserved";}
 #endif
+#endif
+#ifdef PORTABLE_WIFI_TIME_SYNC
+  wifi_time_row=view.count;view.rows[view.count]=wifi_time_lease?"Sync time / cancel":"Sync time / retry";view.values[view.count++]=wifi_time_notice;
 #endif
 }
 #ifdef PORTABLE_TOUCH_SCROLL
@@ -1112,6 +1132,14 @@ static void wifi_activate(unsigned selected) {
     wifi_select_entry(&entry);
     wifi_zero(&entry,sizeof(entry));return;
   }
+#ifdef PORTABLE_WIFI_TIME_SYNC
+  if(selected==wifi_time_row){
+    if(wifi_time_lease){if(wifi_time_cancel())wifi_time_notice="Time sync cancelled";}
+    else if(link_state==WIFI_LINK_UP && wifi_time_ip){wifi_time_attempted=false;wifi_time_notice="Time sync pending";}
+    else wifi_time_notice="Connect before syncing time";
+    dirty=true;return;
+  }
+#endif
   switch(selected) {
   case 0:wifi_edit(WP_SSID);break;
   case 1:wifi_edit(WP_PASSWORD);break;
@@ -1215,15 +1243,15 @@ static bool wifi_open(void) {
 #ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
   remember_join=remember_pending=false;portable_wifi_credentials_clear(&joined_profile);
 #endif
+#ifdef PORTABLE_WIFI_TIME_SYNC
+  if(wifi_time.self && wifi_time.state==PORTABLE_TIME_SYNC_RETAINED)return false;
+  wifi_time=(portable_time_sync){0};wifi_time_attempted=wifi_time_ip=wifi_time_lease=wifi_time_cancelling=wifi_time_disconnect_pending=wifi_time_radio_stop=false;
+  wifi_time_notice="Connect to sync time";
+#endif
   wifi_back_return=wifi_scan_back=false;wifi_service_lease=wifi_service_depth=0;
   wa=t5_app_get_api(1);wr=PORTABLE_APP_RUNTIME();
   if(!wa || !wa->poll || !wa->millis || !wa->screen_width || !wa->screen_height ||
-#ifdef PORTABLE_WIFI_NATIVE_UI
-     wa->screen_width()<(portable_wifi_paper()?240:128) || wa->screen_height()<(portable_wifi_paper()?240:128) ||
-#else
-     wa->screen_width()<240 || wa->screen_height()<240 ||
-#endif
-     !wr || wr->api_version!=1 ||
+     wa->screen_width()<240 || wa->screen_height()<240 || !wr || wr->api_version!=1 ||
      wr->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE || !wr->acquire || !wr->release || !wr->request_launch || !wr->diagnostic || !wr->yield_ms)return false;
   memset(&wg,0,sizeof(wg));memset(&wk,0,sizeof(wk));wifi=NULL;wifi_store=NULL;
 #ifdef WIFI_ASYNC_V1_SIZE
@@ -1239,9 +1267,6 @@ static bool wifi_open(void) {
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   wifi_text=(portable_text_client){0};wifi_text_state=(risc_text_entry_state_v1){0};wifi_text_active=wifi_text_closing=wifi_home_return=false;
-#endif
-#ifdef PORTABLE_WIFI_NATIVE_UI
-  portable_wifi_native_invalidate();
 #endif
   dirty=true;armed=false;page=WP_ROOT;choice=key_page=0;link_state=WIFI_LINK_DOWN;
   strcpy(status_text,"Disconnected");ip_text[0]=0;last_status=wa->millis();
@@ -1335,11 +1360,7 @@ void app_main(void) {
     }
     if(dirty){
       wifi_make_view();
-#ifdef PORTABLE_WIFI_NATIVE_UI
-      if(paper_frame_ready()){portable_wifi_render(&view);dirty=false;}
-#else
       if(!portable_wifi_paper() || paper_frame_ready()){portable_wifi_render(&view);dirty=false;}
-#endif
     }
     t5_app_input_t input;
     if(!wa->poll(&input,25)) {
@@ -1360,6 +1381,9 @@ void app_main(void) {
     if(input.exit_requested && !opened)return;
     wifi_tick();
     if(PORTABLE_APP_RETAINED())return;
+#ifdef PORTABLE_WIFI_TIME_SYNC
+    wifi_time_update();if(PORTABLE_APP_RETAINED())return;
+#endif
     wifi_initial_profile_step();
     if(PORTABLE_APP_RETAINED())return;
 #ifdef PORTABLE_WIFI_PROFILES
@@ -1371,44 +1395,28 @@ void app_main(void) {
 #ifdef PORTABLE_TOUCH_SCROLL
     dirty|=portable_wifi_scroll_changed();
 #endif
-#ifdef PORTABLE_WIFI_NATIVE_UI
-    /* Exit/Back remain responsive while presentation is pending. */
-    if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK)){if(wifi_back())return;continue;}
-    if(input.tapped&&!portable_wifi_paper()){
-      wifi_make_view();
-      if(!portable_wifi_native_accept(&view)){portable_wifi_native_invalidate();continue;}
-    }
-#endif
     if(!input.buttons && !input.tapped && !input.exit_requested){armed=true;continue;}
     if(!armed)continue;
     armed=false;
     if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK)){if(wifi_back())return;continue;}
     wifi_make_view();
-#ifdef PORTABLE_WIFI_NATIVE_UI
-    if(input.tapped && !portable_wifi_paper()) {
-      int hit=portable_wifi_hit(&view,input.touch_x,input.touch_y);input.tapped=false;
-      if(hit==WIFI_HIT_BACK){if(wifi_back())return;continue;}
-      if(hit==WIFI_HIT_PREVIOUS)input.buttons=T5_APP_BUTTON_UP;
-      else if(hit==WIFI_HIT_NEXT)input.buttons=T5_APP_BUTTON_DOWN;
-      else if(hit==WIFI_HIT_SELECT)input.buttons=T5_APP_BUTTON_CONFIRM;
-      else {if(hit>=0){choice=(unsigned)hit;wifi_activate(choice);}continue;}
-    }
+    if(input.tapped && (portable_wifi_paper()
+#ifdef PORTABLE_WIFI_NATIVE_PRESENTATION
+      || true
 #endif
-    if(input.tapped && portable_wifi_paper()) {
+    )) {
       int hit=portable_wifi_hit(&view,input.touch_x,input.touch_y);
       input.tapped=false;
       if(hit==WIFI_HIT_BACK){if(wifi_back())return;continue;}
       if(hit==WIFI_HIT_PREVIOUS)input.buttons=T5_APP_BUTTON_UP;
       else if(hit==WIFI_HIT_NEXT)input.buttons=T5_APP_BUTTON_DOWN;
+#ifdef PORTABLE_WIFI_NATIVE_PRESENTATION
+      else if(hit==WIFI_HIT_SELECT)input.buttons=T5_APP_BUTTON_CONFIRM;
+#endif
       else {if(hit>=0){choice=(unsigned)hit;wifi_activate(choice);}continue;}
     }
     if(input.tapped) {
-#if defined(PORTABLE_NOVA_UI) && defined(PORTABLE_WATCH_NATIVE_HEIGHT)
-      int x=input.touch_x,y=input.touch_y;
-      if(!watch_view_touch(wa->screen_width(),wa->screen_height(),view.keyboard,&x,&y))continue;
-#else
       int x=input.touch_x-(wa->screen_width()-240)/2,y=input.touch_y-(wa->screen_height()-240)/2;
-#endif
 #ifdef PORTABLE_NOVA_UI
       if(!view.keyboard && y>=188 && y<232) {
         if(x>=16 && x<80)input.buttons=T5_APP_BUTTON_UP;
