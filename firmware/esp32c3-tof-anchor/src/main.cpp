@@ -11,7 +11,7 @@
 #error FTM initiator and responder support are required
 #endif
 
-static const char *VERSION="1.0.2";
+static const char *VERSION="1.0.3";
 static const uint16_t PORT=7446;
 static const uint32_t MAX_AGE=30000;
 WebServer web(80);
@@ -41,6 +41,9 @@ QueueHandle_t resultQueue;
 float offsetM=0, heightM=0;
 bool heightKnown=false;
 bool lowTx=false;
+int8_t txQ=78, savedTxQ=78;
+bool txTrial=false;
+uint32_t txTrialStart=0, txTrialDuration=0;
 int disconnectReason=0;
 int ftmCode=-1;
 String macText(const uint8_t *m) {
@@ -70,6 +73,7 @@ void statusDoc(JsonDocument &d) {
  d["id"]=nodeId; d["boot_id"]=bootId; d["seq"]=seq; d["uptime_ms"]=now;
  d["ssid"]=apName; d["bssid"]=WiFi.softAPmacAddress(); wifi_ap_record_t ap={};d["channel"]=esp_wifi_sta_get_ap_info(&ap)==ESP_OK?ap.primary:WiFi.channel();
  d["ip"]=WiFi.status()==WL_CONNECTED?WiFi.localIP().toString():WiFi.softAPIP().toString();
+ int8_t applied=0;esp_wifi_get_max_tx_power(&applied);d["tx_power_dbm"]=float(applied)/4;d["tx_trial_active"]=txTrial;
  d["wifi_status_code"]=int(WiFi.status());d["disconnect_reason"]=disconnectReason;d["low_tx_power"]=lowTx;d["last_ftm_code"]=ftmCode;
  d["connected"]=WiFi.status()==WL_CONNECTED; d["ftm_responder"]=true;
  d["ftm_state"]=retiring?"retirement_stalled":radioBusy?"measuring":scanning?"scanning":"idle";
@@ -102,13 +106,23 @@ void publish() {
  Serial.println(data);
 }
 bool applyConfig(JsonDocument &d,String &error) {
+ if(d.containsKey("tx_power_dbm")&&(!isfinite(d["tx_power_dbm"].as<float>())||d["tx_power_dbm"].as<float>()<2||d["tx_power_dbm"].as<float>()>19.5)){error="invalid TX power";return false;}
  if(d.containsKey("ssid")&&(d["ssid"].as<String>().length()>32)){error="SSID too long";return false;}
  if(d.containsKey("password")&&d["password"].as<String>().length()>63){error="password too long";return false;}
  if(d.containsKey("offset_m")&&(!isfinite(d["offset_m"].as<float>())||fabs(d["offset_m"].as<float>())>100)){error="invalid offset";return false;}
  if(d.containsKey("height_m")&&(!isfinite(d["height_m"].as<float>())||fabs(d["height_m"].as<float>())>100)){error="invalid height";return false;}
- prefs.begin("tof-anchor",false);
+ if(!prefs.begin("tof-anchor",false)){error="settings unavailable";return false;}
  if(d.containsKey("ota_password")){String key=d["ota_password"].as<String>();if(key.length()<16||key.length()>64){prefs.end();error="OTA key length";return false;}otaPassword=key;prefs.putString("ota_key",key);updater.setup(&web,"/update","admin",otaPassword.c_str());}
- if(d.containsKey("low_tx_power")){lowTx=d["low_tx_power"];prefs.putBool("low_tx",lowTx);WiFi.setTxPower(lowTx?WIFI_POWER_8_5dBm:WIFI_POWER_19_5dBm);}
+ if(d.containsKey("low_tx_power")){lowTx=d["low_tx_power"];txQ=lowTx?34:78;savedTxQ=txQ;txTrial=false;prefs.putBool("low_tx",lowTx);prefs.putInt("tx_q",txQ);esp_wifi_set_max_tx_power(txQ);}
+ if(d.containsKey("tx_power_dbm")){
+  int8_t requested=int8_t(lroundf(d["tx_power_dbm"].as<float>()*4));
+  if(esp_wifi_set_max_tx_power(requested)!=ESP_OK){prefs.end();error="TX power rejected";return false;}
+  txQ=requested;lowTx=txQ<=34;
+  uint32_t duration=d["tx_trial_ms"]|0;
+  if(duration){txTrial=true;txTrialStart=millis();txTrialDuration=duration;}
+  else{savedTxQ=txQ;txTrial=false;prefs.putInt("tx_q",txQ);prefs.putBool("low_tx",lowTx);}
+ }
+ if((d["commit_tx_power"]|false)&&txTrial){savedTxQ=txQ;txTrial=false;prefs.putInt("tx_q",txQ);prefs.putBool("low_tx",lowTx);}
  if(d.containsKey("ssid")){wifiSSID=d["ssid"].as<String>();prefs.putString("ssid",wifiSSID);provisionPending=true;}
  if(d.containsKey("password")){wifiPass=d["password"].as<String>();prefs.putString("password",wifiPass);provisionPending=true;}
  if(d.containsKey("target_host")){targetHost=d["target_host"].as<String>();prefs.putString("target",targetHost);}
@@ -125,7 +139,7 @@ void setup() {
  otaPassword=prefs.getString("ota_key","");
  wifiSSID=prefs.getString("ssid","");wifiPass=prefs.getString("password","");
  targetHost=prefs.getString("target","");offsetM=prefs.getFloat("offset",0);
- lowTx=prefs.getBool("low_tx",false);
+ lowTx=prefs.getBool("low_tx",false);txQ=prefs.getInt("tx_q",lowTx?34:78);savedTxQ=txQ;
  heightM=prefs.getFloat("height",0);heightKnown=prefs.getBool("height_known",false);prefs.end();
  WiFi.persistent(false); WiFi.mode(WIFI_AP_STA); WiFi.setSleep(false);
  uint8_t mac[6];esp_wifi_get_mac(WIFI_IF_AP,mac);nodeId=macText(mac);
@@ -135,13 +149,13 @@ void setup() {
  WiFi.softAPConfig(IPAddress(192,168,subnet,1),IPAddress(192,168,subnet,1),IPAddress(255,255,255,0));
  if(!WiFi.softAP(apName.c_str(),nullptr,1,0,4,true)){Serial.println("{\"error\":\"FTM AP failed\"}");}
  WiFi.onEvent(onWiFi);
- WiFi.setTxPower(lowTx?WIFI_POWER_8_5dBm:WIFI_POWER_19_5dBm);
+ esp_wifi_set_max_tx_power(txQ);
  if(!wifiSSID.isEmpty())WiFi.begin(wifiSSID.c_str(),wifiPass.c_str());
  udp.begin(PORT);
  web.on("/",HTTP_GET,[]{web.send_P(200,"text/html",PAGE);});
  web.on("/api/status",HTTP_GET,[]{web.send(200,"application/json",statusJSON());});
  web.on("/api/config",HTTP_POST,[]{
-  if(web.client().localIP()!=WiFi.softAPIP()){web.send(403,"application/json","{\"error\":\"configure over USB or anchor AP\"}");return;}
+  if(web.client().localIP()!=WiFi.softAPIP()&&!(otaPassword.length()>=16&&web.authenticate("admin",otaPassword.c_str()))){web.requestAuthentication();return;}
   DynamicJsonDocument d(1024);String err;
   if(deserializeJson(d,web.arg("plain"))||!applyConfig(d,err)){web.send(400,"application/json","{\"error\":\"invalid configuration\"}");return;}
   web.send(200,"application/json","{\"saved\":true}");
@@ -152,6 +166,7 @@ void setup() {
 }
 void loop() {
  uint32_t now=millis();
+ if(txTrial&&now-txTrialStart>=txTrialDuration){txQ=savedTxQ;lowTx=txQ<=34;esp_wifi_set_max_tx_power(txQ);txTrial=false;}
  web.handleClient();
  while(Serial.available()){
   char c=Serial.read();
