@@ -233,4 +233,16 @@ class BaselineTests(unittest.TestCase):
                 edges.append({"a":IDS[i],"b":IDS[j],"distance_m":float(np.linalg.norm(points[i]-points[j])),"sigma_m":.25})
         self.assertIsNone(fit_geometry(IDS,edges,3))
 
+
+    def test_repeating_a_changed_window_without_new_sessions_cannot_confirm_move(self):
+        f=Fixture();before=f.train();moved=XYZ.copy();moved[-1]+=[3,2,1]
+        for _ in range(40):
+            s=f.tick(points=moved)
+            if s["status"]=="movement_suspected":break
+        self.assertEqual(s["status"],"movement_suspected")
+        for _ in range(30):
+            f.now+=5;s=f.model.update()
+        self.assertEqual(s["epoch"],before["epoch"])
+        self.assertFalse(any(e["type"]=="anchor_movement_detected" for e in f.model.events))
+
 if __name__=="__main__":unittest.main()

@@ -218,9 +218,10 @@ class AnchorBaseline:
     def _movement(self,now):
         if not self.fit or self.recalibrating:return
         old={tuple(sorted((e["a"],e["b"]))):e for e in self.fit["edges"]}
-        changed=[]; stable=[]
+        changed=[]; stable=[]; changed_at={}
         for edge in self._edges(now,True):
             pair=(edge["a"],edge["b"]); before=old.get(pair)
+            if any(now-self.last_seen.get(k,-1e30)>30 for k in pair):continue
             if not before:continue
             # Compare only post-fit sessions. A frozen historical median is never refreshed by a packet.
             rows=[r for key in [pair[0]+">"+pair[1],pair[1]+">"+pair[0]]
@@ -233,7 +234,7 @@ class AnchorBaseline:
             delta=d-before["distance_m"]
             same=sum((r[2]-before["distance_m"])*delta>0 and abs(r[2]-before["distance_m"])>threshold*.75 for r in rows)
             if abs(delta)>threshold and same>=.8*len(rows):
-                changed.append(pair)
+                changed.append(pair);changed_at[pair]=max(r[0] for r in rows)
             elif abs(delta)<threshold*.5:
                 stable.append(pair)
         degree={}
@@ -261,6 +262,7 @@ class AnchorBaseline:
         if previous is None:
             self.suspicions={signature:now};self.dirty=True;return
         if now-previous<self.movement_hold_s:return
+        if min(changed_at.values())<previous+self.movement_hold_s:return
         self.moved=sorted(candidates);self.recalibrating=True;self.suspicions={}
         self.events.append({"type":"anchor_movement_detected" if localized else "baseline_geometry_change_detected","at":now,"anchors":self.moved,
                             "changed_links":[list(p) for p in changed],"cause":"sustained_range_geometry_change" if localized else "movement_or_persistent_RF_change"})
