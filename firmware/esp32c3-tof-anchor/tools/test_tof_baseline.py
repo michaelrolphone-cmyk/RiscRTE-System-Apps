@@ -108,7 +108,7 @@ class BaselineTests(unittest.TestCase):
         states=[]
         for _ in range(40):states.append(f.tick(points=moved))
         self.assertTrue(any(s["status"]=="recalibrating" and not s["valid"] for s in states))
-        after=states[-1];self.assertTrue(after["valid"]);self.assertEqual(after["epoch"],before["epoch"]+1)
+        after=states[-1];self.assertTrue(after["valid"]);self.assertGreater(after["epoch"],before["epoch"])
         self.assertEqual(after["frame_id"],before["frame_id"])
         for node in IDS[:-1]:np.testing.assert_allclose(f.model.fit["positions"][node],original[node],atol=.05)
         displacement=np.linalg.norm(np.array(f.model.fit["positions"][IDS[-1]])-original[IDS[-1]])
@@ -316,5 +316,17 @@ class BaselineTests(unittest.TestCase):
         self.assertEqual(s["refinement"]["accepted"],accepted)
         self.assertEqual(f.model.fit["positions"],frozen)
         self.assertEqual(s["refinement"]["state"],"awaiting_online_anchors")
+
+
+    def test_recalibration_recovers_stationary_subset_when_moved_node_disappears(self):
+        f=Fixture();before=f.train();moved=XYZ.copy();moved[-1]+=[3,2,1]
+        for _ in range(40):
+            s=f.tick(points=moved)
+            if s["status"]=="recalibrating":break
+        self.assertEqual(s["status"],"recalibrating")
+        for _ in range(12):s=f.tick(points=moved,missing=[IDS[-1]])
+        self.assertTrue(s["valid"]);self.assertEqual(len(s["positions"]),4)
+        self.assertNotIn(IDS[-1],f.model.fit["positions"])
+        self.assertGreater(s["epoch"],before["epoch"])
 
 if __name__=="__main__":unittest.main()

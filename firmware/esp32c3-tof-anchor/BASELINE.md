@@ -60,3 +60,5 @@ These diagnostics survive restarts and are carried through the existing socket.
 Movement compares recent ranges to an independent reference retained from the
 last physical calibration. Refinement never updates that reference, preventing
 gradual physical movement from being hidden by successive small coordinate changes.
+
+Recovery accepts the largest observable anchor subset while a moved/unreliable node requalifies, rather than requiring every previously fitted anchor to recover at once. Unfitted nodes stay explicit and are added automatically when observable.

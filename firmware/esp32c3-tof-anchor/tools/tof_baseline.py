@@ -306,13 +306,16 @@ class AnchorBaseline:
         self.last_fit_attempt=-1e30;self.dirty=True
 
     def _calibrate(self,now):
+        if self.recalibrating and self.events and self.events[-1]["at"]>=now:return
         if now-self.last_fit_attempt<self.fit_interval_s:return
         self.last_fit_attempt=now;edges=self._edges(now)
         nodes=sorted(k for k,last in self.last_seen.items() if now-last<=30)
         if self.fit and not self.recalibrating and set(nodes)<=set(self.fit["positions"]):return
         minimum=3
         if self.fit and not self.recalibrating:minimum=len(self.fit["positions"])+1
-        if self.recalibrating and self.fit:minimum=len(self.fit["positions"])
+        # A moved or unreliable anchor cannot hold every stationary anchor hostage.
+        # Requalify the largest observable subset, then expand as links recover.
+        if self.recalibrating and self.fit:minimum=3
         accepted=None
         for size in range(len(nodes),minimum-1,-1):
             for subset in itertools.combinations(nodes,size):
