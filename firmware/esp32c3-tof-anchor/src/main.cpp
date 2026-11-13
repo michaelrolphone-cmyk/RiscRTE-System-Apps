@@ -10,7 +10,7 @@
 #error FTM initiator and responder support are required
 #endif
 
-static const char *VERSION="1.0.0";
+static const char *VERSION="1.0.1";
 static const uint16_t PORT=7446;
 static const uint32_t MAX_AGE=30000;
 WebServer web(80);
@@ -37,6 +37,9 @@ struct Result { uint8_t mac[6]; int status; uint32_t cm, rtt; uint8_t samples; }
 QueueHandle_t resultQueue;
 float offsetM=0, heightM=0;
 bool heightKnown=false;
+bool lowTx=false;
+int disconnectReason=0;
+int ftmCode=-1;
 String macText(const uint8_t *m) {
  char b[18]; snprintf(b,sizeof(b),"%02x:%02x:%02x:%02x:%02x:%02x",m[0],m[1],m[2],m[3],m[4],m[5]); return String(b);
 }
@@ -50,6 +53,7 @@ int peerIndex(const String &mac) {
  return -1;
 }
 void onWiFi(WiFiEvent_t event, WiFiEventInfo_t info) {
+ if(event==ARDUINO_EVENT_WIFI_STA_DISCONNECTED)disconnectReason=info.wifi_sta_disconnected.reason;
  if(event!=ARDUINO_EVENT_WIFI_FTM_REPORT)return;
  auto &r=info.wifi_ftm_report;
  Result out={}; memcpy(out.mac,r.peer_mac,6); out.status=r.status;
@@ -61,8 +65,9 @@ void statusDoc(JsonDocument &d) {
  uint32_t now=millis();
  d["schema"]="rover.tof.anchor/1"; d["firmware"]=VERSION;
  d["id"]=nodeId; d["boot_id"]=bootId; d["seq"]=seq; d["uptime_ms"]=now;
- d["ssid"]=apName; d["bssid"]=WiFi.softAPmacAddress(); d["channel"]=WiFi.channel();
+ d["ssid"]=apName; d["bssid"]=WiFi.softAPmacAddress(); wifi_ap_record_t ap={};d["channel"]=esp_wifi_sta_get_ap_info(&ap)==ESP_OK?ap.primary:WiFi.channel();
  d["ip"]=WiFi.status()==WL_CONNECTED?WiFi.localIP().toString():WiFi.softAPIP().toString();
+ d["wifi_status_code"]=int(WiFi.status());d["disconnect_reason"]=disconnectReason;d["low_tx_power"]=lowTx;d["last_ftm_code"]=ftmCode;
  d["connected"]=WiFi.status()==WL_CONNECTED; d["ftm_responder"]=true;
  d["ftm_state"]=retiring?"retirement_stalled":radioBusy?"measuring":scanning?"scanning":"idle";
  d["offset_m"]=offsetM; d["height_known"]=heightKnown;
@@ -98,6 +103,7 @@ bool applyConfig(JsonDocument &d,String &error) {
  if(d.containsKey("offset_m")&&(!isfinite(d["offset_m"].as<float>())||fabs(d["offset_m"].as<float>())>100)){error="invalid offset";return false;}
  if(d.containsKey("height_m")&&(!isfinite(d["height_m"].as<float>())||fabs(d["height_m"].as<float>())>100)){error="invalid height";return false;}
  prefs.begin("tof-anchor",false);
+ if(d.containsKey("low_tx_power")){lowTx=d["low_tx_power"];prefs.putBool("low_tx",lowTx);WiFi.setTxPower(lowTx?WIFI_POWER_8_5dBm:WIFI_POWER_19_5dBm);}
  if(d.containsKey("ssid")){wifiSSID=d["ssid"].as<String>();prefs.putString("ssid",wifiSSID);provisionPending=true;}
  if(d.containsKey("password")){wifiPass=d["password"].as<String>();prefs.putString("password",wifiPass);provisionPending=true;}
  if(d.containsKey("target_host")){targetHost=d["target_host"].as<String>();prefs.putString("target",targetHost);}
@@ -113,6 +119,7 @@ void setup() {
  prefs.begin("tof-anchor",true);
  wifiSSID=prefs.getString("ssid","");wifiPass=prefs.getString("password","");
  targetHost=prefs.getString("target","");offsetM=prefs.getFloat("offset",0);
+ lowTx=prefs.getBool("low_tx",false);
  heightM=prefs.getFloat("height",0);heightKnown=prefs.getBool("height_known",false);prefs.end();
  WiFi.persistent(false); WiFi.mode(WIFI_AP_STA); WiFi.setSleep(false);
  uint8_t mac[6];esp_wifi_get_mac(WIFI_IF_AP,mac);nodeId=macText(mac);
@@ -122,6 +129,7 @@ void setup() {
  WiFi.softAPConfig(IPAddress(192,168,subnet,1),IPAddress(192,168,subnet,1),IPAddress(255,255,255,0));
  if(!WiFi.softAP(apName.c_str(),nullptr,1,0,4,true)){Serial.println("{\"error\":\"FTM AP failed\"}");}
  WiFi.onEvent(onWiFi);
+ WiFi.setTxPower(lowTx?WIFI_POWER_8_5dBm:WIFI_POWER_19_5dBm);
  if(!wifiSSID.isEmpty())WiFi.begin(wifiSSID.c_str(),wifiPass.c_str());
  udp.begin(PORT);
  web.on("/",HTTP_GET,[]{web.send_P(200,"text/html",PAGE);});
@@ -153,6 +161,7 @@ void loop() {
  if(!wifiSSID.isEmpty()&&WiFi.status()!=WL_CONNECTED&&now-lastConnect>20000&&!radioBusy&&!scanning){lastConnect=now;WiFi.reconnect();}
  Result r;
  while(xQueueReceive(resultQueue,&r,0)==pdTRUE){
+  ftmCode=r.status;
   String mac=macText(r.mac);
   if(mac!=activeMac)continue;
   int i=peerIndex(mac);
@@ -184,7 +193,7 @@ void loop() {
   for(int k=0;k<12;k++){
    int i=cursor++%12;auto &p=peers[i];if(p.mac.isEmpty()||now-p.seen>60000)continue;
    wifi_ftm_initiator_cfg_t cfg={};if(!parseMac(p.mac,cfg.resp_mac))continue;
-   cfg.channel=p.channel;cfg.frm_count=32;cfg.burst_period=2;
+   cfg.channel=p.channel;cfg.frm_count=16;cfg.burst_period=2;
    activeMac=p.mac;activeChannel=p.channel;ftmStarted=now;lastFTM=now;
    if(esp_wifi_ftm_initiate_session(&cfg)==ESP_OK){radioBusy=true;p.status="measuring";}
    else {p.status="request_rejected";p.distance=NAN;}

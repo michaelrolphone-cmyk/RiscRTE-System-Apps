@@ -31,6 +31,7 @@ def main():
     sock.bind(("",args.port));sock.settimeout(.2)
     graph=RangeGraph()
     last_rover=last_write=last_request=0.
+    channel_cache={}
     cursor=0;error=None;pending=None;pending_started=0.;retired=False
     while True:
         now=time.monotonic()
@@ -46,6 +47,13 @@ def main():
             try:
                 snapshot=http_json(args.camera,"/api/telemetry")
                 ftm=snapshot.get("ftm",{})
+                for observation in snapshot.get("wifi",[]):
+                    address=str(observation.get("address") or observation.get("bssid") or observation.get("mac") or "").lower()
+                    channel=observation.get("channel")
+                    if address and isinstance(channel,int) and 1<=channel<=14:
+                        channel_cache[address]=channel
+                if ftm.get("status")=="success" and isinstance(ftm.get("channel"),int):
+                    channel_cache[str(ftm.get("target","")).lower()]=ftm["channel"]
                 graph.ingest_rover(ftm,now)
                 if pending and not ftm.get("busy") and str(ftm.get("target","")).lower()==pending:
                     pending=None
@@ -54,11 +62,11 @@ def main():
                 if pending and now-pending_started>15:
                     error="rover_ftm_pending";retired=True
                 if not ftm.get("busy") and not ftm.get("retiring") and pending is None and now-last_request>=2:
-                    nodes=[v["packet"] for k,v in sorted(graph.nodes.items()) if now-v["received"]<30]
+                    nodes=[v["packet"] for k,v in sorted(graph.nodes.items()) if now-v["received"]<30 and v["packet"].get("ftm_state")=="idle"]
                     if nodes:
                         target=nodes[cursor%len(nodes)];cursor+=1
                         address=target["bssid"].lower()
-                        http_json(args.camera,"/api/telemetry/ftm",{"address":address,"channel":target["channel"]})
+                        http_json(args.camera,"/api/telemetry/ftm",{"address":address,"channel":channel_cache.get(address,target["channel"])})
                         pending=address;pending_started=now;last_request=now;retired=False
                 if not retired:error=None
             except (OSError,ValueError,urllib.error.HTTPError) as e:
