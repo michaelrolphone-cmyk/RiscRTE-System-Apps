@@ -33,6 +33,10 @@
     {
       "capability": "platform.recovery",
       "api": 1
+    },
+    {
+      "capability": "platform.camera-still",
+      "api": 1
     }
   ],
   "provides": [

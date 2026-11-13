@@ -3,6 +3,12 @@
 #include "BiomeSetup.h"
 #include <RiscBoundAppDataAsyncV1.h>
 namespace Infra {
+inline size_t pendingRecordLimit(JsonVariantConst op) {
+ const auto request=op["request"];
+ if(request["family"]=="execution" && request["operation"]=="result" &&
+    request["arguments"]["candidate"]["output"]["media_type"]=="image/jpeg")return 14336;
+ return RecordMax;
+}
 class Journal {
  public:
   Allocator allocator{393216};JsonDocument state{&allocator};
@@ -32,7 +38,7 @@ class Journal {
    if(state.as<JsonObjectConst>().containsKey("biomerte")&&!biomeSetup(state["biomerte"]))return false;
    if(measureJson(state["allocation"])>4096)return false;
    if(measureJson(state["protocol_rejections"])>4096||state["protocol_rejections"]["items"].size()>8)return false;
-   for(auto op:state["pending"].as<JsonArrayConst>())if(measureJson(op)>RecordMax)return false;return !state.overflowed()&&valueBounds(state.as<JsonVariantConst>(),0,24);
+   for(auto op:state["pending"].as<JsonArrayConst>())if(measureJson(op)>pendingRecordLimit(op))return false;return !state.overflowed()&&valueBounds(state.as<JsonVariantConst>(),0,24);
   }
   int save(){
    if(retained)return -2;if(blocked||reload)return -1;if(writeToken)return 1;

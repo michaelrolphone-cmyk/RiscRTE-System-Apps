@@ -1,6 +1,8 @@
 #include "relay_harness.h"
+#include "camera.inc"
 int main(int argc,char** argv){
  assert(argc==2);std::ifstream file(argv[1]);std::string source((std::istreambuf_iterator<char>(file)),{});JsonDocument cfg;assert(!deserializeJson(cfg,source));
+ optionalCamera(cfg);ticks=1000;
  for(const char* mode:{"relay","explorer","sentinel","reconciler","continuity"}){
   cfg["configuration"]["mode"]=mode;assert(policy(cfg));Node n;init(n,cfg);n.configureCadence();
   for(unsigned i=0;i<n.bindings().size();++i){bool maintenance=i<2;bool allowed=strcmp(mode,"relay")&&(!strcmp(mode,"explorer")||(!strcmp(mode,"sentinel")?!maintenance:maintenance));assert(n.bindingDisabled[i]==!allowed);n.bindingIndex=i;
