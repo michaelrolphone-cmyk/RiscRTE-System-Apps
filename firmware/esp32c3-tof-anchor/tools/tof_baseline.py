@@ -1,7 +1,7 @@
 """Persistent relative FTM geometry; independent of floor/world registration.
 
 Only distinct successful ranging sessions enter the bounded rolling window.
-A saved fit is frozen until sustained multi-link evidence invalidates it.
+Accepted fits refine on validated new sessions; sustained multi-link changes invalidate them.
 Reported covariance describes the range model, not calibrated RF accuracy.
 """
 import itertools
@@ -140,9 +140,39 @@ def fit_geometry(nodes, edges, dimension):
             "anchor_model_sigma_m":uncertainty,
             "edges":[dict(e,residual_m=float(err)) for e,err in zip(edges,errors)]}
 
+
+def refinement_candidate(reference,edges,dimension):
+    """Incremental regularized step; only range Jacobian establishes observability."""
+    nodes=sorted(reference);index={k:i for i,k in enumerate(nodes)}
+    original=np.array([reference[k] for k in nodes])
+    origin=original.mean(axis=0)
+    if dimension==2:
+        _,_,vt=np.linalg.svd(original-origin,full_matrices=False);basis=vt[:2].T
+    else:basis=np.eye(3)
+    initial=(original-origin) @ basis
+    def errors(flat):
+        points=flat.reshape(len(nodes),dimension)
+        measurement=[(np.linalg.norm(points[index[e["a"]]]-points[index[e["b"]]])-e["distance_m"])/e["sigma_m"] for e in edges]
+        # A trust prior controls steps; it is never counted as measured geometry.
+        return np.concatenate([measurement,((points-initial)/.5).ravel()])
+    fitted=least_squares(errors,initial.ravel(),loss="soft_l1",max_nfev=200)
+    points=fitted.x.reshape(len(nodes),dimension)
+    jac=np.zeros((len(edges),len(nodes)*dimension))
+    for row,e in enumerate(edges):
+        a,b=index[e["a"]],index[e["b"]];delta=points[a]-points[b];length=np.linalg.norm(delta)
+        if length<1e-5:return None
+        jac[row,a*dimension:(a+1)*dimension]=delta/length
+        jac[row,b*dimension:(b+1)*dimension]=-delta/length
+    dof=dimension*len(nodes)-dimension*(dimension+1)//2
+    singular=np.linalg.svd(jac,compute_uv=False)
+    if len(singular)<dof or singular[dof-1]<max(1e-5,singular[0]*1e-4):return None
+    return {"positions":{k:(points[i] @ basis.T+origin).tolist() for i,k in enumerate(nodes)},
+            "condition_number":float(singular[0]/singular[dof-1])}
+
 class AnchorBaseline:
     def __init__(self,path=None,clock=time.time,min_samples=5,min_span_s=30.,
-                 window_s=1800.,recent_s=90.,movement_hold_s=30.,fit_interval_s=10.):
+                 window_s=1800.,recent_s=90.,movement_hold_s=30.,fit_interval_s=10.,
+                 refinement_interval_s=30.,max_refinement_step_m=.1):
         self.path = Path(path) if path else None; self.clock = clock
         self.min_samples=min_samples; self.min_span_s=min_span_s; self.window_s=window_s
         self.recent_s=recent_s; self.movement_hold_s=movement_hold_s; self.fit_interval_s=fit_interval_s
@@ -150,6 +180,8 @@ class AnchorBaseline:
         self.recalibrating=False; self.moved=[]; self.suspicions={}; self.events=[]
         self.last_fit_attempt=-1e30; self.last_saved=-1e30; self.dirty=False; self.load_error=None
         self.last_rejection=None; self.loaded=False
+        self.refinement_interval_s=refinement_interval_s;self.max_refinement_step_m=max_refinement_step_m
+        self.refinement={"revision":0,"accepted":0,"last_check_at":None,"last_update_at":None,"state":"awaiting_baseline"}
         if self.path and self.path.exists():
             try:
                 value=json.loads(self.path.read_text())
@@ -159,6 +191,7 @@ class AnchorBaseline:
                 self.epoch=int(value.get("epoch",0)); self.recalibrating=bool(value.get("recalibrating"))
                 self.moved=value.get("moved",[]); self.events=value.get("events",[])[-16:]
                 self.suspicions=value.get("suspicions",{})
+                self.refinement=value.get("refinement",self.refinement)
                 if not isinstance(self.history,dict) or not isinstance(self.last_seen,dict):raise ValueError("invalid history")
                 if self.fit:
                     assert all(len(p)==3 and all(math.isfinite(x) for x in p) for p in self.fit["positions"].values())
@@ -193,11 +226,12 @@ class AnchorBaseline:
             rows.append([now-age/1000.,token,float(report["distance_m"]),report.get("samples",0),now])
         self._prune(now)
 
-    def _edges(self,now,recent=False):
+    def _edges(self,now,recent=False,holdout=0):
         pairs={}
         for key,rows in self.history.items():
             src,dst=key.split(">")
             selected=[r for r in rows if now-(self.recent_s if recent else self.window_s)<=r[0]<=now+1.]
+            if holdout:selected=sorted(selected,key=lambda row:row[0])[:-holdout]
             minimum=3 if recent else self.min_samples
             if len(selected)<minimum:continue
             span=max(r[0] for r in selected)-min(r[0] for r in selected)
@@ -217,7 +251,7 @@ class AnchorBaseline:
 
     def _movement(self,now):
         if not self.fit or self.recalibrating:return
-        old={tuple(sorted((e["a"],e["b"]))):e for e in self.fit["edges"]}
+        old={tuple(sorted((e["a"],e["b"]))):e for e in self.fit.get("movement_reference_edges",self.fit["edges"])}
         changed=[]; stable=[]; changed_at={}
         for edge in self._edges(now,True):
             pair=(edge["a"],edge["b"]); before=old.get(pair)
@@ -301,13 +335,91 @@ class AnchorBaseline:
                         aligned_to_previous=aligned)
         if old:self.previous=(self.previous+[{"epoch":old["epoch"],"positions":old["positions"],"created_at":old["created_at"]}])[-2:]
         self.fit=accepted;self.recalibrating=False;self.moved=[]
+        self.fit["revision"]=1
+        self.refinement={"revision":1,"accepted":0,"last_check_at":now,"last_update_at":None,"state":"accumulating_new_sessions"}
         self.events.append({"type":"baseline_calibrated","at":now,"epoch":self.epoch,"frame_id":accepted["frame_id"],
                             "anchors":list(accepted["positions"]),"aligned_to_previous":aligned})
         self.events=self.events[-16:];self.last_rejection=None;self.dirty=True
 
+
+    def _refine(self,now):
+        if not self.fit or self.recalibrating or self.suspicions:
+            self.refinement["state"]="paused_for_geometry_change" if self.fit else "awaiting_baseline"
+            return
+        last=self.refinement.get("last_check_at")
+        if last is not None and now-last<self.refinement_interval_s:return
+        self.refinement["last_check_at"]=now;self.dirty=True
+        nodes=sorted(self.fit["positions"])
+        if any(now-self.last_seen.get(k,-1e30)>30 for k in nodes):
+            self.refinement["state"]="awaiting_online_anchors";return
+        pairs={tuple(sorted((e["a"],e["b"]))) for e in self.fit["edges"]}
+        cutoff=self.refinement.get("checked_through",self.fit["created_at"])
+        fresh=0;validation=[]
+        for a,b in pairs:
+            new=[];held=[]
+            for key in (a+">"+b,b+">"+a):
+                rows=sorted([r for r in self.history.get(key,[]) if now-self.window_s<=r[0]<=now+1],key=lambda r:r[0])
+                new.extend(r for r in rows if r[4]>cutoff)
+                if len(rows)>=self.min_samples+2:
+                    d,sigma=median_sigma([r[2] for r in rows[-2:]])
+                    held.append((d,sigma))
+            if len(new)>=2:fresh+=1
+            if held:
+                validation.append({"a":a,"b":b,"distance_m":statistics.median(d for d,s in held),
+                                   "sigma_m":max(.25,statistics.median(s for d,s in held))})
+        if fresh<max(3,math.ceil(len(pairs)/2.)):
+            self.refinement["state"]="accumulating_new_sessions";return
+        current=[e for e in self._edges(now) if (e["a"],e["b"]) in pairs]
+        training=[e for e in self._edges(now,holdout=2) if (e["a"],e["b"]) in pairs]
+        if len(current)<len(pairs) or len(training)<len(pairs) or len(validation)<len(pairs):
+            self.refinement["state"]="awaiting_training_and_validation";return
+        self.refinement["checked_through"]=now
+        candidate=refinement_candidate(self.fit["positions"],training,self.fit["dimension"])
+        if not candidate:
+            self.refinement["state"]="candidate_geometry_rejected";return
+        candidate["positions"],aligned=align(candidate["positions"],self.fit["positions"],
+                                             require_3d=self.fit["dimension"]==3)
+        if not aligned:
+            self.refinement["state"]="candidate_frame_unobservable";return
+        if candidate["condition_number"]>max(50.,2*self.fit["condition_number"]):
+            self.refinement["state"]="candidate_conditioning_rejected";return
+        def score(points,edges):
+            errors=np.array([np.linalg.norm(np.array(points[e["a"]])-points[e["b"]])-e["distance_m"] for e in edges])
+            scaled=errors/np.array([e["sigma_m"] for e in edges])
+            return float(np.sqrt(np.mean(errors**2))),float(np.mean(2*(np.sqrt(1+scaled**2)-1)))
+        before=score(self.fit["positions"],current);held_before=score(self.fit["positions"],validation)
+        delta={k:np.array(candidate["positions"][k])-self.fit["positions"][k] for k in nodes}
+        maximum=max(float(np.linalg.norm(d)) for d in delta.values())
+        factor=min(.25,self.max_refinement_step_m/max(maximum,1e-12))
+        accepted=None
+        for _ in range(8):
+            positions={k:(np.array(self.fit["positions"][k])+factor*delta[k]).tolist() for k in nodes}
+            after=score(positions,current);held_after=score(positions,validation)
+            if (after[0]<before[0]-max(1e-5,before[0]*1e-4) and after[1]<before[1]-1e-7
+                    and held_after[1]<=held_before[1]+1e-9 and held_after[0]<=held_before[0]+.02):
+                accepted=(positions,after,held_after,factor);break
+            factor*=.5
+        if accepted is None:
+            self.refinement["state"]="no_validated_improvement";return
+        positions,after,held_after,factor=accepted
+        # This independent physical-change reference never follows refinement.
+        # Otherwise gradual movement could be absorbed into a drifting baseline.
+        if "movement_reference_edges" not in self.fit:
+            self.fit["movement_reference_edges"]=json.loads(json.dumps(self.fit["edges"]))
+        self.fit["positions"]=positions
+        self.fit["edges"]=[dict(e,residual_m=float(np.linalg.norm(np.array(positions[e["a"]])-positions[e["b"]])-e["distance_m"])) for e in current]
+        self.fit["residual_rms_m"]=after[0];self.fit["updated_at"]=now
+        self.fit["revision"]=self.fit.get("revision",1)+1
+        self.fit["condition_number"]=max(self.fit["condition_number"],candidate["condition_number"])
+        self.refinement.update(revision=self.fit["revision"],accepted=self.refinement.get("accepted",0)+1,
+            last_update_at=now,state="refined",before_rms_m=before[0],after_rms_m=after[0],
+            validation_before_m=held_before[0],validation_after_m=held_after[0],
+            max_step_m=maximum*factor)
+        self.dirty=True
+
     def update(self,now=None):
         now=self.clock() if now is None else now
-        self._prune(now);self._movement(now);self._calibrate(now);self.save(now)
+        self._prune(now);self._movement(now);self._calibrate(now);self._refine(now);self.save(now)
         return self.status(now)
 
     def status(self,now=None):
@@ -319,6 +431,7 @@ class AnchorBaseline:
         return {"schema":SCHEMA,"status":status,"valid":ready,"epoch":self.epoch,
                 "frame_id":fit["frame_id"] if fit else None,"dimension":fit["dimension"] if fit else None,
                 "created_at":fit["created_at"] if fit else None,
+                "revision":fit.get("revision",1) if fit else 0,"refinement":dict(self.refinement),
                 "positions":[{"bssid":k,"x_m":v[0],"y_m":v[1],"z_m":v[2],
                               "model_sigma_m":fit["anchor_model_sigma_m"].get(k)} for k,v in sorted(fit["positions"].items())] if fit else [],
                 "unfitted_anchors":sorted(set(active)-set(fit["positions"] if fit else [])),
@@ -339,7 +452,7 @@ class AnchorBaseline:
         self.path.parent.mkdir(parents=True,exist_ok=True)
         value={"schema":SCHEMA,"history":self.history,"last_seen":self.last_seen,"fit":self.fit,
                "previous":self.previous,"epoch":self.epoch,"recalibrating":self.recalibrating,
-               "moved":self.moved,"events":self.events,"suspicions":self.suspicions}
+               "moved":self.moved,"events":self.events,"suspicions":self.suspicions,"refinement":self.refinement}
         raw=json.dumps(value,allow_nan=False,separators=(",",":"))
         if self.load_error and self.path.exists() and not self.loaded:
             backup=self.path.with_suffix(".invalid.json")
@@ -351,7 +464,7 @@ class AnchorBaseline:
         os.replace(temporary,self.path);self.last_saved=now;self.dirty=False
 
 def localize_relative(baseline, observations):
-    """Rover spheres against the frozen baseline; never implies world alignment."""
+    """Rover spheres against the accepted baseline; never implies world alignment."""
     points={p["bssid"]:np.array([p["x_m"],p["y_m"],p["z_m"]]) for p in baseline["positions"]}
     observations=[r for r in observations if r["target_bssid"] in points and positive(r.get("distance_m"))]
     dimension=baseline["dimension"];needed=4 if dimension==3 else 3
@@ -380,7 +493,7 @@ def localize_relative(baseline, observations):
     if rms>threshold:
         result["status"]="inconsistent_rover_ranges";return result
     position={"x_m":float(fit.x[0]),"y_m":float(fit.x[1]),"z_m":float(fit.x[2]),
-              "residual_rms_m":rms,"residuals_m":residuals.tolist(),"baseline_epoch":baseline["epoch"]}
+              "residual_rms_m":rms,"residuals_m":residuals.tolist(),"baseline_epoch":baseline["epoch"],"baseline_revision":baseline.get("revision",1)}
     if dimension==2:
         result["status"]="mirror_ambiguous_3d"
         result["position_hypotheses"]=[position,dict(position,z_m=-position["z_m"])]

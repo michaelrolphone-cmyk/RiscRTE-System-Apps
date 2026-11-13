@@ -48,7 +48,8 @@ class BaselineTests(unittest.TestCase):
                 for r in p["ranges"]:r["distance_m"]+=float(rng.normal(0,.15))
                 f.model.observe(p)
             f.model.update()
-        self.assertEqual(f.model.epoch,epoch);self.assertEqual(f.model.fit["positions"],frozen)
+        self.assertEqual(f.model.epoch,epoch)
+        self.assertLess(max(np.linalg.norm(np.array(f.model.fit["positions"][k])-v) for k,v in frozen.items()),.5)
 
     def test_duplicate_success_is_not_new_evidence(self):
         f=Fixture();p=f.packets()[0]
@@ -244,5 +245,76 @@ class BaselineTests(unittest.TestCase):
             f.now+=5;s=f.model.update()
         self.assertEqual(s["epoch"],before["epoch"])
         self.assertFalse(any(e["type"]=="anchor_movement_detected" for e in f.model.events))
+
+
+    def test_refinement_corrects_initial_estimate_with_bounded_steps(self):
+        f=Fixture();before=f.train();node=IDS[-1]
+        f.model.fit["positions"][node]=(np.array(f.model.fit["positions"][node])+[.35,-.2,.1]).tolist()
+        def error():
+            points=f.model.fit["positions"]
+            return np.sqrt(np.mean([(np.linalg.norm(np.array(points[IDS[i]])-points[IDS[j]])-np.linalg.norm(XYZ[i]-XYZ[j]))**2 for i in range(5) for j in range(i+1,5)]))
+        initial=error();old=f.model.fit["positions"].copy()
+        for _ in range(50):
+            status=f.tick()
+            step=max(np.linalg.norm(np.array(f.model.fit["positions"][k])-old[k]) for k in IDS)
+            self.assertLessEqual(step,.100001);old=json.loads(json.dumps(f.model.fit["positions"]))
+        self.assertGreater(status["refinement"]["accepted"],2)
+        self.assertLess(error(),initial*.2)
+        self.assertEqual(status["epoch"],before["epoch"]);self.assertEqual(status["frame_id"],before["frame_id"])
+        self.assertGreater(status["revision"],1)
+        self.assertLess(status["refinement"]["after_rms_m"],status["refinement"]["before_rms_m"])
+        self.assertLessEqual(status["refinement"]["validation_after_m"],status["refinement"]["validation_before_m"]+.02)
+
+    def test_refinement_improves_after_biased_initial_samples_are_outnumbered(self):
+        f=Fixture()
+        for _ in range(8):f.tick(bias={(IDS[0],IDS[1]):.4,(IDS[2],IDS[4]):.3})
+        initial=f.model.status()
+        for _ in range(50):s=f.tick()
+        self.assertGreater(s["refinement"]["accepted"],0)
+        self.assertEqual(s["epoch"],initial["epoch"])
+
+    def test_refinement_survives_restart_and_keeps_movement_reference(self):
+        with tempfile.TemporaryDirectory() as d:
+            f=Fixture(Path(d)/"baseline.json");f.train()
+            reference=json.loads(json.dumps(f.model.fit["edges"]))
+            f.model.fit["positions"][IDS[-1]][0]+=.3
+            for _ in range(12):s=f.tick()
+            self.assertGreater(s["refinement"]["accepted"],0)
+            self.assertEqual(f.model.fit["movement_reference_edges"],reference)
+            restored=AnchorBaseline(f.model.path,clock=lambda:f.now)
+            self.assertEqual(restored.status()["revision"],s["revision"])
+            self.assertEqual(restored.refinement,f.model.refinement)
+            self.assertEqual(restored.fit["movement_reference_edges"],reference)
+
+    def test_no_new_sessions_cannot_refine(self):
+        f=Fixture();s=f.train();f.model.fit["positions"][IDS[-1]][0]+=.3
+        frozen=json.loads(json.dumps(f.model.fit["positions"]))
+        for _ in range(10):
+            f.now+=30
+            for node in IDS:f.model.last_seen[node]=f.now
+            f.model.update()
+        self.assertEqual(f.model.fit["positions"],frozen)
+        self.assertEqual(f.model.refinement["accepted"],0)
+
+    def test_full_ring_keeps_refining_on_new_session_tokens(self):
+        f=Fixture();f.train()
+        for _ in range(135):f.tick()
+        count=sum(map(len,f.model.history.values()))
+        self.assertEqual(count,20*120)
+        f.model.fit["positions"][IDS[-1]][0]+=.3
+        accepted=f.model.refinement["accepted"]
+        for _ in range(15):s=f.tick()
+        self.assertEqual(sum(map(len,f.model.history.values())),count)
+        self.assertGreater(s["refinement"]["accepted"],accepted)
+
+    def test_offline_refinement_is_paused(self):
+        f=Fixture();f.train();f.model.fit["positions"][IDS[-1]][0]+=.3
+        for _ in range(12):s=f.tick(missing=[IDS[-1]])
+        accepted=s["refinement"]["accepted"]
+        frozen=json.loads(json.dumps(f.model.fit["positions"]))
+        for _ in range(10):s=f.tick(missing=[IDS[-1]])
+        self.assertEqual(s["refinement"]["accepted"],accepted)
+        self.assertEqual(f.model.fit["positions"],frozen)
+        self.assertEqual(s["refinement"]["state"],"awaiting_online_anchors")
 
 if __name__=="__main__":unittest.main()

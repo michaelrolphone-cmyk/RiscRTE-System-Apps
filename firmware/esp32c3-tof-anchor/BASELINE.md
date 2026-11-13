@@ -16,7 +16,7 @@ A partial baseline identifies unfitted anchors explicitly and upgrades when suff
 A planar baseline describes an intrinsic anchor plane; it is not a floor assumption.
 A planar rover fix retains its two-sided ambiguity.
 
-The saved fit stays fixed during ordinary noise. Movement uses recent90-second windows,
+The saved fit changes only through validated bounded refinement during ordinary noise. Movement uses recent90-second windows,
 at least4 distinct post-fit observations spanning30 seconds, coherent changes on multiple links,
 a threshold of at least1 metre (also scaled by range and robust statistical spread),
 and a further30-second confirmation hold. A single bad link or lost node is not a move.
@@ -35,3 +35,28 @@ omit duplicate per-edge diagnostics; full capability responses retain the comple
 
 Dependencies: requirements-tof.txt. Installed Mac NumPy/SciPy were used without installing packages.
 Run: python -m unittest discover -s tools -p 'test_tof*.py' -v
+
+
+## Continuous refinement
+
+Every30 seconds the solver checks for genuinely new sessions across at least half
+the fitted links (at least3). It retains two recent sessions per direction as
+validation data and fits the remaining rolling history jointly in the existing
+dimension. A candidate must remain observable, align to the current frame and
+preserve conditioning. Accepted bounded steps must improve both robust loss and
+RMS against the SAME current edge statistics and must pass held-out validation.
+A step is at most0.1m per anchor and uses at most25% of the candidate correction.
+No new data, insufficient coverage, offline nodes, suspected movement or rejected
+validation leave coordinates unchanged. Full rings continue to recognize new
+sessions by arrival watermark; a fixed sample count never disables refinement.
+
+Refinement increments baseline.revision, not the movement epoch or frame ID.
+The current residual may rise when incoming evidence changes: it is not made
+artificially monotonic by comparing errors from different measurement windows.
+Each accepted update reports same-window before/after RMS, validation metrics,
+the maximum coordinate step, accepted count and timestamps in baseline.refinement.
+These diagnostics survive restarts and are carried through the existing socket.
+
+Movement compares recent ranges to an independent reference retained from the
+last physical calibration. Refinement never updates that reference, preventing
+gradual physical movement from being hidden by successive small coordinate changes.

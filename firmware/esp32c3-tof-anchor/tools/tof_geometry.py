@@ -180,7 +180,7 @@ class RangeGraph:
         baseline=self.baseline.update()
         result["baseline"]=baseline
         result["frame"]={"kind":"relative_anchor_frame","world_alignment":"unregistered",
-                         "frame_id":baseline["frame_id"],"baseline_epoch":baseline["epoch"],
+                         "frame_id":baseline["frame_id"],"baseline_epoch":baseline["epoch"],"baseline_revision":baseline["revision"],
                          "orientation":"Persistent relative gauge; not registered to floor or world"}
         result["anchor_geometry"]=baseline["positions"]
         result["height_mode"]="relative_3d" if baseline["dimension"]==3 else "relative_anchor_plane"
