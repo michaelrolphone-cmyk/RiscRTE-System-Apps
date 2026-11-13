@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: f1b0c43eaa18ff099393a98d3a679e8319c512dd
+          ref: 889e0df02fc1efd410d7540b07cb1a8f0c48a85c
           path: runtime
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -51,22 +51,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: f1b0c43eaa18ff099393a98d3a679e8319c512dd
+          ref: 889e0df02fc1efd410d7540b07cb1a8f0c48a85c
           path: runtime
           persist-credentials: false
-      - name: Compile the complete product ELF cohort and verify imports
+      - name: Build native runtime, product ELFs and verified first-install and repair images
         run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/apps"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/runtime"
           . "$IDF_PATH/export.sh"
-          python apps/scripts/build_infrastructure.py --runtime runtime --cc "$(command -v xtensa-esp-elf-gcc)" --output target-elf
-      - name: Repackage the verified unchanged native runtime
-        run: |
-          . "$IDF_PATH/export.sh"
-          curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' https://github.com/michaelrolphone-cmyk/RiscRTE/releases/download/esp32s3-infrastructure-v1.6.3/riscrte-esp32s3-infrastructure-v1.6.3-repair.zip --output base-repair.zip
-          python apps/scripts/package_infrastructure_modes.py --base-archive base-repair.zip --runtime runtime --elf target-elf --idf "$IDF_PATH" --output package
+          export RISC_RUNTIME_ROOT="$PWD/runtime" INFRA_OUTPUT="$PWD/package/esp32s3-infrastructure-v1.10.1"
+          mkdir -p package
+          bash apps/scripts/build_infrastructure_bundle.sh
+          python apps/scripts/package_infrastructure_modes.py --bundle "$INFRA_OUTPUT" --runtime runtime --output package/release
       - uses: actions/upload-artifact@v4
         with:
           name: infrastructure-modes-elf-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
-            target-elf/
             package/release/
           if-no-files-found: error

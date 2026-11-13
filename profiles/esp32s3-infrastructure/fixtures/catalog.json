@@ -511,13 +511,115 @@
         "api_version": 1,
         "contract_digest": "4f10b9ec48f8b47b43aed171d7b7074cf13663ae447c1a960026e52937a0e8c4"
       }
+    },
+    {
+      "contract": {
+        "capability_id": "camera.capture",
+        "api_version": 1,
+        "operations": {
+          "capture": {
+            "input_schema": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            },
+            "output_schema": {
+              "type": "object",
+              "properties": {
+                "media_type": {
+                  "const": "image/jpeg"
+                },
+                "width": {
+                  "const": 160
+                },
+                "height": {
+                  "const": 120
+                },
+                "bytes": {
+                  "type": "integer",
+                  "minimum": 4,
+                  "maximum": 8192
+                },
+                "base64_chunks": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "maxItems": 11,
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "media_type",
+                "width",
+                "height",
+                "bytes",
+                "base64_chunks"
+              ],
+              "additionalProperties": false
+            },
+            "evidence_schema": {
+              "type": "object",
+              "required": [
+                "observer",
+                "boot_id",
+                "observed_at_ms",
+                "monotonic_ms"
+              ],
+              "properties": {
+                "observer": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "boot_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "observed_at_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "monotonic_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "quiescent": {
+                  "const": true
+                },
+                "executor_identity": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false
+            },
+            "effect_semantics": "repeatable_compute",
+            "execution_modes": [
+              "job"
+            ]
+          }
+        }
+      },
+      "reference": {
+        "capability_id": "camera.capture",
+        "api_version": 1,
+        "contract_digest": "d74507ab682dbde2915c3375a8add6fee06946628740894f4905d7716221ff57"
+      }
     }
   ],
   "providers": [
     {
       "provider": {
         "provider_id": "esp32s3-infra-scheduler-drive",
-        "revision": 18,
+        "revision": 20,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
@@ -563,15 +665,15 @@
       "reference": {
         "capability_id": "scheduler.drive",
         "provider_id": "esp32s3-infra-scheduler-drive",
-        "revision": 18,
-        "definition_digest": "4253a951f8e693ede2f706cc7b03621ff06579a12076faba5aba75e138d50983",
+        "revision": 20,
+        "definition_digest": "9c9990270970e96631feb02ca0fde81e9f85b01144e861eef4ca8c349f93cd5c",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-service-reconcile",
-        "revision": 18,
+        "revision": 20,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
@@ -617,15 +719,15 @@
       "reference": {
         "capability_id": "service.reconcile",
         "provider_id": "esp32s3-infra-service-reconcile",
-        "revision": 18,
-        "definition_digest": "0ab97a135d6a20673aa2890aec1d506c00560700d52c73566307291e2f08bc91",
+        "revision": 20,
+        "definition_digest": "0547c2f8db922e96d89cd5074332e23d551c8232b0baba7f88bf9e1838e6a9ef",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-service-health-observe",
-        "revision": 18,
+        "revision": 20,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
@@ -671,15 +773,15 @@
       "reference": {
         "capability_id": "service.health.observe",
         "provider_id": "esp32s3-infra-service-health-observe",
-        "revision": 18,
-        "definition_digest": "c1f9248cd45b8bf9d76bf5d45c655778fe304f1fc8b3e1ab4f63c8fa33e5ace8",
+        "revision": 20,
+        "definition_digest": "7c5c98a0c7a8899275ceccdc441d61c0d6158d76aaf4d96645e6f8b32d30448a",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-source-poll",
-        "revision": 18,
+        "revision": 20,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
@@ -725,8 +827,62 @@
       "reference": {
         "capability_id": "source.poll",
         "provider_id": "esp32s3-infra-source-poll",
-        "revision": 18,
-        "definition_digest": "8c62814ba13e8706f00e3bfddc2efa7b8f08fae1a87bac604b4e713b2df628dd",
+        "revision": 20,
+        "definition_digest": "111ce497d80400cc2b8fa4b6bc69ca31f2281d24f518410851af1a3cf91fc10a",
+        "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "provider": {
+        "provider_id": "esp32s3-infra-camera-capture",
+        "revision": 20,
+        "implementation_ref": {
+          "kind": "risc-elf",
+          "profile": "esp32s3-infrastructure",
+          "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "provides": [
+          {
+            "capability_id": "camera.capture",
+            "api_version": 1,
+            "contract_digest": "d74507ab682dbde2915c3375a8add6fee06946628740894f4905d7716221ff57"
+          }
+        ],
+        "requires": [],
+        "resource_bindings": [
+          {
+            "name": "tls",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "job",
+            "amount": 1,
+            "lifetime": "invocation"
+          },
+          {
+            "name": "pending",
+            "amount": 2,
+            "lifetime": "invocation"
+          }
+        ],
+        "recovery_support": {
+          "checkpoint_formats": [
+            "infra.source/1"
+          ]
+        },
+        "cost_estimate": 1,
+        "cost_model": {
+          "network_transactions": 1,
+          "maximum_ms": 5000
+        },
+        "cost_evidence": "software_bounds_physical_qualification_pending"
+      },
+      "reference": {
+        "capability_id": "camera.capture",
+        "provider_id": "esp32s3-infra-camera-capture",
+        "revision": 20,
+        "definition_digest": "bc351d0c7b5d0aec2ca21524cd1abc24d65efd9cd4d3842c6bcb2d0e7cd99c0b",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     }
