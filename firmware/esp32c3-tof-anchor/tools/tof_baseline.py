@@ -45,7 +45,7 @@ def align(points, reference, exclude=(), require_3d=False):
         return points, False
     u, _, vt = np.linalg.svd((x-xc).T @ (y-yc))
     rotation = u @ vt
-    return {k: ((np.array(v)-xc) @ rotation+yc).tolist() for k,v in points.items()}, bool(np.linalg.matrix_rank(x-xc,tol=1e-5)>=(3 if require_3d else 2))
+    return {k: ((np.array(v)-xc) @ rotation+yc).tolist() for k,v in points.items()}, bool(min(np.linalg.matrix_rank(x-xc,tol=1e-5),np.linalg.matrix_rank(y-yc,tol=1e-5))>=(3 if require_3d else 2))
 
 def fit_geometry(nodes, edges, dimension):
     """Fit measured edges only. Shortest paths are initial guesses, not evidence."""
@@ -179,7 +179,7 @@ class AnchorBaseline:
         self.history={}; self.last_seen={}; self.fit=None; self.previous=[]; self.epoch=0
         self.recalibrating=False; self.moved=[]; self.suspicions={}; self.events=[]
         self.last_fit_attempt=-1e30; self.last_saved=-1e30; self.dirty=False; self.load_error=None
-        self.last_rejection=None; self.loaded=False
+        self.last_rejection=None; self.loaded=False;self.spatial_dimension=2
         self.refinement_interval_s=refinement_interval_s;self.max_refinement_step_m=max_refinement_step_m
         self.refinement={"revision":0,"accepted":0,"last_check_at":None,"last_update_at":None,"state":"awaiting_baseline"}
         if self.path and self.path.exists():
@@ -192,6 +192,9 @@ class AnchorBaseline:
                 self.moved=value.get("moved",[]); self.events=value.get("events",[])[-16:]
                 self.suspicions=value.get("suspicions",{})
                 self.refinement=value.get("refinement",self.refinement)
+                self.spatial_dimension=value.get("spatial_dimension",2)
+                if self.fit and (self.fit["dimension"]==3 or any(np.linalg.matrix_rank(np.array(list(p["positions"].values()))-np.mean(list(p["positions"].values()),axis=0),tol=1e-5)>=3 for p in self.previous)):
+                    self.spatial_dimension=3
                 if not isinstance(self.history,dict) or not isinstance(self.last_seen,dict):raise ValueError("invalid history")
                 if self.fit:
                     assert all(len(p)==3 and all(math.isfinite(x) for x in p) for p in self.fit["positions"].values())
@@ -306,6 +309,8 @@ class AnchorBaseline:
         self.last_fit_attempt=-1e30;self.dirty=True
 
     def _calibrate(self,now):
+        if self.fit and self.spatial_dimension==3 and self.fit["dimension"]==2 and len(self.fit["positions"])>=4:
+            self.recalibrating=True
         if self.recalibrating and self.events and self.events[-1]["at"]>=now:return
         if now-self.last_fit_attempt<self.fit_interval_s:return
         self.last_fit_attempt=now;edges=self._edges(now)
@@ -320,7 +325,7 @@ class AnchorBaseline:
         for size in range(len(nodes),minimum-1,-1):
             for subset in itertools.combinations(nodes,size):
                 selected=[e for e in edges if e["a"] in subset and e["b"] in subset]
-                for dimension in ([3,2] if size>=4 else [2]):
+                for dimension in ([3] if size>=4 and self.spatial_dimension==3 else [3,2] if size>=4 else [2]):
                     accepted=fit_geometry(list(subset),selected,dimension)
                     if accepted:break
                 if accepted:break
@@ -338,6 +343,7 @@ class AnchorBaseline:
                         aligned_to_previous=aligned)
         if old:self.previous=(self.previous+[{"epoch":old["epoch"],"positions":old["positions"],"created_at":old["created_at"]}])[-2:]
         self.fit=accepted;self.recalibrating=False;self.moved=[]
+        self.spatial_dimension=max(self.spatial_dimension,accepted["dimension"])
         self.fit["revision"]=1
         self.refinement={"revision":1,"accepted":0,"last_check_at":now,"last_update_at":None,"state":"accumulating_new_sessions"}
         self.events.append({"type":"baseline_calibrated","at":now,"epoch":self.epoch,"frame_id":accepted["frame_id"],
@@ -453,7 +459,7 @@ class AnchorBaseline:
         now=self.clock() if now is None else now
         if not self.path or not self.dirty or (not force and now-self.last_saved<5):return
         self.path.parent.mkdir(parents=True,exist_ok=True)
-        value={"schema":SCHEMA,"history":self.history,"last_seen":self.last_seen,"fit":self.fit,
+        value={"schema":SCHEMA,"spatial_dimension":self.spatial_dimension,"history":self.history,"last_seen":self.last_seen,"fit":self.fit,
                "previous":self.previous,"epoch":self.epoch,"recalibrating":self.recalibrating,
                "moved":self.moved,"events":self.events,"suspicions":self.suspicions,"refinement":self.refinement}
         raw=json.dumps(value,allow_nan=False,separators=(",",":"))
@@ -477,6 +483,11 @@ def localize_relative(baseline, observations):
     if len(observations)<needed:return result
     anchors=np.array([points[r["target_bssid"]] for r in observations]);ranges=np.array([r["distance_m"] for r in observations])
     result["rover_range_time_span_s"]=max(r["observed"] for r in observations)-min(r["observed"] for r in observations)
+    origin=np.zeros(3);basis=np.eye(3)
+    if dimension==2:
+        origin=anchors.mean(axis=0)
+        _,_,vt=np.linalg.svd(anchors-origin,full_matrices=False);basis=vt.T
+        anchors=(anchors-origin) @ basis
     matrix=2*(anchors[1:]-anchors[0]);rhs=ranges[0]**2-ranges[1:]**2+(anchors[1:]**2).sum(axis=1)-(anchors[0]**2).sum()
     if np.linalg.matrix_rank(matrix,tol=1e-5)<dimension:
         result["status"]="unobservable_rover_geometry";return result
@@ -495,11 +506,13 @@ def localize_relative(baseline, observations):
     result.update(residual_acceptance_m=threshold,uncertainty="Anchor baseline and FTM bias require physical calibration")
     if rms>threshold:
         result["status"]="inconsistent_rover_ranges";return result
-    position={"x_m":float(fit.x[0]),"y_m":float(fit.x[1]),"z_m":float(fit.x[2]),
+    world=fit.x @ basis.T+origin
+    position={"x_m":float(world[0]),"y_m":float(world[1]),"z_m":float(world[2]),
               "residual_rms_m":rms,"residuals_m":residuals.tolist(),"baseline_epoch":baseline["epoch"],"baseline_revision":baseline.get("revision",1)}
     if dimension==2:
         result["status"]="mirror_ambiguous_3d"
-        result["position_hypotheses"]=[position,dict(position,z_m=-position["z_m"])]
+        mirror=fit.x.copy();mirror[2]*=-1;other=mirror @ basis.T+origin
+        result["position_hypotheses"]=[position,dict(position,x_m=float(other[0]),y_m=float(other[1]),z_m=float(other[2]))]
         result["ambiguity"]="Relative anchor plane does not determine the rover's side of that plane."
     else:
         result.update(valid=True,status="relative_position",position=position)

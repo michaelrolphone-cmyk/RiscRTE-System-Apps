@@ -329,4 +329,45 @@ class BaselineTests(unittest.TestCase):
         self.assertNotIn(IDS[-1],f.model.fit["positions"])
         self.assertGreater(s["epoch"],before["epoch"])
 
+
+    def test_expansion_of_known_3d_baseline_cannot_silently_fall_back_to_plane(self):
+        from unittest.mock import patch
+        import tof_baseline
+        f=Fixture(points=XYZ[:4]);f.train();f.points=XYZ.copy()
+        original=tof_baseline.fit_geometry
+        def candidate(nodes,edges,dimension):
+            if len(nodes)==5:
+                self.assertEqual(dimension,3);return None
+            return original(nodes,edges,dimension)
+        with patch('tof_baseline.fit_geometry',side_effect=candidate):
+            for _ in range(10):s=f.tick()
+        self.assertEqual(s["dimension"],3);self.assertEqual(len(s["positions"]),4)
+        self.assertEqual(s["status"],"partial")
+
+    def test_loaded_planar_downgrade_revalidates_against_previous_3d_evidence(self):
+        with tempfile.TemporaryDirectory() as d:
+            f=Fixture(Path(d)/"baseline.json");f.train()
+            f.model.previous=[{"positions":json.loads(json.dumps(f.model.fit["positions"]))}]
+            f.model.fit["dimension"]=2;f.model.fit["positions"]={k:[v[0],v[1],0.] for k,v in f.model.fit["positions"].items()}
+            f.model.spatial_dimension=2;f.model.dirty=True;f.model.save(force=True)
+            restored=AnchorBaseline(f.model.path,clock=lambda:f.now,fit_interval_s=0)
+            self.assertEqual(restored.spatial_dimension,3)
+            previous_frame=restored.fit["frame_id"];status=restored.update()
+            self.assertEqual(status["dimension"],3)
+            self.assertNotEqual(status["frame_id"],previous_frame)
+
+    def test_tilted_anchor_plane_has_correct_mirror_rover_solutions(self):
+        angle=.7;rotation=np.array([[1,0,0],[0,math.cos(angle),-math.sin(angle)],[0,math.sin(angle),math.cos(angle)]])
+        planar=XYZ[:4].copy();planar[:,2]=0;f=Fixture(points=planar);s=f.train()
+        offset=np.array([2.,-1.,3.])
+        for p in s["positions"]:
+            transformed=np.array([p["x_m"],p["y_m"],p["z_m"]]) @ rotation.T+offset
+            p.update(x_m=float(transformed[0]),y_m=float(transformed[1]),z_m=float(transformed[2]))
+        # Work entirely in the fitted planar frame, then tilt both anchors and rover.
+        f0=f.model.fit["positions"];plain_rover=np.array([1.,1.,1.5])
+        obs=[{"target_bssid":k,"distance_m":float(np.linalg.norm(np.array(v)-plain_rover)),"observed":1000} for k,v in f0.items()]
+        result=localize_relative(s,obs);self.assertEqual(result["status"],"mirror_ambiguous_3d")
+        expected=plain_rover @ rotation.T+offset
+        self.assertLess(min(np.linalg.norm(np.array([p["x_m"],p["y_m"],p["z_m"]])-expected) for p in result["position_hypotheses"]),1e-5)
+
 if __name__=="__main__":unittest.main()

@@ -62,3 +62,5 @@ last physical calibration. Refinement never updates that reference, preventing
 gradual physical movement from being hidden by successive small coordinate changes.
 
 Recovery accepts the largest observable anchor subset while a moved/unreliable node requalifies, rather than requiring every previously fitted anchor to recover at once. Unfitted nodes stay explicit and are added automatically when observable.
+
+Once noncoplanar3D geometry is established, expansion cannot silently downgrade the network to a plane to include an inconsistent anchor. Legacy downgrades are revalidated using retained3D evidence. Intrinsic-plane rover hypotheses are computed in that plane's basis and transformed back, so a tilted plane is not mistaken for horizontal z=0.
