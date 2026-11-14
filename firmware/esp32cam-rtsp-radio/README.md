@@ -6,7 +6,7 @@ There is no Bluetooth initialization, advertising scan, scheduled Wi-Fi scan, RS
 
 ## Build
 
-Run `python3 prepare.py --output /absolute/empty/project`, then `pio run -d /absolute/empty/project -e esp32cam_s3_wroom_n16r8`. The manifest pins the upstream revision and package checksums. Firmware version: `1.0-radio.15-reciprocal-ftm`.
+Run `python3 prepare.py --output /absolute/empty/project`, then `pio run -d /absolute/empty/project -e esp32cam_s3_wroom_n16r8`. The manifest pins the upstream revision and package checksums. Firmware version: `1.0-radio.16-capture-imu`. Each frame includes up to 32 distinct IMU samples from the preceding 650 ms on its boot clock. The worker checks the MPU acceleration range, gyro range and bypass configuration once per second and reinitializes the sensor if those registers lose their settings.
 
 ## Interfaces
 
