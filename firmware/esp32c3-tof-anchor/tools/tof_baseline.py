@@ -13,7 +13,7 @@ import statistics
 import time
 
 import numpy as np
-from scipy.optimize import least_squares
+from scipy.optimize import least_squares, minimize
 
 SCHEMA = "rover.tof.baseline/1"
 
@@ -46,6 +46,39 @@ def align(points, reference, exclude=(), require_3d=False):
     u, _, vt = np.linalg.svd((x-xc).T @ (y-yc))
     rotation = u @ vt
     return {k: ((np.array(v)-xc) @ rotation+yc).tolist() for k,v in points.items()}, bool(min(np.linalg.matrix_rank(x-xc,tol=1e-5),np.linalg.matrix_rank(y-yc,tol=1e-5))>=(3 if require_3d else 2))
+
+
+def lateration_certificate(nodes, edges, points, dimension=3):
+    """A nondegenerate simplex plus d+1 prior neighbors uniquely locates each added point.
+
+    This is a sufficient global-rigidity certificate, not a claim that all
+    globally rigid graphs admit this ordering. Missing links are never synthesized.
+    """
+    links={frozenset((e["a"],e["b"])) for e in edges}
+    def independent(group):
+        p=np.array([points[k] for k in group],dtype=float)
+        singular=np.linalg.svd(p[1:]-p[0],compute_uv=False)
+        return (len(singular)>=dimension and
+                singular[dimension-1]>max(1e-5,singular[0]*1e-4))
+    for seed in itertools.combinations(nodes,dimension+1):
+        if not all(frozenset(pair) in links for pair in itertools.combinations(seed,2)):
+            continue
+        if not independent(seed):
+            continue
+        placed=set(seed)
+        while len(placed)<len(nodes):
+            added=False
+            for node in nodes:
+                if node in placed:
+                    continue
+                neighbors=[k for k in placed if frozenset((node,k)) in links]
+                if any(independent(group) for group in itertools.combinations(neighbors,dimension+1)):
+                    placed.add(node);added=True
+            if not added:
+                break
+        if len(placed)==len(nodes):
+            return True
+    return False
 
 def fit_geometry(nodes, edges, dimension):
     """Fit measured edges only. Shortest paths are initial guesses, not evidence."""
@@ -109,7 +142,22 @@ def fit_geometry(nodes, edges, dimension):
         fit = least_squares(residual,start,bounds=(lower,upper),loss="soft_l1",max_nfev=400)
         cost = float(np.sum(np.minimum(residual(fit.x)**2, 9.)))
         if best is None or cost < best[0]: best = (cost,fit)
-    fit = best[1]; p = unpack(fit.x); errors = residual(fit.x,False)
+    fit = best[1]
+    limits = np.array([max(.75, .12*e["distance_m"], 2.5*e["sigma_m"]) for e in edges])
+    if n>5 and np.any(np.abs(residual(fit.x,False))>limits):
+        # A minimum robust cost need not satisfy every existing per-link gate.
+        # Seek a feasible fit under those same gates; never widen them.
+        def robust_cost(v):
+            r=residual(v)
+            return float(np.sum(2*(np.sqrt(1+r*r)-1)))
+        feasible=minimize(robust_cost,fit.x,method="SLSQP",
+            bounds=list(zip(lower,upper)),
+            constraints={"type":"ineq","fun":lambda v:np.concatenate(
+                [.995*limits-residual(v,False),.995*limits+residual(v,False)])},
+            options={"maxiter":400,"ftol":1e-10})
+        if np.isfinite(feasible.x).all() and np.all(np.abs(residual(feasible.x,False))<=limits):
+            fit=feasible
+    p = unpack(fit.x); errors = residual(fit.x,False)
     # Unweighted distance Jacobian; robust loss must not create fake observability.
     jac = np.zeros((len(edges),len(slots)))
     for row,e in enumerate(edges):
@@ -126,7 +174,9 @@ def fit_geometry(nodes, edges, dimension):
         if any(np.linalg.matrix_rank(np.delete(jac,i,axis=0),tol=1e-5)<dof for i in range(len(edges))):
             return None
         if dimension==3 and n>5 and len(edges)<n*(n-1)//2:
-            return None  # no general global-rigidity certificate implemented for larger sparse 3D graphs
+            fitted_points={k:p[i] for i,k in enumerate(nodes)}
+            if not lateration_certificate(nodes,edges,fitted_points,dimension):
+                return None  # sparse 3D graph still needs a sufficient uniqueness certificate
     limits = np.array([max(.75, .12*e["distance_m"], 2.5*e["sigma_m"]) for e in edges])
     if np.any(np.abs(errors)>limits):
         return None
