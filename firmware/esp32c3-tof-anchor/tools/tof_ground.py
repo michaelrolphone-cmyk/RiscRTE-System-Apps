@@ -131,7 +131,10 @@ def fit_ground(baseline, observations, radio_height):
                                       "correction_m": r["correction_m"], "used_m": r["distance_m"],
                                       "residual_m": float(e), "transfer": r.get("transfer_check", "none"),
                                       "proposed_correction_m": r.get("proposed_correction_m", r["correction_m"])} for r,e in zip(rows, errors)])
-    if not best.success or rms > threshold:
+    per_anchor_limits = np.maximum(.75, .15*ranges)
+    out["ground_fit"]["inconsistent_anchors"] = [
+        r["target_bssid"] for r, e, limit in zip(rows, errors, per_anchor_limits) if abs(e) > limit]
+    if not best.success or rms > threshold or out["ground_fit"]["inconsistent_anchors"]:
         out["status"] = "inconsistent_ground_ranges"
         return out
     if any(np.linalg.norm(f.x-best.x) > 1. and

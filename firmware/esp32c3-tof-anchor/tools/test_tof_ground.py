@@ -87,3 +87,17 @@ class GroundTest(unittest.TestCase):
             first = baseline.update()
             second = baseline.update()
             self.assertEqual(first["revision"], second["revision"])
+
+    def test_individual_bad_range_cannot_hide_in_average(self):
+        # Replay of a three-anchor fit with a passing overall RMS but 2.59 m error on Hallway.
+        coords = [[-9,196,12],[-37,375,16],[-66,164,0]]
+        ranges = [7.,13.5,10.75625]
+        self.baseline["ground_plane"]["elevation_m"] = 0.
+        self.baseline["positions"] = [dict(bssid=str(i),x_m=x*.0254,y_m=y*.0254,z_m=z*.0254)
+                                      for i,(x,y,z) in enumerate(coords)]
+        rows = [dict(target_bssid=str(i), distance_m=d, raw_distance_m=d, correction_m=0.)
+                for i,d in enumerate(ranges)]
+        fit = fit_ground(self.baseline, rows, .0635)
+        self.assertFalse(fit["valid"])
+        self.assertEqual(fit["ground_fit"]["inconsistent_anchors"], ["0"])
+        self.assertLess(fit["ground_fit"]["residual_rms_m"], fit["ground_fit"]["residual_acceptance_m"])
