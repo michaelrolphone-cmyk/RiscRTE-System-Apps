@@ -36,3 +36,9 @@ Baseline output includes `geometry_configuration`, `fixed_anchors`, per-position
 between fixed anchors. They never move tape measured positions. Estimated positions
 still require observability and the existing range consistency gates. This does not
 calibrate RF bias, grant navigation authority or register a SLAM map to the room.
+
+### Surveyed ground and rover contact
+
+Set `ground_plane: {"elevation": 0}` in the configured ENU frame. Elevation and optional rover radio height use the document's units. Set `rover_ground_contact` with `grounded: true` and `confirmed_at` (Unix seconds at observation) when the rover is on that floor. `radio_height` overrides the collector's existing antenna-height setting. A later pickup suspends the constraint until a new confirmation. Use `grounded: false` for an elevated rover.
+
+The position is the radio phase-center estimate. Its ground projection is exposed separately. Fresh, directed surveyed links report signed bias and drift between disjoint windows. A radio-role correction transfers to rover ranges only when it improves prediction on held-out peers. Raw observations stay available. Survey coordinates and the visual-map similarity have separate validity.

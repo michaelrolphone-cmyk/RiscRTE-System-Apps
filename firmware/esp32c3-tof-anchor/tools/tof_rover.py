@@ -25,6 +25,7 @@ class RoverRefinement:
         self.boot = None
         self.segment = 1
         self.total_sessions = 0
+        self.last_pickup = None
         self.last_motion = None
         self.reason = "startup"
         self.accel = None
@@ -46,6 +47,7 @@ class RoverRefinement:
                     self.segment = d["segment"]
                     self.total_sessions = d["total_sessions"]
                     self.last_motion = d.get("last_motion")
+                    self.last_pickup = d.get("last_pickup")
                     self.reason = "restored"
             except (OSError, ValueError, KeyError, TypeError):
                 self.reason = "state_unavailable"
@@ -96,6 +98,12 @@ class RoverRefinement:
     def observe_visual(self, evidence, now=None):
         """Consume fresh, deduplicated camera pose displacement from the mapper."""
         now = self.clock() if now is None else now
+        pickup = evidence.get("last_pickup_at") if isinstance(evidence, dict) else None
+        if isinstance(pickup, (float, int)) and 0 <= pickup <= now and (self.last_pickup is None or pickup > self.last_pickup):
+            self.last_pickup = pickup
+            if now-pickup < 5:
+                self.invalidate("pickup", now)
+            self.dirty = True
         if not isinstance(evidence, dict) or evidence.get("tracking") is not True:
             return False
         at = evidence.get("observed_at")
@@ -161,6 +169,15 @@ class RoverRefinement:
             delta = distance-r["mean"]
             r["mean"] += delta/r["n"]
             r["m2"] += delta*(distance-r["mean"])
+        if direction:
+            stats = r.setdefault("ground_stats", {}).setdefault(direction, {"n": 0, "mean": 0., "last": observed, "recent": []})
+            stats["recent"] = (stats["recent"] + [float(distance)])[-9:]
+            center = statistics.median(stats["recent"])
+            mad = statistics.median(abs(v-center) for v in stats["recent"])
+            if abs(distance-center) <= max(1.5, 4.45*mad):
+                stats["n"] += 1
+                stats["mean"] += (distance-stats["mean"])/stats["n"]
+                stats["last"] = max(stats["last"], observed)
         self._range_change(now)
         return True
 
@@ -186,11 +203,16 @@ class RoverRefinement:
             self.invalidate("anchor_frame_changed", now)
         self.frame = frame
         rows = [{"target_bssid": k, "distance_m": r["mean"], "session_count": r["n"], "direction_counts": dict(r.get("direction_counts",{})), "std_m": math.sqrt(max(0., r["m2"]/max(1,r["n"]-1))), "age_s": now-r["last"], "observed": r["last"]} for k, r in sorted(self.rows.items()) if r["n"] and 0 <= now-r["last"] <= 30]
+        for row in rows:
+            stats = self.rows[row["target_bssid"]].get("ground_stats", {})
+            row["ground_directions"] = [
+                {"direction": key, "distance_m": s["mean"], "session_count": s["n"], "observed": s["last"]}
+                for key, s in stats.items() if s["n"] and 0 <= now-s["last"] <= 30]
         motion = self.last_motion is not None and now-self.last_motion < 2
         quiet_imu = self.last_imu is not None and 0 <= now-self.last_imu <= 3
         quiet_visual = self.last_visual is not None and 0 <= now-self.last_visual <= 3
         out = {"schema": "rover.tof.refinement/1", "state": "moving" if motion else "accumulating", "segment": self.segment, "total_sessions": self.total_sessions, "session_count": sum(r["session_count"] for r in rows), "anchor_count": len(rows), "stationary_evidence": "ahrs_and_ranges" if quiet_imu else "visual_and_ranges" if quiet_visual else "ranges_only", "reason": self.reason, "estimate": None, "ranges": rows, "navigation_authority": False, "uncertainty": "Repeated-session precision excludes systematic FTM bias and anchor-model error"}
-        if motion or not baseline.get("valid") or baseline.get("dimension") != 3:
+        if motion or baseline.get("grounded_solve") or not baseline.get("valid") or baseline.get("dimension") != 3:
             self.save(now)
             return out
         points = {p["bssid"]: [p["x_m"],p["y_m"],p["z_m"]] for p in baseline.get("positions", [])}
@@ -217,7 +239,7 @@ class RoverRefinement:
         now = self.clock() if now is None else now
         if not self.path or not self.dirty or (not force and now-self.saved_at < 5):
             return
-        d = {"schema": "rover.tof.refinement-state/1", "rows": self.rows, "seen": self.seen, "session_ids": self.session_ids, "frame": self.frame, "boot": self.boot, "segment": self.segment, "total_sessions": self.total_sessions, "last_motion": self.last_motion}
+        d = {"schema": "rover.tof.refinement-state/1", "rows": self.rows, "seen": self.seen, "session_ids": self.session_ids, "frame": self.frame, "boot": self.boot, "segment": self.segment, "total_sessions": self.total_sessions, "last_motion": self.last_motion, "last_pickup": self.last_pickup}
         self.path.parent.mkdir(parents=True,exist_ok=True)
         tmp = self.path.with_suffix(".tmp")
         tmp.write_text(json.dumps(d,allow_nan=False))

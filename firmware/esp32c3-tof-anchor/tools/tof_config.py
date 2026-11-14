@@ -13,6 +13,9 @@ from scipy.optimize import least_squares
 
 SCHEMA = "rover.tof.geometry-config/1"
 
+def _finite(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
 def validate(document):
     if not isinstance(document, dict) or document.get("schema") != SCHEMA:
         raise ValueError("unsupported geometry configuration schema")
@@ -23,6 +26,18 @@ def validate(document):
         raise ValueError("units must be in or m")
     if not isinstance(document.get("frame_id"), str) or not document["frame_id"].strip():
         raise ValueError("frame_id required")
+    plane = document.get("ground_plane")
+    if plane is not None:
+        if not isinstance(plane, dict) or not _finite(plane.get("elevation")):
+            raise ValueError("ground_plane requires a finite elevation in configuration units")
+    contact = document.get("rover_ground_contact")
+    if contact is not None:
+        if plane is None or not isinstance(contact, dict) or not isinstance(contact.get("grounded"), bool):
+            raise ValueError("rover_ground_contact requires a ground plane and boolean grounded")
+        if not _finite(contact.get("confirmed_at")) or contact["confirmed_at"] < 0:
+            raise ValueError("ground contact requires a Unix confirmation timestamp")
+        if "radio_height" in contact and (not _finite(contact["radio_height"]) or contact["radio_height"] < 0):
+            raise ValueError("radio_height must be a nonnegative offset above the floor")
     rows = document.get("anchors")
     if not isinstance(rows, list):
         raise ValueError("anchors must be a list")
@@ -196,10 +211,12 @@ class RuntimeGeometry:
         active = sorted(k for k, seen in baseline.last_seen.items() if now-seen <= 30)
         fit = anchored_fit(fixed, active, edges)
         old = baseline.fit
+        same_geometry = (old and old.get("configuration_revision") == revision and
+                         old.get("positions") == fit["positions"])
         fit.update(configured_geometry=True, configuration_revision=revision,
                    fixed_anchors=sorted(fixed), frame_id=document["frame_id"] + ":" + revision,
                    epoch=baseline.epoch, created_at=now if changed or not old else old["created_at"],
-                   revision=1 if changed or not old else old.get("revision", 0)+1)
+                   revision=(old["revision"] if same_geometry else 1 if changed or not old else old.get("revision", 0)+1))
         baseline.fit = fit
         baseline.spatial_dimension = 3
         baseline.recalibrating = False
@@ -219,6 +236,15 @@ class RuntimeGeometry:
                       positions=[dict(p, position_source="measured_fixed" if p["bssid"] in fixed else "range_estimated",
                                       label=next((a.get("label", "") for a in enabled if a["bssid"].lower()==p["bssid"]), ""))
                                  for p in result["positions"]])
+        from tof_ground import radio_calibration, surveyed_floor
+        plane = surveyed_floor(document, scale, fit["frame_id"], fixed)
+        if plane is not None:
+            result["ground_plane"] = plane
+            result["radio_calibration"] = radio_calibration(baseline.history, fixed, now)
+            contact = dict(document.get("rover_ground_contact") or {})
+            if "radio_height" in contact:
+                contact["radio_height_m"] = contact.pop("radio_height") * scale
+            result["rover_ground_contact"] = contact
         return result
 
 def main():
