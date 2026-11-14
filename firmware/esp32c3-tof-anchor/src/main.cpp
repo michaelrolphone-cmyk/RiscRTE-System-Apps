@@ -11,7 +11,11 @@
 #error FTM initiator and responder support are required
 #endif
 
-static const char *VERSION="1.0.3";
+#if CONFIG_IDF_TARGET_ESP32S3
+static const char *VERSION="1.0.4-s3.1";
+#else
+static const char *VERSION="1.0.4";
+#endif
 static const uint16_t PORT=7446;
 static const uint32_t MAX_AGE=30000;
 WebServer web(80);
@@ -46,6 +50,8 @@ bool txTrial=false;
 uint32_t txTrialStart=0, txTrialDuration=0;
 int disconnectReason=0;
 int ftmCode=-1;
+uint32_t lanPeerReports=0,scanAttempts=0;
+int lastScanCode=0;
 String macText(const uint8_t *m) {
  char b[18]; snprintf(b,sizeof(b),"%02x:%02x:%02x:%02x:%02x:%02x",m[0],m[1],m[2],m[3],m[4],m[5]); return String(b);
 }
@@ -70,6 +76,7 @@ void onWiFi(WiFiEvent_t event, WiFiEventInfo_t info) {
 void statusDoc(JsonDocument &d) {
  uint32_t now=millis();
  d["schema"]="rover.tof.anchor/1"; d["firmware"]=VERSION;
+ d["lan_peer_reports"]=lanPeerReports;d["scan_attempts"]=scanAttempts;d["last_scan_code"]=lastScanCode;
  d["id"]=nodeId; d["boot_id"]=bootId; d["seq"]=seq; d["uptime_ms"]=now;
  d["ssid"]=apName; d["bssid"]=WiFi.softAPmacAddress(); wifi_ap_record_t ap={};d["channel"]=esp_wifi_sta_get_ap_info(&ap)==ESP_OK?ap.primary:WiFi.channel();
  d["ip"]=WiFi.status()==WL_CONNECTED?WiFi.localIP().toString():WiFi.softAPIP().toString();
@@ -197,7 +204,8 @@ void loop() {
  if(radioBusy&&!retiring&&now-ftmStarted>8000){esp_wifi_ftm_end_session();retiring=true;}
  // Never overlap a timed-out session with a new measurement: its delayed report must retire first.
  if(!radioBusy&&!scanning&&now-lastScan>20000){
-  int rc=WiFi.scanNetworks(true,false,false,150,0);scanning=rc==WIFI_SCAN_RUNNING;lastScan=now;
+  int rc=WiFi.scanNetworks(true,false,false,150,0);lastScanCode=rc;++scanAttempts;
+  scanning=rc==WIFI_SCAN_RUNNING||rc>=0;lastScan=now;
  }
  if(scanning){
   int n=WiFi.scanComplete();
@@ -223,7 +231,27 @@ void loop() {
   }
  }
  // Drain network packets: this node publishes its own measurements, the coordinator fuses all nodes.
- int packet=udp.parsePacket();if(packet){char discard[256];while(udp.available())udp.read(discard,sizeof(discard));}
+ int packet=udp.parsePacket();if(packet){
+  String announcement;announcement.reserve(packet);
+  while(udp.available())announcement+=char(udp.read());
+  StaticJsonDocument<256> filter;
+  filter["schema"]=true;filter["bssid"]=true;filter["ssid"]=true;
+  filter["channel"]=true;filter["ftm_responder"]=true;
+  StaticJsonDocument<512> advertised;
+  auto error=deserializeJson(advertised,announcement,DeserializationOption::Filter(filter));
+  // Existing C3 WiFiUDP can split large reports. Only complete leading
+  // identity/channel fields are used for discovery, never any partial ranges.
+  if(!error||error==DeserializationError::IncompleteInput){
+   String mac=advertised["bssid"].as<String>();mac.toLowerCase();
+   String ssid=advertised["ssid"].as<String>();
+   int channel=advertised["channel"]|0;uint8_t bytes[6];
+   if(advertised["schema"]=="rover.tof.anchor/1"&&advertised["ftm_responder"]==true&&
+      parseMac(mac,bytes)&&mac!=nodeId&&ssid.startsWith("C3-TOF-")&&channel>=1&&channel<=14){
+    int i=peerIndex(mac);
+    if(i>=0){peers[i].ssid=ssid;peers[i].channel=channel;peers[i].seen=now;++lanPeerReports;}
+   }
+  }
+ }
  if(now-lastPublish>2000){lastPublish=now;publish();}
  delay(2);
 }

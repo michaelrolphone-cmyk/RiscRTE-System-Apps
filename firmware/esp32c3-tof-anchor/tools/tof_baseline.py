@@ -80,6 +80,59 @@ def lateration_certificate(nodes, edges, points, dimension=3):
             return True
     return False
 
+
+def fit_anchor_extension(reference, edges, node, prior=None):
+    """Locate one new anchor; established reference coordinates are not variables."""
+    selected=[e for e in edges if node in (e["a"],e["b"]) and
+              (e["b"] if e["a"]==node else e["a"]) in reference]
+    ids=[e["b"] if e["a"]==node else e["a"] for e in selected]
+    if len(set(ids))<4:return None,"insufficient_reference_links"
+    q=np.array([reference[k] for k in ids]);d=np.array([e["distance_m"] for e in selected])
+    sv=np.linalg.svd(q[1:]-q[0],compute_uv=False)
+    if len(sv)<3 or sv[-1]<=max(1e-5,sv[0]*1e-4):
+        return None,"reference_geometry_ambiguous"
+    sigma=np.array([e["sigma_m"] for e in selected])
+    limits=np.maximum.reduce([np.full(len(d),.75),.12*d,2.5*sigma])
+    seed=np.linalg.lstsq(2*(q[1:]-q[0]),
+        np.sum(q[1:]**2,axis=1)-np.sum(q[0]**2)+d[0]**2-d[1:]**2,rcond=None)[0]
+    def errors(x):return np.linalg.norm(x-q,axis=1)-d
+    def cost(x):
+        r=errors(x)/sigma
+        return float(np.sum(2*(np.sqrt(1+r*r)-1)))
+    endpoints=None
+    if prior and prior.get("between"):
+        ends=prior["between"]
+        if len(ends)!=2 or any(k not in reference for k in ends):
+            return None,"placement_references_unavailable"
+        a,b=[np.array(reference[k]) for k in ends];length=float(np.linalg.norm(a-b))
+        if length<1e-5:return None,"placement_references_coincident"
+        endpoints=(a,b,length)
+    def bounds(x):
+        rows=[.995*limits-errors(x),.995*limits+errors(x)]
+        if endpoints:
+            a,b,length=endpoints
+            # Necessary distance ordering for "between"; this does not invent a midpoint or exact line.
+            rows.append(np.array([length-np.linalg.norm(x-a),length-np.linalg.norm(x-b)]))
+        return np.concatenate(rows)
+    candidates=[]
+    starts=[seed,np.mean(q,axis=0)]
+    if endpoints:starts.append((endpoints[0]+endpoints[1])/2)
+    for start in starts:
+        result=minimize(cost,start,method="SLSQP",constraints={"type":"ineq","fun":bounds},
+                        options={"maxiter":400,"ftol":1e-10})
+        x=result.x
+        if np.isfinite(x).all() and np.min(bounds(x))>=-1e-7:candidates.append((cost(x),x))
+    if not candidates:return None,"ranges_conflict_with_reference_or_placement"
+    _,x=min(candidates,key=lambda row:row[0]);delta=x-q;length=np.linalg.norm(delta,axis=1)
+    if np.any(length<1e-5):return None,"coincident_reference"
+    jac=delta/length[:,None];singular=np.linalg.svd(jac,compute_uv=False)
+    if singular[-1]<=max(1e-5,singular[0]*1e-4):return None,"range_geometry_ambiguous"
+    cov=np.linalg.pinv(jac.T @ np.diag(1/sigma**2) @ jac)
+    return {"position":x.tolist(),"model_sigma_m":math.sqrt(float(np.trace(cov))),
+            "residual_rms_m":float(np.sqrt(np.mean(errors(x)**2))),
+            "references":ids,"edges":selected,"last_sample_at":min(e["last_observed_at"] for e in selected),
+            "placement":prior or {}},None
+
 def fit_geometry(nodes, edges, dimension):
     """Fit measured edges only. Shortest paths are initial guesses, not evidence."""
     n = len(nodes); dof = dimension*n-dimension*(dimension+1)//2
@@ -358,6 +411,45 @@ class AnchorBaseline:
             if set(key.split(">")) & set(self.moved):self.history.pop(key)
         self.last_fit_attempt=-1e30;self.dirty=True
 
+
+    def _extend(self,now):
+        fit=self.fit
+        if not fit or fit["dimension"]!=3:return
+        priors={}
+        if self.path:
+            path=self.path.parent/"anchor-placement-priors.json"
+            if path.exists():
+                try:
+                    value=json.loads(path.read_text())
+                    if value.get("schema")!="rover.tof.anchor-placement/1":raise ValueError()
+                    priors=value["anchors"]
+                except (ValueError,KeyError,TypeError,OSError):
+                    self.last_rejection="invalid_anchor_placement_priors";return
+        else:priors=getattr(self,"placement_priors",{})
+        reference=fit["positions"];extensions=fit.setdefault("extensions",{})
+        reference_revision=fit.setdefault("reference_revision",fit.get("revision",1))
+        edges=[e for e in self._edges(now,recent=True) if
+               e["samples"]>=self.min_samples and e["span_s"]>=self.min_span_s]
+        nodes=sorted(k for k,last in self.last_seen.items() if now-last<=30 and k not in reference)
+        states={};changed=False
+        for node in nodes:
+            usable=[e for e in edges if now-self.last_seen.get(e["a"],-1e30)<=30 and
+                    now-self.last_seen.get(e["b"],-1e30)<=30]
+            candidate,reason=fit_anchor_extension(reference,usable,node,priors.get(node))
+            if candidate:
+                candidate["reference_revision"]=reference_revision
+                previous=extensions.get(node)
+                if not previous or np.linalg.norm(np.array(previous["position"])-candidate["position"])>1e-8:
+                    changed=True
+                extensions[node]=candidate;states[node]="fitted_against_fixed_reference"
+            else:
+                changed=extensions.pop(node,None) is not None or changed
+                states[node]=reason
+        fit["extension_status"]=states
+        if changed:
+            fit["revision"]=fit.get("revision",1)+1;self.dirty=True
+        self.last_rejection=next((v for v in states.values() if v!="fitted_against_fixed_reference"),None)
+
     def _calibrate(self,now):
         if self.fit and self.spatial_dimension==3 and self.fit["dimension"]==2 and len(self.fit["positions"])>=4:
             self.recalibrating=True
@@ -365,6 +457,11 @@ class AnchorBaseline:
         if now-self.last_fit_attempt<self.fit_interval_s:return
         self.last_fit_attempt=now;edges=self._edges(now)
         nodes=sorted(k for k,last in self.last_seen.items() if now-last<=30)
+        # A simplex still needs joint bootstrap; protect an already redundant reference core.
+        if (self.fit and not self.recalibrating and self.fit["dimension"]==3 and
+                len(self.fit["positions"])>self.fit["dimension"]+1):
+            self._extend(now)
+            return
         if self.fit and not self.recalibrating and set(nodes)<=set(self.fit["positions"]):return
         minimum=3
         if self.fit and not self.recalibrating:minimum=len(self.fit["positions"])+1
@@ -469,6 +566,7 @@ class AnchorBaseline:
         self.fit["edges"]=[dict(e,residual_m=float(np.linalg.norm(np.array(positions[e["a"]])-positions[e["b"]])-e["distance_m"])) for e in current]
         self.fit["residual_rms_m"]=after[0];self.fit["updated_at"]=now
         self.fit["revision"]=self.fit.get("revision",1)+1
+        self.fit["reference_revision"]=self.fit["revision"]
         self.fit["condition_number"]=max(self.fit["condition_number"],candidate["condition_number"])
         self.refinement.update(revision=self.fit["revision"],accepted=self.refinement.get("accepted",0)+1,
             last_update_at=now,state="refined",before_rms_m=before[0],after_rms_m=after[0],
@@ -478,22 +576,33 @@ class AnchorBaseline:
 
     def update(self,now=None):
         now=self.clock() if now is None else now
-        self._prune(now);self._movement(now);self._calibrate(now);self._refine(now);self.save(now)
+        self._prune(now);self._movement(now);self._calibrate(now);self._refine(now)
+        if self.fit and any(e.get("reference_revision")!=self.fit.get("reference_revision",self.fit.get("revision",1))
+                            for e in self.fit.get("extensions",{}).values()):
+            self._extend(now)
+        self.save(now)
         return self.status(now)
 
     def status(self,now=None):
         now=self.clock() if now is None else now
         fit=self.fit;active=sorted(k for k,last in self.last_seen.items() if now-last<=30)
+        points=dict(fit["positions"]) if fit else {}
+        sigmas=dict(fit["anchor_model_sigma_m"]) if fit else {}
+        if fit:
+            for k,e in fit.get("extensions",{}).items():
+                if (k in active and now-e["last_sample_at"]<=self.recent_s and
+                    e.get("reference_revision")==fit.get("reference_revision",fit.get("revision",1))):
+                    points[k]=e["position"];sigmas[k]=e["model_sigma_m"]
         ready=bool(fit) and not self.recalibrating and not self.suspicions
         status="recalibrating" if self.recalibrating else "movement_suspected" if self.suspicions else "ready" if fit else "collecting"
-        if ready and set(active)-set(fit["positions"]):status="partial"
+        if ready and set(active)-set(points):status="partial"
         return {"schema":SCHEMA,"status":status,"valid":ready,"epoch":self.epoch,
                 "frame_id":fit["frame_id"] if fit else None,"dimension":fit["dimension"] if fit else None,
                 "created_at":fit["created_at"] if fit else None,
                 "revision":fit.get("revision",1) if fit else 0,"refinement":dict(self.refinement),
                 "positions":[{"bssid":k,"x_m":v[0],"y_m":v[1],"z_m":v[2],
-                              "model_sigma_m":fit["anchor_model_sigma_m"].get(k)} for k,v in sorted(fit["positions"].items())] if fit else [],
-                "unfitted_anchors":sorted(set(active)-set(fit["positions"] if fit else [])),
+                              "model_sigma_m":sigmas.get(k)} for k,v in sorted(points.items())] if fit else [],
+                "unfitted_anchors":sorted(set(active)-set(points)),"extension_status":fit.get("extension_status",{}) if fit else {},
                 "movement_anchors":self.moved or sorted({k for s in self.suspicions for k in s.split("|")}),
                 "movement_threshold_m":1.,"movement_hold_s":self.movement_hold_s,
                 "residual_rms_m":fit["residual_rms_m"] if fit else None,

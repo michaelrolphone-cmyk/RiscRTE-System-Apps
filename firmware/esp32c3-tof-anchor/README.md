@@ -129,3 +129,12 @@ The S3 camera can also act as an FTM responder. Existing 1.0.3 anchors discover
 its C3-TOF-ROVER- SSID and measure it without associating or reflashing. See
 [RECIPROCAL.md](RECIPROCAL.md) for collector quality rules and the complete-status
 transport fallback needed when larger reports exceed the legacy UDP writer.
+
+
+### Adding an anchor to an established baseline
+
+A new anchor is fitted against fixed coordinates of the established redundant 3D reference set. Its ranges cannot move those references. At least four fresh, independent reference links and the existing per-link residual bounds must pass; stale, inconsistent or ambiguous extensions are withheld. Reference refinement and movement detection continue independently.
+
+Optional `anchor-placement-priors.json` beside the baseline state uses `{"schema":"rover.tof.anchor-placement/1","anchors":{"<bssid>":{"between":["<reference-a>","<reference-b>"]}}}`. The between constraint bounds distances to both endpoints by their separation; it does not invent a midpoint or assume collinearity. It never replaces range observability requirements.
+
+Build the S3 with `pio run -e esp32s3`; the C3 environment remains `esp32c3`. LAN peer discovery supplements Wi-Fi scans using validated identity/channel fields from anchor broadcasts, allowing the S3 to initiate ranging while retaining telemetry delivery.
