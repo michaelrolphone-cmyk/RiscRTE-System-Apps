@@ -56,7 +56,8 @@ def trilaterate(points,ranges):
     return {"x_m":x,"y_m":y,"residual_rms_m":rms,"residuals_m":residuals}
 
 class RangeGraph:
-    def __init__(self,baseline=None):
+    def __init__(self,baseline=None,rover_refinement=None):
+        self.rover_refinement=rover_refinement
         self.baseline=baseline
         self.nodes={}
         self.rover={}
@@ -97,6 +98,9 @@ class RangeGraph:
         age=ftm.get("age_ms")
         if target not in self.nodes or not finite_positive(ftm.get("distance_m")):return False
         if not isinstance(age,(int,float)) or age<0 or age>TTL*1000:return False
+        if self.rover_refinement is not None:
+            wall=time.time()
+            self.rover_refinement.observe(target,ftm["distance_m"],wall-age/1000,now=wall)
         self.rover[target]={"distance_m":ftm["distance_m"],"observed":now-age/1000,
                            "samples":ftm.get("samples"),"rtt_ns":ftm.get("rtt_ns")}
         return True
@@ -190,5 +194,20 @@ class RangeGraph:
             result["status"]="baseline_"+baseline["status"]
             return result
         result["geometry_quality"]=None if baseline["condition_number"] is None else 1./baseline["condition_number"]
-        result.update(localize_relative(baseline,result["rover_ranges"]))
+        if self.rover_refinement is not None:
+            refinement=self.rover_refinement.snapshot(baseline)
+            result["rover_refinement"]=refinement
+            refined=refinement.get("ranges",[])
+            result.update(localize_relative(baseline,refined))
+            if refinement.get("state")=="moving":
+                result.update(valid=False,position=None,status="rover_moving_reacquire")
+            elif refinement.get("minimum_sessions_per_anchor",0)<5:
+                result.update(valid=False,position=None,status="rover_refinement_accumulating")
+            elif result.get("valid"):
+                result["status"]="refined_relative_position"
+            if result.get("position"):
+                result["position"]["frame_id"]=baseline["frame_id"]
+                result["position"]["refinement_segment"]=refinement["segment"]
+        else:
+            result.update(localize_relative(baseline,result["rover_ranges"]))
         return result

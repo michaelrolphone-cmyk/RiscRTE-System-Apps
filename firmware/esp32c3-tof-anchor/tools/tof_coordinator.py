@@ -12,6 +12,7 @@ import urllib.request
 import urllib.error
 from tof_geometry import RangeGraph
 from tof_baseline import AnchorBaseline
+from tof_rover import RoverRefinement
 
 def http_json(base,path,payload=None):
     data=None if payload is None else json.dumps(payload).encode()
@@ -68,7 +69,8 @@ def main():
     sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
     sock.bind(("",args.port));sock.settimeout(.2)
     baseline=AnchorBaseline(state/"baseline.json")
-    graph=RangeGraph(baseline=baseline)
+    rover_refinement=RoverRefinement(state/"rover-refinement.json")
+    graph=RangeGraph(baseline=baseline,rover_refinement=rover_refinement)
     last_rover=last_write=last_request=0.
     channel_cache={}
     last_requested={};error=None;request_state=RoverRequest();retired=False
@@ -88,6 +90,12 @@ def main():
                 if request_state.observe(snapshot):
                     # Do not combine measurements from different camera boots.
                     graph.rover.clear()
+                rover_refinement.observe_boot(snapshot.get("boot_id"))
+                rover_refinement.observe_motion(snapshot.get("ahrs",{}))
+                try:
+                    visual=json.loads((Path.home()/".local/share/biome-robot-vision/rover-motion.json").read_text())
+                    rover_refinement.observe_visual(visual)
+                except (OSError,ValueError,TypeError):pass
                 ftm=snapshot.get("ftm",{})
                 for observation in snapshot.get("wifi",[]):
                     address=str(observation.get("address") or observation.get("bssid") or observation.get("mac") or "").lower()
