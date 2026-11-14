@@ -133,8 +133,12 @@ transport fallback needed when larger reports exceed the legacy UDP writer.
 
 ### Joint self-localization
 
-All anchor coordinates are unknown estimates. Adding an anchor fits the entire measured graph jointly, and subsequent validated refinement updates every included anchor. Rigid alignment retains coordinate-frame continuity without fixing anchor-to-anchor distances. No manual placement-prior file is consumed and no established anchor is treated as physical ground truth.
+By default, all anchor coordinates are unknown estimates. Adding an anchor fits the entire measured graph jointly, and subsequent validated refinement updates every included anchor. Rigid alignment retains coordinate-frame continuity without fixing anchor-to-anchor distances. No manual placement-prior file is consumed and no established anchor is treated as physical ground truth.
 
 Sparse six-node graphs retain their measured-link observability and residual checks. Optimizer starts are ranked by the same soft-L1 objective they minimize. Inconsistent reciprocal measurements are rejected as measurements; coordinate estimates are not used to declare an endpoint correct.
 
 Build the S3 with `pio run -e esp32s3`; the C3 environment remains `esp32c3`. Validated LAN peer identity/channel discovery supplements Wi-Fi scanning so the S3 can initiate ranges.
+
+### Measured geometry at runtime
+
+Explicitly measured module positions can be configured in geometry-config.json beside the collector state. The configuration is keyed by BSSID and reloads without a restart or code redeployment. Configured positions are fixed; unconfigured modules remain range estimates. See [runtime geometry configuration](tools/RUNTIME_GEOMETRY.md) for units, coordinate frames, atomic updates and relocation history invalidation.

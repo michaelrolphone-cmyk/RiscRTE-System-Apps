@@ -222,7 +222,7 @@ def refinement_candidate(reference,edges,dimension):
 class AnchorBaseline:
     def __init__(self,path=None,clock=time.time,min_samples=5,min_span_s=30.,
                  window_s=1800.,recent_s=90.,movement_hold_s=30.,fit_interval_s=10.,
-                 refinement_interval_s=30.,max_refinement_step_m=.1):
+                 refinement_interval_s=30.,max_refinement_step_m=.1,geometry_path=None):
         self.path = Path(path) if path else None; self.clock = clock
         self.min_samples=min_samples; self.min_span_s=min_span_s; self.window_s=window_s
         self.recent_s=recent_s; self.movement_hold_s=movement_hold_s; self.fit_interval_s=fit_interval_s
@@ -253,6 +253,8 @@ class AnchorBaseline:
                 self.history={};self.last_seen={};self.fit=None;self.suspicions={}
                 self.load_error=type(e).__name__+": "+str(e)
         self._prune(self.clock())
+        from tof_config import RuntimeGeometry
+        self.runtime_geometry = RuntimeGeometry(geometry_path if geometry_path is not None else self.path.with_name("geometry-config.json") if self.path else None)
 
     def _prune(self,now):
         for key,rows in list(self.history.items()):
@@ -478,7 +480,11 @@ class AnchorBaseline:
 
     def update(self,now=None):
         now=self.clock() if now is None else now
-        self._prune(now);self._movement(now);self._calibrate(now);self._refine(now);self.save(now)
+        self._prune(now)
+        configured = self.runtime_geometry.update(self, now)
+        if configured is not None:
+            return configured
+        self._movement(now);self._calibrate(now);self._refine(now);self.save(now)
         return self.status(now)
 
     def status(self,now=None):
