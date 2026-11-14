@@ -9,7 +9,8 @@ Each optional peripheral has an independent worker; no sensor or UART operations
 run in the capture/HTTP path. Capture returns null/unavailable sensor evidence rather
 than inventing measurements or rejecting the image. Unplugged devices are retried,
 stale samples are excluded and future samples cannot be attached to older captures.
-UART is dedicated UART2; USB debug, UART0 and camera wiring are retained.
+UART is dedicated UART2. Debug logging uses the programming UART0, so startup
+and network operation do not depend on a USB-OTG host; camera wiring is retained.
 Do not flash the SDR board or the existing front camera with this variant.
 
 ## Wiring on the REAR board
@@ -82,3 +83,19 @@ The existing fleet coordinator can target this rear endpoint as another initiato
 sensor receiver configuration may also list known peers for automatic rear sessions.
 No BLE/RSSI scanning is added. FTM and video share one radio, so simultaneous
 performance and off-channel ranging need physical qualification.
+
+
+## One-time USB Wi-Fi provisioning
+For a board without saved camera settings, prepare a private factory image:
+`python3 prepare.py --output /absolute/new/factory-build --provisioning-json /private/wifi.json --build`
+The input JSON supplies ssid and password. This initializes IotWebConf's network
+and AP settings, saves them, and reboots once. The generated credential header
+is owner-readable; treat the factory binary as private and never publish it.
+Flash that image by USB, then upload the normal build over Wi-Fi using espota.
+Normal OTA images omit the factory seed and retain the saved network settings.
+GET /api/rear reports the actual running partition, firmware version, flash/PSRAM
+sizes and whether an OTA target partition exists. Verify a real network update
+and a post-update camera capture before relying on OTA.
+
+The rear build routes application logging to UART0 (USB CDC on boot disabled).
+This avoids a disconnected USB-OTG debug channel stalling first-run setup.

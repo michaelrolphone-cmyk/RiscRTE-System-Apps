@@ -4,6 +4,8 @@
 #include "rear_health.h"
 #include "rear_ranging.h"
 #include "sensor_push.h"
+#include "settings.h"
+#include <esp_ota_ops.h>
 #include <Arduino.h>
 #include <Wire.h>
 #include <HardwareSerial.h>
@@ -214,8 +216,11 @@ void sendStatus(WebServer &server) {
  DynamicJsonDocument document(8192);JsonObject out=document.to<JsonObject>();
  writeIdentity(out);writeSensors(out.createNestedObject("lidar"),nowUs());
  writeLink(out.createNestedObject("uart"),nowUs());out["camera_independent"]=true;
- out["firmware"]="1.0-rear.2";
- rear_ranging::writeJson(out,nowUs());out["ota_supported"]=true;
+ out["firmware"]=APP_VERSION;
+ rear_ranging::writeJson(out,nowUs());out["ota_supported"]=esp_ota_get_next_update_partition(nullptr)!=nullptr;
+ const esp_partition_t *running=esp_ota_get_running_partition();
+ out["running_partition"]=running?running->label:"unknown";
+ out["flash_size_bytes"]=ESP.getFlashChipSize();out["psram_size_bytes"]=ESP.getPsramSize();
  String text;serializeJson(document,text);server.send(200,"application/json",text);
 }
 }
