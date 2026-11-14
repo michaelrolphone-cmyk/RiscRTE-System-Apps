@@ -3,6 +3,10 @@
  * never recapture on stale/busy or infer an intent from an automatic KV put. */
 #include "PortablePreferenceAtomic.h"
 #include "PortableContextPreferences.h"
+#ifdef PORTABLE_QUICK_PENDING_FRAME
+static int quick_pending_frame(void);
+static void quick_pending_done(void);
+#endif
 static risc_runtime_capability_v1 quick_atomic_grant;
 static portable_preference_atomic quick_atomic_edit;
 static char quick_atomic_key[16];
@@ -179,6 +183,15 @@ static bool quick_atomic_save(void *unused,const char *key,const void *value,uin
   portable_preference_atomic_prepare(&quick_atomic_edit,value,size);
  if(rc!=PORTABLE_PREFERENCE_READY){quick_atomic_result(rc);return false;}
  quick_atomic_running=true;bool cancel=false;
+#ifdef PORTABLE_QUICK_PENDING_FRAME
+ int pending=quick_pending_frame();
+ if(pending!=PENDING_READY){
+  if(pending==PENDING_FAULT){quick_atomic_result(RISC_ATOMIC_RETAINED);return false;}
+  quick_atomic_running=false;quick_pending_done();
+  quick_atomic_edit=(portable_preference_atomic){0};quick_atomic_attempted=false;quick_atomic_key[0]=0;
+  quick_atomic_discard();return false;
+ }
+#endif
  for(;;) {
   if(!quick_atomic_guard(NULL)){rc=RISC_ATOMIC_RETAINED;break;}
   rc=cancel?portable_preference_atomic_cancel(&quick_atomic_edit):
@@ -195,6 +208,9 @@ static bool quick_atomic_save(void *unused,const char *key,const void *value,uin
  }
  quick_atomic_running=false;
  if(!quick_atomic_result(rc))return false;
+#ifdef PORTABLE_QUICK_PENDING_FRAME
+ quick_pending_done();
+#endif
  bool saved=rc==RISC_ATOMIC_OK;
  pqa_cancel_input(&quick.ui);
  /* Only our collected successful operation advances the next draft's base.
