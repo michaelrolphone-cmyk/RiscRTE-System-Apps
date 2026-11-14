@@ -100,6 +100,25 @@ def replace_configuration(path, document, expected_revision):
                 os.unlink(temporary)
     return digest(raw)
 
+def display_range_edges(baseline, accepted_edges, now):
+    """Include immature or disagreeing range pairs in display estimates only."""
+    from tof_baseline import median_sigma
+    result = {tuple(sorted((e["a"],e["b"]))):e for e in accepted_edges}
+    samples = {}
+    for key, rows in baseline.history.items():
+        pair = tuple(sorted(key.split(">")))
+        if pair in result:
+            continue
+        values = [r[2] for r in rows if now-baseline.window_s <= r[0] <= now+1 and r[2]>0]
+        if values:
+            samples.setdefault(pair,[]).append(median_sigma(values))
+    for (a,b),groups in samples.items():
+        values = [m for m,_ in groups]
+        result[a,b] = dict(a=a,b=b,distance_m=float(np.median(values)),
+            sigma_m=max(.25,max(values)-min(values),max(s for _,s in groups)),display_only=True)
+    return list(result.values())
+
+
 def anchored_fit(fixed, active, edges):
     """Laterate observable unknown nodes; fixed coordinates never enter optimization."""
     points = {k: list(v) for k, v in fixed.items()}
@@ -153,6 +172,12 @@ class RuntimeGeometry:
         self.error = None
         self.active = False
         self.epoch = 0
+        self.display_upstairs = set()
+        # Floor membership is a display constraint only. The accepted solver is independent.
+        floor_priors = self.path.parent/"display-floor-priors.json" if self.path else None
+        if floor_priors and floor_priors.is_file():
+            priors = json.loads(floor_priors.read_text()).get("anchors",{})
+            self.display_upstairs = {k.lower() for k,v in priors.items() if v.get("floor")=="upstairs"}
 
     def update(self, baseline, now):
         if self.path is None:
@@ -236,6 +261,17 @@ class RuntimeGeometry:
                       positions=[dict(p, position_source="measured_fixed" if p["bssid"] in fixed else "range_estimated",
                                       label=next((a.get("label", "") for a in enabled if a["bssid"].lower()==p["bssid"]), ""))
                                  for p in result["positions"]])
+        from tof_display_fit import display_fits
+        display_edges = display_range_edges(baseline, edges, now)
+        key = (revision,tuple(active),tuple(sorted((e["a"],e["b"],round(e["distance_m"],2),
+            round(e["sigma_m"],2),bool(e.get("display_only"))) for e in display_edges)))
+        if getattr(self,"display_key",None)!=key:
+            previous = {p["bssid"]:[p[k] for k in ("x_m","y_m","z_m")]
+                        for p in getattr(self,"display_positions",[]) if not changed}
+            upstairs = self.display_upstairs if document.get("ground_plane",{}).get("elevation")==0 else set()
+            self.display_positions = display_fits(fixed,active,display_edges,fit["positions"],previous,upstairs)
+            self.display_key = key
+        result["display_positions"] = self.display_positions
         from tof_ground import radio_calibration, surveyed_floor
         plane = surveyed_floor(document, scale, fit["frame_id"], fixed)
         if plane is not None:
