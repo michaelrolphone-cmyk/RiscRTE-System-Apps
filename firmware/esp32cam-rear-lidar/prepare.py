@@ -35,11 +35,11 @@ def main():
  settings=out/'include/settings.h';s=settings.read_text()
  import re
  s=re.sub(r'#define APP_TITLE .*','#define APP_TITLE "ROVER-REAR-CAMERA"',s)
- s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.1"',s)
+ s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.2"',s)
  s=re.sub(r'#define WIFI_SSID .*','#define WIFI_SSID "Rover-Rear-Camera"',s);settings.write_text(s)
  ini=out/'platformio.ini';s=ini.read_text()
  s=s.replace('build_flags =','board_build.partitions = partitions/rear-ota.csv\n\nbuild_flags =\n  -D VL53L5CX_NB_TARGET_PER_ZONE=1')
- s=s.replace('lib_deps =','lib_deps =\n  sparkfun/SparkFun VL53L5CX Arduino Library@1.0.3');ini.write_text(s)
+ s=s.replace('lib_deps =','lib_deps =\n  sparkfun/SparkFun VL53L5CX Arduino Library@1.0.3\n  links2004/WebSockets@2.7.2');ini.write_text(s)
  print('Prepared rear variant:',out)
  if a.build:subprocess.run(['pio','run','-d',str(out),'-e','esp32cam_s3_wroom_n16r8'],check=True)
 if __name__=='__main__':main()

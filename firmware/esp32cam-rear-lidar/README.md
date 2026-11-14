@@ -48,3 +48,37 @@ Camera packets include their original boot-clock capture timestamp even offline.
 Mount geometry belongs in host configuration, not this firmware. Rear default is
 same height,180degree yaw,0.0762m behind the FRONT CAMERA OPTICAL ORIGIN, provisional
 until measured. Rear intrinsics must be independently calibrated.
+
+
+## Independent sensor WebSocket and reciprocal Wi-Fi FTM
+Version 1.0-rear.2 implements the front camera's authenticated outbound
+WebSocket protocol: /sensors, Authorization: Sensor <token>, boot identity,
+biome.sensor_tick.v1, clock exchanges and sequence acknowledgements.
+A separate low-priority task emits rear LiDAR, UART health and FTM telemetry;
+it never invokes the camera or front AHRS. Missing devices do not stop ticks.
+One packet may be outstanding; disconnect/reconnect or a missing acknowledgement
+resets the exchange instead of blocking the camera or accumulating a backlog.
+These ticks carry the latest valid ranges, not a retained history of every range.
+Payload documents and send buffers use PSRAM. OTA pauses optional publication.
+
+Configure persistently using authenticated POST /api/telemetry/stream:
+{"host":"<native gateway LAN address>","port":9878,"token":"<rear-specific secret of at least 32 characters>"}
+GET the same route for connection/worker/clock status (never returns the token).
+The host's rear receiver must use matching receiver_id, port and token.
+GET /api/sensors/capture returns the identical tick schema for diagnostics.
+The front receiver remains on its existing port and identity.
+
+Both FTM initiator and responder roles are enabled when provided by the S3 SDK.
+Responder SSID C3-TOF-ROVER-REAR-<id> is discoverable by the existing C3 fleet.
+The responder shares the STA channel and keeps existing station sockets alive.
+The requested maximum transmit power is 15 dBm (60 quarter-dBm SDK units),
+reapplied after AP changes/reconnection; /api/telemetry reports measured readback.
+Actual transmit power remains subject to the SDK/radio's per-rate behavior.
+Authenticated POST /api/telemetry/ftm accepts {"address":"aa:bb:cc:dd:ee:ff","channel":6}
+and queues a session; /api/telemetry and /api/ranging expose report_id, status,
+distance, sample count and responder identity. No synchronous ranging in HTTP
+or image capture. Cancellation drains late reports before admitting a new session.
+The existing fleet coordinator can target this rear endpoint as another initiator;
+sensor receiver configuration may also list known peers for automatic rear sessions.
+No BLE/RSSI scanning is added. FTM and video share one radio, so simultaneous
+performance and off-channel ranging need physical qualification.
