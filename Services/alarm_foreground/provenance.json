@@ -1,0 +1,17 @@
+{
+  "source_repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+  "source_ref": "a6c33d75",
+  "files": [
+    {
+      "source_path": "lib/Alarm/include/AlarmServiceV2.h",
+      "destination": "AlarmServiceV2.h",
+      "git_blob_sha": "76f25ce14030fd81dd190e7d51f3482e6394c5e7"
+    },
+    {
+      "source_path": "LICENSE",
+      "destination": "UTILITIES_LICENSE",
+      "git_blob_sha": "b8c074800342d88eb4892d9ef79a65485d1bfcf9"
+    }
+  ],
+  "qualification": "Header reused unchanged. Not proof of installed scheduler compatibility."
+}
