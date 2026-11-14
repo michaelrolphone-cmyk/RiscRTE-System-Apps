@@ -131,10 +131,10 @@ its C3-TOF-ROVER- SSID and measure it without associating or reflashing. See
 transport fallback needed when larger reports exceed the legacy UDP writer.
 
 
-### Adding an anchor to an established baseline
+### Joint self-localization
 
-A new anchor is fitted against fixed coordinates of the established redundant 3D reference set. Its ranges cannot move those references. At least four fresh, independent reference links and the existing per-link residual bounds must pass; stale, inconsistent or ambiguous extensions are withheld. Reference refinement and movement detection continue independently.
+All anchor coordinates are unknown estimates. Adding an anchor fits the entire measured graph jointly, and subsequent validated refinement updates every included anchor. Rigid alignment retains coordinate-frame continuity without fixing anchor-to-anchor distances. No manual placement-prior file is consumed and no established anchor is treated as physical ground truth.
 
-Optional `anchor-placement-priors.json` beside the baseline state uses `{"schema":"rover.tof.anchor-placement/1","anchors":{"<bssid>":{"between":["<reference-a>","<reference-b>"]}}}`. The between constraint bounds distances to both endpoints by their separation; it does not invent a midpoint or assume collinearity. It never replaces range observability requirements.
+Sparse six-node graphs retain their measured-link observability and residual checks. Optimizer starts are ranked by the same soft-L1 objective they minimize. Inconsistent reciprocal measurements are rejected as measurements; coordinate estimates are not used to declare an endpoint correct.
 
-Build the S3 with `pio run -e esp32s3`; the C3 environment remains `esp32c3`. LAN peer discovery supplements Wi-Fi scans using validated identity/channel fields from anchor broadcasts, allowing the S3 to initiate ranging while retaining telemetry delivery.
+Build the S3 with `pio run -e esp32s3`; the C3 environment remains `esp32c3`. Validated LAN peer identity/channel discovery supplements Wi-Fi scanning so the S3 can initiate ranges.
