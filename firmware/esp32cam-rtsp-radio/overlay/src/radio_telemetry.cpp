@@ -1,4 +1,5 @@
 #include "radio_telemetry.h"
+#include "sensor_push.h"
 #include "ahrs_telemetry.h"
 #include "ultrasonic_telemetry.h"
 
@@ -762,7 +763,7 @@ void handleFtm() {
 }
 } // namespace
 
-bool writeFrameJson(JsonObject output, uint64_t captureUs) {
+bool writeFrameJson(JsonObject output, uint64_t captureUs, uint64_t sinceUs) {
     if (!stateMutex) return false;
     uint32_t sequence;
     { Lock lock; sequence=packetSequence; }
@@ -772,7 +773,7 @@ bool writeFrameJson(JsonObject output, uint64_t captureUs) {
     char identity[64];snprintf(identity,sizeof(identity),"%s:%llu",bootId,static_cast<unsigned long long>(captureUs));output["frame_id"]=String(identity);
     JsonObject ahrs=output.createNestedObject("ahrs");
     putEnvelope(ahrs,"ahrs",sequence);ahrs["uptime_ms"]=static_cast<uint32_t>(captureUs/1000);
-    if (!ahrs_telemetry::writeJsonAt(ahrs.createNestedObject("ahrs"),captureUs)) output["ahrs"]=nullptr;
+    if (!ahrs_telemetry::writeJsonAt(ahrs.createNestedObject("ahrs"),captureUs,sinceUs)) output["ahrs"]=nullptr;
     JsonObject sonar=output.createNestedObject("ultrasonic");
     putEnvelope(sonar,"ultrasonic",sequence);
     sonar["uptime_ms"]=static_cast<uint32_t>(captureUs/1000);
@@ -809,6 +810,7 @@ void begin(WebServer &server, bool (*authorize)()) {
     server.on("/api/ahrs/calibration", HTTP_POST, handleAhrsProfileSet);
     ahrs_telemetry::begin();
     ultrasonic_telemetry::begin();
+    sensor_push::begin(server, authorize);
     server.on("/api/ultrasonic", HTTP_GET, handleUltrasonic);
     if (!stateMutex) return;
     loadConfig();

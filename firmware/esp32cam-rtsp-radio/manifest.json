@@ -26,6 +26,10 @@
       "sha256": "06e790f908e07c4ed49bded5e11bea489fcb9cbe8bbc3f5ba97c0b805a3d01ad"
     },
     {
+      "path": "SENSOR_PUSH.md",
+      "sha256": "e0cdf75fa90691c4078ebb106f22443b0b160072e334b646a8f3bec53aa801d0"
+    },
+    {
       "path": "SYNCHRONIZATION.md",
       "sha256": "01ef433ee5154550c5035f4f00b71db64307f1984259680550054cde665a58de"
     },
@@ -47,7 +51,7 @@
     },
     {
       "path": "overlay/include/ahrs_telemetry.h",
-      "sha256": "b3740b1c0488b978a5156427ca8918484d785f7d651b44ee261896ed861b97af"
+      "sha256": "304242fbbf96b675903b8b3818b538cb21dbdfe3cccd867a35c8e0f465819213"
     },
     {
       "path": "overlay/include/ahrs_telemetry_model.h",
@@ -67,7 +71,11 @@
     },
     {
       "path": "overlay/include/radio_telemetry.h",
-      "sha256": "b9577760aa22e395ede5f78bb4a39648994b315a75553b01bad3b3a023cb2749"
+      "sha256": "05ebef6800900f51dfbb928283361c08a1a59264841958e08e2237ee4fd6bdc3"
+    },
+    {
+      "path": "overlay/include/sensor_push.h",
+      "sha256": "c0f97ec8935104a0036d09c6723e4754151edf130d58016a7976274b464313d0"
     },
     {
       "path": "overlay/include/ultrasonic_capture_model.h",
@@ -83,11 +91,11 @@
     },
     {
       "path": "overlay/platformio.ini",
-      "sha256": "f389285c52423363862783cc231f3744490f630cf8779abf5a4a40390f19d9ce"
+      "sha256": "aa8189071dcc5043a9a869f47667b04b0208d034f4d5eec81cbb00761581c7dd"
     },
     {
       "path": "overlay/src/ahrs_telemetry.cpp",
-      "sha256": "222c0af8eec8d89b5f856dd43dce795010c7b837549f25e4254b690d4d098ce6"
+      "sha256": "ec473fb556b0c692c64eb61e1a66ce34636c4b6f1a2b47fcb97cd07e0a8d34fb"
     },
     {
       "path": "overlay/src/camera_exposure.cpp",
@@ -99,7 +107,11 @@
     },
     {
       "path": "overlay/src/radio_telemetry.cpp",
-      "sha256": "be3495ab11c667b469164de66710833131bb27f01b8b9cc8cd0e914c39192fea"
+      "sha256": "b86528f3439e9bbfb3646495edd32f61bb1c670e58832358c79b42f8c9a953a4"
+    },
+    {
+      "path": "overlay/src/sensor_push.cpp",
+      "sha256": "cd674b34eee8464effbb24b8ca301693b99241c1116d2b0c9530ebb0d598d583"
     },
     {
       "path": "overlay/src/ultrasonic_telemetry.cpp",
