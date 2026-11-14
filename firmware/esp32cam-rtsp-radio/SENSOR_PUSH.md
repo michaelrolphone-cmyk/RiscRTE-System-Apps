@@ -10,10 +10,11 @@ Configuration persists in the separate `rover-push` NVS namespace. `GET` reports
 connection state and counters without disclosing the token. Calibration remains in
 `rover-ahrs`; no calibration or survey writes occur in this path.
 
-Every 100 ms, the sender emits `biome.sensor_tick.v1`, explicitly with no image.
+Once the preceding batch is acknowledged, at a nominal 100 ms interval, the sender emits `biome.sensor_tick.v1`, explicitly with no image.
 Packets include boot identity, increasing stream sequence, device monotonic capture
 and service timestamps, and actual measured IMU samples since the acknowledged
-sample. The PSRAM history can recover up to 2.5 seconds within its physical capacity.
+sample and stream sequence. Only one unacknowledged batch is allowed on the socket;
+new samples continue accumulating in sensor memory rather than a TCP backlog. The PSRAM history can recover up to 2.5 seconds within its physical capacity.
 Longer outages remain explicit observation gaps. An acknowledgement advances only
 after the native receiver validates and publishes the batch. Reconnects resend
 retained samples; sample identity prevents reintegration.

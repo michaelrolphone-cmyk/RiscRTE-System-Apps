@@ -27,7 +27,7 @@
     },
     {
       "path": "SENSOR_PUSH.md",
-      "sha256": "6514f4de0c89ff123f782d5292cc0d239ba120c23bb1df4a88e88b486ad6baef"
+      "sha256": "e0cdf75fa90691c4078ebb106f22443b0b160072e334b646a8f3bec53aa801d0"
     },
     {
       "path": "SYNCHRONIZATION.md",
@@ -111,7 +111,7 @@
     },
     {
       "path": "overlay/src/sensor_push.cpp",
-      "sha256": "c8757baedaf52d3908a42c2127961a2a556fb5d9147a8d928d6cf8f912cfab0f"
+      "sha256": "cd674b34eee8464effbb24b8ca301693b99241c1116d2b0c9530ebb0d598d583"
     },
     {
       "path": "overlay/src/ultrasonic_telemetry.cpp",
