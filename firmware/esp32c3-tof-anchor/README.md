@@ -138,3 +138,9 @@ All anchor coordinates are unknown estimates. Adding an anchor fits the entire m
 Sparse six-node graphs retain their measured-link observability and residual checks. Optimizer starts are ranked by the same soft-L1 objective they minimize. Inconsistent reciprocal measurements are rejected as measurements; coordinate estimates are not used to declare an endpoint correct.
 
 Build the S3 with `pio run -e esp32s3`; the C3 environment remains `esp32c3`. Validated LAN peer identity/channel discovery supplements Wi-Fi scanning so the S3 can initiate ranges.
+
+### Responder discovery
+
+The coordinator announces current FTM responder identities to online anchors every five seconds using compact `rover.tof.responder/1` UDP packets. It learns identities and channels from current anchor reports and their scanned peer lists, including the rover; no device address is compiled into firmware. Stale sources and stale scanned identities are excluded. Announcements carry identity and channel only, never distance measurements.
+
+The shared C3/S3 firmware accepts these announcements alongside local scans and anchor broadcasts. Every node still initiates and reports its own FTM sessions. This recovers reverse rover ranging on nodes whose scan misses the rover. `responder_discovery` reports delivery counts in coordinator telemetry. Transmit power remains a persistent runtime setting exposed through the authenticated configuration endpoint.

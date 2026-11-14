@@ -12,9 +12,9 @@
 #endif
 
 #if CONFIG_IDF_TARGET_ESP32S3
-static const char *VERSION="1.0.4-s3.1";
+static const char *VERSION="1.0.4-s3.2";
 #else
-static const char *VERSION="1.0.4";
+static const char *VERSION="1.0.5";
 #endif
 static const uint16_t PORT=7446;
 static const uint32_t MAX_AGE=30000;
@@ -63,6 +63,13 @@ int peerIndex(const String &mac) {
  for(int i=0;i<12;i++)if(peers[i].mac==mac)return i;
  for(int i=0;i<12;i++)if(peers[i].mac.isEmpty()){peers[i].mac=mac;return i;}
  return -1;
+}
+bool learnPeer(String mac,const String &ssid,int channel,uint32_t now) {
+ mac.toLowerCase();uint8_t bytes[6];
+ if(!parseMac(mac,bytes)||mac==nodeId||!ssid.startsWith("C3-TOF-")||channel<1||channel>14)return false;
+ int i=peerIndex(mac);if(i<0)return false;
+ peers[i].ssid=ssid;peers[i].channel=channel;peers[i].seen=now;++lanPeerReports;
+ return true;
 }
 void onWiFi(WiFiEvent_t event, WiFiEventInfo_t info) {
  if(event==ARDUINO_EVENT_WIFI_STA_DISCONNECTED)disconnectReason=info.wifi_sta_disconnected.reason;
@@ -242,13 +249,10 @@ void loop() {
   // Existing C3 WiFiUDP can split large reports. Only complete leading
   // identity/channel fields are used for discovery, never any partial ranges.
   if(!error||error==DeserializationError::IncompleteInput){
-   String mac=advertised["bssid"].as<String>();mac.toLowerCase();
-   String ssid=advertised["ssid"].as<String>();
-   int channel=advertised["channel"]|0;uint8_t bytes[6];
-   if(advertised["schema"]=="rover.tof.anchor/1"&&advertised["ftm_responder"]==true&&
-      parseMac(mac,bytes)&&mac!=nodeId&&ssid.startsWith("C3-TOF-")&&channel>=1&&channel<=14){
-    int i=peerIndex(mac);
-    if(i>=0){peers[i].ssid=ssid;peers[i].channel=channel;peers[i].seen=now;++lanPeerReports;}
+   if((advertised["schema"]=="rover.tof.anchor/1"||advertised["schema"]=="rover.tof.responder/1")&&advertised["ftm_responder"]==true){
+    learnPeer(advertised["bssid"].as<String>(),advertised["ssid"].as<String>(),
+              advertised["channel"]|0,now);
+
    }
   }
  }

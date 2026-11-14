@@ -14,6 +14,7 @@ from tof_geometry import RangeGraph
 from tof_baseline import AnchorBaseline
 from tof_rover import RoverRefinement
 from tof_anchor_transport import AnchorHTTPFallback
+from tof_discovery import publish_responders
 
 def http_json(base,path,payload=None):
     data=None if payload is None else json.dumps(payload).encode()
@@ -79,7 +80,8 @@ def main():
     baseline=AnchorBaseline(state/"baseline.json")
     rover_refinement=RoverRefinement(state/"rover-refinement.json")
     graph=RangeGraph(baseline=baseline,rover_refinement=rover_refinement)
-    last_rover=last_write=last_request=0.
+    last_rover=last_write=last_request=last_discovery=0.
+    discovery_status={}
     channel_cache={}
     last_requested={};error=None;request_state=RoverRequest();retired=False
     while True:
@@ -136,6 +138,10 @@ def main():
             last_write=now
             out=graph.snapshot(now,args.rover_height)
             out["anchor_transport"]=transport.status()
+            if now-last_discovery>=5:
+                last_discovery=now
+                discovery_status=publish_responders(sock,out,args.port)
+            out["responder_discovery"]=discovery_status
             out.update(updated_at=time.time(),camera=args.camera,camera_error=error,pending_target=request_state.pending,camera_boot_id=request_state.boot_id,request_age_s={k:now-v for k,v in last_requested.items()})
             temp=state/"latest.json.tmp";temp.write_text(json.dumps(out,allow_nan=False))
             os.replace(temp,state/"latest.json")
