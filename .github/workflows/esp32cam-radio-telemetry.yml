@@ -1,4 +1,4 @@
-name: ESP32-S3 CAM radio telemetry
+name: ESP32-S3 CAM sensor and FTM telemetry
 on:
   pull_request:
     paths:
@@ -55,11 +55,6 @@ jobs:
       - name: Test UDP collector
         working-directory: firmware/esp32cam-rtsp-radio/overlay
         run: python -m unittest discover -s tests -p 'test_*.py' -v
-      - name: Compile radio model tests
-        working-directory: firmware/esp32cam-rtsp-radio/overlay
-        run: c++ -std=c++11 -Wall -Wextra -pedantic -Iinclude test/radio_telemetry_model/test_model.cpp -o "$RUNNER_TEMP/radio-model-test"
-      - name: Run radio model tests
-        run: '"$RUNNER_TEMP/radio-model-test"'
       - name: Check out pinned ArduinoJson for light API model tests
         uses: actions/checkout@v4
         with:
