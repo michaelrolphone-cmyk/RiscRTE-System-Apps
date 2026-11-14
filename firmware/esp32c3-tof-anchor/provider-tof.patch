@@ -1,0 +1,14 @@
+--- providers/robot-vision/biome_provider.py
++++ providers/robot-vision/biome_provider.py
+@@ -366,6 +366,11 @@
+         operation == "robot.vision.snapshot" and inputs.get("include_frame") is True)
+     client = client or VisionClient(cfg["socket"], cfg.get("query_timeout_seconds"))
+     response = client.query(operation, inputs)
++    if contract in ("robot.radio.status:1", "robot.radio.localize:1"):
++        sys.path.insert(0, str(Path.home() / ".local/share/biome-tof/release-1.0.0"))
++        from tof_provider_wrapper import read_tof
++        response = copy.deepcopy(response)
++        response["tof"] = read_tof(Path.home() / ".local/share/biome-tof/latest.json")
+     return {"result": externalize_frame(response, remote, requested)}
+ 
+ 
