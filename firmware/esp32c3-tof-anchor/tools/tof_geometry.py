@@ -56,11 +56,16 @@ def trilaterate(points,ranges):
     return {"x_m":x,"y_m":y,"residual_rms_m":rms,"residuals_m":residuals}
 
 class RangeGraph:
-    def __init__(self,baseline=None):
+    def __init__(self,baseline=None,rover_refinement=None):
+        self.rover_refinement=rover_refinement
         self.baseline=baseline
         self.nodes={}
         self.rover={}
         self.anchor_limit=12
+        self.rover_responder = None
+        self.rover_boot = None
+        self.rover_boot_started = None
+        self.responder_received = None
 
     def ingest(self,packet,received=None):
         now=time.monotonic() if received is None else received
@@ -83,11 +88,41 @@ class RangeGraph:
             if not r.get("valid") or r.get("status")!="ok" or not finite_positive(r.get("distance_m")):continue
             if not isinstance(age,(int,float)) or age<0 or age>TTL*1000:continue
             target=str(r.get("target_bssid","")).lower()
+            prior=ranges.get(target)
+            if prior and r.get("range_seq") is not None and prior.get("sequence")==r["range_seq"]:
+                continue  # Re-publishing a report never refreshes its observation time.
             ranges[target]={"distance_m":r["distance_m"],"observed":now-age/1000,
                             "rtt_ns":r.get("rtt_ns"),"samples":r.get("samples"),
                             "sequence":r.get("range_seq"),"latest_attempt_status":r.get("status")}
+            if target==self.rover_responder:
+                self._refine_report(node,ranges[target],"anchor_to_rover",now,identity[0])
         self.nodes[node]={"identity":identity,"received":now,"packet":packet,"ranges":ranges}
-        if self.baseline is not None:self.baseline.observe(packet)
+        if self.baseline is not None:
+            # The mobile rover is never part of fixed-anchor refinement.
+            fixed=dict(packet,ranges=[r for r in packet.get("ranges",[])[:12]
+                if str(r.get("target_bssid","")).lower()!=self.rover_responder
+                and not str(r.get("ssid","")).startswith("C3-TOF-ROVER-")])
+            self.baseline.observe(fixed)
+        return True
+
+    def observe_rover_responder(self, snapshot, received=None):
+        now=time.monotonic() if received is None else received
+        responder=snapshot.get("ftm_responder") or {}
+        if not isinstance(responder,dict):
+            self.rover_responder=None
+            return False
+        mac=str(responder.get("bssid","")).lower()
+        if (not responder.get("active") or not responder.get("station_connected")
+                or len(mac)!=17 or mac=="00:00:00:00:00:00"):
+            self.rover_responder=None
+            return False
+        boot=snapshot.get("boot_id")
+        uptime=snapshot.get("uptime_ms")
+        if boot != self.rover_boot:
+            self.rover_boot_started=now-uptime/1000 if isinstance(uptime,(int,float)) else now
+            self.rover_boot=boot
+        self.rover_responder=mac
+        self.responder_received=now
         return True
 
     def ingest_rover(self,ftm,received=None):
@@ -97,9 +132,74 @@ class RangeGraph:
         age=ftm.get("age_ms")
         if target not in self.nodes or not finite_positive(ftm.get("distance_m")):return False
         if not isinstance(age,(int,float)) or age<0 or age>TTL*1000:return False
+        previous=self.rover.get(target)
+        if (previous and ftm.get("report_id") is not None
+                and previous.get("sequence")==ftm["report_id"]):return False
         self.rover[target]={"distance_m":ftm["distance_m"],"observed":now-age/1000,
-                           "samples":ftm.get("samples"),"rtt_ns":ftm.get("rtt_ns")}
+                           "samples":ftm.get("samples"),"rtt_ns":ftm.get("rtt_ns"),
+                           "sequence":ftm.get("report_id")}
+        self._refine_report(target,self.rover[target],"rover_to_anchor",now,self.rover_boot)
         return True
+
+    def _refine_report(self, anchor, report, direction, now, source_boot):
+        if self.rover_refinement is None:return
+        if direction=="anchor_to_rover":
+            if (self.rover_responder is None or self.responder_received is None
+                    or now-self.responder_received>=TTL
+                    or (self.rover_boot_started is not None and report["observed"]<self.rover_boot_started)):
+                return
+            other=self.rover.get(anchor)
+        else:
+            other=self.nodes.get(anchor,{}).get("ranges",{}).get(self.rover_responder)
+        if other and abs(report["observed"]-other["observed"])<=2.:
+            center=(report["distance_m"]+other["distance_m"])/2
+            if abs(report["distance_m"]-other["distance_m"])>max(1.,.25*center):return
+        wall=time.time()
+        sequence=report.get("sequence")
+        token=str(source_boot)+":"+str(sequence) if sequence is not None else None
+        self.rover_refinement.observe(anchor,report["distance_m"],wall-(now-report["observed"]),
+                                      now=wall,direction=direction,session_id=token)
+
+    def rover_observations(self, active, now):
+        combined=[];directional=[]
+        responder_fresh=(self.rover_responder is not None and self.responder_received is not None
+                         and now-self.responder_received<TTL)
+        for anchor,node in sorted(active.items()):
+            reports=[]
+            forward=self.rover.get(anchor)
+            if forward and 0<=now-forward["observed"]<TTL:
+                reports.append(dict(forward,direction="rover_to_anchor",
+                                    source_bssid=self.rover_responder,measured_target_bssid=anchor,
+                                    source_boot_id=self.rover_boot))
+            reverse=node["ranges"].get(self.rover_responder) if responder_fresh else None
+            if (reverse and 0<=now-reverse["observed"]<TTL and
+                    (self.rover_boot_started is None or reverse["observed"]>=self.rover_boot_started)):
+                reports.append(dict(reverse,direction="anchor_to_rover",source_bssid=anchor,
+                                    measured_target_bssid=self.rover_responder,
+                                    source_boot_id=node["identity"][0]))
+            if not reports:continue
+            directional.extend(dict(r,target_bssid=anchor,age_s=now-r["observed"]) for r in reports)
+            newest=max(reports,key=lambda r:r["observed"])
+            selected=dict(newest,target_bssid=anchor,age_s=now-newest["observed"],
+                          directions=len(reports),method="single_direction",consistent=True)
+            if len(reports)==2:
+                distances=[r["distance_m"] for r in reports]
+                skew=abs(reports[0]["observed"]-reports[1]["observed"])
+                disagreement=abs(distances[0]-distances[1])
+                selected.update(disagreement_m=disagreement,time_skew_s=skew)
+                if skew<=2.:
+                    distance=statistics.median(distances)
+                    good=disagreement<=max(1.,.25*distance)
+                    # One geometric constraint per anchor. Correlated reciprocal
+                    # reports do not pretend to be two independent anchors.
+                    observed=min(r["observed"] for r in reports)
+                    selected.update(distance_m=distance,observed=observed,age_s=now-observed,
+                                    method="reciprocal_median",consistent=good)
+                else:
+                    selected.update(method="newest_direction",consistent=None)
+            selected["directional_measurements"]=[dict(r,age_s=now-r["observed"]) for r in reports]
+            combined.append(selected)
+        return combined,directional
 
     def _snapshot_instantaneous(self,now=None,rover_height_m=0.0635):
         now=time.monotonic() if now is None else now
@@ -119,8 +219,14 @@ class RangeGraph:
                 good=disagreement<=max(1.,0.25*d)
                 result["edges"].append({"a":a,"b":b,"distance_m":d,"directions":len(obs),"disagreement_m":disagreement,"consistent":good})
                 if good:edges[a,b]=d
-        for k,v in self.rover.items():
-            if k in active and now-v["observed"]<TTL:result["rover_ranges"].append(dict(v,target_bssid=k,age_s=now-v["observed"]))
+        result["rover_ranges"],result["rover_directional_ranges"]=self.rover_observations(active,now)
+        result["rover_responder_bssid"]=self.rover_responder
+        result["reciprocal_ftm"]={"forward_count":sum(r["direction"]=="rover_to_anchor" for r in result["rover_directional_ranges"]),
+                                  "reverse_count":sum(r["direction"]=="anchor_to_rover" for r in result["rover_directional_ranges"]),
+                                  "paired_count":sum(r["directions"]==2 for r in result["rover_ranges"]),
+                                  "inconsistent_count":sum(r.get("consistent") is False for r in result["rover_ranges"]),
+                                  "max_pair_skew_s":2.,"mode":"reciprocal_not_simultaneous_full_duplex"}
+        rover={r["target_bssid"]:r for r in result["rover_ranges"] if r.get("consistent") is not False}
         if len(active)<3:return result
         candidates=[]
         heights_known=all(v["packet"].get("height_known") and isinstance(v["packet"].get("height_m"),(int,float)) for v in active.values())
@@ -138,10 +244,10 @@ class RangeGraph:
         result["height_mode"]="configured" if heights_known else "assumed_coplanar_for_preview"
         rr=[]
         for k in ids:
-            r=self.rover.get(k)
+            r=rover.get(k)
             if not r or now-r["observed"]>=TTL:result["status"]="awaiting_rover_ranges";return result
             rr.append(r["distance_m"])
-        sample_times=[self.rover[k]["observed"] for k in ids]
+        sample_times=[rover[k]["observed"] for k in ids]
         result["rover_range_time_span_s"]=max(sample_times)-min(sample_times)
         result["motion_compensated"]=False
         result["moving_rover_requires_motion_compensation"]=True
@@ -190,5 +296,24 @@ class RangeGraph:
             result["status"]="baseline_"+baseline["status"]
             return result
         result["geometry_quality"]=None if baseline["condition_number"] is None else 1./baseline["condition_number"]
-        result.update(localize_relative(baseline,result["rover_ranges"]))
+        if self.rover_refinement is not None:
+            refinement=self.rover_refinement.snapshot(baseline)
+            result["rover_refinement"]=refinement
+            excluded={r["target_bssid"] for r in result["rover_ranges"] if r.get("consistent") is False}
+            refined=[r for r in refinement.get("ranges",[]) if r["target_bssid"] not in excluded]
+            if excluded:
+                refinement["range_exclusions"]=sorted(excluded)
+                refinement["estimate"]=None
+            result.update(localize_relative(baseline,refined))
+            if refinement.get("state")=="moving":
+                result.update(valid=False,position=None,status="rover_moving_reacquire")
+            elif refinement.get("minimum_sessions_per_anchor",0)<5:
+                result.update(valid=False,position=None,status="rover_refinement_accumulating")
+            elif result.get("valid"):
+                result["status"]="refined_relative_position"
+            if result.get("position"):
+                result["position"]["frame_id"]=baseline["frame_id"]
+                result["position"]["refinement_segment"]=refinement["segment"]
+        else:
+            result.update(localize_relative(baseline,result["rover_ranges"]))
         return result

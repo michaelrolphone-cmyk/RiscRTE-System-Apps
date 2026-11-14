@@ -475,7 +475,7 @@ class AnchorBaseline:
 def localize_relative(baseline, observations):
     """Rover spheres against the accepted baseline; never implies world alignment."""
     points={p["bssid"]:np.array([p["x_m"],p["y_m"],p["z_m"]]) for p in baseline["positions"]}
-    observations=[r for r in observations if r["target_bssid"] in points and positive(r.get("distance_m"))]
+    observations=[r for r in observations if r["target_bssid"] in points and positive(r.get("distance_m")) and r.get("consistent") is not False]
     dimension=baseline["dimension"];needed=4 if dimension==3 else 3
     result={"valid":False,"position":None,"navigation_authority":False,
             "status":"awaiting_rover_ranges","motion_compensated":False,

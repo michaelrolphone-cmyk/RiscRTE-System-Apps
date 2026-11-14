@@ -12,6 +12,8 @@ import urllib.request
 import urllib.error
 from tof_geometry import RangeGraph
 from tof_baseline import AnchorBaseline
+from tof_rover import RoverRefinement
+from tof_anchor_transport import AnchorHTTPFallback
 
 def http_json(base,path,payload=None):
     data=None if payload is None else json.dumps(payload).encode()
@@ -67,8 +69,16 @@ def main():
     sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
     sock.bind(("",args.port));sock.settimeout(.2)
+    transport=AnchorHTTPFallback(state/"anchor-registry.json")
+    # Last observed endpoints are discovery seeds, not accepted measurements.
+    try:
+        for anchor in json.loads((state/"latest.json").read_text()).get("anchors",[]):
+            transport.register(anchor.get("bssid"),anchor.get("ip"))
+    except (OSError,ValueError,TypeError):pass
+    transport.start()
     baseline=AnchorBaseline(state/"baseline.json")
-    graph=RangeGraph(baseline=baseline)
+    rover_refinement=RoverRefinement(state/"rover-refinement.json")
+    graph=RangeGraph(baseline=baseline,rover_refinement=rover_refinement)
     last_rover=last_write=last_request=0.
     channel_cache={}
     last_requested={};error=None;request_state=RoverRequest();retired=False
@@ -80,7 +90,9 @@ def main():
             # Packet source supplies its reachability address, not an arbitrary advertised host.
             packet["ip"]=addr[0]
             graph.ingest(packet,now)
+            transport.note_udp(packet,addr[0],now)
         except (socket.timeout,ValueError,TypeError):pass
+        for packet,received in transport.drain():graph.ingest(packet,received)
         if now-last_rover>=1:
             last_rover=now
             try:
@@ -88,6 +100,13 @@ def main():
                 if request_state.observe(snapshot):
                     # Do not combine measurements from different camera boots.
                     graph.rover.clear()
+                rover_refinement.observe_boot(snapshot.get("boot_id"))
+                rover_refinement.observe_motion(snapshot.get("ahrs",{}))
+                try:
+                    visual=json.loads((Path.home()/".local/share/biome-robot-vision/rover-motion.json").read_text())
+                    rover_refinement.observe_visual(visual)
+                except (OSError,ValueError,TypeError):pass
+                graph.observe_rover_responder(snapshot,now)
                 ftm=snapshot.get("ftm",{})
                 for observation in snapshot.get("wifi",[]):
                     address=str(observation.get("address") or observation.get("bssid") or observation.get("mac") or "").lower()
@@ -116,6 +135,7 @@ def main():
         if now-last_write>=1:
             last_write=now
             out=graph.snapshot(now,args.rover_height)
+            out["anchor_transport"]=transport.status()
             out.update(updated_at=time.time(),camera=args.camera,camera_error=error,pending_target=request_state.pending,camera_boot_id=request_state.boot_id,request_age_s={k:now-v for k,v in last_requested.items()})
             temp=state/"latest.json.tmp";temp.write_text(json.dumps(out,allow_nan=False))
             os.replace(temp,state/"latest.json")

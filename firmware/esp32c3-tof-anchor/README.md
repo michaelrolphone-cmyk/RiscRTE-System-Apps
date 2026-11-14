@@ -122,3 +122,10 @@ the trial expires. commit_tx_power=true explicitly persists an active trial.
 Status reports the SDK-applied tx_power_dbm and tx_trial_active. Observe boot
 identity, association and distinct successful ranges before committing power.
 Changing power alone does not establish ranging accuracy or anchor geometry.
+
+## Reciprocal rover ranging
+
+The S3 camera can also act as an FTM responder. Existing 1.0.3 anchors discover
+its C3-TOF-ROVER- SSID and measure it without associating or reflashing. See
+[RECIPROCAL.md](RECIPROCAL.md) for collector quality rules and the complete-status
+transport fallback needed when larger reports exceed the legacy UDP writer.
