@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-radio.15-reciprocal-ftm",
+  "variant": "1.0-radio.16-capture-imu",
   "target": "esp32cam_s3_wroom_n16r8",
   "upstream_repository": "rzeldent/esp32cam-rtsp",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
@@ -23,7 +23,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "3635c7d34dbf38549e25cf3f69b0b04d8cd2352813155549e1841de8c7f759ce"
+      "sha256": "06e790f908e07c4ed49bded5e11bea489fcb9cbe8bbc3f5ba97c0b805a3d01ad"
     },
     {
       "path": "SYNCHRONIZATION.md",
@@ -87,7 +87,7 @@
     },
     {
       "path": "overlay/src/ahrs_telemetry.cpp",
-      "sha256": "a0b7f98a43bd037614db2b2081f9473e88542e4700d08eadb246fe49ada3842f"
+      "sha256": "8809eae2d985f1917327eb5c1d5cf9d9ae1c28f253f2235b8f1aad2777ad993c"
     },
     {
       "path": "overlay/src/camera_exposure.cpp",
@@ -99,7 +99,7 @@
     },
     {
       "path": "overlay/src/radio_telemetry.cpp",
-      "sha256": "a4d422e6070fb663f355afd83b1cc1bb22a2b0d7d53f8672268750745fc9686e"
+      "sha256": "be3495ab11c667b469164de66710833131bb27f01b8b9cc8cd0e914c39192fea"
     },
     {
       "path": "overlay/src/ultrasonic_telemetry.cpp",
