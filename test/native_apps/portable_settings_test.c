@@ -1,7 +1,20 @@
+#ifndef TEST_SETTINGS_DISPLAY_FLAGS
+#define TEST_SETTINGS_DISPLAY_FLAGS 0
+#endif
 /* Execute the unchanged Settings app with its production portable client. */
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef TEST_SETTINGS_RASTER_WIDTH
+#define TEST_SETTINGS_RASTER_WIDTH 240
+#define TEST_SETTINGS_RASTER_HEIGHT 240
+#endif
+#ifndef TEST_SETTINGS_INSET
+#define TEST_SETTINGS_INSET 0
+#endif
+#ifdef TEST_SETTINGS_FRAME_CAPTURE
+static void test_settings_frame_capture(void);
+#endif
 #define PORTABLE_SETTINGS_APP
 #include "../../lib/PortableApps/src/adapter.c"
 #ifndef TEST_PAPER_SETTINGS
@@ -15,13 +28,22 @@ const unsigned portable_catalog_count = 0;
 static unsigned scenario, ticks, polls, grants, subscriptions, frame_count, displays;
 static unsigned writes, reads_after_write, diagnostics,writes_at_submit_failure;
 static bool submit_failed;
+#ifdef TEST_SETTINGS_ASYNC
+static unsigned async_submitted_poll,async_pending_complete;
+static bool async_pending_frame,async_fail_pending,async_failed_pending;
+static unsigned async_pending_value;
+#endif
 /* Ordinary failed submission may release known-owned resources. It must not
  * dispatch more input, service state, acquisition or drawing after observation. */
-static void active_provider(void){assert(!submit_failed);}
+static void active_provider(void){assert(!submit_failed);
+#ifdef TEST_SETTINGS_CUSTODY
+ assert(!native_custody_retained);
+#endif
+}
 #ifdef TEST_PAPER_SETTINGS
 static uint8_t framebuffer[100 * 480];
 #else
-static uint16_t framebuffer[240 * 240];
+static uint16_t framebuffer[TEST_SETTINGS_RASTER_WIDTH * TEST_SETTINGS_RASTER_HEIGHT];
 #endif
 static twatch_rtc_time_v1 stored = {2024, 2, 29, 4, 23, 59, 59};
 static twatch_rtc_time_v1 written;
@@ -56,7 +78,10 @@ static bool display_info(void *c, risc_display_info_v1 *out) {active_provider();
 #ifdef TEST_PAPER_SETTINGS
   *out=(risc_display_info_v1){.width=800,.height=480,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_PARTIAL_DAMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT,.damage_x_alignment=8,.damage_width_alignment=8};
 #else
-  *out = (risc_display_info_v1){.width=240,.height=240,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
+  *out = (risc_display_info_v1){.width=TEST_SETTINGS_RASTER_WIDTH,.height=TEST_SETTINGS_RASTER_HEIGHT,.flags=TEST_SETTINGS_DISPLAY_FLAGS,.safe_insets={TEST_SETTINGS_INSET,TEST_SETTINGS_INSET,TEST_SETTINGS_INSET,TEST_SETTINGS_INSET},.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
+#endif
+#ifdef TEST_SETTINGS_ASYNC
+  out->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;
 #endif
   return true;
 }
@@ -66,7 +91,7 @@ static bool frame_acquire(void *c, uint32_t f, risc_display_surface_v1 *out) {ac
   assert(f==RISC_DISPLAY_FORMAT_MONO1);
   *out=(risc_display_surface_v1){.frame=1,.pixels=framebuffer,.width=800,.height=480,.stride_bytes=scenario==215?99:100,.size_bytes=sizeof(framebuffer),.pixel_format=f};
 #else
-  *out=(risc_display_surface_v1){.frame=1,.pixels=framebuffer,.width=240,.height=240,.stride_bytes=480,.size_bytes=sizeof(framebuffer),.pixel_format=f};
+  *out=(risc_display_surface_v1){.frame=1,.pixels=framebuffer,.width=TEST_SETTINGS_RASTER_WIDTH,.height=TEST_SETTINGS_RASTER_HEIGHT,.stride_bytes=TEST_SETTINGS_RASTER_WIDTH*2,.size_bytes=sizeof(framebuffer),.pixel_format=f};
 #endif
   return true;
 }
@@ -79,6 +104,14 @@ static bool frame_submit(void *c, risc_display_frame_v1 f, const risc_display_re
   (void)c;(void)r;(void)n;(void)o;assert(f==1 && frame_count);
   if(scenario==10){submit_failed=true;writes_at_submit_failure=writes;return false;}
   frame_count=0;*token=++displays;
+#ifdef TEST_SETTINGS_ASYNC
+  async_submitted_poll=polls;
+  async_pending_frame=(sv_page==SV_SLEEP||sv_page==SV_TIMER)&&strstr(sv_page==SV_SLEEP?sleep_message:timer_message,"Saving");
+  if(async_pending_frame)async_pending_value=sv_page==SV_SLEEP?sleep_choice:timer_choice;
+#endif
+#ifdef TEST_SETTINGS_FRAME_CAPTURE
+  test_settings_frame_capture();
+#endif
 #ifdef TEST_PAPER_SETTINGS
   const char *path=getenv("PAPER_SETTINGS_FRAME");if(path&&displays==1){FILE *file=fopen(path,"wb");assert(file);fprintf(file,"P4\n800 480\n");assert(fwrite(framebuffer,1,sizeof(framebuffer),file)==sizeof(framebuffer));fclose(file);}
 #else
@@ -95,7 +128,14 @@ static bool frame_submit(void *c, risc_display_frame_v1 f, const risc_display_re
   return true;
 }
 static bool frame_status(void *c, risc_display_present_token_v1 token, risc_display_present_status_v1 *out) {active_provider();
-  (void)c;assert(token);out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;
+  (void)c;assert(token);
+#ifdef TEST_SETTINGS_ASYNC
+  if(async_fail_pending&&async_pending_frame)return false;
+  if(async_failed_pending&&async_pending_frame){out->state=RISC_DISPLAY_PRESENT_FAILED;return true;}
+  if(polls-async_submitted_poll<10){out->state=RISC_DISPLAY_PRESENT_ACTIVE;return true;}
+  if(async_pending_frame)++async_pending_complete;
+#endif
+  out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;
 }
 /* Ordered raw ABI fixture; snapshots alone cannot represent queued taps. */
 static risc_touch_snapshot_v1 touch_state;
@@ -107,7 +147,7 @@ static bool touch_script_snapshot(void *c,risc_touch_snapshot_v1 *out){
   out->width=480;out->height=800;
   if(scenario==218&&polls==9)out->buttons=RISC_TOUCH_BUTTON_PRIMARY;
 #else
-  out->width=out->height=240;
+  out->width=TEST_SETTINGS_RASTER_WIDTH;out->height=TEST_SETTINGS_RASTER_HEIGHT;
 #endif
   /* Held-entry case starts before subscription; later DOWN is a new gesture. */
   if(scenario==9 && polls==0){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=80,.y=140};}
@@ -116,8 +156,19 @@ static bool touch_script_snapshot(void *c,risc_touch_snapshot_v1 *out){
 #if defined(PORTABLE_NOVA_UI) && !defined(TEST_PAPER_SETTINGS)
     nova_fixture_choice_coordinates(sv_page,&out->contacts[0].x,&out->contacts[0].y);
 #endif
+#ifndef TEST_PAPER_SETTINGS
+#ifdef PORTABLE_SETTINGS_NATIVE_GEOMETRY
+    /* Independent fixture mapping from reference scripts into capability space. */
+    int content_w=TEST_SETTINGS_RASTER_WIDTH-2*TEST_SETTINGS_INSET,content_h=TEST_SETTINGS_RASTER_HEIGHT-2*TEST_SETTINGS_INSET;
+    int side=content_w<content_h?content_w:content_h;if(side<300)side=240;
+    out->contacts[0].x=TEST_SETTINGS_INSET+(content_w-side)/2+(out->contacts[0].x*side+239)/240;
+    out->contacts[0].y=TEST_SETTINGS_INSET+(content_h-side)/2+(out->contacts[0].y*side+239)/240;
+#else
+    out->contacts[0].x+=(TEST_SETTINGS_RASTER_WIDTH-240)/2;out->contacts[0].y+=(TEST_SETTINGS_RASTER_HEIGHT-240)/2;
+#endif
+#endif
 #if PORTABLE_TOUCH_ROTATION == 180
-    out->contacts[0].x=239-out->contacts[0].x;out->contacts[0].y=239-out->contacts[0].y;
+    out->contacts[0].x=TEST_SETTINGS_RASTER_WIDTH-1-out->contacts[0].x;out->contacts[0].y=TEST_SETTINGS_RASTER_HEIGHT-1-out->contacts[0].y;
 #endif
     break;
   }return true;

@@ -1,4 +1,5 @@
 #pragma once
+#include "RiscRuntimeClockV1.h"
 #include "ContextsServiceV1.h"
 #include "PortableContextPreferences.h"
 #include "PortableRadioPolicy.h"
@@ -90,8 +91,8 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
     if(c->storage.api) {
         if(!portable_contexts_pause(c)||!portable_contexts_release_storage(c))return false;
     }
-    risc_runtime_health_v1 health={.struct_size=sizeof(health)};
-    if(!c->runtime->health(&health))return portable_contexts_pause(c);
+    uint32_t now=0;
+    if(!risc_runtime_monotonic_ms_v1(c->runtime,&now))return portable_contexts_pause(c);
     if(!c->save_failed&&!c->loaded) {
         #ifdef PORTABLE_CONTEXTS_PAUSE_POLICY_READS
         if(!portable_contexts_pause(c))return false;
@@ -121,7 +122,7 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
             if(!portable_contexts_release_storage(c)){(void)portable_contexts_pause(c);return false;}
         }
         if(!PORTABLE_CONTEXTS_CUSTODY_SAFE())return false;
-        c->loaded=true;c->loaded_at=health.uptime_ms;
+        c->loaded=true;c->loaded_at=now;
     }
     contexts_policy_v1 policy=c->policy;policy.awake=true;
     policy.enabled=(policy.enabled||c->foreground_learning)&&c->settings_valid;
@@ -131,7 +132,7 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
     if(fp){
         contexts_fingerprint_config_v1 cfg={.struct_size=sizeof(cfg),.sources=c->fingerprint_sources&PORTABLE_CONTEXTS_SOURCE_MASK,.temporal_only=c->fingerprint_temporal_only};
         if(!portable_contexts_callback(fp->fingerprint(fp->base.context,CONTEXTS_FP_CONFIG,&cfg)))return false;
-        if((uint32_t)(health.uptime_ms-c->fingerprint_checkpoint_at)>=60000u){if(!portable_fp_checkpoint(c,false))return false;c->fingerprint_checkpoint_at=health.uptime_ms;}
+        if((uint32_t)(now-c->fingerprint_checkpoint_at)>=60000u){if(!portable_fp_checkpoint(c,false))return false;c->fingerprint_checkpoint_at=now;}
     }
     return c->api->step(c->api->context,&policy);
 }

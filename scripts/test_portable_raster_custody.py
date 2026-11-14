@@ -11,6 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--sanitize', action='store_true')
+parser.add_argument('--nova-mask-bounds', action='store_true')
+parser.add_argument('--overwrite-clear', action='store_true')
+parser.add_argument('--underlay-exchange', action='store_true')
 parser.add_argument('--text-scene', action='store_true')
 variant = parser.add_mutually_exclusive_group()
 variant.add_argument('--native-terminal', action='store_true')
@@ -22,6 +25,9 @@ command = [os.environ.get('CC', 'cc'), '-std=c11', '-O1', '-g', '-Wall', '-Wextr
            '-Werror', '-Wno-unused-function', '-DPORTABLE_RASTER_SNAPSHOT',
            '-I' + str(ROOT / 'lib/PortableApps/include'),
            '-I' + str(ROOT / 'lib/NativeApps/include')]
+if args.nova_mask_bounds:command += ['-DPORTABLE_NOVA_MASK_BOUNDS']
+if args.overwrite_clear:
+    command += ['-DPORTABLE_RASTER_OVERWRITE_CLEAR']
 if args.clipped_begin:
     command += ['-DRASTER_CUSTODY_CLIP', '-DPORTABLE_TOUCH_SCROLL',
                 '-DPORTABLE_RETAINED_RGB565_HANDOFF', '-DPORTABLE_FORCE_FULL_FRAMES']
@@ -32,6 +38,8 @@ if args.text_scene:
 if args.native_terminal:
     command += ['-DPORTABLE_NATIVE_CUSTODY_FENCE', '-DPORTABLE_ALARM_TERMINAL_RETENTION',
                 '-Wl,--wrap=free']
+if args.underlay_exchange:
+    command.append('-DPORTABLE_RASTER_UNDERLAY_EXCHANGE')
 if args.sanitize:
     command += ['-fsanitize=address,undefined', '-fno-sanitize-recover=all',
                 '-fno-omit-frame-pointer']
@@ -55,7 +63,7 @@ cases = ('no-op-settle', 'failed-cleanup', 'non-cooperative-clear',
 if args.text_scene:
     cases = ('text-scene-pending', 'text-scene-unsubmitted')
 if args.native_terminal:
-    cases = ('terminal-band-restore', 'terminal-watch-row', 'terminal-offscreen-fallback',
+    cases = ('terminal-band-restore', 'terminal-watch-row', 'terminal-caption-row', 'terminal-circle-span', 'terminal-mask-row', 'terminal-offscreen-fallback',
              'terminal-quick-orphan', 'terminal-bitmap-orphan', 'terminal-recording-callbacks',
              'terminal-repeated-quick-orphan')
 if args.clipped_begin:

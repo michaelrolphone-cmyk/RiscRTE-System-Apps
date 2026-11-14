@@ -8,8 +8,7 @@
 #include <stddef.h>
 
 #define WATCH_LAYOUT_WIDTH 240u
-/* Physical and logical input coordinates are uint16_t in this adapter. */
-#define WATCH_LAYOUT_MAX_SIDE UINT16_MAX
+#define WATCH_LAYOUT_MAX_SIDE 2048u
 
 typedef struct { uint16_t top, right, bottom, left; } watch_layout_insets;
 typedef struct { int32_t x, y; uint32_t width, height; } watch_layout_rect;
