@@ -1,5 +1,4 @@
 #include "radio_telemetry.h"
-#include "radio_telemetry_model.h"
 #include "ahrs_telemetry.h"
 #include "ultrasonic_telemetry.h"
 
@@ -18,83 +17,46 @@
 #include <cstring>
 #include <cstdlib>
 
-#if defined(CONFIG_BT_ENABLED) && CONFIG_BT_ENABLED && !defined(CONFIG_IDF_TARGET_ESP32S2)
-#define RADIO_HAS_BLE 1
-#include <NimBLEDevice.h>
-#else
-#define RADIO_HAS_BLE 0
-#endif
-
 #if defined(CONFIG_ESP_WIFI_FTM_INITIATOR_SUPPORT) && CONFIG_ESP_WIFI_FTM_INITIATOR_SUPPORT
 #define RADIO_HAS_FTM 1
 #else
 #define RADIO_HAS_FTM 0
 #endif
 
+#if defined(CONFIG_ESP_WIFI_FTM_RESPONDER_SUPPORT) && CONFIG_ESP_WIFI_FTM_RESPONDER_SUPPORT
+#define RADIO_HAS_FTM_RESPONDER 1
+#else
+#define RADIO_HAS_FTM_RESPONDER 0
+#endif
+
 namespace radio_telemetry {
 namespace {
-using radio_telemetry_model::IBeacon;
-constexpr size_t WIFI_CAPACITY = 32;
-constexpr size_t BLE_CAPACITY = 64;
-constexpr uint32_t OBSERVATION_TTL_MS = 300000;
 constexpr uint32_t FTM_TIMEOUT_MS = 12000;
-constexpr uint32_t WIFI_SCAN_TIMEOUT_MS = 10000;
-constexpr float RSSI_ALPHA = 0.25f;
 
 struct Config {
-    bool wifiEnabled = true;
-    bool bleEnabled = RADIO_HAS_BLE;
-    uint32_t wifiInterval = 60000;
-    uint32_t bleInterval = 10000;
-    uint32_t bleDuration = 2000;
+    bool ftmResponderEnabled = true;
     uint32_t publishInterval = 5000;
     uint32_t ahrsPublishInterval = 100;
     char udpHost[16] = {};
     uint16_t udpPort = 9876;
-    float wifiReference = -45.0f;
-    float bleReference = -59.0f;
-    float exponent = 2.5f;
-    bool wifiCalibrated = false;
-    bool bleCalibrated = false;
 };
-
-struct Observation {
-    bool used = false;
-    uint8_t address[6] = {};
-    uint8_t addressType = 0;
-    char name[33] = {};
-    uint8_t channel = 0;
-    int8_t rssi = 0;
-    float filteredRssi = 0;
-    uint32_t samples = 0;
-    uint32_t lastSeen = 0;
-    bool ftmResponder = false;
-    bool haveTxPower = false;
-    int8_t txPower = 0;
-    bool haveIBeacon = false;
-    IBeacon iBeacon = {};
-};
-
 struct Status {
     bool workerReady = false;
-    bool wifiScan = false;
-    uint8_t wifiScanChannel = 0;
-    bool bleScan = false;
-    bool bleInitialized = false;
-    bool bleInitializing = false;
-    bool wifiScanned = false;
-    bool bleScanned = false;
-    uint32_t wifiLastScan = 0;
-    uint32_t bleLastScan = 0;
-    int wifiError = 0;
-    int bleError = 0;
-    int bleEndReason = 0;
     uint32_t udpSent = 0;
     uint32_t udpFailed = 0;
-    uint32_t wifiEvictions = 0;
-    uint32_t bleEvictions = 0;
-    uint32_t wifiTruncated = 0;
 };
+
+struct ResponderState {
+    bool active = false;
+    bool owned = false;
+    uint8_t channel = 0;
+    char bssid[18] = {};
+    char ssid[33] = {};
+    int error = 0;
+};
+ResponderState responder;
+char responderPassword[17] = {};
+uint32_t lastResponderCheck = 0;
 
 struct FtmState {
     bool busy = false;
@@ -117,8 +79,6 @@ struct FtmState {
 };
 
 Config configuration;
-Observation wifiObservations[WIFI_CAPACITY];
-Observation bleObservations[BLE_CAPACITY];
 Status status;
 FtmState ftm;
 bool isPaused = false;
@@ -131,10 +91,6 @@ WebServer *httpServer = nullptr;
 bool (*authorizeRequest)() = nullptr;
 char receiverId[25] = {};
 char bootId[17] = {};
-#if RADIO_HAS_BLE
-NimBLEScan *readyBleScan = nullptr; // published only under stateMutex
-#endif
-
 struct Lock {
     Lock() { xSemaphoreTake(stateMutex, portMAX_DELAY); }
     ~Lock() { xSemaphoreGive(stateMutex); }
@@ -150,72 +106,18 @@ void formatMac(const uint8_t address[6], char output[18]) {
              address[0], address[1], address[2], address[3], address[4], address[5]);
 }
 
-// Keep valid complete UTF-8 sequences. Advertising data is not trusted text.
-void copyName(char output[33], const uint8_t *input, size_t size) {
-    size_t in = 0, out = 0;
-    while (in < size && out < 32) {
-        uint8_t value = input[in];
-        if (value < 0x80) {
-            output[out++] = value >= 0x20 && value != 0x7f ? value : ' ';
-            ++in;
-            continue;
-        }
-        size_t width = value >= 0xc2 && value <= 0xdf ? 2 :
-                       value >= 0xe0 && value <= 0xef ? 3 :
-                       value >= 0xf0 && value <= 0xf4 ? 4 : 0;
-        bool valid = width && in + width <= size;
-        for (size_t j = 1; valid && j < width; ++j)
-            valid = (input[in + j] & 0xc0) == 0x80;
-        if (valid && width == 3)
-            valid = !((value == 0xe0 && input[in + 1] < 0xa0) ||
-                      (value == 0xed && input[in + 1] >= 0xa0));
-        if (valid && width == 4)
-            valid = !((value == 0xf0 && input[in + 1] < 0x90) ||
-                      (value == 0xf4 && input[in + 1] >= 0x90));
-        if (!valid) { output[out++] = '?'; ++in; continue; }
-        if (out + width > 32) break;
-        memcpy(output + out, input + in, width);
-        out += width;
-        in += width;
-    }
-    output[out] = 0;
-}
-
 void putConfig(JsonObject output, const Config &config) {
-    output["wifi_enabled"] = config.wifiEnabled;
-    output["ble_enabled"] = config.bleEnabled;
-    output["wifi_interval_ms"] = config.wifiInterval;
-    output["ble_interval_ms"] = config.bleInterval;
-    output["ble_duration_ms"] = config.bleDuration;
+    output["ftm_responder_enabled"] = config.ftmResponderEnabled;
     output["publish_interval_ms"] = config.publishInterval;
     output["ahrs_publish_interval_ms"] = config.ahrsPublishInterval;
     output["udp_host"] = String(config.udpHost);
     output["udp_port"] = config.udpPort;
-    output["wifi_reference_rssi_1m_dbm"] = config.wifiReference;
-    output["ble_reference_rssi_1m_dbm"] = config.bleReference;
-    output["path_loss_exponent"] = config.exponent;
-    output["wifi_calibrated"] = config.wifiCalibrated;
-    output["ble_calibrated"] = config.bleCalibrated;
-}
-
-bool readBool(JsonVariantConst value, bool &target) {
-    if (!value.is<bool>()) return false;
-    target = value.as<bool>();
-    return true;
 }
 
 bool readUnsigned(JsonVariantConst value, uint32_t &target, uint32_t low, uint32_t high) {
     if (!value.is<uint32_t>()) return false;
     uint32_t result = value.as<uint32_t>();
     if (result < low || result > high) return false;
-    target = result;
-    return true;
-}
-
-bool readFloat(JsonVariantConst value, float &target, float low, float high) {
-    if (!value.is<float>() && !value.is<int>()) return false;
-    float result = value.as<float>();
-    if (!std::isfinite(result) || result < low || result > high) return false;
     target = result;
     return true;
 }
@@ -234,18 +136,12 @@ bool patchConfig(JsonObjectConst input, Config &config, String &error) {
         const char *key = item.key().c_str();
         JsonVariantConst value = item.value();
         bool valid = false;
-        if (!strcmp(key, "wifi_enabled")) valid = readBool(value, config.wifiEnabled);
-        else if (!strcmp(key, "ble_enabled")) valid = readBool(value, config.bleEnabled);
-        else if (!strcmp(key, "wifi_interval_ms")) valid = readUnsigned(value, config.wifiInterval, 10000, 86400000);
-        else if (!strcmp(key, "ble_interval_ms")) valid = readUnsigned(value, config.bleInterval, 1000, 86400000);
-        else if (!strcmp(key, "ble_duration_ms")) valid = readUnsigned(value, config.bleDuration, 200, 5000);
+        if (!strcmp(key, "ftm_responder_enabled")) {
+            valid = value.is<bool>();
+            if (valid) config.ftmResponderEnabled = value.as<bool>();
+        }
         else if (!strcmp(key, "publish_interval_ms")) valid = readUnsigned(value, config.publishInterval, 1000, 86400000);
         else if (!strcmp(key, "ahrs_publish_interval_ms")) valid = readUnsigned(value, config.ahrsPublishInterval, 50, 86400000);
-        else if (!strcmp(key, "wifi_reference_rssi_1m_dbm")) valid = readFloat(value, config.wifiReference, -127, -1);
-        else if (!strcmp(key, "ble_reference_rssi_1m_dbm")) valid = readFloat(value, config.bleReference, -127, -1);
-        else if (!strcmp(key, "path_loss_exponent")) valid = readFloat(value, config.exponent, 0.5f, 6.0f);
-        else if (!strcmp(key, "wifi_calibrated")) valid = readBool(value, config.wifiCalibrated);
-        else if (!strcmp(key, "ble_calibrated")) valid = readBool(value, config.bleCalibrated);
         else if (!strcmp(key, "udp_port")) {
             uint32_t port = config.udpPort;
             valid = readUnsigned(value, port, 1, 65535);
@@ -263,10 +159,6 @@ bool patchConfig(JsonObjectConst input, Config &config, String &error) {
             return false;
         }
     }
-    if (config.bleDuration >= config.bleInterval) {
-        error = "ble_duration_ms must be less than ble_interval_ms";
-        return false;
-    }
     return true;
 }
 
@@ -280,6 +172,11 @@ void loadConfig() {
     if (deserializeJson(document, saved) || !document.is<JsonObject>()) return;
     Config candidate;
     String error;
+    // Preserve sensor delivery settings while retiring saved scan/calibration keys.
+    for (const char *key : {"wifi_enabled", "ble_enabled", "wifi_interval_ms",
+            "ble_interval_ms", "ble_duration_ms", "wifi_reference_rssi_1m_dbm",
+            "ble_reference_rssi_1m_dbm", "path_loss_exponent", "wifi_calibrated",
+            "ble_calibrated"}) document.remove(key);
     if (patchConfig(document.as<JsonObjectConst>(), candidate, error))
         configuration = candidate;
 }
@@ -298,98 +195,6 @@ bool saveConfig(const Config &config) {
     return count == serialized.length();
 }
 
-Observation &slotFor(Observation *items, size_t capacity, const uint8_t address[6],
-                     uint8_t addressType, uint32_t now, uint32_t &evictions) {
-    size_t oldest = 0;
-    uint32_t oldestAge = 0;
-    size_t unused = capacity;
-    for (size_t i = 0; i < capacity; ++i) {
-        if (items[i].used && items[i].addressType == addressType &&
-            !memcmp(items[i].address, address, 6))
-            return items[i];
-        if (!items[i].used && unused == capacity) unused = i;
-        if (items[i].used && now - items[i].lastSeen >= oldestAge) {
-            oldestAge = now - items[i].lastSeen;
-            oldest = i;
-        }
-    }
-    size_t selected = unused != capacity ? unused : oldest;
-    if (items[selected].used) ++evictions;
-    items[selected] = Observation();
-    items[selected].used = true;
-    memcpy(items[selected].address, address, 6);
-    items[selected].addressType = addressType;
-    return items[selected];
-}
-
-void observeRssi(Observation &observation, int8_t rssi, uint32_t now) {
-    observation.rssi = rssi;
-    observation.filteredRssi = observation.samples ?
-        observation.filteredRssi + RSSI_ALPHA * (rssi - observation.filteredRssi) : rssi;
-    if (observation.samples != UINT32_MAX) ++observation.samples;
-    observation.lastSeen = now;
-}
-
-bool copyObservation(bool bluetooth, size_t index, Observation &copy) {
-    Lock lock;
-    Observation &source = bluetooth ? bleObservations[index] : wifiObservations[index];
-    if (!source.used) return false;
-    copy = source;
-    return true;
-}
-
-void putObservation(JsonObject output, const Observation &observation, bool bluetooth, const Config &config) {
-    char address[18], id[24];
-    formatMac(observation.address, address);
-    if (bluetooth) snprintf(id, sizeof(id), "%s/%u", address, observation.addressType);
-    else snprintf(id, sizeof(id), "%s", address);
-    // ArduinoJson duplicates these stack-backed strings.
-    output["id"] = String(id);
-    output["address"] = String(address);
-    output["name"] = String(observation.name);
-    output["rssi_dbm"] = observation.rssi;
-    output["rssi_filtered_dbm"] = observation.filteredRssi;
-    output["sample_count"] = observation.samples;
-    output["age_ms"] = millis() - observation.lastSeen;
-    output["observed_uptime_ms"] = observation.lastSeen;
-
-    float reference = bluetooth ? config.bleReference : config.wifiReference;
-    bool calibrated = bluetooth ? config.bleCalibrated : config.wifiCalibrated;
-    const char *calibrationSource = calibrated ? "user_1m_reference" : "configured_assumption";
-    if (bluetooth && observation.haveIBeacon && !config.bleCalibrated) {
-        reference = observation.iBeacon.referenceAtOneMeter;
-        calibrated = true;
-        calibrationSource = "ibeacon_advertised_1m_reference";
-    }
-    output["reference_rssi_1m_dbm"] = reference;
-    output["path_loss_exponent"] = config.exponent;
-    output["calibrated"] = calibrated;
-    output["calibration_source"] = calibrationSource;
-    output["distance_method"] = calibrated ? "rssi_calibrated" : "rssi_assumed";
-    const float distance = radio_telemetry_model::distanceMeters(observation.filteredRssi, reference, config.exponent);
-    if (std::isfinite(distance)) output["distance_m"] = distance;
-    else output["distance_m"] = nullptr;
-    if (bluetooth) {
-        output["address_type"] = observation.addressType;
-        if (observation.haveTxPower) output["tx_power_dbm"] = observation.txPower;
-        else output["tx_power_dbm"] = nullptr;
-        if (observation.haveIBeacon) {
-            char uuid[37];
-            const uint8_t *u = observation.iBeacon.uuid;
-            snprintf(uuid, sizeof(uuid), "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-                     u[0],u[1],u[2],u[3],u[4],u[5],u[6],u[7],u[8],u[9],u[10],u[11],u[12],u[13],u[14],u[15]);
-            JsonObject beacon = output.createNestedObject("ibeacon");
-            beacon["uuid"] = String(uuid);
-            beacon["major"] = observation.iBeacon.major;
-            beacon["minor"] = observation.iBeacon.minor;
-            beacon["reference_rssi_1m_dbm"] = observation.iBeacon.referenceAtOneMeter;
-        } else output["ibeacon"] = nullptr;
-    } else {
-        output["channel"] = observation.channel;
-        output["ftm_responder"] = observation.ftmResponder;
-    }
-}
-
 void putEnvelope(JsonObject output, const char *type, uint32_t sequence) {
     output["schema"] = 1;
     if (type) output["type"] = type;
@@ -404,8 +209,65 @@ void putEnvelope(JsonObject output, const char *type, uint32_t sequence) {
     } else output["timestamp_ms"] = nullptr;
 }
 
+// Called only by the radio worker, with no application mutex held. Preserve
+// STA and its existing sockets: never enter IotWebConf's AP-only setup path.
+void maintainResponder(const Config &config, uint32_t now) {
+    if (now-lastResponderCheck < 1000) return;
+    lastResponderCheck = now;
+    ResponderState next;
+    { Lock lock; next = responder; }
+#if RADIO_HAS_FTM_RESPONDER
+    wifi_config_t ap = {};
+    const bool hasAP = (WiFi.getMode() & WIFI_MODE_AP) != 0;
+    const bool haveConfig = hasAP && esp_wifi_get_config(WIFI_IF_AP, &ap) == ESP_OK;
+    next.active = haveConfig && ap.ap.ftm_responder && WiFi.status() == WL_CONNECTED;
+    if (!config.ftmResponderEnabled) {
+        if (next.owned && haveConfig && ap.ap.ftm_responder) {
+            ap.ap.ftm_responder = false;
+            next.error = esp_wifi_set_config(WIFI_IF_AP, &ap);
+        }
+        next.active = false;
+    } else if (WiFi.status() == WL_CONNECTED && !pauseRequested()) {
+        if (!next.active || strncmp(reinterpret_cast<const char *>(ap.ap.ssid), next.ssid, sizeof(ap.ap.ssid))) {
+            // Existing C3 firmware discovers this prefix and can range without
+            // associating. A private AP password prevents general LAN use.
+            next.error = WiFi.softAP(next.ssid, responderPassword, WiFi.channel(), 0, 1, true) ? 0 : -1;
+            next.owned = next.error == 0;
+        }
+        wifi_config_t actual = {};
+        next.active = next.error == 0 && WiFi.status() == WL_CONNECTED &&
+            esp_wifi_get_config(WIFI_IF_AP, &actual) == ESP_OK && actual.ap.ftm_responder;
+        next.channel = WiFi.channel();
+        uint8_t mac[6] = {};
+        if (esp_wifi_get_mac(WIFI_IF_AP, mac) == ESP_OK) formatMac(mac, next.bssid);
+    }
+#else
+    next.active = false;
+    next.error = -2;
+#endif
+    { Lock lock; responder = next; }
+}
+
+void putResponder(JsonObject output) {
+    ResponderState state; bool enabled;
+    { Lock lock; state = responder; enabled = configuration.ftmResponderEnabled; }
+    output["supported"] = static_cast<bool>(RADIO_HAS_FTM_RESPONDER);
+    output["enabled"] = enabled;
+    output["active"] = enabled && state.active && (WiFi.getMode() & WIFI_MODE_AP) &&
+        WiFi.status() == WL_CONNECTED;
+    output["bssid"] = String(state.bssid);
+    output["ssid"] = String(state.ssid);
+    output["channel"] = state.channel;
+    output["station_connected"] = WiFi.status() == WL_CONNECTED;
+    output["error"] = state.error;
+    output["role"] = "rover";
+    output["mode"] = "reciprocal_ftm";
+    output["firmware"] = "1.0-radio.16-capture-imu";
+}
+
 void putFtm(JsonObject output, const FtmState &copy) {
     output["supported"] = static_cast<bool>(RADIO_HAS_FTM);
+    output["report_id"] = copy.generation;
     output["busy"] = copy.busy;
     output["retiring"] = copy.retiring;
     output["status"] = String(copy.status);
@@ -433,153 +295,31 @@ void putFtm(JsonObject output, const FtmState &copy) {
 }
 
 void putSummary(JsonObject output, bool withConfig) {
-    Config config;
-    Status state;
-    FtmState ftmCopy;
-    bool paused;
-    uint32_t sequence;
-    size_t wifiCount = 0, bleCount = 0;
+    Config config; Status state; FtmState ftmCopy; bool paused; uint32_t sequence;
     {
         Lock lock;
-        config = configuration;
-        state = status;
-        ftmCopy = ftm;
-        paused = isPaused;
-        sequence = packetSequence;
-        for (const auto &observation : wifiObservations) if (observation.used) ++wifiCount;
-        for (const auto &observation : bleObservations) if (observation.used) ++bleCount;
+        config=configuration; state=status; ftmCopy=ftm;
+        paused=isPaused; sequence=packetSequence;
     }
     putEnvelope(output, withConfig ? nullptr : "summary", sequence);
-    output["paused"] = paused;
-    output["observation_ttl_ms"] = OBSERVATION_TTL_MS;
-    JsonObject capabilities = output.createNestedObject("capabilities");
-    capabilities["wifi"] = true;
-    capabilities["ble"] = static_cast<bool>(RADIO_HAS_BLE);
-    capabilities["ftm"] = static_cast<bool>(RADIO_HAS_FTM);
-    capabilities["bluetooth_classic"] = false;
-    capabilities["ahrs"] = true;
-    capabilities["ultrasonic"] = true;
-    JsonObject counts = output.createNestedObject("counts");
-    counts["wifi"] = wifiCount;
-    counts["ble"] = bleCount;
-    JsonObject report = output.createNestedObject("status");
-    report["worker_ready"] = state.workerReady;
-    report["wifi_scan"] = state.wifiScan;
-    report["wifi_scan_mode"] = "passive_interleaved_channels";
-    report["wifi_scan_result_scope"] = "single_channel";
-    report["wifi_scan_channel"] = state.wifiScanChannel;
-    report["wifi_scan_dwell_ms"] = static_cast<uint32_t>(radio_telemetry_model::PassiveWifiSweep::DWELL_MS);
-    report["wifi_channel_spacing_ms"] = static_cast<uint32_t>(radio_telemetry_model::PassiveWifiSweep::SPACING_MS);
-    report["ble_scan"] = state.bleScan;
-    report["ble_initialized"] = state.bleInitialized;
-    report["ble_initializing"] = state.bleInitializing;
-    if (state.wifiScanned) report["wifi_last_scan_age_ms"] = millis() - state.wifiLastScan;
-    else report["wifi_last_scan_age_ms"] = nullptr;
-    if (state.bleScanned) report["ble_last_scan_age_ms"] = millis() - state.bleLastScan;
-    else report["ble_last_scan_age_ms"] = nullptr;
-    report["wifi_error"] = state.wifiError;
-    report["ble_error"] = state.bleError;
-    report["ble_scan_end_reason"] = state.bleEndReason;
-    report["udp_sent"] = state.udpSent;
-    report["udp_failed"] = state.udpFailed;
-    report["wifi_evictions"] = state.wifiEvictions;
-    report["ble_evictions"] = state.bleEvictions;
-    report["wifi_truncated"] = state.wifiTruncated;
+    output["paused"]=paused;
+    JsonObject capabilities=output.createNestedObject("capabilities");
+    capabilities["ftm"]=static_cast<bool>(RADIO_HAS_FTM);
+    capabilities["ftm_responder"]=static_cast<bool>(RADIO_HAS_FTM_RESPONDER);
+    capabilities["ahrs"]=true;
+    capabilities["ultrasonic"]=true;
+    JsonObject report=output.createNestedObject("status");
+    report["worker_ready"]=state.workerReady;
+    report["udp_sent"]=state.udpSent;
+    report["udp_failed"]=state.udpFailed;
     if (withConfig) {
-        putConfig(output.createNestedObject("config"), config);
+        putConfig(output.createNestedObject("config"),config);
         ahrs_telemetry::writeJson(output.createNestedObject("ahrs"));
         ultrasonic_telemetry::writeJson(output.createNestedObject("ultrasonic"));
     }
-    putFtm(output.createNestedObject("ftm"), ftmCopy);
+    putFtm(output.createNestedObject("ftm"),ftmCopy);
+    putResponder(output.createNestedObject("ftm_responder"));
 }
-
-#if RADIO_HAS_BLE
-class ScanCallbacks final : public NimBLEScanCallbacks {
-    void onResult(const NimBLEAdvertisedDevice *device) override {
-        uint8_t address[6];
-        const std::string addressText = device->getAddress().toString();
-        if (!radio_telemetry_model::parseMac(addressText.c_str(), address)) return;
-        const int8_t rssi = device->getRSSI();
-        if (rssi < -127 || rssi > 20) return; // reject unavailable/invalid controller RSSI
-        const std::string name = device->haveName() ? device->getName() : std::string();
-        const bool haveTx = device->haveTXPower();
-        const int8_t tx = haveTx ? device->getTXPower() : 0;
-        IBeacon beacon = {};
-        bool isBeacon = false;
-        if (device->haveManufacturerData()) {
-            const std::string manufacturer = device->getManufacturerData();
-            isBeacon = radio_telemetry_model::decodeIBeacon(
-                reinterpret_cast<const uint8_t *>(manufacturer.data()), manufacturer.size(), beacon);
-        }
-        const uint32_t now = millis();
-        Lock lock;
-        if (isPaused || !configuration.bleEnabled) return;
-        Observation &observation = slotFor(bleObservations, BLE_CAPACITY, address,
-                                           device->getAddressType(), now, status.bleEvictions);
-        observeRssi(observation, rssi, now);
-        if (!name.empty())
-            copyName(observation.name, reinterpret_cast<const uint8_t *>(name.data()), name.size());
-        if (haveTx) {
-            observation.haveTxPower = true;
-            observation.txPower = tx;
-        }
-        if (isBeacon) {
-            observation.haveIBeacon = true;
-            observation.iBeacon = beacon;
-        }
-    }
-
-    void onScanEnd(const NimBLEScanResults &, int reason) override {
-        Lock lock;
-        status.bleScan = false;
-        status.bleScanned = true;
-        status.bleLastScan = millis();
-        status.bleEndReason = reason;
-    }
-};
-ScanCallbacks bleCallbacks;
-
-NimBLEScan *initializeBluetooth() {
-    if (!NimBLEDevice::init("")) return nullptr;
-    NimBLEScan *scan = NimBLEDevice::getScan();
-    if (!scan) return nullptr;
-    scan->setScanCallbacks(&bleCallbacks, true);
-    scan->setActiveScan(false);
-    scan->setDuplicateFilter(0);
-    scan->setMaxResults(0);
-    scan->setInterval(300);
-    scan->setWindow(30);
-    return scan;
-}
-
-void bluetoothInitializer(void *) {
-    // NimBLE init can wait indefinitely for controller/host sync. Keep that wait
-    // out of the radio worker so Wi-Fi, publication and OTA pause still progress.
-    NimBLEScan *scan = initializeBluetooth();
-    {
-        Lock lock;
-        readyBleScan = scan;
-        status.bleInitialized = scan != nullptr;
-        status.bleInitializing = false;
-        status.bleError = scan ? 0 : -1;
-    }
-    vTaskDelete(nullptr);
-}
-
-void requestBluetoothInitialization() {
-    {
-        Lock lock;
-        if (isPaused || status.bleInitializing || status.bleInitialized) return;
-        status.bleInitializing = true;
-        status.bleError = 0;
-    }
-    if (xTaskCreate(bluetoothInitializer, "radio-ble-init", 4096, nullptr, 1, nullptr) != pdPASS) {
-        Lock lock;
-        status.bleInitializing = false;
-        status.bleError = -3;
-    }
-}
-#endif
 
 #if RADIO_HAS_FTM
 const char *ftmStatusName(wifi_ftm_status_t value) {
@@ -623,37 +363,6 @@ void onFtmReport(arduino_event_t *event) {
     free(report.ftm_report_data);
 }
 #endif
-
-void collectWifiResults(int count) {
-    const uint32_t now = millis();
-    for (int index = 0; index < count && index < static_cast<int>(WIFI_CAPACITY); ++index) {
-        const wifi_ap_record_t *record =
-            static_cast<const wifi_ap_record_t *>(WiFi.getScanInfoByIndex(index));
-        if (!record || record->rssi < -127 || record->rssi > 20) continue;
-        Lock lock;
-        if (isPaused || !configuration.wifiEnabled) break;
-        Observation &observation = slotFor(wifiObservations, WIFI_CAPACITY, record->bssid, 0,
-                                           now, status.wifiEvictions);
-        observeRssi(observation, record->rssi, now);
-        observation.channel = record->primary;
-        observation.ftmResponder = record->ftm_responder;
-        copyName(observation.name, record->ssid, strnlen(reinterpret_cast<const char *>(record->ssid), 32));
-    }
-    Lock lock;
-    if (count > static_cast<int>(WIFI_CAPACITY))
-        status.wifiTruncated += count - WIFI_CAPACITY;
-    status.wifiScanned = true;
-    status.wifiLastScan = now;
-    status.wifiError = 0;
-}
-
-void expireObservations(uint32_t now) {
-    Lock lock;
-    for (auto &observation : wifiObservations)
-        if (observation.used && now - observation.lastSeen > OBSERVATION_TTL_MS) observation.used = false;
-    for (auto &observation : bleObservations)
-        if (observation.used && now - observation.lastSeen > OBSERVATION_TTL_MS) observation.used = false;
-}
 
 void cancelFtm(const char *reason, uint32_t now) {
     bool wasRunning;
@@ -729,48 +438,16 @@ bool sendDatagram(WiFiUDP &udp, IPAddress target, uint16_t port, const JsonDocum
     return sent;
 }
 
-// Publishes at most one radio-table datagram per worker iteration, with no backlog.
-void publishStep(WiFiUDP &udp, const Config &config, uint32_t now,
-                 bool &publishing, size_t &cursor, uint32_t &lastStart) {
-    if (pauseRequested() || !config.udpHost[0]) { publishing = false; return; }
+// Publish the latest status without retaining scan observations or a backlog.
+void publishSummary(WiFiUDP &udp,const Config &config,uint32_t now,uint32_t &lastStart) {
+    if (pauseRequested() || !config.udpHost[0] || now-lastStart<config.publishInterval) return;
+    lastStart=now;
     IPAddress destination;
-    if (!destination.fromString(config.udpHost)) { publishing = false; return; }
-    if (!publishing) {
-        if (now - lastStart < config.publishInterval) return;
-        lastStart = now;
-        cursor = 0;
-        publishing = true;
-        {
-            Lock lock;
-            ++packetSequence;
-        }
-        // Summary is kept deliberately small enough for one nonfragmented datagram.
-        DynamicJsonDocument summary(3072);
-        putSummary(summary.to<JsonObject>(), false);
-        sendDatagram(udp, destination, config.udpPort, summary);
-        return;
-    }
-    Observation observation;
-    while (cursor < WIFI_CAPACITY + BLE_CAPACITY) {
-        const bool bluetooth = cursor >= WIFI_CAPACITY;
-        const size_t index = bluetooth ? cursor - WIFI_CAPACITY : cursor;
-        ++cursor;
-        if (!copyObservation(bluetooth, index, observation)) continue;
-        if (now - observation.lastSeen > OBSERVATION_TTL_MS) continue;
-        DynamicJsonDocument document(2048);
-        JsonObject output = document.to<JsonObject>();
-        uint32_t sequence;
-        {
-            Lock lock;
-            sequence = ++packetSequence;
-        }
-        putEnvelope(output, "observation", sequence);
-        output["radio"] = bluetooth ? "ble" : "wifi";
-        putObservation(output.createNestedObject("observation"), observation, bluetooth, config);
-        sendDatagram(udp, destination, config.udpPort, document);
-        return;
-    }
-    publishing = false;
+    if (!destination.fromString(config.udpHost)) return;
+    { Lock lock; ++packetSequence; }
+    DynamicJsonDocument summary(3072);
+    putSummary(summary.to<JsonObject>(),false);
+    sendDatagram(udp,destination,config.udpPort,summary);
 }
 
 // AHRS has its own cadence; radio table publication never queues motion samples.
@@ -808,182 +485,32 @@ void publishUltrasonic(WiFiUDP &udp, const Config &config, uint32_t now, uint32_
 
 void worker(void *) {
     WiFiUDP udp;
-    uint32_t lastUltrasonicPublish = 0;
-    bool wifiOwned = false, wifiCancelled = false, publishing = false;
-    uint32_t wifiStarted = 0;
-    radio_telemetry_model::PassiveWifiSweep wifiSweep;
-    uint32_t nextWifi = millis() + 5000;
-    uint32_t nextBle = millis() + 1000;
-    uint32_t lastExpire = millis(), lastPublish = millis(), lastRevision = 0;
-    uint32_t lastAhrsPublish = millis();
-    size_t publicationCursor = 0;
-#if RADIO_HAS_BLE
-    NimBLEScan *bleScan = nullptr;
-#endif
-    {
-        Lock lock;
-        status.workerReady = true;
-    }
+    uint32_t lastAhrsPublish=millis(),lastUltrasonicPublish=0,lastPublish=millis();
+    { Lock lock; status.workerReady=true; }
     for (;;) {
-        const uint32_t now = millis();
-        Config config;
-        bool paused;
-        uint32_t revision;
-        FtmState ftmCopy;
-        {
-            Lock lock;
-            config = configuration;
-            paused = isPaused;
-            revision = configurationRevision;
-            ftmCopy = ftm;
-        }
-        if (revision != lastRevision) {
-            publishing = false;
-            lastPublish = now - config.publishInterval;
-            lastAhrsPublish = now - config.ahrsPublishInterval;
-            lastRevision = revision;
-            wifiSweep.reset();
-            nextWifi = now + 1000;
-            nextBle = now + 1000;
-        }
-        if (now - lastExpire >= 1000) {
-            expireObservations(now);
-            lastExpire = now;
-        }
-#if RADIO_HAS_BLE
-        if (!bleScan) {
-            Lock lock;
-            if (readyBleScan) {
-                bleScan = readyBleScan;
-                nextBle = now;
-            }
-        }
-#endif
-        const bool connected = WiFi.status() == WL_CONNECTED;
-        if (wifiOwned) {
-            int count = WiFi.scanComplete();
-            if (count >= 0) {
-                if (!wifiCancelled && !paused && connected) collectWifiResults(count);
-                WiFi.scanDelete();
-                wifiOwned = false;
-                wifiCancelled = false;
-                Lock lock;
-                status.wifiScan = false;
-            } else if (count == WIFI_SCAN_FAILED || now - wifiStarted > WIFI_SCAN_TIMEOUT_MS) {
-                esp_wifi_scan_stop();
-                WiFi.scanDelete();
-                wifiOwned = false;
-                wifiCancelled = false;
-                Lock lock;
-                status.wifiScan = false;
-                status.wifiError = count == WIFI_SCAN_FAILED ? WIFI_SCAN_FAILED : -3;
-            }
-        }
-        if (paused || !connected) {
-            wifiSweep.reset();
-            if (wifiOwned && !wifiCancelled) {
-                esp_wifi_scan_stop();
-                wifiCancelled = true;
-            }
-#if RADIO_HAS_BLE
-            if (bleScan && bleScan->isScanning()) {
-                bleScan->stop();
-                Lock lock;
-                status.bleScan = false;
-            }
-#endif
-            cancelFtm(paused ? "paused" : "disconnected", now);
-            publishing = false;
+        const uint32_t now=millis();
+        Config config; FtmState ftmCopy; bool paused;
+        { Lock lock; config=configuration;ftmCopy=ftm;paused=isPaused; }
+        if (paused || WiFi.status()!=WL_CONNECTED) {
+            cancelFtm(paused ? "paused" : "disconnected",now);
             udp.stop();
             vTaskDelay(pdMS_TO_TICKS(50));
             continue;
         }
-        if (wifiOwned && !config.wifiEnabled && !wifiCancelled) {
-            esp_wifi_scan_stop();
-            wifiCancelled = true;
-        }
-#if RADIO_HAS_BLE
-        if (bleScan && !config.bleEnabled && bleScan->isScanning()) {
-            bleScan->stop();
+        if (ftmCopy.retiring && now-ftmCopy.retiredAt>=2000) {
             Lock lock;
-            status.bleScan = false;
-        }
-        bool bluetoothScanning = bleScan && bleScan->isScanning();
-#else
-        const bool bluetoothScanning = false;
-#endif
-        {
-            Lock lock;
-            ftmCopy = ftm;
-        }
-        if (ftmCopy.retiring && now - ftmCopy.retiredAt >= 2000) {
-            Lock lock;
-            if (ftm.retiring && ftm.generation == ftmCopy.generation)
-                snprintf(ftm.status, sizeof(ftm.status), "retirement_stalled");
+            if (ftm.retiring && ftm.generation==ftmCopy.generation)
+                snprintf(ftm.status,sizeof(ftm.status),"retirement_stalled");
         }
         if (ftmCopy.busy && !ftmCopy.pending && !ftmCopy.retiring &&
-            now - ftmCopy.started >= FTM_TIMEOUT_MS) {
-            cancelFtm("timeout", now);
-            Lock lock;
-            ftmCopy = ftm;
-        }
-        // Waiting for a cancelled FTM report blocks only new FTM requests.
-        // Wi-Fi/BLE scanning and telemetry delivery continue.
-        const bool ftmActive = ftmCopy.busy && !ftmCopy.retiring;
-        if (ftmCopy.pending && !wifiOwned && !bluetoothScanning) {
-            startPendingFtm(now);
-        } else if (!ftmActive && !wifiOwned && !bluetoothScanning &&
-                   config.wifiEnabled && static_cast<int32_t>(now - nextWifi) >= 0) {
-            // Arduino owns its scan result allocation. Do not replace another active scan.
-            if (!pauseRequested() && WiFi.scanComplete() != WIFI_SCAN_RUNNING) {
-                // Keep every passive channel dwell, interleaved with home-channel
-                // traffic. A full all-channel sweep otherwise stalls camera TCP.
-                if (!wifiSweep.active()) {
-                    wifi_country_t country = {};
-                    const esp_err_t error = esp_wifi_get_country(&country);
-                    if (error != ESP_OK || !wifiSweep.begin(country.schan, country.nchan, now)) {
-                        nextWifi = now + 1000;
-                        Lock lock;
-                        status.wifiError = error == ESP_OK ? ESP_ERR_INVALID_ARG : error;
-                    }
-                }
-                if (wifiSweep.active()) {
-                    const uint8_t channel = wifiSweep.channel();
-                    int result = WiFi.scanNetworks(true, true, true,
-                        radio_telemetry_model::PassiveWifiSweep::DWELL_MS, channel);
-                    if (result == WIFI_SCAN_RUNNING) {
-                        nextWifi = wifiSweep.advance(now, config.wifiInterval);
-                        wifiOwned = true;
-                        wifiCancelled = false;
-                        wifiStarted = now;
-                        Lock lock;
-                        status.wifiScan = true;
-                        status.wifiScanChannel = channel;
-                        status.wifiError = 0;
-                    } else {
-                        nextWifi = now + 1000; // Retry this channel; do not skip coverage.
-                        Lock lock;
-                        status.wifiError = result;
-                    }
-                }
-            } else nextWifi = now + 1000;
-        }
-#if RADIO_HAS_BLE
-        else if (!ftmActive && !wifiOwned && !bluetoothScanning &&
-                 config.bleEnabled && static_cast<int32_t>(now - nextBle) >= 0) {
-            nextBle = now + config.bleInterval;
-            if (!bleScan) requestBluetoothInitialization();
-            if (bleScan && !pauseRequested()) {
-                const bool started = bleScan->start(config.bleDuration, false, true);
-                Lock lock;
-                status.bleScan = started;
-                status.bleError = started ? 0 : -2;
-            } else nextBle = now + 30000;
-        }
-#endif
-        publishAhrs(udp, config, now, lastAhrsPublish);
-        publishUltrasonic(udp, config, now, lastUltrasonicPublish);
-        publishStep(udp, config, now, publishing, publicationCursor, lastPublish);
+                now-ftmCopy.started>=FTM_TIMEOUT_MS)
+            cancelFtm("timeout",now);
+        // Configuration changes never overlap our own initiating session.
+        if (!ftmCopy.busy) maintainResponder(config,now);
+        if (ftmCopy.pending) startPendingFtm(now);
+        publishAhrs(udp,config,now,lastAhrsPublish);
+        publishUltrasonic(udp,config,now,lastUltrasonicPublish);
+        publishSummary(udp,config,now,lastPublish);
         vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
@@ -1013,41 +540,12 @@ void sendError(int code, const String &message) {
 void handleSnapshot() {
     if (!authorized()) return;
     DynamicJsonDocument document(12288);
-    putSummary(document.to<JsonObject>(), true);
-    if (document.overflowed()) { sendError(503, "Telemetry summary allocation failed"); return; }
+    putSummary(document.to<JsonObject>(),true);
+    if (document.overflowed()) { sendError(503,"Telemetry summary allocation failed");return; }
     String serialized;
-    serialized.reserve(12288);
-    serializeJson(document, serialized);
-    if (!serialized.length()) { sendError(503, "Telemetry serialization failed"); return; }
-    serialized.remove(serialized.length() - 1);
-    httpServer->sendHeader("Cache-Control", "no-store");
-    httpServer->setContentLength(CONTENT_LENGTH_UNKNOWN);
-    httpServer->send(200, "application/json", "");
-    httpServer->sendContent(serialized);
-    Config config;
-    {
-        Lock lock;
-        config = configuration;
-    }
-    for (int radio = 0; radio < 2; ++radio) {
-        httpServer->sendContent(radio ? ",\"ble\":[" : ",\"wifi\":[");
-        const size_t capacity = radio ? BLE_CAPACITY : WIFI_CAPACITY;
-        bool first = true;
-        for (size_t i = 0; i < capacity && httpServer->client().connected(); ++i) {
-            Observation observation;
-            if (!copyObservation(radio != 0, i, observation)) continue;
-            document.clear();
-            putObservation(document.to<JsonObject>(), observation, radio != 0, config);
-            serialized = "";
-            serializeJson(document, serialized);
-            if (!first) httpServer->sendContent(",");
-            httpServer->sendContent(serialized);
-            first = false;
-        }
-        httpServer->sendContent("]");
-    }
-    httpServer->sendContent("}");
-    httpServer->sendContent("");
+    serializeJson(document,serialized);
+    httpServer->sendHeader("Cache-Control","no-store");
+    httpServer->send(200,"application/json",serialized);
 }
 
 void handleGetConfig() {
@@ -1135,6 +633,22 @@ void handleAhrsCalibration() {
     httpServer->send(202, "application/json", "{\"status\":\"queued\"}");
 }
 
+void handleAhrsProfileGet() {
+    if(!authorized())return;
+    DynamicJsonDocument doc(4096);ahrs_telemetry::writeCalibrationJson(doc.to<JsonObject>());
+    if(doc.overflowed()){sendError(503,"Calibration snapshot allocation failed");return;}
+    String body;serializeJson(doc,body);httpServer->sendHeader("Cache-Control","no-store");httpServer->send(200,"application/json",body);
+}
+void handleAhrsProfileSet() {
+    if(!authorized()||!requireJsonContentType())return;
+    DynamicJsonDocument doc(4096);
+    if(deserializeJson(doc,httpServer->arg("plain"))||!doc.is<JsonObject>()){sendError(400,"Invalid calibration JSON");return;}
+    const auto result=ahrs_telemetry::configureCalibration(doc.as<JsonObjectConst>());
+    if(result==ahrs_telemetry::CalibrationRequest::Invalid){sendError(400,"Invalid calibration schema, values or reference");return;}
+    if(result!=ahrs_telemetry::CalibrationRequest::Accepted){sendError(result==ahrs_telemetry::CalibrationRequest::Busy?409:503,"Calibration worker unavailable or busy");return;}
+    httpServer->sendHeader("Cache-Control","no-store");httpServer->send(202,"application/json","{\"status\":\"queued\"}");
+}
+
 void handleSetConfig() {
     if (!authorized() || !requireJsonContentType()) return;
     const String body = httpServer->arg("plain");
@@ -1169,6 +683,26 @@ void handleSetConfig() {
     handleGetConfig();
 }
 
+bool parseTarget(const char *address,uint8_t target[6]) {
+    if (!address || strlen(address)!=17) return false;
+    bool nonzero=false;
+    for (int i=0;i<6;++i) {
+        if (i && address[i*3-1]!=':') return false;
+        unsigned value=0;
+        for (int j=0;j<2;++j) {
+            char c=address[i*3+j];
+            unsigned digit;
+            if (c>='0' && c<='9') digit=c-'0';
+            else if (c>='a' && c<='f') digit=c-'a'+10;
+            else if (c>='A' && c<='F') digit=c-'A'+10;
+            else return false;
+            value=(value<<4)|digit;
+        }
+        target[i]=value;nonzero|=value!=0;
+    }
+    return nonzero && !(target[0]&1);
+}
+
 void handleFtm() {
     if (!authorized() || !requireJsonContentType()) return;
 #if !RADIO_HAS_FTM
@@ -1194,8 +728,7 @@ void handleFtm() {
     uint8_t target[6];
     const char *address = object["address"].as<const char *>();
     uint32_t channel = 0;
-    if (!radio_telemetry_model::parseMac(address, target) ||
-        !radio_telemetry_model::isUnicastTarget(target) ||
+    if (!parseTarget(address, target) ||
         !readUnsigned(object["channel"], channel, 1, 14)) {
         sendError(400, "FTM requires a unicast MAC address and channel from 1 to 14");
         return;
@@ -1232,8 +765,7 @@ void handleFtm() {
 bool writeFrameJson(JsonObject output, uint64_t captureUs) {
     if (!stateMutex) return false;
     uint32_t sequence;
-    Config config;
-    { Lock lock; sequence=packetSequence;config=configuration; }
+    { Lock lock; sequence=packetSequence; }
     output["schema"]="biome.capture.v1";
     output["receiver_id"]=receiverId;output["boot_id"]=bootId;
     output["capture_monotonic_us"]=captureUs;output["capture_clock"]="esp_timer";
@@ -1245,19 +777,12 @@ bool writeFrameJson(JsonObject output, uint64_t captureUs) {
     putEnvelope(sonar,"ultrasonic",sequence);
     sonar["uptime_ms"]=static_cast<uint32_t>(captureUs/1000);
     ultrasonic_telemetry::writeJsonAt(sonar.createNestedObject("ultrasonic"),captureUs);
-    JsonObject radio=output.createNestedObject("radio");
-    putEnvelope(radio,nullptr,sequence);radio["uptime_ms"]=static_cast<uint32_t>(captureUs/1000);
-    for (int kind=0;kind<2;++kind) {
-        JsonArray rows=radio.createNestedArray(kind ? "ble" : "wifi");
-        const size_t count=kind ? BLE_CAPACITY : WIFI_CAPACITY;
-        for(size_t i=0;i<count;++i) {
-            Observation observation;
-            if (!copyObservation(kind!=0,i,observation)) continue;
-            const uint32_t age=static_cast<uint32_t>(captureUs/1000)-observation.lastSeen;
-            if (age>=0x80000000UL) continue; // A later scan cannot be assigned to this frame.
-            JsonObject row=rows.createNestedObject();
-            putObservation(row,observation,kind!=0,config);row["age_ms"]=age;
-        }
+    FtmState ftmCopy;
+    { Lock lock; ftmCopy=ftm; }
+    if (!ftmCopy.hasReport || static_cast<uint32_t>(captureUs/1000)-ftmCopy.completed<0x80000000UL) {
+        JsonObject range=output.createNestedObject("ftm");
+        putFtm(range,ftmCopy);
+        if (ftmCopy.hasReport) range["age_ms"]=static_cast<uint32_t>(captureUs/1000)-ftmCopy.completed;
     }
     return true;
 }
@@ -1280,11 +805,22 @@ void begin(WebServer &server, bool (*authorize)()) {
     server.on("/api/telemetry/ftm", HTTP_POST, handleFtm);
     server.on("/api/ahrs", HTTP_GET, handleAhrs);
     server.on("/api/ahrs/calibrate", HTTP_POST, handleAhrsCalibration);
+    server.on("/api/ahrs/calibration", HTTP_GET, handleAhrsProfileGet);
+    server.on("/api/ahrs/calibration", HTTP_POST, handleAhrsProfileSet);
     ahrs_telemetry::begin();
     ultrasonic_telemetry::begin();
     server.on("/api/ultrasonic", HTTP_GET, handleUltrasonic);
     if (!stateMutex) return;
     loadConfig();
+    uint8_t apMac[6] = {};
+    esp_wifi_get_mac(WIFI_IF_AP, apMac);
+    // get_mac may require AP to be enabled on some SDK builds. The efuse MAC
+    // plus one is not assumed: refresh the actual identity after AP starts.
+    snprintf(responder.ssid, sizeof(responder.ssid), "C3-TOF-ROVER-%08lx",
+             static_cast<unsigned long>(ESP.getEfuseMac()));
+    snprintf(responderPassword, sizeof(responderPassword), "%08lx%08lx",
+             static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
+    formatMac(apMac, responder.bssid);
 #if RADIO_HAS_FTM
     WiFi.onEvent(onFtmReport, ARDUINO_EVENT_WIFI_FTM_REPORT);
 #else
