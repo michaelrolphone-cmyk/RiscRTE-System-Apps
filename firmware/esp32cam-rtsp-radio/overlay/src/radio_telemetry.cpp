@@ -262,7 +262,7 @@ void putResponder(JsonObject output) {
     output["error"] = state.error;
     output["role"] = "rover";
     output["mode"] = "reciprocal_ftm";
-    output["firmware"] = "1.0-radio.15-reciprocal-ftm";
+    output["firmware"] = "1.0-radio.16-capture-imu";
 }
 
 void putFtm(JsonObject output, const FtmState &copy) {
