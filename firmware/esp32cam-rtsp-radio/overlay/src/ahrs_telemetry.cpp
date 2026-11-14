@@ -1,5 +1,8 @@
 #include "ahrs_telemetry.h"
 #include "ahrs_telemetry_model.h"
+#include "ahrs_persistence_model.h"
+#include <Preferences.h>
+#include <initializer_list>
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -20,6 +23,7 @@
 namespace ahrs_telemetry {
 namespace {
 namespace model = ahrs_telemetry_model;
+namespace persistence = ahrs_persistence_model;
 // esp32-camera 2.0.4 SCCB_Init selects the controller from SDK configuration,
 // not CAMERA_CONFIG_SCCB_I2C_PORT when camera SDA/SCL pins are supplied.
 #if defined(CONFIG_SCCB_HARDWARE_I2C_PORT1) && CONFIG_SCCB_HARDWARE_I2C_PORT1
@@ -112,6 +116,10 @@ struct Snapshot {
     model::Attitude attitude;
     model::CalibrationState calibration=model::CalibrationState::Uncalibrated;
     uint32_t calibrationSamples=0;
+    persistence::Calibration savedCalibration;
+    persistence::WorldHeading worldHeading;
+    bool calibrationStored=false, calibrationRestored=false;
+    const char *storageError=nullptr;
 };
 
 TwoWire sensorWire(SENSOR_BUS);
@@ -122,6 +130,8 @@ Snapshot *captureHistory = nullptr;
 uint64_t captureHistoryTime[CAPTURE_HISTORY] = {};
 size_t captureHistoryNext = 0, captureHistoryCount = 0;
 bool requestedPause=false, calibrationQueued=false;
+bool profileQueued=false;
+persistence::Calibration queuedProfile;
 bool started=false;
 int lastBusError=0; // worker-owned; never accessed by the HTTP caller
 
@@ -227,6 +237,40 @@ bool findImu(Health &health) {
     fail(health,responded ? "unsupported_identity" : "not_detected");
     return false;
 }
+bool storeCalibration(Snapshot &state, persistence::Calibration value) {
+    if (!persistence::usable(value)) { state.storageError="invalid_calibration"; return false; }
+    ++value.revision; value.checksum=persistence::crc(value);
+    Preferences nvs;
+    if (!nvs.begin("rover-ahrs",false)) { state.storageError="nvs_open_failed"; return false; }
+    const bool written=nvs.putBytes("cal-v1",&value,sizeof(value))==sizeof(value);
+    persistence::Calibration check;
+    const bool verified=written && nvs.getBytes("cal-v1",&check,sizeof(check))==sizeof(check) &&
+        persistence::intact(check) && std::memcmp(&check,&value,sizeof(value))==0;
+    nvs.end();
+    if (!verified) { state.storageError="nvs_write_verification_failed"; return false; }
+    state.savedCalibration=value; state.calibrationStored=true;state.storageError=nullptr;
+    state.gyroBiasValid=(value.flags&persistence::GYRO_VALID)!=0;
+    state.gyroBias=state.gyroBiasValid?value.gyroBias:model::Vec3();
+    state.worldHeading.reset();
+    return true;
+}
+void loadCalibration(Snapshot &state) {
+    Preferences nvs;if(!nvs.begin("rover-ahrs",true))return;
+    persistence::Calibration value;
+    const size_t length=nvs.getBytesLength("cal-v1");
+    const bool valid=length==sizeof(value)&&nvs.getBytes("cal-v1",&value,sizeof(value))==sizeof(value)&&persistence::intact(value);
+    nvs.end();
+    if(!valid){if(length)state.storageError="invalid_saved_calibration";return;}
+    state.savedCalibration=value;state.calibrationStored=state.calibrationRestored=true;
+    state.gyroBiasValid=(value.flags&persistence::GYRO_VALID)!=0;
+    state.gyroBias=state.gyroBiasValid?value.gyroBias:model::Vec3();
+    if(state.gyroBiasValid)state.calibration=model::CalibrationState::Succeeded;
+}
+void applyQueuedProfile(Snapshot &state) {
+    persistence::Calibration value;bool pending=false;
+    {Lock lock;if(profileQueued){value=queuedProfile;profileQueued=false;pending=true;}}
+    if(pending)storeCalibration(state,value);
+}
 bool initializeImu(Snapshot &state) {
     Health &health=state.imu;
     health.valid=false;
@@ -253,9 +297,9 @@ bool initializeImu(Snapshot &state) {
     health.seen=false;
     health.error="awaiting_sample";
     health.consecutive=0;
-    state.gyroBias=model::Vec3();
-    state.gyroBiasValid=false;
-    state.calibration=model::CalibrationState::Uncalibrated;
+    state.gyroBiasValid=(state.savedCalibration.flags&persistence::GYRO_VALID)!=0;
+    state.gyroBias=state.gyroBiasValid?state.savedCalibration.gyroBias:model::Vec3();
+    state.calibration=state.gyroBiasValid?model::CalibrationState::Succeeded:model::CalibrationState::Uncalibrated;
     state.calibrationSamples=0;
     state.mag.valid=false;
     state.mag.present=false;
@@ -348,8 +392,9 @@ void invalidateImu(Snapshot &state, model::StationaryCalibration &calibration) {
     state.mag.valid=false;
     state.mag.error="imu_unavailable";
     state.magTrimValid=false;
-    state.gyroBiasValid=false;
-    state.gyroBias=model::Vec3();
+    // Sensor reconnection does not invalidate a separately stored bias calibration.
+    state.gyroBiasValid=(state.savedCalibration.flags&persistence::GYRO_VALID)!=0;
+    state.gyroBias=state.gyroBiasValid?state.savedCalibration.gyroBias:model::Vec3();
     calibration.interrupt();
     if (state.calibration == model::CalibrationState::Collecting ||
         state.calibration == model::CalibrationState::Queued)
@@ -383,6 +428,11 @@ void readImu(Snapshot &state, model::StationaryCalibration &calibration) {
             state.gyroBias=calibration.bias();
             state.gyroBiasValid=true;
             state.attitude.reset(model::ResetReason::Calibration);
+            persistence::Calibration saved=state.savedCalibration;
+            saved.gyroBias=state.gyroBias;saved.flags|=persistence::GYRO_VALID;
+            // A bias-only update must preserve the current world-heading solution.
+            const auto heading=state.worldHeading;
+            storeCalibration(state,saved);state.worldHeading=heading;
         }
     }
     state.imuValue=reading;
@@ -406,6 +456,8 @@ void readMag(Snapshot &state) {
     if (bytes[0] & 0x02) increment(state.magOverruns);
     state.magneticField=field;
     observed(state.mag,millis());
+    if(model::fresh(state.imu.valid,state.imu.seen,millis(),state.imu.observed,model::IMU_FRESH_MS))
+        state.worldHeading.observe(state.attitude,field,state.savedCalibration,millis());
 }
 void readBarometer(Snapshot &state, const model::BmpCalibration &calibration) {
     uint8_t status=0;
@@ -427,6 +479,7 @@ void readBarometer(Snapshot &state, const model::BmpCalibration &calibration) {
 
 void worker(void *) {
     Snapshot state;
+    loadCalibration(state);
     state.workerReady=true;
     state.workerError=nullptr;
     bool imuReady=false, magReady=false, barometerReady=false;
@@ -434,6 +487,7 @@ void worker(void *) {
     model::BmpCalibration bmpCalibration;
     model::StationaryCalibration gyroCalibration;
     uint32_t nextBus=0,nextImu=0,nextMag=0,nextBarometer=0,lastBarometer=0;
+    uint32_t checkedImuConfig=0;
     uint32_t imuConfigured=0,magConfigured=0,barometerConfigured=0;
     TickType_t wake=xTaskGetTickCount();
     const TickType_t period=pdMS_TO_TICKS(20);
@@ -441,6 +495,7 @@ void worker(void *) {
     for (;;) {
         bool paused=false, calibrate=false;
         controls(paused,calibrate);
+        applyQueuedProfile(state);
         state.paused=paused;
         uint32_t now=millis();
         if (paused) {
@@ -488,6 +543,22 @@ void worker(void *) {
                 nextBarometer=now+RETRY_MS;
                 barometerReady=initializeBarometer(state,bmpCalibration);
                 barometerConfigured=millis();
+            }
+            // An MPU-only reset can leave WHO_AM_I and data-ready working
+            // at the power-on range. Reject that epoch before decoding samples.
+            if (imuReady && now-checkedImuConfig >= 1000) {
+                checkedImuConfig=now;
+                uint8_t range=0, gyro=0, bypass=0;
+                const uint8_t addr=state.imu.address;
+                if (!readRegisters(addr,0x1c,&range,1) ||
+                    !readRegisters(addr,0x1b,&gyro,1) ||
+                    !readRegisters(addr,0x37,&bypass,1) ||
+                    (range & 0x18)!=0x08 || (gyro & 0x18)!=0 || !(bypass & 0x02)) {
+                    fail(state.imu,"configuration_lost");
+                    invalidateImu(state,gyroCalibration);
+                    imuReady=magReady=false;
+                    nextImu=now;
+                }
             }
             if (imuReady && !pauseRequested()) readImu(state,gyroCalibration);
             if (magReady && !pauseRequested()) readMag(state);
@@ -596,6 +667,57 @@ CalibrationRequest requestGyroCalibration() {
     return CalibrationRequest::Accepted;
 }
 
+namespace {
+bool profileVector(JsonVariantConst input,model::Vec3 &out){
+    if(!input.is<JsonArrayConst>()||input.size()!=3)return false;
+    double v[3];for(int i=0;i<3;++i){if(!input[i].is<double>())return false;v[i]=input[i].as<double>();if(!std::isfinite(v[i]))return false;}
+    out=model::Vec3(v[0],v[1],v[2]);return true;
+}
+bool profileMatrix(JsonVariantConst input,persistence::Matrix &out){
+    if(!input.is<JsonArrayConst>()||input.size()!=3)return false;
+    for(int i=0;i<3;++i){model::Vec3 row;if(!profileVector(input[i],row))return false;out.v[3*i]=row.x;out.v[3*i+1]=row.y;out.v[3*i+2]=row.z;}return true;
+}
+}
+CalibrationRequest configureCalibration(JsonObjectConst input) {
+    if(!snapshotMutex||std::strcmp(input["schema"] | "","rover.ahrs.calibration/1")!=0)return CalibrationRequest::Invalid;
+    Lock lock;if(profileQueued)return CalibrationRequest::Busy;
+    if(!latest.workerReady)return CalibrationRequest::Unavailable;
+    auto candidate=latest.savedCalibration;
+    for(JsonPairConst item:input){const char *k=item.key().c_str();
+        if(std::strcmp(k,"schema")==0)continue;
+        if(std::strcmp(k,"gyro_bias_rad_s")==0){if(!profileVector(item.value(),candidate.gyroBias))return CalibrationRequest::Invalid;candidate.flags|=persistence::GYRO_VALID;}
+        else if(std::strcmp(k,"mag_bias_uT")==0){if(!profileVector(item.value(),candidate.magBias))return CalibrationRequest::Invalid;}
+        else if(std::strcmp(k,"mag_correction")==0){if(!profileMatrix(item.value(),candidate.magCorrection))return CalibrationRequest::Invalid;}
+        else if(std::strcmp(k,"mag_calibrated")==0){if(!item.value().is<bool>())return CalibrationRequest::Invalid;if(item.value().as<bool>())candidate.flags|=persistence::MAG_CALIBRATED;else candidate.flags&=~persistence::MAG_CALIBRATED;}
+        else if(std::strcmp(k,"world_id")==0){const char *v=item.value().as<const char *>();if(!v||!v[0]||std::strlen(v)>=sizeof(candidate.worldId))return CalibrationRequest::Invalid;std::strcpy(candidate.worldId,v);candidate.flags|=persistence::WORLD_VALID;}
+        else if(std::strcmp(k,"reference_id")==0){const char *v=item.value().as<const char *>();if(!v||!v[0]||std::strlen(v)>=sizeof(candidate.referenceId))return CalibrationRequest::Invalid;std::strcpy(candidate.referenceId,v);}
+        else if(std::strcmp(k,"north_accel_m_s2")==0){if(!profileVector(item.value(),candidate.northAccel))return CalibrationRequest::Invalid;}
+        else if(std::strcmp(k,"north_magnetic_uT")==0){if(!profileVector(item.value(),candidate.northRawMag))return CalibrationRequest::Invalid;}
+        else if(std::strcmp(k,"world_imu_rotation")==0){if(!profileMatrix(item.value(),candidate.worldImu))return CalibrationRequest::Invalid;}
+        else return CalibrationRequest::Invalid;
+    }
+    if(!persistence::usable(candidate))return CalibrationRequest::Invalid;
+    queuedProfile=candidate;profileQueued=true;return CalibrationRequest::Accepted;
+}
+void writeCalibrationJson(JsonObject output) {
+    if(!snapshotMutex)return;Snapshot state;bool pending;
+    {Lock lock;state=latest;pending=profileQueued;}
+    output["schema"]="rover.ahrs.calibration/1";
+    output["persistent"]=state.calibrationStored;output["restored_from_flash"]=state.calibrationRestored;
+    output["revision"]=state.savedCalibration.revision;output["pending"]=pending;output["storage_error"]=state.storageError;
+    output["world_id"]=String(state.savedCalibration.worldId);output["reference_id"]=String(state.savedCalibration.referenceId);
+    output["world_reference_valid"]=(state.savedCalibration.flags&persistence::WORLD_VALID)!=0;
+    output["mag_calibrated"]=(state.savedCalibration.flags&persistence::MAG_CALIBRATED)!=0;
+    putVector(output,"gyro_bias_rad_s",state.savedCalibration.gyroBias,true,1000000);
+    putVector(output,"mag_bias_uT",state.savedCalibration.magBias,true,1000000);
+    putVector(output,"north_accel_m_s2",state.savedCalibration.northAccel,true,1000000);
+    putVector(output,"north_magnetic_uT",state.savedCalibration.northRawMag,true,1000000);
+    for(const char *key:{"mag_correction","world_imu_rotation"}){
+        const auto &m=std::strcmp(key,"mag_correction")==0?state.savedCalibration.magCorrection:state.savedCalibration.worldImu;
+        JsonArray rows=output.createNestedArray(key);for(int i=0;i<3;++i){JsonArray row=rows.createNestedArray();for(int j=0;j<3;++j)row.add(m.v[3*i+j]);}
+    }
+}
+
 static void renderSnapshot(JsonObject output, bool compact, const Snapshot &state, uint32_t now) {
     const bool active=state.workerReady && !state.paused;
     const bool imuValid=active && model::fresh(state.imu.valid,state.imu.seen,now,state.imu.observed,model::IMU_FRESH_MS);
@@ -635,11 +757,12 @@ static void renderSnapshot(JsonObject output, bool compact, const Snapshot &stat
     JsonObject mag=output.createNestedObject("mag");
     putHealth(mag,state.mag,magValid,now,compact);
     putVector(mag,"field_uT",state.magneticField,magValid,100);
-    mag["calibration"]=state.magTrimValid ? "factory_sensitivity_only" : "unavailable";
+    mag["calibration"]=(state.savedCalibration.flags&persistence::MAG_CALIBRATED)?"hard_soft_iron_matrix":state.magTrimValid?"factory_sensitivity_only":"unavailable";
     if (!compact) {
         mag["frame"]="ak8963_native_xyz";
-        mag["hard_iron_calibrated"]=false; mag["soft_iron_calibrated"]=false;
-        mag["used_for_heading"]=false;
+        mag["hard_iron_calibrated"]=(state.savedCalibration.flags&persistence::MAG_CALIBRATED)!=0;
+        mag["soft_iron_calibrated"]=(state.savedCalibration.flags&persistence::MAG_CALIBRATED)!=0;
+        mag["used_for_heading"]=state.worldHeading.valid(state.attitude);
         mag["data_overruns"]=state.magOverruns;
         putVector(mag,"factory_scale",state.magScale,state.magTrimValid,100000);
     }
@@ -668,6 +791,7 @@ static void renderSnapshot(JsonObject output, bool compact, const Snapshot &stat
     putNumber(attitude,"pitch_deg",angles.y,attitudeValid,1000);
     putNumber(attitude,"yaw_deg",angles.z,attitudeValid,1000);
     attitude["reference"]="relative_yaw";
+    attitude["gyro_calibration_preserves_orientation"]=true;
     attitude["generation"]=state.attitude.generation();
     if (state.attitude.generation()) attitude["yaw_origin_uptime_ms"]=state.attitude.originMs();
     else attitude["yaw_origin_uptime_ms"]=nullptr;
@@ -676,8 +800,20 @@ static void renderSnapshot(JsonObject output, bool compact, const Snapshot &stat
         attitude["frame"]="MPU_axes_to_gravity_aligned_initial_yaw";
         attitude["reset_reason"]=model::resetReasonName(state.attitude.resetReason());
         attitude["accel_correction_used"]=attitudeValid && state.attitude.accelCorrection();
-        attitude["heading_absolute"]=false;
+        attitude["heading_absolute"]=state.worldHeading.valid(state.attitude);
         attitude["mounting_alignment_applied"]=false;
+    }
+    const bool worldValid=attitudeValid && state.worldHeading.valid(state.attitude);
+    attitude["world_alignment_valid"]=worldValid;
+    if(worldValid){
+        attitude["world_id"]=String(state.savedCalibration.worldId);
+        attitude["world_reference_id"]=String(state.savedCalibration.referenceId);
+        attitude["world_reference_persistent"]=state.calibrationStored;
+        attitude["magnetic_heading_age_ms"]=static_cast<uint32_t>(now-state.worldHeading.lastMagMs());
+        attitude["heading_quality"]=(now-state.worldHeading.lastMagMs()>model::MAG_FRESH_MS)?"gyro_coasting":(state.savedCalibration.flags&persistence::MAG_CALIBRATED)?"magnetically_calibrated":"factory_only_magnetic_reference";
+        const auto orientation=state.worldHeading.orientation(state.attitude);
+        JsonArray rows=attitude.createNestedArray("world_rotation_enu_imu");
+        for(int i=0;i<3;++i){JsonArray row=rows.createNestedArray();for(int j=0;j<3;++j)row.add(rounded(orientation.v[3*i+j],1000000));}
     }
     JsonObject calibration=output.createNestedObject("calibration");
     calibration["status"]=model::calibrationName(state.calibration);
@@ -686,7 +822,12 @@ static void renderSnapshot(JsonObject output, bool compact, const Snapshot &stat
     calibration["samples"]=state.calibrationSamples;
     if (!compact) {
         calibration["window_ms"]=2000;
-        calibration["persistent"]=false;
+        calibration["persistent"]=state.calibrationStored;
+        calibration["restored_from_flash"]=state.calibrationRestored;
+        calibration["revision"]=state.savedCalibration.revision;
+        calibration["storage_error"]=state.storageError;
+        calibration["world_reference_persistent"]=state.calibrationStored && (state.savedCalibration.flags&persistence::WORLD_VALID);
+        calibration["magnetic_calibration_complete"]=(state.savedCalibration.flags&persistence::MAG_CALIBRATED)!=0;
         calibration["requirement"]="Keep the module motionless; low constant yaw motion cannot be distinguished from gyro bias";
         calibration["max_gyro_rate_deg_s"]=5;
         calibration["max_accel_std_m_s2"]=0.15;
@@ -701,22 +842,74 @@ void writeJson(JsonObject output, bool compact) {
 }
 
 bool writeJsonAt(JsonObject output, uint64_t captureUs) {
+    // Export overlapping dense IMU history with the camera packet. Snapshot
+    // storage and the compact export scratch live in PSRAM; no I2C here.
+    struct CompactImu {
+        uint64_t us;
+        uint32_t generation, sequence;
+        float accel[3], gyro[3], q[4], yaw;
+        bool valid, attitudeValid;
+    };
+    constexpr size_t limit=32;
+    auto samples=static_cast<CompactImu *>(heap_caps_calloc(limit,sizeof(CompactImu),
+        MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
     Snapshot state;
-    uint64_t selected = 0;
+    uint64_t selected=0;
+    size_t count=0;
+    uint32_t previousSequence=0;
+    bool haveSequence=false;
     if (snapshotMutex && captureHistory) {
         Lock lock;
         for (size_t i=0;i<captureHistoryCount;++i) {
             const size_t index=(captureHistoryNext+CAPTURE_HISTORY-1-i)%CAPTURE_HISTORY;
-            if (captureHistoryTime[index] <= captureUs) {
-                state=captureHistory[index];selected=captureHistoryTime[index];break;
-            }
+            const uint64_t published=captureHistoryTime[index];
+            if (published>captureUs) continue;
+            if (!selected) { state=captureHistory[index];selected=published; }
+            if (!samples || count>=limit || captureUs-published>650000) continue;
+            const Snapshot &entry=captureHistory[index];
+            if (haveSequence && entry.imu.samples==previousSequence) continue;
+            previousSequence=entry.imu.samples;haveSequence=true;
+            const uint32_t age=static_cast<uint32_t>(published/1000)-entry.imu.observed;
+            if (age>100 || entry.attitude.generation()!=state.attitude.generation()) continue;
+            CompactImu &sample=samples[count++];
+            sample.us=(published/1000-age)*1000;
+            sample.sequence=entry.imu.samples;
+            sample.generation=entry.attitude.generation();
+            sample.valid=entry.workerReady && !entry.paused && entry.imu.valid &&
+                entry.imu.seen && !entry.imuValue.saturated;
+            sample.attitudeValid=sample.valid && entry.attitude.valid() &&
+                entry.attitude.observedMs()==entry.imu.observed;
+            sample.accel[0]=entry.imuValue.accel.x;sample.accel[1]=entry.imuValue.accel.y;sample.accel[2]=entry.imuValue.accel.z;
+            sample.gyro[0]=entry.correctedGyro.x;sample.gyro[1]=entry.correctedGyro.y;sample.gyro[2]=entry.correctedGyro.z;
+            const model::Quaternion q=entry.attitude.quaternion();
+            sample.q[0]=q.w;sample.q[1]=q.x;sample.q[2]=q.y;sample.q[3]=q.z;
+            sample.yaw=entry.attitude.anglesDeg().z;
         }
     }
-    if (!selected) return false;
+    if (!selected) { heap_caps_free(samples);return false; }
     renderSnapshot(output,false,state,static_cast<uint32_t>(captureUs/1000));
-    output["history_publish_monotonic_us"] = selected;
-    output["association"] = "last_sensor_state_published_before_camera_capture";
+    output["history_publish_monotonic_us"]=selected;
+    output["association"]="last_sensor_state_published_before_camera_capture";
+    output["imu_history_capacity"]=limit;
+    output["imu_history_window_ms"]=650;
+    JsonArray history=output.createNestedArray("imu_samples");
+    for (size_t i=count;i>0;--i) {
+        const CompactImu &sample=samples[i-1];
+        JsonObject row=history.createNestedObject();
+        row["monotonic_us"]=sample.us;row["sample_count"]=sample.sequence;
+        row["generation"]=sample.generation;row["valid"]=sample.valid;
+        row["attitude_valid"]=sample.attitudeValid;
+        JsonArray accel=row.createNestedArray("accel_m_s2");
+        JsonArray gyro=row.createNestedArray("gyro_rad_s");
+        JsonArray quaternion=row.createNestedArray("quaternion_wxyz");
+        for (int j=0;j<3;++j) {
+            accel.add(rounded(sample.accel[j],1000));
+            gyro.add(rounded(sample.gyro[j],10000));
+        }
+        for (int j=0;j<4;++j) quaternion.add(rounded(sample.q[j],100000));
+        row["yaw_deg"]=rounded(sample.yaw,1000);
+    }
+    heap_caps_free(samples);
     return true;
 }
 } // namespace ahrs_telemetry
-
