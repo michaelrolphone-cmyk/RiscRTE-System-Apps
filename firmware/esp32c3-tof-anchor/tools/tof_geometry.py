@@ -292,10 +292,25 @@ class RangeGraph:
         result["height_mode"]="relative_3d" if baseline["dimension"]==3 else "relative_anchor_plane"
         result.pop("position_hypotheses",None);result.pop("ambiguity",None)
         result.update(valid=False,position=None,navigation_authority=False)
+        floor = baseline.get("ground_plane")
+        contact = baseline.get("rover_ground_contact") or {}
+        if floor:
+            result["frame"].update(kind="surveyed_enu", world_alignment="surveyed_floor",
+                                   orientation="east, north, up", ground_plane=floor)
+            result["height_mode"] = "surveyed_enu"
+            result["ground_plane"] = floor
         if not baseline["valid"]:
             result["status"]="baseline_"+baseline["status"]
             return result
         result["geometry_quality"]=None if baseline["condition_number"] is None else 1./baseline["condition_number"]
+        pickup = getattr(self.rover_refinement, "last_pickup", None)
+        grounded = bool(floor and contact.get("grounded") and
+                        (pickup is None or contact["confirmed_at"] > pickup))
+        if floor:
+            result["ground_contact"] = {"active": grounded, "confirmed_at": contact.get("confirmed_at"),
+                                        "last_pickup_at": pickup}
+        if grounded:
+            return self._ground_snapshot(result, baseline, contact.get("radio_height_m", rover_height_m))
         if self.rover_refinement is not None:
             refinement=self.rover_refinement.snapshot(baseline)
             result["rover_refinement"]=refinement
@@ -316,4 +331,46 @@ class RangeGraph:
                 result["position"]["refinement_segment"]=refinement["segment"]
         else:
             result.update(localize_relative(baseline,result["rover_ranges"]))
+        return result
+
+    def _ground_snapshot(self, result, baseline, radio_height):
+        from tof_ground import fit_ground, ground_observations, validate_transfers
+        calibration = baseline["radio_calibration"]
+        result.update(height_mode="ground_constrained", rover_height_m=radio_height)
+        instantaneous = ground_observations(result["rover_ranges"], calibration, False)
+        instantaneous = validate_transfers(baseline, instantaneous, radio_height)
+        corrections = {r["target_bssid"]: r for r in instantaneous}
+        for row in result["rover_ranges"]:
+            corrected = corrections.get(row["target_bssid"])
+            if corrected:
+                row["corrected_distance_m"] = corrected["distance_m"]
+        if self.rover_refinement is None:
+            result.update(fit_ground(baseline, instantaneous, radio_height))
+            return result
+        refinement = self.rover_refinement.snapshot(dict(baseline, grounded_solve=True))
+        result["rover_refinement"] = refinement
+        if refinement["state"] == "moving":
+            result["status"] = "rover_moving_reacquire"
+            return result
+        excluded = {r["target_bssid"] for r in result["rover_ranges"] if r.get("consistent") is False}
+        fitted = {p["bssid"] for p in baseline["positions"]}
+        rows = ground_observations([r for r in refinement["ranges"] if r["target_bssid"] in fitted
+                                    and r["target_bssid"] not in excluded], calibration, True)
+        mature = [r for r in rows if r["session_count"] >= 5]
+        if excluded:
+            refinement["range_exclusions"] = sorted(excluded)
+        if len(mature) < 3:
+            result["status"] = "rover_refinement_accumulating"
+            return result
+        mature = validate_transfers(baseline, mature, radio_height)
+        result.update(fit_ground(baseline, mature, radio_height))
+        if result["valid"]:
+            result["status"] = "refined_ground_position"
+            pos = result["position"]
+            pos["refinement_segment"] = refinement["segment"]
+            result["ground_position"] = dict(pos, z_m=baseline["ground_plane"]["elevation_m"],
+                                              reference="radio_ground_projection")
+            refinement.update(estimate=dict(pos), state="refining",
+                              residual_rms_m=pos["residual_rms_m"],
+                              minimum_sessions_per_anchor=min(r["session_count"] for r in mature))
         return result
