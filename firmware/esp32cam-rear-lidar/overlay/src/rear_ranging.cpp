@@ -26,6 +26,10 @@
 #define RADIO_HAS_FTM_RESPONDER 0
 #endif
 
+#if !RADIO_HAS_FTM || !RADIO_HAS_FTM_RESPONDER
+#error Rear firmware requires both Wi-Fi FTM initiator and responder support.
+#endif
+
 namespace rear_ranging {
 namespace {
 constexpr uint32_t FTM_TIMEOUT_MS = 12000;
