@@ -130,6 +130,25 @@ class InertialReferenceTests(unittest.TestCase):
         self.assertIsNone(self.nav.offset)
         np.testing.assert_allclose(self.nav.alignment,np.eye(3))
 
+    def test_push_prevents_old_camera_boot_from_replacing_live_reference(self):
+        self.feed(edit=lambda m:m.update(sensor_delivery='websocket_push'))
+        identity=self.nav.identity
+        stale_camera=packet(8,boot='previous-camera-boot')
+        self.nav.ingest(stale_camera,1001.6)
+        self.assertEqual(self.nav.identity,identity)
+
+    def test_buffered_measured_samples_bridge_transport_interruption(self):
+        self.feed()
+        # No packets arrive for 1.6s, but the device retained every actual sample.
+        m=packet(15)
+        m['ahrs']['ahrs']['imu_history_window_ms']=2500
+        m['ahrs']['ahrs']['imu_samples']=[dict(monotonic_us=us,generation=1,valid=True,
+            attitude_valid=True,quaternion_wxyz=[1,0,0,0],accel_m_s2=[0,0,9.80665],
+            gyro_rad_s=[0,0,0]) for us in range(2420000,4000001,20000)]
+        self.nav.ingest(m,1003.)
+        self.assertEqual(self.nav.gaps,0)
+        self.assertEqual(self.nav.display(1003.)['state'],'stationary')
+
 
 if __name__=='__main__':
     unittest.main()

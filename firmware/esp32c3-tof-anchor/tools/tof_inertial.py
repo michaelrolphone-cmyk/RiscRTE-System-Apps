@@ -150,6 +150,11 @@ class InertialNavigator:
             return False
 
     def ingest(self, metadata, now):
+        push = metadata.get('sensor_delivery') == 'websocket_push'
+        if push:
+            self.last_push_receive = now
+        elif now-getattr(self, 'last_push_receive', float('-inf')) < 2:
+            return
         envelope = metadata.get('ahrs') or {}
         if not envelope.get('timing_qualified'):
             return
@@ -186,7 +191,7 @@ class InertialNavigator:
                 self.reference(*identity)
             for s in raw.get('imu_samples', []):
                 us = s.get('monotonic_us')
-                if not isinstance(us, int) or not 0 <= capture-us < 1500000 or s.get('generation') != generation:
+                if not isinstance(us, int) or not 0 <= capture-us < max(1500000, int(raw.get('imu_history_window_ms',1500))*1000) or s.get('generation') != generation:
                     continue
                 age = (capture-us)/1e6
                 self.sample(s, epoch-age)

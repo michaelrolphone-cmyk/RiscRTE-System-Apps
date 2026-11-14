@@ -841,7 +841,7 @@ void writeJson(JsonObject output, bool compact) {
     renderSnapshot(output,compact,state,millis());
 }
 
-bool writeJsonAt(JsonObject output, uint64_t captureUs) {
+bool writeJsonAt(JsonObject output, uint64_t captureUs, uint64_t sinceUs) {
     // Export overlapping dense IMU history with the camera packet. Snapshot
     // storage and the compact export scratch live in PSRAM; no I2C here.
     struct CompactImu {
@@ -850,7 +850,8 @@ bool writeJsonAt(JsonObject output, uint64_t captureUs) {
         float accel[3], gyro[3], q[4], yaw;
         bool valid, attitudeValid;
     };
-    constexpr size_t limit=32;
+    const size_t limit=sinceUs ? 128 : 32;
+    const uint64_t window=sinceUs ? 2500000 : 650000;
     auto samples=static_cast<CompactImu *>(heap_caps_calloc(limit,sizeof(CompactImu),
         MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
     Snapshot state;
@@ -865,12 +866,14 @@ bool writeJsonAt(JsonObject output, uint64_t captureUs) {
             const uint64_t published=captureHistoryTime[index];
             if (published>captureUs) continue;
             if (!selected) { state=captureHistory[index];selected=published; }
-            if (!samples || count>=limit || captureUs-published>650000) continue;
+            if (!samples || count>=limit || captureUs-published>window) continue;
             const Snapshot &entry=captureHistory[index];
             if (haveSequence && entry.imu.samples==previousSequence) continue;
             previousSequence=entry.imu.samples;haveSequence=true;
             const uint32_t age=static_cast<uint32_t>(published/1000)-entry.imu.observed;
             if (age>100 || entry.attitude.generation()!=state.attitude.generation()) continue;
+            const uint64_t sampleUs=(published/1000-age)*1000;
+            if(sinceUs && sampleUs<=sinceUs) continue;
             CompactImu &sample=samples[count++];
             sample.us=(published/1000-age)*1000;
             sample.sequence=entry.imu.samples;
@@ -891,7 +894,7 @@ bool writeJsonAt(JsonObject output, uint64_t captureUs) {
     output["history_publish_monotonic_us"]=selected;
     output["association"]="last_sensor_state_published_before_camera_capture";
     output["imu_history_capacity"]=limit;
-    output["imu_history_window_ms"]=650;
+    output["imu_history_window_ms"]=window/1000;
     JsonArray history=output.createNestedArray("imu_samples");
     for (size_t i=count;i>0;--i) {
         const CompactImu &sample=samples[i-1];
