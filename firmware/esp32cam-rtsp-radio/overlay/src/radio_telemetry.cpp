@@ -778,6 +778,7 @@ bool writeFrameJson(JsonObject output, uint64_t captureUs, uint64_t sinceUs) {
     putEnvelope(sonar,"ultrasonic",sequence);
     sonar["uptime_ms"]=static_cast<uint32_t>(captureUs/1000);
     ultrasonic_telemetry::writeJsonAt(sonar.createNestedObject("ultrasonic"),captureUs);
+    putResponder(output.createNestedObject("ftm_responder"));
     FtmState ftmCopy;
     { Lock lock; ftmCopy=ftm; }
     if (!ftmCopy.hasReport || static_cast<uint32_t>(captureUs/1000)-ftmCopy.completed<0x80000000UL) {
