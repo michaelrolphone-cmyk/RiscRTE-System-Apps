@@ -1,0 +1,15 @@
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -1,3 +1,4 @@
++#include "sensor_push.h"
+ #include <Arduino.h>
+ #include <esp_wifi.h>
+ #include <soc/rtc_cntl_reg.h>
+@@ -661,6 +662,7 @@
+   rtsp_server.loop();
+   ArduinoOTA.handle();
+   radio_telemetry::loop();
++  if (camera_init_result == ESP_OK && !Update.isRunning()) sensor_push::offerCamera(param_frame_duration.value());
+ 
+   // OTA diagnostics: once an update is running, log progress + heap so the
+   // serial monitor shows whether the firmware stream is actually arriving.

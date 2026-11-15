@@ -14,6 +14,6 @@ void writeJson(JsonObject output, bool compact = false);
 // Queues a two-second stationary gyro-bias window; no bus work on the caller.
 CalibrationRequest requestGyroCalibration();
 // Capture-clock history lookup; never substitutes a newer sample.
-bool writeJsonAt(JsonObject output, uint64_t captureUs);
+bool writeJsonAt(JsonObject output, uint64_t captureUs, uint64_t sinceUs=0);
 } // namespace ahrs_telemetry
 

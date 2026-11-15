@@ -10,6 +10,6 @@ void begin(WebServer &server, bool (*authorize)());
 void loop();
 // Requests pause; an in-flight short operation may finish before the worker stops.
 void pause(bool paused);
-bool writeFrameJson(JsonObject output, uint64_t captureUs);
+bool writeFrameJson(JsonObject output, uint64_t captureUs, uint64_t sinceUs=0);
 } // namespace radio_telemetry
 

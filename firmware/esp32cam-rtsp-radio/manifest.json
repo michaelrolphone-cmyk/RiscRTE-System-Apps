@@ -26,6 +26,10 @@
       "sha256": "06e790f908e07c4ed49bded5e11bea489fcb9cbe8bbc3f5ba97c0b805a3d01ad"
     },
     {
+      "path": "SENSOR_PUSH.md",
+      "sha256": "6514f4de0c89ff123f782d5292cc0d239ba120c23bb1df4a88e88b486ad6baef"
+    },
+    {
       "path": "SYNCHRONIZATION.md",
       "sha256": "01ef433ee5154550c5035f4f00b71db64307f1984259680550054cde665a58de"
     },
@@ -39,7 +43,7 @@
     },
     {
       "path": "integration.patch",
-      "sha256": "6ac1ddd31152d85f35cd259c1e690befca8d8123e1d19d06c867524c2a924268"
+      "sha256": "51c1f8198b4b8172341eac2cd2ba985b7200c140ca6d9719534231ba3478ed04"
     },
     {
       "path": "overlay/html/telemetry.html",
@@ -47,7 +51,7 @@
     },
     {
       "path": "overlay/include/ahrs_telemetry.h",
-      "sha256": "b3740b1c0488b978a5156427ca8918484d785f7d651b44ee261896ed861b97af"
+      "sha256": "304242fbbf96b675903b8b3818b538cb21dbdfe3cccd867a35c8e0f465819213"
     },
     {
       "path": "overlay/include/ahrs_telemetry_model.h",
@@ -67,7 +71,11 @@
     },
     {
       "path": "overlay/include/radio_telemetry.h",
-      "sha256": "b9577760aa22e395ede5f78bb4a39648994b315a75553b01bad3b3a023cb2749"
+      "sha256": "05ebef6800900f51dfbb928283361c08a1a59264841958e08e2237ee4fd6bdc3"
+    },
+    {
+      "path": "overlay/include/sensor_push.h",
+      "sha256": "e08cf2f7bfe5572c752e6fcd81b1d4cd2473bfb816ee60d040bd26605d8a1d3f"
     },
     {
       "path": "overlay/include/ultrasonic_capture_model.h",
@@ -83,11 +91,11 @@
     },
     {
       "path": "overlay/platformio.ini",
-      "sha256": "f389285c52423363862783cc231f3744490f630cf8779abf5a4a40390f19d9ce"
+      "sha256": "aa8189071dcc5043a9a869f47667b04b0208d034f4d5eec81cbb00761581c7dd"
     },
     {
       "path": "overlay/src/ahrs_telemetry.cpp",
-      "sha256": "222c0af8eec8d89b5f856dd43dce795010c7b837549f25e4254b690d4d098ce6"
+      "sha256": "ec473fb556b0c692c64eb61e1a66ce34636c4b6f1a2b47fcb97cd07e0a8d34fb"
     },
     {
       "path": "overlay/src/camera_exposure.cpp",
@@ -99,7 +107,11 @@
     },
     {
       "path": "overlay/src/radio_telemetry.cpp",
-      "sha256": "be3495ab11c667b469164de66710833131bb27f01b8b9cc8cd0e914c39192fea"
+      "sha256": "b86528f3439e9bbfb3646495edd32f61bb1c670e58832358c79b42f8c9a953a4"
+    },
+    {
+      "path": "overlay/src/sensor_push.cpp",
+      "sha256": "4841a19b2a7404d9514bef267fc7b7b107569d2a8e2dfeab2b685e7e12df1fe3"
     },
     {
       "path": "overlay/src/ultrasonic_telemetry.cpp",
@@ -136,6 +148,10 @@
     {
       "path": "prepare.py",
       "sha256": "fa751b2263fecef9e4ab324656f493b04da649ca4bf9b3cdb6d8b7a35bdef25b"
+    },
+    {
+      "path": "overlay/src/camera_websocket.inc",
+      "sha256": "144d215803048cc2be1f1257eee55eecaea666ff76712ae887671bceb545f6e9"
     }
   ]
 }
