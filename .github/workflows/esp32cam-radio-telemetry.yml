@@ -52,6 +52,8 @@ jobs:
           for script in scripts:
               subprocess.run(['node', '--check', '-'], input=script, text=True, check=True)
           PY
+      - name: Install magnetic-fit test dependency
+        run: python -m pip install numpy
       - name: Test UDP collector
         working-directory: firmware/esp32cam-rtsp-radio/overlay
         run: python -m unittest discover -s tests -p 'test_*.py' -v
