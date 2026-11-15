@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""Receive ESP32CAM radio and AHRS telemetry. JSONL on stdout; no files unless --log is set.
+"""Receive ESP32CAM AHRS, sonar and FTM telemetry. JSONL on stdout; no files unless --log is set.
 
 Examples:
   python3 tools/telemetry_receiver.py
   python3 tools/telemetry_receiver.py --view
-  python3 tools/telemetry_receiver.py --log radio.jsonl --max-bytes 1048576 --backups 3
+  python3 tools/telemetry_receiver.py --log sensors.jsonl --max-bytes 1048576 --backups 3
 
 UDP is best-effort and unauthenticated. Keep this listener on a trusted LAN.
-The receiver preserves device-reported observation age and never turns RSSI
-estimates into measured distances. Python 3.8+; standard library only.
+The receiver preserves device-reported sensor and FTM measurement ages. Python 3.8+; standard library only.
 """
 import argparse
 from collections import OrderedDict
@@ -205,48 +204,16 @@ def parse_datagram(data):
         _text(message["boot_id"], "boot_id", 64)
     if message.get("timestamp_ms") is not None:
         _integer(message["timestamp_ms"], "timestamp_ms")
+    if any(key in message for key in ("wifi", "ble", "wifi_count", "ble_count")):
+        raise PacketError("Legacy scan telemetry has been retired")
     kind = message.get("type")
     if kind == "observation":
-        radio = message.get("radio")
-        if radio not in ("wifi", "ble"):
-            raise PacketError("unknown observation radio")
-        item = message.get("observation")
-        if not isinstance(item, dict):
-            raise PacketError("observation must be an object")
-        for key, maximum, empty in (("id", 128, False), ("address", 17, False),
-                                    ("name", 256, True)):
-            _text(item.get(key), key, maximum, empty)
-        if not MAC.fullmatch(item["address"]):
-            raise PacketError("invalid transmitter address")
-        _number(item.get("rssi_dbm"), "rssi_dbm", -127, 20)
-        _number(item.get("rssi_filtered_dbm"), "rssi_filtered_dbm", -127, 20)
-        _integer(item.get("age_ms"), "age_ms")
-        _integer(item.get("sample_count"), "sample_count", 1)
-        if radio == "ble":
-            _integer(item.get("address_type"), "address_type", 0, 255)
-        if "channel" in item:
-            _integer(item["channel"], "channel", 1, 14)
-        if "distance_m" in item:
-            _number(item["distance_m"], "distance_m", 0, 10000, nullable=True)
-        if "distance_method" in item:
-            if item["distance_method"] not in ("rssi_assumed", "rssi_calibrated", "wifi_ftm"):
-                raise PacketError("unknown distance method")
-        if "reference_rssi_1m_dbm" in item:
-            _number(item["reference_rssi_1m_dbm"], "reference_rssi_1m_dbm", -127, 20)
-        if "path_loss_exponent" in item:
-            _number(item["path_loss_exponent"], "path_loss_exponent", 0.1, 10)
-        if "calibrated" in item and type(item["calibrated"]) is not bool:
-            raise PacketError("calibrated must be boolean")
-        if "tx_power_dbm" in item:
-            _number(item["tx_power_dbm"], "tx_power_dbm", -127, 127, nullable=True)
+        raise PacketError("Legacy scan telemetry has been retired")
     elif kind == "ultrasonic":
         _ultrasonic(message.get("ultrasonic"))
     elif kind == "ahrs":
         _ahrs(message.get("ahrs"))
     elif kind == "summary":
-        for key in ("wifi_count", "ble_count"):
-            if key in message:
-                _integer(message[key], key, 0)
         if "status" in message and not isinstance(message["status"], dict):
             raise PacketError("summary status must be an object")
         if "ftm" in message:
@@ -280,7 +247,7 @@ def json_line(record):
 
 def make_log(path, max_bytes, backups):
     """The active file and at most backups older files are retained."""
-    logger = logging.Logger("radio-telemetry")
+    logger = logging.Logger("sensor-telemetry")
     logger.setLevel(logging.INFO)
     handler = RotatingFileHandler(path, maxBytes=max_bytes, backupCount=backups,
                                   encoding="utf-8")
@@ -305,7 +272,6 @@ class LatestObservations:
     def __init__(self, maximum=1024, ttl=180.0):
         self.maximum = maximum
         self.ttl = ttl
-        self.items = OrderedDict()
         self.summaries = OrderedDict()
         self.ahrs = OrderedDict()
         self.ultrasonic = OrderedDict()
@@ -324,30 +290,14 @@ class LatestObservations:
             while len(collection) > self.maximum:
                 collection.popitem(last=False)
             return
-        item = message["observation"]
-        key = receiver + (message["radio"], item["address"].lower(),
-                          item.get("address_type"))
-        previous = self.items.get(key)
-        if previous and not _is_newer_packet(message, previous[0]["telemetry"]):
-            return
-        self.items[key] = (record, now)
-        self.items.move_to_end(key)
-        while len(self.items) > self.maximum:
-            self.items.popitem(last=False)
+        raise PacketError("Unsupported sensor packet")
 
     def rows(self, now):
-        rows = []
-        for key, (record, arrived) in list(self.items.items()):
-            age = record["telemetry"]["observation"]["age_ms"] / 1000.0 + max(0, now - arrived)
-            if age > self.ttl:
-                del self.items[key]
-            else:
-                rows.append((record, age))
         for collection in (self.summaries, self.ahrs, self.ultrasonic):
             for key, (_record, arrived) in list(collection.items()):
                 if now - arrived > self.ttl:
                     del collection[key]
-        return rows
+        return []
 
 
 def display_text(value, length):
@@ -357,25 +307,8 @@ def display_text(value, length):
 
 
 def render_view(cache, now, rejected):
-    lines = ["ESP32CAM radio / AHRS telemetry | radio stale after %.0fs | rejected packets %d" % (cache.ttl, rejected),
-             "RECEIVER / SOURCE IP        RADIO  ADDRESS / TYPE        RSSI   EMA    AGE(s)  RANGE(m) / METHOD         NAME"]
-    for record, age in cache.rows(now):
-        message = record["telemetry"]
-        item = message["observation"]
-        receiver = "%s@%s" % (message["receiver_id"], record["source_ip"])
-        address = item["address"]
-        if message["radio"] == "ble":
-            address += "/" + str(item["address_type"])
-        distance = item.get("distance_m")
-        method = item.get("distance_method", "unavailable")
-        ranging = ("--" if distance is None else "%.2f" % distance) + " / " + method
-        lines.append("%-27s %-6s %-21s %5.0f %6.1f %7.1f  %-25s %s" %
-                     (display_text(receiver, 27), message["radio"],
-                      display_text(address, 21), item["rssi_dbm"],
-                      item["rssi_filtered_dbm"], age, ranging,
-                      display_text(item["name"], 24)))
-    if len(lines) == 2:
-        lines.append("Waiting for fresh device observations.")
+    cache.rows(now)
+    lines = ["ESP32CAM AHRS / sonar / FTM telemetry | rejected packets %d" % rejected]
     for record, arrived in cache.summaries.values():
         message = record["telemetry"]
         ftm = message.get("ftm", {})
@@ -419,7 +352,7 @@ def render_view(cache, now, rejected):
                      (display_text(message["receiver_id"], 64), record["source_ip"],
                       angles, pressure, "--" if age is None else "%.2fs" % age,
                       display_text(data["calibration"]["status"], 64)))
-    lines.append("RSSI ranges are approximate. AHRS yaw is relative. FTM needs a compatible AP. Ctrl-C to stop.")
+    lines.append("AHRS yaw is relative. FTM needs a compatible responder and qualified geometry. Ctrl-C to stop.")
     return "\n".join(lines)
 
 
@@ -428,7 +361,7 @@ def arguments(argv=None):
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--bind", default="0.0.0.0", help="local IPv4 address (default: all interfaces)")
     parser.add_argument("--port", type=int, default=9876)
-    parser.add_argument("--view", action="store_true", help="show latest radios and AHRS instead of JSONL stdout")
+    parser.add_argument("--view", action="store_true", help="show latest AHRS, sonar and FTM instead of JSONL stdout")
     parser.add_argument("--ttl", type=float, default=180, help="hide observations older than this many seconds")
     parser.add_argument("--max-devices", type=int, default=1024, help="bounded display cache size")
     parser.add_argument("--log", help="optional rotating JSONL file; no files are written by default")
