@@ -13,7 +13,6 @@ import time
 import numpy as np
 from scipy.spatial.transform import Rotation
 from tof_world_motion import WorldBodyPose
-from tof_survey_pose import start_survey_control
 
 
 def vector(value, size):
@@ -281,9 +280,6 @@ class InertialNavigator:
                    stationary_reference=self.rest_gate.copy())
         world = self.world_body.display(self, h)
         if world is not None:
-            survey_pose = getattr(self, 'survey_pose', None)
-            if survey_pose is not None:
-                world.update(survey_pose.fields(now))
             out["world_body_pose"] = world
         if h is None:
             return out
@@ -354,6 +350,30 @@ class VisionFeed(threading.Thread):
     def __init__(self, nav, path):
         super().__init__(daemon=True, name='tof-imu-stream')
         self.nav, self.path = nav, str(path)
+        self._radio_lock = threading.Lock()
+        self._radio = None
+
+    def _ranging(self, meta):
+        packet = meta.get("ranging_observation")
+        if not meta.get("sensor_tick") or not isinstance(packet, dict):
+            return
+        interval = packet.get("capture_host_monotonic_interval_s")
+        if not isinstance(interval, list) or len(interval) != 2:
+            return
+        low, high = interval
+        if not all(isinstance(x, (int, float)) and math.isfinite(x) for x in interval) or low > high:
+            return
+        observed = (low + high) / 2
+        snapshot = dict(packet, ahrs=(meta.get("ahrs") or {}).get("ahrs") or {})
+        with self._radio_lock:
+            if self._radio is None or observed > self._radio[1]:
+                self._radio = snapshot, observed
+
+    def take_ranging(self):
+        with self._radio_lock:
+            value, self._radio = self._radio, None
+            return value
+
 
     def run(self):
         self.nav.survey_pose = start_survey_control(self.nav)
@@ -378,10 +398,12 @@ class VisionFeed(threading.Thread):
                             now = time.time()
                             dual=getattr(self.nav,'dual_radio',None)
                             if dual is not None:dual.receive(meta)
+                            self._ranging(meta)
                             self.nav.ingest(meta,now)
                             with self.nav.lock:
                                 if self.nav.survey_pose is not None:
                                     self.nav.survey_pose.observe(meta,now,self.nav)
+                            with self.nav.lock:
                                 self.nav.world_body.visual(self.nav,meta,now)
                             self.nav.feed_error = None
             except (OSError, ValueError, TypeError, KeyError, struct.error, http.client.HTTPException) as exc:
@@ -407,8 +429,7 @@ class InertialRefinement:
         nav, b = self.nav, self.baseline
         with nav.lock:
             h = nav.at(observed)
-            receiver = 'rear' if str(session_id).startswith('rear/') else 'front'
-            key = (anchor, direction, receiver)
+            key = (anchor, direction)
             if now-observed > 30 or observed > now:
                 return
             prev = nav.seen.get(key)
@@ -434,7 +455,7 @@ class InertialRefinement:
                 refinement.observe(anchor,distance,observed,now=now,direction=direction,session_id=session_id)
                 return
             nav.pending[key] = dict(target_bssid=anchor,distance_m=distance,observed=observed,
-                                    direction=direction,session_id=session_id,receiver=receiver)
+                                    direction=direction,session_id=session_id)
             batch = [r for r in nav.pending.values() if now-r['observed'] <= 30 and nav.at(r['observed']) is not None]
             per_anchor = {}
             for r in sorted(batch,key=lambda x:x['observed']):
@@ -448,17 +469,6 @@ class InertialRefinement:
                 nav.last_decision = 'awaiting_independent_ranges'
                 return
             chosen = list(per_anchor.values())
-            used = []
-            for i,r in enumerate(chosen):
-                t=r['observed']
-                other=next((v for v in reversed(sorted(batch,key=lambda v:v['observed']))
-                            if v['target_bssid']==r['target_bssid'] and v['receiver']!=r['receiver']
-                            and abs(t-v['observed']) <= (10. if nav.rest_gate.get('quiet_duration_s',0)>=abs(t-v['observed']) else 1.)
-                            and abs(v['distance_m']-r['distance_m'])<=max(1.,.25*r['distance_m'])),None)
-                used.append(r)
-                if other:
-                    chosen[i]=dict(r,distance_m=(r['distance_m']+other['distance_m'])/2)
-                    used.append(other)
             # During motion, compensate each sphere to the common fix time when
             # ENU position is known. Otherwise retain only near-simultaneous data.
             h = nav.at(max(r['observed'] for r in chosen))
@@ -498,10 +508,10 @@ class InertialRefinement:
                 # Range evidence can still refine a first fix with unresolved
                 # geometry. Never promote an ambiguous candidate to a pose.
                 nav.last_decision = 'range_only_bootstrap'
-            for r in used:
+            for r in chosen:
                 target, direction = r['target_bssid'], r['direction']
                 t = nav.at(r['observed'])
-                refs = nav.links.setdefault((target,direction,r['receiver']),deque(maxlen=7))
+                refs = nav.links.setdefault((target,direction),deque(maxlen=7))
                 refs.append((r['distance_m'],t))
                 refinement.observe(target,r['distance_m'],r['observed'],now=now,
                                    direction=direction,session_id=r['session_id'])
@@ -509,7 +519,6 @@ class InertialRefinement:
     def publish(self, result, now):
         nav = self.nav
         with nav.lock:
-            nav.world_body.observe_floor(nav, result)
             h = nav.at(now)
             rejected = False
             refinement = result.get('rover_refinement') or {}

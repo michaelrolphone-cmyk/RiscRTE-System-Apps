@@ -89,7 +89,8 @@ def main():
     if (vision_dir/'camera-rig.json').is_file() and (vision_dir/'survey-world.json').is_file():
         graph.dual_radio=nav.dual_radio=DualRadioRanging(vision_dir,nav)
 
-    last_rover=last_write=last_request=last_discovery=0.
+    last_write=last_request=last_discovery=0.
+    last_sample=None
     discovery_status={}
     channel_cache={}
     last_requested={};error=None;request_state=RoverRequest();retired=False
@@ -151,6 +152,7 @@ def main():
             if getattr(graph,'dual_radio',None) is not None:
                 out['dual_radio']=graph.dual_radio.status()
             inertial.publish(out,time.time())
+            out["rover_measurements"]={"transport":"websocket_push","age_s":None if last_sample is None else max(0.,now-last_sample),"boot_id":request_state.boot_id}
             out["anchor_transport"]=transport.status()
             if now-last_discovery>=5:
                 last_discovery=now
