@@ -169,14 +169,21 @@ class SurveyPose:
                 continue
             plane_tilt = tilt(fit['normal'])
             mounting = self.reference.get('floor_tilt_at_zero',{}).get(sid,[0,0])
-            innovations.append((sid,plane_tilt-mounting-tilt(rotation[2])))
+            innovations.append((sid,plane_tilt-mounting-tilt(rotation[2]),fit['tilt_sigma_rad']))
         if not innovations:
             return
         if len(innovations)>1 and np.linalg.norm(innovations[0][1]-innovations[1][1]) > math.radians(12):
             return
         dt = .1 if self.last_floor is None else max(0,min(1.,now-self.last_floor))
         gain = 1-math.exp(-dt/1.2)
-        self.tilt_bias += gain*(np.mean([x[1] for x in innovations],axis=0)-self.tilt_bias)
+        # A plane and its captured zero each carry angular uncertainty. For each
+        # axis use the smallest gyro correction supported by that interval.
+        # A measured change of body tilt still arrives immediately via the IMU.
+        supported = []
+        for _,error,sigma in innovations:
+            uncertainty = 2.*math.sqrt(2.)*sigma
+            supported.append(np.sign(error)*np.maximum(abs(error)-uncertainty,0.))
+        self.tilt_bias += gain*(np.mean(supported,axis=0)-self.tilt_bias)
         self.floor_sources = [x[0] for x in innovations]
         self.last_floor = now
         self.floor_updates += 1
