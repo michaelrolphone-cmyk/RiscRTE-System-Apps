@@ -1,4 +1,7 @@
 #include "sensor_push.h"
+#include <atomic>
+#include <esp_camera.h>
+#include <freertos/queue.h>
 #include "radio_telemetry.h"
 #include <ArduinoJson.h>
 #include <Preferences.h>
@@ -26,17 +29,26 @@ WebSocketsClient socket;
 String headers,boot;
 volatile bool connected=false,paused=false;
 bool workerReady=false;
-uint64_t inflightCaptureUs=0;
-uint32_t inflightStarted=0;
-bool awaitingAck=false,clockReady=false;
-uint64_t inflightSequence=0;
+
+
+bool clockReady=false;
+volatile uint32_t stationDisconnects=0, stationDisconnectReason=0;
+uint32_t socketConnections=0, socketDisconnects=0;
+uint32_t lastSocketDisconnectMs=0, lastSendDurationMs=0;
+uint64_t lastSentSampleUs=0;
+uint64_t lastSentSequence=0;
 size_t lastPacketBytes=0;
-uint64_t acknowledged=0,sequence=0;
+uint64_t sequence=0;
 uint32_t sent=0,failed=0;
+
+#define CAMERA_SOCKET_ROLE "rear"
+#include "camera_websocket.inc"
 
 void writePacket(JsonObject packet,bool streaming=true) {
     const uint64_t now=esp_timer_get_time();
-    radio_telemetry::writeFrameJson(packet,now,acknowledged ? acknowledged : 1);
+    // Only the socket worker advances this cursor. HTTP snapshots are independent.
+    radio_telemetry::writeFrameJson(packet,now,streaming && lastSentSampleUs ? lastSentSampleUs : 1);
+    packet["delivery_mode"]="continuous";
     packet["camera_id"]="rear";
     packet["schema"]="biome.sensor_tick.v1";
     packet["image_available"]=false;
@@ -46,8 +58,8 @@ void writePacket(JsonObject packet,bool streaming=true) {
 }
 
 void event(WStype_t type,uint8_t *payload,size_t length) {
-    if(type==WStype_CONNECTED) { connected=true; acknowledged=0; awaitingAck=false; clockReady=false; }
-    if(type==WStype_DISCONNECTED) { connected=false; acknowledged=0; awaitingAck=false; clockReady=false; }
+    if(type==WStype_CONNECTED) { connected=true; lastSentSampleUs=0; clockReady=false; ++socketConnections; }
+    if(type==WStype_DISCONNECTED) { connected=false; clockReady=false; ++socketDisconnects; lastSocketDisconnectMs=millis(); }
     if(type!=WStype_TEXT) return;
     const uint64_t received=esp_timer_get_time();
     DynamicJsonDocument request(1024);
@@ -59,11 +71,6 @@ void event(WStype_t type,uint8_t *payload,size_t length) {
         reply["boot_id"]=boot;reply["received_monotonic_us"]=received;
         reply["served_monotonic_us"]=static_cast<uint64_t>(esp_timer_get_time());
         String text;serializeJson(reply,text);clockReady=socket.sendTXT(text);
-    } else if(kind=="ack" && String(request["boot_id"]|"")==boot &&
-              (request["stream_sequence"]|uint64_t(0))==inflightSequence) {
-        const uint64_t value=request["monotonic_us"]|uint64_t(0);
-        if(value>acknowledged && value<=inflightCaptureUs) acknowledged=value;
-        awaitingAck=false;
     }
 }
 
@@ -74,7 +81,7 @@ void worker(void *) {
         Config current;
         xSemaphoreTake(mutex,portMAX_DELAY);current=config;xSemaphoreGive(mutex);
         if(current.revision!=revision) {
-            socket.disconnect();connected=false;acknowledged=0;awaitingAck=false;clockReady=false;revision=current.revision;
+            socket.disconnect();connected=false;clockReady=false;revision=current.revision;
             if(current.host.length() && current.token.length()) {
                 headers="Authorization: Sensor "+current.token;
                 socket.setExtraHeaders(headers.c_str());socket.begin(current.host,current.port,"/sensors");
@@ -82,11 +89,7 @@ void worker(void *) {
         }
         if(current.host.length() && WiFi.status()==WL_CONNECTED) socket.loop();
         const uint32_t now=millis();
-        // A lost acknowledgement must recover independently of camera/UART.
-        if(connected && awaitingAck && now-inflightStarted>=5000) {
-            socket.disconnect();connected=false;awaitingAck=false;clockReady=false;
-        }
-        if(!paused && connected && clockReady && !awaitingAck && now-last>=100) {
+        if(!paused && connected && now-last>=100) {
             last=now;
             Document document(131072);JsonObject packet=document.to<JsonObject>();writePacket(packet);
             if(boot.isEmpty()) boot=String(packet["boot_id"]|"");
@@ -94,10 +97,15 @@ void worker(void *) {
                 const size_t size=measureJson(document);
                 auto bytes=static_cast<uint8_t *>(heap_caps_malloc(size+1,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
                 if(bytes) { serializeJson(document,reinterpret_cast<char *>(bytes),size+1);
-                    if(socket.sendTXT(static_cast<const uint8_t *>(bytes),size)) {
-                        ++sent;awaitingAck=true;inflightSequence=sequence;
-                        inflightCaptureUs=packet["capture_monotonic_us"]|uint64_t(0);
-                        inflightStarted=now;lastPacketBytes=size;
+                    const uint32_t sendStart=millis();
+                    const bool delivered=socket.sendTXT(static_cast<const uint8_t *>(bytes),size);
+                    lastSendDurationMs=millis()-sendStart;
+                    if(delivered) {
+                        ++sent;
+                        lastSentSequence=sequence;
+                        lastSentSampleUs=packet["capture_monotonic_us"]|uint64_t(0);
+
+                        lastPacketBytes=size;
                     } else ++failed;
                     heap_caps_free(bytes);
                 } else ++failed;
@@ -110,12 +118,17 @@ void worker(void *) {
 void status() {
     if(!authorizeRequest || !authorizeRequest()) return;
     Config current;xSemaphoreTake(mutex,portMAX_DELAY);current=config;xSemaphoreGive(mutex);
-    DynamicJsonDocument d(1024);
+    DynamicJsonDocument d(2048);
+    d["camera_frames_sent"]=cameraFrames.load();d["camera_frames_acknowledged"]=cameraAcks.load();
     d["transport"]="websocket_push";d["camera_id"]="rear";d["worker_ready"]=workerReady;d["paused"]=paused;d["configured"]=!current.host.isEmpty();
     d["host"]=current.host;d["port"]=current.port;d["connected"]=connected;
     d["sent"]=sent;d["failed"]=failed;
-    d["awaiting_ack"]=awaitingAck;d["clock_ready"]=clockReady;
-    d["last_packet_bytes"]=lastPacketBytes;d["inflight_sequence"]=inflightSequence;
+    d["delivery_mode"]="continuous";d["awaiting_ack"]=false;
+    d["last_sent_sequence"]=lastSentSequence;d["send_duration_ms"]=lastSendDurationMs;
+    d["socket_connects"]=socketConnections;d["socket_disconnects"]=socketDisconnects;
+    d["last_socket_disconnect_ms"]=lastSocketDisconnectMs;
+    d["station_disconnects"]=stationDisconnects;d["station_disconnect_reason"]=stationDisconnectReason;d["clock_ready"]=clockReady;
+    d["last_packet_bytes"]=lastPacketBytes;d["inflight_sequence"]=0;
     String text;serializeJson(d,text);server->send(200,"application/json",text);
 }
 
@@ -133,6 +146,10 @@ void configure() {
         server->send(400,"application/json","{\"error\":\"invalid stream configuration\"}");return;
     }
     next.port=port;
+    xSemaphoreTake(mutex,portMAX_DELAY);
+    const bool unchanged=config.host==next.host && config.port==next.port && config.token==next.token;
+    xSemaphoreGive(mutex);
+    if(unchanged) {status();return;}
     Preferences prefs;
     if(!prefs.begin("rover-push",false)) {server->send(503,"application/json","{\"error\":\"storage unavailable\"}");return;}
     const bool stored=prefs.putString("host",next.host)>0 && prefs.putString("token",next.token)>0 && prefs.putUShort("port",next.port)>0;
@@ -150,12 +167,19 @@ void capture() {
 }
 } // namespace
 
+void offerCamera(uint32_t intervalMs) { captureForSocket(intervalMs); }
+
 void begin(WebServer &http,bool (*authorize)()) {
     server=&http;authorizeRequest=authorize;mutex=xSemaphoreCreateMutex();
     if(!mutex) return;
+    WiFi.onEvent([](WiFiEvent_t, WiFiEventInfo_t info) {
+        stationDisconnectReason=info.wifi_sta_disconnected.reason;
+        ++stationDisconnects;
+    }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
     Preferences prefs;
     if(prefs.begin("rover-push",true)) {config.host=prefs.getString("host","");config.token=prefs.getString("token","");config.port=prefs.getUShort("port",9877);prefs.end();}
     Document initial(131072);writePacket(initial.to<JsonObject>(),false);boot=String(initial["boot_id"]|"");
+    startCameraPush();
     http.on("/api/sensors/capture",HTTP_GET,capture);
     http.on("/api/telemetry/stream",HTTP_GET,status);
     http.on("/api/telemetry/stream",HTTP_POST,configure);

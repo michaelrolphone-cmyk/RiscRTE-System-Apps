@@ -43,7 +43,7 @@
     },
     {
       "path": "integration.patch",
-      "sha256": "6ac1ddd31152d85f35cd259c1e690befca8d8123e1d19d06c867524c2a924268"
+      "sha256": "51c1f8198b4b8172341eac2cd2ba985b7200c140ca6d9719534231ba3478ed04"
     },
     {
       "path": "overlay/html/telemetry.html",
@@ -75,7 +75,7 @@
     },
     {
       "path": "overlay/include/sensor_push.h",
-      "sha256": "c0f97ec8935104a0036d09c6723e4754151edf130d58016a7976274b464313d0"
+      "sha256": "e08cf2f7bfe5572c752e6fcd81b1d4cd2473bfb816ee60d040bd26605d8a1d3f"
     },
     {
       "path": "overlay/include/ultrasonic_capture_model.h",
@@ -111,7 +111,7 @@
     },
     {
       "path": "overlay/src/sensor_push.cpp",
-      "sha256": "cd674b34eee8464effbb24b8ca301693b99241c1116d2b0c9530ebb0d598d583"
+      "sha256": "4841a19b2a7404d9514bef267fc7b7b107569d2a8e2dfeab2b685e7e12df1fe3"
     },
     {
       "path": "overlay/src/ultrasonic_telemetry.cpp",
@@ -148,6 +148,10 @@
     {
       "path": "prepare.py",
       "sha256": "fa751b2263fecef9e4ab324656f493b04da649ca4bf9b3cdb6d8b7a35bdef25b"
+    },
+    {
+      "path": "overlay/src/camera_websocket.inc",
+      "sha256": "144d215803048cc2be1f1257eee55eecaea666ff76712ae887671bceb545f6e9"
     }
   ]
 }
