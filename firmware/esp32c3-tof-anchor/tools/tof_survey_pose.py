@@ -50,6 +50,8 @@ class SurveyPose:
     def __init__(self, directory):
         self.directory = Path(directory)
         self.path = self.directory/'survey-pose-zero.json'
+        from tof_magnetic_reference import StationaryNorth
+        self.magnetic=StationaryNorth(self.directory)
         self.reference = self.sample = self.rotation = self.rate_rotation = None
         self.floor = {}
         self.scan_keys = {}
@@ -124,6 +126,7 @@ class SurveyPose:
                     self.attitudes.append((at,self.rate_rotation))
         self.observe_scans(meta, received, now)
         self.update_rotation(nav, now)
+        self.magnetic.observe(self,nav,env,now)
 
     def observe_scans(self, meta, received, now):
         fusion = meta.get('lidar_fusion') or meta.get('lidar') or {}
@@ -307,6 +310,7 @@ class SurveyPose:
         if self.rotation is None or self.reference is None:
             return {}
         return dict(rotation_enu_body=self.rotation.tolist(), survey_zero_id=self.reference['id'],
+                    magnetic_north=dict(self.magnetic.receipt,error=self.magnetic.error),
                     orientation_source='survey-zeroed AHRS', attitude_observed_at=self.sample['at'] if self.sample else self.reference['at'],
                     lidar_floor=dict(sources=self.floor_sources, updates=self.floor_updates,
                                      observed_at=self.last_floor, fresh=self.last_floor is not None and now-self.last_floor<=2,
