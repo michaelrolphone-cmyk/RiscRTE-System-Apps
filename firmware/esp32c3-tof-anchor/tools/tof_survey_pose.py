@@ -50,7 +50,7 @@ class SurveyPose:
     def __init__(self, directory):
         self.directory = Path(directory)
         self.path = self.directory/'survey-pose-zero.json'
-        self.reference = self.sample = self.rotation = None
+        self.reference = self.sample = self.rotation = self.rate_rotation = None
         self.floor = {}
         self.scan_keys = {}
         self.tilt_bias = np.zeros(2)
@@ -119,9 +119,9 @@ class SurveyPose:
                     sample['rate_noise'] = float(np.median(np.linalg.norm(window-sample['rate'],axis=1)))
                 sample['turning'] = (meta.get('motion_events') or {}).get('state',{}).get('turning') is True
                 self.sample = sample
-                base = self.corrected_base(sample)
-                if base is not None:
-                    self.attitudes.append((at,base))
+                self.update_rotation(nav,now)
+                if self.corrected_base(sample) is not None and self.rate_rotation is not None:
+                    self.attitudes.append((at,self.rate_rotation))
         self.observe_scans(meta, received, now)
         self.update_rotation(nav, now)
 
@@ -196,7 +196,9 @@ class SurveyPose:
             return
         yaw = math.atan2(base[1,0], base[0,0])
         yaw = self.correct_heading(yaw,base,nav,now)
-        pitch, roll = tilt(base[2]) + self.tilt_bias
+        inclination = tilt(base[2])+np.asarray((self.heading_state or {}).get('tilt_offset',[0.,0.]))
+        self.rate_rotation = Rotation.from_euler('ZYX',[yaw,*inclination]).as_matrix()
+        pitch, roll = inclination + self.tilt_bias
         self.rotation = Rotation.from_euler('ZYX',[yaw,pitch,roll]).as_matrix()
         nav.alignment = self.rotation @ self.imu_to_body.T @ self.sample['gyro'].T
         nav.world_id = self.world_id
@@ -232,8 +234,15 @@ class SurveyPose:
         else:
             adjustment = -bias*dt if same_boot and dt <= 2 else 0.
         offset = previous['offset']+adjustment
+        raw_tilt = tilt(base[2])
+        previous_tilt = np.asarray(previous.get('raw_tilt',tilt(self.body[2,:3]) if previous['at']==ref['at'] else raw_tilt))
+        tilt_delta = (raw_tilt-previous_tilt+math.pi)%(2*math.pi)-math.pi
+        tilt_offset = np.asarray(previous.get('tilt_offset',[0.,0.]))
+        if same_boot and dt<=2 and quiet and np.linalg.norm(tilt_delta)<=dt*(np.linalg.norm(rate_zero)+tolerance)+.0003:
+            tilt_offset = tilt_offset-tilt_delta
         self.heading_state = dict(raw=yaw, at=at, offset=offset, zero_id=ref['id'],
-                                  identity=self.sample['identity'], zero_rate_observed=bool(quiet))
+                                  identity=self.sample['identity'], zero_rate_observed=bool(quiet),
+                                  raw_tilt=raw_tilt.tolist(), tilt_offset=tilt_offset.tolist())
         if now-self.heading_saved >= 5:
             atomic_json(self.heading_path,self.heading_state)
             self.heading_saved = now
