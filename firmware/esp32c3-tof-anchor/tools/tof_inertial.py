@@ -12,6 +12,7 @@ import time
 
 import numpy as np
 from scipy.spatial.transform import Rotation
+from tof_world_motion import WorldBodyPose
 
 
 def vector(value, size):
@@ -38,6 +39,7 @@ class InertialNavigator:
     def __init__(self, vision_dir=None):
         self.directory = Path(vision_dir) if vision_dir else None
         self.lock = threading.RLock()
+        self.world_body = WorldBodyPose(self.directory)
         self.identity = self.frame = None
         self.alignment = None
         self.world_id = None
@@ -255,6 +257,8 @@ class InertialNavigator:
             if self.history:
                 wall = max(wall, self.history[-1][0]+1e-6)
             self.history.append((wall,self.p.copy(),self.trav_sigma,self.stationary))
+            if self.world_body.segment != self.segment:
+                self.world_body.track(self, self.history[-1])
             while self.history and wall-self.history[0][0] > 35:
                 self.history.popleft()
 
@@ -274,6 +278,9 @@ class InertialNavigator:
                    reference_id=self.reference_id, heading_quality=self.heading_quality,
                    reference_status='aligned' if self.alignment is not None else 'missing_world_alignment',
                    stationary_reference=self.rest_gate.copy())
+        world = self.world_body.display(self, h)
+        if world is not None:
+            out["world_body_pose"] = world
         if h is None:
             return out
         out.update(state='stationary' if h[3] else 'propagating', observed_at=h[0],velocity_m_s=self.v.tolist(),
@@ -301,6 +308,9 @@ class InertialNavigator:
         return False
 
     def position_gate(self, p, h, rms):
+        if not self.world_body.supports(self, p, h):
+            self.last_rejection = dict(kind="world_displacement", observed_at=h[0] if h else None)
+            return False
         if h is None:
             return True
         if self.offset is not None and self.alignment is not None:
@@ -318,6 +328,7 @@ class InertialNavigator:
         return False
 
     def correct(self, p, h, rms):
+        self.world_body.correct(self, p, h)
         sigma = max(.50,rms)
         self.relative_fix = (p.copy(),h,sigma)
         self.accepted_fixes += 1
@@ -392,7 +403,10 @@ class InertialRefinement:
                 return
             nav.seen[key] = session_id, observed
             if not b or not b.get('valid') or nav.at(now) is None or h is None:
-                # Without contemporaneous evidence an inertial veto is unjustified.
+                if nav.world_body.body is not None:
+                    nav.last_decision = "awaiting_time_aligned_inertial_evidence"
+                    return
+                # The unsurveyed relative-ranging mode has no absolute world reference.
                 refinement.observe(anchor,distance,observed,now=now,direction=direction,session_id=session_id)
                 return
             if refinement.segment != self.previous_segment:
@@ -453,7 +467,7 @@ class InertialRefinement:
                     return
                 nav.correct(p,h,rms)
                 nav.last_decision = 'position_accepted'
-            elif nav.relative_fix is not None or nav.offset is not None:
+            elif nav.world_body.body is not None or nav.relative_fix is not None or nav.offset is not None:
                 nav.last_decision = 'unqualified_batch_excluded'
                 return
             else:
@@ -484,5 +498,5 @@ class InertialRefinement:
                 refinement['estimate'] = None
             info = nav.display(now)
             info['suppress_range_fallback'] = bool(h and (rejected or nav.offset is not None or nav.relative_fix is not None
-                or nav.last_decision in ('range_rejected_before_average','position_rejected_before_average','unqualified_batch_excluded')))
+                or nav.last_decision in ('range_rejected_before_average','position_rejected_before_average','unqualified_batch_excluded'))) or nav.world_body.body is not None
             result['inertial_navigation'] = info
