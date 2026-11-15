@@ -85,6 +85,10 @@ def main():
     inertial = InertialRefinement(nav)
     VisionFeed(nav, vision_dir/"vision.sock").start()
     graph=RangeGraph(baseline=baseline,rover_refinement=rover_refinement,inertial=inertial)
+    from tof_dual_radio import DualRadioRanging
+    if (vision_dir/'camera-rig.json').is_file() and (vision_dir/'survey-world.json').is_file():
+        graph.dual_radio=nav.dual_radio=DualRadioRanging(vision_dir,nav)
+
     last_rover=last_write=last_request=last_discovery=0.
     discovery_status={}
     channel_cache={}
@@ -139,9 +143,13 @@ def main():
                 error=type(e).__name__+": "+str(e)
                 # A timed-out POST has uncertain effect. Observe status before retry.
                 last_request=now
+        if getattr(graph,'dual_radio',None) is not None:
+            graph.dual_radio.tick(graph,time.monotonic())
         if now-last_write>=1:
             last_write=now
             out=graph.snapshot(now,args.rover_height)
+            if getattr(graph,'dual_radio',None) is not None:
+                out['dual_radio']=graph.dual_radio.status()
             inertial.publish(out,time.time())
             out["anchor_transport"]=transport.status()
             if now-last_discovery>=5:
