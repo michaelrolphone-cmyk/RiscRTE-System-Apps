@@ -58,4 +58,4 @@ def fit_floor(row, mount, camera_to_body):
             n[2] < np.cos(np.deg2rad(38)) or abs(height) > .065):
         return None
     return dict(normal=n, inliers=len(inliers), residual_m=float(widths[2]/np.sqrt(len(inliers))),
-                height_m=height)
+                height_m=height, tilt_sigma_rad=float(np.arctan2(widths[2],np.sqrt(len(inliers))*widths[1])))
