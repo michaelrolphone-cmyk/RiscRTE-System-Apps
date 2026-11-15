@@ -54,6 +54,10 @@ class SurveyPose:
         self.floor = {}
         self.scan_keys = {}
         self.tilt_bias = np.zeros(2)
+        self.heading_state = None
+        self.heading_saved = 0.
+        self.heading_path = self.directory/'survey-heading-state.json'
+        self.floor_history = {sid:deque(maxlen=40) for sid in ('front','rear')}
         self.floor_updates = 0
         self.floor_sources = []
         self.last_floor = None
@@ -69,6 +73,10 @@ class SurveyPose:
             r = json.loads(self.path.read_text())
             if r['world_id'] == self.world_id:
                 self.reference = r
+                if self.heading_path.exists():
+                    saved = json.loads(self.heading_path.read_text())
+                    if saved.get('zero_id') == r['id']:
+                        self.heading_state = saved
 
     def corrected_base(self, sample):
         if not self.reference:
@@ -98,6 +106,18 @@ class SurveyPose:
                               a.get('generation'),a.get('yaw_origin_uptime_ms')],
                               persistent=proper(a.get('world_rotation_enu_imu')) if a.get('world_alignment_valid')
                               and a.get('world_id') == self.world_id else None, profile=a.get('world_reference_id'))
+                sensors = env.get('ahrs') or {}
+                rates = [v['gyro_rad_s'] for v in (sensors.get('imu_samples') or [])
+                         if v.get('valid') and isinstance(v.get('gyro_rad_s'),list) and len(v['gyro_rad_s'])==3
+                         and v.get('generation')==a.get('generation') and
+                         0 <= env.get('capture_monotonic_us',0)-v.get('monotonic_us',-1000000) <= 250000]
+                if not rates and (sensors.get('imu') or {}).get('valid'):
+                    rates = [(sensors['imu']).get('gyro_rad_s')]
+                window = np.asarray(rates,dtype=float)
+                if window.ndim==2 and window.shape[1]==3 and np.isfinite(window).all():
+                    sample['rate'] = np.median(window,axis=0)
+                    sample['rate_noise'] = float(np.median(np.linalg.norm(window-sample['rate'],axis=1)))
+                sample['turning'] = (meta.get('motion_events') or {}).get('state',{}).get('turning') is True
                 self.sample = sample
                 base = self.corrected_base(sample)
                 if base is not None:
@@ -135,6 +155,7 @@ class SurveyPose:
             fit = fit_floor(row,mount,self.camera_to_body)
             if fit is not None:
                 self.floor[sid] = (at,fit)
+                self.floor_history[sid].append((at,tilt(fit['normal'])))
                 updated = True
         if not updated or not self.attitudes:
             return
@@ -167,10 +188,49 @@ class SurveyPose:
         if base is None:
             return
         yaw = math.atan2(base[1,0], base[0,0])
+        yaw = self.correct_heading(yaw,base,nav,now)
         pitch, roll = tilt(base[2]) + self.tilt_bias
         self.rotation = Rotation.from_euler('ZYX',[yaw,pitch,roll]).as_matrix()
         nav.alignment = self.rotation @ self.imu_to_body.T @ self.sample['gyro'].T
         nav.world_id = self.world_id
+
+    def correct_heading(self, yaw, base, nav, now):
+        # A plane has no yaw information. Estimate gyro rate bias only against
+        # the operator's measured zero-rate reference. Preserve measured turns.
+        ref = self.reference
+        if 'rate_zero' not in ref:
+            return yaw
+        if self.sample.get('rate') is None:
+            return yaw+(self.heading_state or {}).get('offset',0.)
+        previous = self.heading_state
+        at = self.sample['at']
+        if previous is None:
+            previous = dict(raw=math.atan2(self.body[1,0],self.body[0,0]), at=ref['at'],
+                            offset=0., zero_id=ref['id'], identity=ref['identity'])
+        if at <= previous['at']:
+            return yaw+previous['offset']
+        dt = at-previous['at']
+        delta = math.remainder(yaw-previous['raw'],2*math.pi)
+        rate_zero = np.asarray(ref['rate_zero'])
+        tolerance = ref['rate_tolerance']
+        quiet = (getattr(nav,'rest_gate',{}).get('imu_quiet') is True
+                 and not self.sample.get('turning')
+                 and np.linalg.norm(self.sample['rate']-rate_zero) <= tolerance)
+        # Subtract the measured sensor-axis bias projected onto world vertical.
+        bias = float((base @ self.imu_to_body.T)[2] @ rate_zero)
+        same_boot = previous['identity'] == self.sample['identity']
+        expected_drift = abs(bias)*dt
+        if same_boot and dt <= 2 and quiet and abs(delta) <= expected_drift+tolerance*dt+.0003:
+            adjustment = -delta
+        else:
+            adjustment = -bias*dt if same_boot and dt <= 2 else 0.
+        offset = previous['offset']+adjustment
+        self.heading_state = dict(raw=yaw, at=at, offset=offset, zero_id=ref['id'],
+                                  identity=self.sample['identity'], zero_rate_observed=bool(quiet))
+        if now-self.heading_saved >= 5:
+            atomic_json(self.heading_path,self.heading_state)
+            self.heading_saved = now
+        return yaw+offset
 
     def zero(self, nav, world_id, request_id, now):
         if world_id != self.world_id:
@@ -187,8 +247,14 @@ class SurveyPose:
         record = dict(id=request_id, earlier_ids=earlier[:32], world_id=world_id, at=now,
                       position_enu_m=self.body[:3,3].tolist(), identity=sample['identity'], gyro=sample['gyro'].tolist(),
                       persistent=None if sample['persistent'] is None else sample['persistent'].tolist(),
-                      profile=sample['profile'],floor_tilt_at_zero={sid:tilt(fit['normal']).tolist()
-                      for sid,(at,fit) in self.floor.items() if 0 <= now-at <= 1})
+                      profile=sample['profile'],floor_tilt_at_zero=dict((self.reference or {}).get('floor_tilt_at_zero',{})))
+        for sid,history in self.floor_history.items():
+            recent = [value for at,value in history if 0 <= now-at <= 2]
+            if recent:
+                record['floor_tilt_at_zero'][sid] = np.median(recent,axis=0).tolist()
+        if sample.get('rate') is not None:
+            record.update(rate_zero=sample['rate'].tolist(),
+                          rate_tolerance=max(.0025,4*sample['rate_noise']))
         atomic_json(self.path,record)
         self.reference=record
         self.apply_zero(nav)
@@ -208,6 +274,8 @@ class SurveyPose:
         world.source = 'owner-confirmed surveyed body checkpoint'
         world.last_write = None
         world.display(nav,None)
+        self.heading_state=None
+        self.heading_saved=0.
         self.attitudes.clear()
         self.tilt_bias[:] = 0
         self.last_floor = None
