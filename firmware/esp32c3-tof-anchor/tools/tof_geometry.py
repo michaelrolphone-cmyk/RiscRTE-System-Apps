@@ -204,7 +204,8 @@ class RangeGraph:
                     selected.update(method="newest_direction",consistent=None)
             selected["directional_measurements"]=[dict(r,age_s=now-r["observed"]) for r in reports]
             combined.append(selected)
-        return combined,directional
+        dual=getattr(self,"dual_radio",None)
+        return dual.combine(combined,directional,active,now) if dual is not None else (combined,directional)
 
     def _snapshot_instantaneous(self,now=None,rover_height_m=0.0635):
         now=time.monotonic() if now is None else now
