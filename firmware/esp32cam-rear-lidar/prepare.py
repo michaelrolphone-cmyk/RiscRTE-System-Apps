@@ -46,6 +46,7 @@ def main():
  s=s.replace('lib_deps =','lib_deps =\n  sparkfun/SparkFun VL53L5CX Arduino Library@1.0.3\n  links2004/WebSockets@2.7.2');ini.write_text(s)
 
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/camera_websocket.inc',out/'src/camera_websocket.inc')
+ shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/sensor_mailbox.inc',out/'src/sensor_mailbox.inc')
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'camera-main.patch')],cwd=out,check=True)
  if a.provisioning_json:
   secret=json.loads(a.provisioning_json.expanduser().read_text())

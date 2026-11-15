@@ -1,5 +1,6 @@
 #include "sensor_push.h"
 #include <atomic>
+#include <Update.h>
 #include <esp_camera.h>
 #include <freertos/queue.h>
 #include "radio_telemetry.h"
@@ -32,30 +33,55 @@ bool clockReady=false;
 volatile uint32_t stationDisconnects=0, stationDisconnectReason=0;
 uint32_t socketConnections=0, socketDisconnects=0;
 uint32_t lastSocketDisconnectMs=0, lastSendDurationMs=0;
+portMUX_TYPE sampleLock = portMUX_INITIALIZER_UNLOCKED;
+uint32_t dialFailures = 0;
 uint64_t lastSentSampleUs=0;
 uint64_t lastSentSequence=0;
 size_t lastPacketBytes=0;
 uint64_t sequence=0;
-uint32_t sent=0,failed=0,prepareMs=0,sendMs=0,lastDiagnostics=0;
+uint32_t sent=0,failed=0,lastDiagnostics=0;
 
 #define CAMERA_SOCKET_ROLE "front"
 #include "camera_websocket.inc"
 
 void writePacket(JsonObject packet,bool streaming=true) {
     const uint64_t now=esp_timer_get_time();
-    // Only the socket worker advances this cursor. HTTP snapshots are independent.
-    radio_telemetry::writeFrameJson(packet,now,streaming && lastSentSampleUs ? lastSentSampleUs : 1);
-    packet["delivery_mode"]="continuous";
+    portENTER_CRITICAL(&sampleLock);
+    const uint64_t cursor = lastSentSampleUs;
+    const uint64_t sample = streaming ? ++sequence : sequence;
+    portEXIT_CRITICAL(&sampleLock);
+    radio_telemetry::writeFrameJson(packet, now, streaming && cursor ? cursor : 1);
+    packet["sampling_mode"] = "latest_mailbox";
+    packet["delivery_mode"] = "continuous";
     packet["schema"]="biome.sensor_tick.v1";
     packet["image_available"]=false;
     packet["capture_timestamp_semantics"]="sensor_snapshot_tick_no_camera_frame";
-    packet["stream_sequence"]=streaming ? ++sequence : sequence;
+    packet["stream_sequence"]=sample;
     packet["served_monotonic_us"]=static_cast<uint64_t>(esp_timer_get_time());
 }
 
+bool sensorPaused() { return false; }
+#include "sensor_mailbox.inc"
+
 void event(WStype_t type,uint8_t *payload,size_t length) {
-    if(type==WStype_CONNECTED) { connected=true; lastSentSampleUs=0; clockReady=false; ++socketConnections; }
-    if(type==WStype_DISCONNECTED) { connected=false; clockReady=false; ++socketDisconnects; lastSocketDisconnectMs=millis(); }
+    if (type == WStype_CONNECTED) {
+        portENTER_CRITICAL(&sampleLock);
+        lastSentSampleUs = 0;
+        portEXIT_CRITICAL(&sampleLock);
+        connected = true;
+        clockReady = false;
+        ++socketConnections;
+    }
+    if (type == WStype_DISCONNECTED) {
+        if (connected) {
+            ++socketDisconnects;
+            lastSocketDisconnectMs = millis();
+        } else {
+            ++dialFailures;
+        }
+        connected = false;
+        clockReady = false;
+    }
     if(type!=WStype_TEXT) return;
     const uint64_t received=esp_timer_get_time();
     DynamicJsonDocument request(1024);
@@ -71,43 +97,39 @@ void event(WStype_t type,uint8_t *payload,size_t length) {
 }
 
 void worker(void *) {
-    uint32_t revision=UINT32_MAX,last=0;
-    socket.onEvent(event);socket.setReconnectInterval(1000);socket.enableHeartbeat(5000,2000,2);
-    for(;;) {
-        Config current;
-        xSemaphoreTake(mutex,portMAX_DELAY);current=config;xSemaphoreGive(mutex);
-        if(current.revision!=revision) {
-            socket.disconnect();connected=false;clockReady=false;revision=current.revision;
-            if(current.host.length() && current.token.length()) {
-                headers="Authorization: Sensor "+current.token;
-                socket.setExtraHeaders(headers.c_str());socket.begin(current.host,current.port,"/sensors");
+    uint32_t revision = UINT32_MAX;
+    Config route;
+    bool wifi = false;
+    socket.onEvent(event);
+    socket.setReconnectInterval(1000);
+    socket.enableHeartbeat(5000, 2000, 2);
+    for (;;) {
+        xSemaphoreTake(mutex, portMAX_DELAY);
+        const bool changed = revision != config.revision;
+        if (changed) route = config;
+        xSemaphoreGive(mutex);
+        const bool online = WiFi.status() == WL_CONNECTED;
+        if (changed || online != wifi) {
+            socket.disconnect();
+            connected = false;
+            clockReady = false;
+            revision = route.revision;
+            wifi = online;
+            if (online && route.host.length() && route.token.length()) {
+                headers = "Authorization: Sensor " + route.token;
+                socket.setExtraHeaders(headers.c_str());
+                socket.begin(route.host, route.port, "/sensors");
             }
         }
-        if(current.host.length() && WiFi.status()==WL_CONNECTED) socket.loop();
-        const uint32_t now=millis();
-        if(connected && now-last>=100) {
-            last=now;
-            const uint32_t prepareStart=millis();
-            Document document(131072);JsonObject packet=document.to<JsonObject>();writePacket(packet);
-            prepareMs=millis()-prepareStart;
-            if(boot.isEmpty()) boot=String(packet["boot_id"]|"");
-            if(!document.overflowed()) {
-                const size_t size=measureJson(document);
-                auto bytes=static_cast<uint8_t *>(heap_caps_malloc(size+1,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
-                if(bytes) { serializeJson(document,reinterpret_cast<char *>(bytes),size+1);
-                    const uint32_t sendStart=millis();
-                    const bool delivered=socket.sendTXT(static_cast<const uint8_t *>(bytes),size);
-                    sendMs=millis()-sendStart;lastSendDurationMs=sendMs;
-                    if(delivered) {
-                        ++sent;
-                        lastSentSequence=sequence;
-                        lastSentSampleUs=packet["capture_monotonic_us"]|uint64_t(0);lastPacketBytes=size;
-                    } else ++failed;
-                    heap_caps_free(bytes);
-                } else ++failed;
-            } else ++failed;
+        if (wifi && route.host.length()) socket.loop();
+        if (connected && !sensorPaused() && !Update.isRunning()) sendLatestSample();
+        const uint32_t now = millis();
+        if (now - lastDiagnostics >= 5000) {
+            lastDiagnostics = now;
+            Serial0.printf("[sensor-link] wifi=%d rssi=%d connected=%d sent=%u failed=%u prepare_ms=%u send_ms=%u bytes=%u\n",
+                int(WiFi.status()), WiFi.RSSI(), int(connected), sent, failed,
+                lastPrepareMs.load(), lastSendDurationMs, unsigned(lastPacketBytes));
         }
-        if(now-lastDiagnostics>=5000){lastDiagnostics=now;Serial0.printf("[sensor-link] wifi=%d rssi=%d channel=%d connected=%d clock=%d sent=%u failed=%u prepare_ms=%u send_ms=%u bytes=%u\n",int(WiFi.status()),WiFi.RSSI(),WiFi.channel(),int(connected),int(clockReady),sent,failed,prepareMs,sendMs,unsigned(lastPacketBytes));}
         vTaskDelay(pdMS_TO_TICKS(2));
     }
 }
@@ -116,13 +138,26 @@ void status() {
     if(!authorizeRequest || !authorizeRequest()) return;
     Config current;xSemaphoreTake(mutex,portMAX_DELAY);current=config;xSemaphoreGive(mutex);
     DynamicJsonDocument d(2048);
+    d["camera_frames_superseded"]=cameraSuperseded.load();
     d["camera_frames_sent"]=cameraFrames.load();d["camera_frames_acknowledged"]=cameraAcks.load();
     d["transport"]="websocket_push";d["configured"]=!current.host.isEmpty();
     d["host"]=current.host;d["port"]=current.port;d["connected"]=connected;
     d["sent"]=sent;d["failed"]=failed;
-    d["rssi_dbm"]=WiFi.RSSI();d["channel"]=WiFi.channel();d["prepare_ms"]=prepareMs;d["send_ms"]=sendMs;
+    d["rssi_dbm"]=WiFi.RSSI();d["channel"]=WiFi.channel();d["send_ms"]=lastSendDurationMs;
     d["delivery_mode"]="continuous";d["awaiting_ack"]=false;
-    d["last_sent_sequence"]=lastSentSequence;d["send_duration_ms"]=lastSendDurationMs;
+    portENTER_CRITICAL(&sampleLock);
+    const uint64_t sentSequence = lastSentSequence;
+    const uint64_t preparedSequence = sequence;
+    portEXIT_CRITICAL(&sampleLock);
+    d["sampling_mode"]="latest_mailbox";
+    d["producer_sequence"]=preparedSequence;
+    d["samples_prepared"]=samplesPrepared.load();
+    d["superseded_before_send"]=samplesSuperseded.load();
+    d["prepare_failures"]=prepareFailures.load();
+    d["prepare_ms"]=lastPrepareMs.load();
+    d["max_sample_gap_ms"]=maxSampleGapMs.load();
+    d["socket_dial_failures"]=dialFailures;
+    d["last_sent_sequence"]=sentSequence;d["send_duration_ms"]=lastSendDurationMs;
     d["socket_connects"]=socketConnections;d["socket_disconnects"]=socketDisconnects;
     d["last_socket_disconnect_ms"]=lastSocketDisconnectMs;
     d["station_disconnects"]=stationDisconnects;d["station_disconnect_reason"]=stationDisconnectReason;d["clock_ready"]=clockReady;
@@ -181,6 +216,8 @@ void begin(WebServer &http,bool (*authorize)()) {
     http.on("/api/sensors/capture",HTTP_GET,capture);
     http.on("/api/telemetry/stream",HTTP_GET,status);
     http.on("/api/telemetry/stream",HTTP_POST,configure);
+    sensorMailbox = xQueueCreate(1, sizeof(SensorMessage));
+    if (!sensorMailbox || xTaskCreate(sampleSensors, "sensor-sampling", 8192, nullptr, 1, nullptr) != pdPASS) return;
     xTaskCreate(worker,"sensor-websocket",8192,nullptr,1,nullptr);
 }
 } // namespace sensor_push

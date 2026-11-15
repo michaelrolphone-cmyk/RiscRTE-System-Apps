@@ -8,19 +8,17 @@ struct CameraMessage {
 };
 
 QueueHandle_t cameraMailbox = nullptr;
-std::atomic<uint32_t> cameraDemand{0}, cameraFrames{0}, cameraAcks{0};
+std::atomic<uint32_t> cameraCaptureSession{0}, cameraFrames{0}, cameraAcks{0}, cameraSuperseded{0};
 WebSocketsClient videoSocket;
 String videoHeaders;
 uint32_t cameraSession = 0;
 
-
 bool videoConnected = false, videoReady = false;
 
 void nextCameraSession() {
-    cameraDemand.store(0);
+    cameraCaptureSession.store(0);
     if (++cameraSession == 0) ++cameraSession;
     videoReady = false;
-
 }
 
 void cameraEvent(WStype_t type, uint8_t *payload, size_t length) {
@@ -46,7 +44,8 @@ void cameraEvent(WStype_t type, uint8_t *payload, size_t length) {
         videoSocket.sendTXT(bytes);
     } else if (kind == "camera_ready" && String(message["boot_id"] | "") == boot) {
         videoReady = true;
-     } else if (kind == "camera_ack" && String(message["frame_id"] | "").startsWith(boot + ":")) {
+        cameraCaptureSession.store(cameraSession);
+    } else if (kind == "camera_ack" && String(message["frame_id"] | "").startsWith(boot + ":")) {
         ++cameraAcks;
     }
 }
@@ -81,8 +80,6 @@ void cameraWorker(void *) {
         if (xQueueReceive(cameraMailbox, &frame, 0) == pdTRUE) {
             if (videoConnected && videoReady && frame.session == cameraSession) {
                 if (videoSocket.sendBIN(frame.buffer, frame.length, true)) {
-
-
                     ++cameraFrames;
                 } else {
                     videoSocket.disconnect();
@@ -90,7 +87,6 @@ void cameraWorker(void *) {
             }
             heap_caps_free(frame.buffer);
         }
-        if (videoConnected && videoReady) cameraDemand.store(cameraSession);
 
         vTaskDelay(pdMS_TO_TICKS(2));
     }
@@ -103,9 +99,8 @@ void startCameraPush() {
 
 void captureForSocket(uint32_t intervalMs) {
     static uint32_t lastCapture = 0;
-    if (!cameraDemand.load() || millis() - lastCapture < intervalMs) return;
-    const uint32_t session = cameraDemand.exchange(0);
-    if (!session) return;
+    const uint32_t session = cameraCaptureSession.load();
+    if (!session || millis() - lastCapture < intervalMs) return;
     lastCapture = millis();
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb) return;
@@ -135,7 +130,14 @@ void captureForSocket(uint32_t intervalMs) {
                 serializeJson(metadata, reinterpret_cast<char *>(body + 4), size + 1);
                 memcpy(body + 4 + size, fb->buf, fb->len);
                 CameraMessage frame{buffer, length, captureUs, session};
-                if (xQueueSend(cameraMailbox, &frame, 0) != pdTRUE) heap_caps_free(buffer);
+                if (xQueueSend(cameraMailbox, &frame, 0) != pdTRUE) {
+                    CameraMessage old{};
+                    if (xQueueReceive(cameraMailbox, &old, 0) == pdTRUE) {
+                        heap_caps_free(old.buffer);
+                        ++cameraSuperseded;
+                    }
+                    xQueueSend(cameraMailbox, &frame, 0);
+                }
             }
         }
     }

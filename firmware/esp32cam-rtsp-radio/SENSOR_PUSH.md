@@ -27,3 +27,5 @@ Delayed samples retain their measured time rather than being stamped fresh at re
 clients. Normal configured delivery uses WebSocket push, without sensor HTTP polling.
 The native LAN ingress accepts only the provisioned device and token and carries no
 drive commands. Existing authenticated gateway connections carry data onward to the GUI.
+
+Sampling runs on its own 100 ms FreeRTOS task. The WebSocket writer takes the newest pending sample. A blocked write supersedes older unsent samples, while capture timestamps and stream sequence numbers continue advancing. Status exposes the producer sequence, superseded count, sampling gaps, send duration and established socket disconnects separately from failed connection attempts.

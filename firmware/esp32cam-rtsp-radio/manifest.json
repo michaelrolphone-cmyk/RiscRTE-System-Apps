@@ -27,7 +27,7 @@
     },
     {
       "path": "SENSOR_PUSH.md",
-      "sha256": "d48e6c8825679794b2ac9dc20d2c6c60add04c47d593988c7c4bd2190134f861"
+      "sha256": "d9fbfa7459bc5168ecd9adc6575d97405595cdddee57b9f15297dc91120a95e1"
     },
     {
       "path": "SYNCHRONIZATION.md",
@@ -106,12 +106,20 @@
       "sha256": "48787da311e2260a957cd4b598f2561597eae75aa44fad7cc7469fd5d8696636"
     },
     {
+      "path": "overlay/src/camera_websocket.inc",
+      "sha256": "81704cdf21ee68de67f3843110fd082154c8fbd5b4736396cafe90746a9d5516"
+    },
+    {
       "path": "overlay/src/radio_telemetry.cpp",
       "sha256": "b86528f3439e9bbfb3646495edd32f61bb1c670e58832358c79b42f8c9a953a4"
     },
     {
+      "path": "overlay/src/sensor_mailbox.inc",
+      "sha256": "9ef9b818b67d74a425e9111dad8ef0e962162c66de0cf7d2e52c73006a7d6b85"
+    },
+    {
       "path": "overlay/src/sensor_push.cpp",
-      "sha256": "4841a19b2a7404d9514bef267fc7b7b107569d2a8e2dfeab2b685e7e12df1fe3"
+      "sha256": "bcf56cd092d8c01c4a8401e9b9e4dbf5f8f058cac79736982350376204482fdc"
     },
     {
       "path": "overlay/src/ultrasonic_telemetry.cpp",
@@ -148,10 +156,6 @@
     {
       "path": "prepare.py",
       "sha256": "fa751b2263fecef9e4ab324656f493b04da649ca4bf9b3cdb6d8b7a35bdef25b"
-    },
-    {
-      "path": "overlay/src/camera_websocket.inc",
-      "sha256": "57fe5fcfe78e1ac87703af18b1aa483f8b5b38880c120a7ddb95d80e715cff26"
     }
   ]
 }
