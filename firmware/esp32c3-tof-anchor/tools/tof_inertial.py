@@ -328,7 +328,7 @@ class InertialNavigator:
         return False
 
     def correct(self, p, h, rms):
-        self.world_body.correct(self, p, h)
+        self.world_body.correct(self, p, h, rms)
         sigma = max(.50,rms)
         self.relative_fix = (p.copy(),h,sigma)
         self.accepted_fixes += 1
@@ -370,7 +370,10 @@ class VisionFeed(threading.Thread):
                                 raise ValueError('invalid live frame')
                             meta = json.loads(r.read(size))
                             r.read(total-4-size)
-                            self.nav.ingest(meta,time.time())
+                            now = time.time()
+                            self.nav.ingest(meta,now)
+                            with self.nav.lock:
+                                self.nav.world_body.visual(self.nav,meta,now)
                             self.nav.feed_error = None
             except (OSError, ValueError, TypeError, KeyError, struct.error, http.client.HTTPException) as exc:
                 self.nav.feed_error = type(exc).__name__

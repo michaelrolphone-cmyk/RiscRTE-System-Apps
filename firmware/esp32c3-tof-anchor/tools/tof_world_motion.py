@@ -1,4 +1,5 @@
 """Continuity of the surveyed rover body position in east/north/up metres."""
+from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,7 @@ class WorldBodyPose:
         self.body = self.world_id = self.lever = None
         self.segment = self.origin = self.local_origin = None
         self.aligned = False
+        self.visual_frame = None
         self.origin_time = 0.
         self.last_write = None
         self.time = 0.
@@ -21,6 +23,7 @@ class WorldBodyPose:
                 survey = json.loads((self.path.parent / 'survey-world.json').read_text())
                 ref = survey['reference']
                 self.lever = np.array(ref['T_enu_camera'])[:3,3] - np.array(ref['T_enu_body'])[:3,3]
+                self.camera_basis = np.asarray(ref['T_enu_camera'],dtype=float)[:3,:3]
                 self.world_id = survey['world_id']
                 saved = json.loads(self.path.read_text())
                 if saved['world_id'] != survey['world_id']:
@@ -68,24 +71,72 @@ class WorldBodyPose:
         return (abs(delta[2]-travel[2]) <= tolerance and
                 np.linalg.norm(delta[:2]) <= np.linalg.norm(travel[:2])+tolerance)
 
-    def correct(self, nav, camera, h):
+    def correct(self, nav, camera, h, rms=.5, visual_body=None):
         if self.body is None or h is None or not self.supports(nav,camera,h):
             return
-        if self.aligned:
-            return
         travel = h[1]-self.local_origin
-        direction = (camera-self.lever-self.origin)[:2]
-        length = np.linalg.norm(direction)
-        if length == 0. or not np.any(travel):
+        if not np.any(travel):
             return
-        # Radio can resolve missing yaw, but cannot enlarge IMU displacement.
-        self.body = self.origin.copy()
-        self.body[:2] += direction / length * np.linalg.norm(travel[:2])
-        self.body[2] += travel[2]
+        measurement = camera-self.lever if visual_body is None else visual_body
+        if self.aligned:
+            predicted = self.origin + nav.alignment @ travel
+            sigma = abs(h[2]-self.origin_sigma)
+            gain = sigma**2/(sigma**2+max(.01,rms)**2)
+            correction = (measurement-predicted)*gain
+            length = np.linalg.norm(correction)
+            if length > 3*sigma:
+                correction *= (3*sigma)/length
+            self.body = predicted + correction
+        else:
+            direction = (measurement-self.origin)[:2]
+            length = np.linalg.norm(direction)
+            if length == 0. and np.linalg.norm(travel[:2]) > 0.:
+                return
+            # Without yaw, fixes supply direction only within measured travel.
+            self.body = self.origin.copy()
+            if length:
+                self.body[:2] += direction / length * np.linalg.norm(travel[:2])
+            self.body[2] += travel[2]
         self.origin, self.local_origin, self.origin_sigma = self.body.copy(), h[1].copy(), h[2]
-        self.source = 'AHRS-constrained ranging'
+        self.source = 'AHRS-constrained ranging' if visual_body is None else 'AHRS-constrained visual tracking'
         self.origin_time = h[0]
         self.time = max(self.time, h[0])
+
+    def visual(self, nav, meta, now):
+        tof = meta.get('tof') or {}
+        base, reg = tof.get('baseline') or {}, tof.get('registration') or {}
+        camera, world = reg.get('current_camera') or {}, reg.get('surveyed_world') or {}
+        frame = camera.get('frame_id')
+        identity = (reg.get('map_id'), base.get('epoch'), frame)
+        if (self.body is None or not frame or identity == self.visual_frame or not reg.get('valid')
+                or not base.get('valid') or world.get('axes') != 'east_north_up'
+                or world.get('world_id',self.world_id) != self.world_id or not getattr(nav,'surveyed',False)
+                or reg.get('map_id') != meta.get('map_id') or not reg.get('map_id')
+                or world.get('frame_id') != base.get('frame_id')
+                or (base.get('frame_id'),base.get('epoch')) != nav.frame
+                or (reg.get('frame_id'),reg.get('baseline_epoch'),reg.get('baseline_revision'))
+                != (base.get('frame_id'),base.get('epoch'),base.get('revision'))):
+            return
+        try:
+            age, collector = float(camera['age_s']), float(tof['collector_age_s'])
+            if not 0 <= age <= 3 or not 0 <= collector <= 5:
+                return
+            received = datetime.fromisoformat(meta['receive_decode_timestamp'].replace('Z','+00:00')).timestamp()
+            if not 0 <= now-received <= 3:
+                return
+            h = nav.at(received-age)
+            point = np.asarray(camera['position_anchor_m'],dtype=float)
+            rotation = np.asarray(camera['R_anchor_camera'],dtype=float)
+            if (point.shape != (3,) or not np.isfinite(point).all() or rotation.shape != (3,3)
+                    or not np.allclose(rotation.T @ rotation,np.eye(3),atol=.001)
+                    or not np.isclose(np.linalg.det(rotation),1.,atol=.001)):
+                return
+            body = point - rotation @ self.camera_basis.T @ self.lever
+        except (KeyError, TypeError, ValueError, OverflowError):
+            return
+        if h is not None:
+            self.visual_frame = identity
+            self.correct(nav,point,h,visual_body=body)
 
     def display(self, nav, h):
         if self.body is None:

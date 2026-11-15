@@ -79,3 +79,25 @@ class TestWorldBody(unittest.TestCase):
                 gyro_rad_s=[0.,0.,0.]),us/1e6)
         xyz=self.nav.display(3.5)['world_body_pose']['position_enu_m']
         np.testing.assert_allclose(xyz,self.start+[.25,0,0],atol=.006)
+
+    def test_registered_visual_and_radio_corrections_require_observed_motion(self):
+        from datetime import datetime, timezone
+        self.sample(2,[0,0,0],True)
+        h=(3.,np.array([.5,0,0]),.04,False)
+        self.nav.history.append(h)
+        nav=self.nav
+        base=dict(valid=True,frame_id='enu',epoch=1,revision=2)
+        camera=dict(frame_id='capture1',age_s=0.,position_anchor_m=(self.radio+[3,0,0]).tolist(),R_anchor_camera=np.eye(3).tolist())
+        reg=dict(valid=True,map_id='local',frame_id='enu',baseline_epoch=1,baseline_revision=2,
+                 surveyed_world=dict(axes='east_north_up',frame_id='enu'),current_camera=camera)
+        meta=dict(map_id='local',receive_decode_timestamp=datetime.fromtimestamp(3,timezone.utc).isoformat(),
+                  tof=dict(baseline=base,registration=reg,collector_age_s=0))
+        nav.world_body.visual(nav,meta,3.)
+        np.testing.assert_allclose(nav.world_body.body,self.start)
+        camera.update(frame_id='capture2',position_anchor_m=(self.radio+[.52,0,0]).tolist())
+        nav.world_body.visual(nav,meta,3.)
+        self.assertGreater(nav.world_body.body[0], self.start[0]+.5)
+        self.assertLess(nav.world_body.body[0], self.start[0]+.52)
+        saved=nav.world_body.body.copy()
+        nav.correct(self.radio+[.55,0,0],h,.4)
+        np.testing.assert_allclose(nav.world_body.body,saved)
