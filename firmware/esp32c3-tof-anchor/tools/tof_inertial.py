@@ -350,6 +350,30 @@ class VisionFeed(threading.Thread):
     def __init__(self, nav, path):
         super().__init__(daemon=True, name='tof-imu-stream')
         self.nav, self.path = nav, str(path)
+        self._radio_lock = threading.Lock()
+        self._radio = None
+
+    def _ranging(self, meta):
+        packet = meta.get("ranging_observation")
+        if not meta.get("sensor_tick") or not isinstance(packet, dict):
+            return
+        interval = packet.get("capture_host_monotonic_interval_s")
+        if not isinstance(interval, list) or len(interval) != 2:
+            return
+        low, high = interval
+        if not all(isinstance(x, (int, float)) and math.isfinite(x) for x in interval) or low > high:
+            return
+        observed = (low + high) / 2
+        snapshot = dict(packet, ahrs=(meta.get("ahrs") or {}).get("ahrs") or {})
+        with self._radio_lock:
+            if self._radio is None or observed > self._radio[1]:
+                self._radio = snapshot, observed
+
+    def take_ranging(self):
+        with self._radio_lock:
+            value, self._radio = self._radio, None
+            return value
+
 
     def run(self):
         while True:
@@ -371,6 +395,7 @@ class VisionFeed(threading.Thread):
                             meta = json.loads(r.read(size))
                             r.read(total-4-size)
                             now = time.time()
+                            self._ranging(meta)
                             self.nav.ingest(meta,now)
                             with self.nav.lock:
                                 self.nav.world_body.visual(self.nav,meta,now)

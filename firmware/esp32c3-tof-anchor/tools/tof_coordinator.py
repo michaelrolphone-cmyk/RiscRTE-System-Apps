@@ -83,9 +83,11 @@ def main():
     vision_dir = Path.home()/".local/share/biome-robot-vision"
     nav = InertialNavigator(vision_dir)
     inertial = InertialRefinement(nav)
-    VisionFeed(nav, vision_dir/"vision.sock").start()
+    vision_feed=VisionFeed(nav, vision_dir/"vision.sock")
+    vision_feed.start()
     graph=RangeGraph(baseline=baseline,rover_refinement=rover_refinement,inertial=inertial)
-    last_rover=last_write=last_request=last_discovery=0.
+    last_write=last_request=last_discovery=0.
+    last_sample=None
     discovery_status={}
     channel_cache={}
     last_requested={};error=None;request_state=RoverRequest();retired=False
@@ -100,20 +102,22 @@ def main():
             transport.note_udp(packet,addr[0],now)
         except (socket.timeout,ValueError,TypeError):pass
         for packet,received in transport.drain():graph.ingest(packet,received)
-        if now-last_rover>=1:
-            last_rover=now
+        reading=vision_feed.take_ranging()
+        if reading is not None:
+            snapshot,observed=reading
+            now=time.monotonic()
+            last_sample=observed
             try:
-                snapshot=http_json(args.camera,"/api/telemetry")
                 if request_state.observe(snapshot):
                     # Do not combine measurements from different camera boots.
                     graph.rover.clear()
                 rover_refinement.observe_boot(snapshot.get("boot_id"))
-                rover_refinement.observe_motion(snapshot.get("ahrs",{}))
+                rover_refinement.observe_motion(snapshot.get("ahrs",{}),now=observed)
                 try:
                     visual=json.loads((Path.home()/".local/share/biome-robot-vision/rover-motion.json").read_text())
                     rover_refinement.observe_visual(visual)
                 except (OSError,ValueError,TypeError):pass
-                graph.observe_rover_responder(snapshot,now)
+                graph.observe_rover_responder(snapshot,observed)
                 ftm=snapshot.get("ftm",{})
                 for observation in snapshot.get("wifi",[]):
                     address=str(observation.get("address") or observation.get("bssid") or observation.get("mac") or "").lower()
@@ -122,7 +126,7 @@ def main():
                         channel_cache[address]=channel
                 if ftm.get("status")=="success" and isinstance(ftm.get("channel"),int):
                     channel_cache[str(ftm.get("target","")).lower()]=ftm["channel"]
-                graph.ingest_rover(ftm,now)
+                graph.ingest_rover(ftm,observed)
                 # Existing camera requests from other consumers are never cancelled.
                 # A stuck FTM driver is reported, not reset under another controller.
                 if request_state.pending and now-request_state.started>15:
@@ -143,6 +147,7 @@ def main():
             last_write=now
             out=graph.snapshot(now,args.rover_height)
             inertial.publish(out,time.time())
+            out["rover_measurements"]={"transport":"websocket_push","age_s":None if last_sample is None else max(0.,now-last_sample),"boot_id":request_state.boot_id}
             out["anchor_transport"]=transport.status()
             if now-last_discovery>=5:
                 last_discovery=now
