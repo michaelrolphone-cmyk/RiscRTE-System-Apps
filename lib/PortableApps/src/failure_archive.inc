@@ -4,6 +4,9 @@
 #if !defined(PORTABLE_RESIDENT_SHELL_HOST) || !defined(PORTABLE_RESIDENT_POLICY)
 #error Crash report persistence requires an explicitly selected resident Home
 #endif
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+#include "PortableHomeBindings.h"
+#endif
 #include "CrashReportSpool.h"
 #include "CrashReportSd.h"
 #include "RiscStorageVolumeStateV1.h"
@@ -62,9 +65,14 @@ static bool failure_archive_release(risc_runtime_capability_v1 *grant) {
  return failure_archive_safe(NULL);
 }
 static bool failure_archive_open_data(void) {
+ uint64_t namespace_id=PORTABLE_CRASH_REPORT_NAMESPACE;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(portable_home_bindings_retained()){portable_adapter_retain_silent();return false;}
+ if(!namespace_id)return false; /* Explicit unavailable, never uniqueness selection. */
+#endif
  if(!failure_archive_storage_safe())return false;
  failure_archive_data_grant=(risc_runtime_capability_v1){.struct_size=sizeof(failure_archive_data_grant)};
- if(!rt->acquire(RISC_APP_DATA_CAPABILITY,1,PORTABLE_CRASH_REPORT_NAMESPACE,&failure_archive_data_grant))return false;
+ if(!rt->acquire(RISC_APP_DATA_CAPABILITY,1,namespace_id,&failure_archive_data_grant))return false;
  const risc_app_data_v1 *api=failure_archive_data_grant.api;
  if(!api || api->api_version!=1 || api->struct_size<sizeof(*api) || !api->stat || !api->read || !api->replace) {
   (void)failure_archive_release(&failure_archive_data_grant);return false;
@@ -167,7 +175,13 @@ static bool failure_archive_checkpoint(void) {
   * The report is copied in the spool's fixed buffer and has no borrowed handle. */
  if(!failure_archive_close_data())goto retained;
  failure_archive_sd_grant=(risc_runtime_capability_v1){.struct_size=sizeof(failure_archive_sd_grant)};
- if(!rt->acquire("storage.volume",1,9,&failure_archive_sd_grant))goto deferred;
+ uint64_t volume_instance=9;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ volume_instance=portable_home_catalog_volume();
+ if(portable_home_bindings_retained())goto retained;
+ if(!volume_instance)goto deferred;
+#endif
+ if(!rt->acquire("storage.volume",1,volume_instance,&failure_archive_sd_grant))goto deferred;
  const risc_storage_volume_api_v1_ext *volume=risc_storage_volume_extension(failure_archive_sd_grant.api);
  if(!volume) {if(!failure_archive_release(&failure_archive_sd_grant))goto retained;goto deferred;}
  const risc_storage_volume_api_v1_state *state=risc_storage_volume_state(failure_archive_sd_grant.api);

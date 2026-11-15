@@ -10,10 +10,6 @@
 #else
 #ifdef ALARM_SERVICE_TAGGED_V2
 #define quick_alarm_output_modes() alarm_output_modes()
-#elif defined(PORTABLE_TIMECARD_NATIVE_UI) && defined(ALARM_SERVICE_SLEEP_RESUME_SUPPORTED)
-/* Canonical API1 appends a resume callback, not an output-mode descriptor.
- * Legacy API1 requires both outputs; never reinterpret the callback suffix. */
-#define quick_alarm_output_modes() ALARM_MODE_BOTH
 #else
 #define quick_alarm_output_modes() alarm_service_output_modes(alarm_sleep_api())
 #endif
@@ -56,6 +52,12 @@ static bool quick_storage_safe(void) {
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
 #ifdef PORTABLE_SETTINGS_AVAILABILITY
 #include "home_settings_availability.inc"
+#endif
+#ifdef PORTABLE_QUICK_PENDING_FRAME
+#if !defined(PORTABLE_QUICK_CAPABILITY_SAFE) || !defined(PORTABLE_QUICK_NATIVE_GEOMETRY)
+#error Pending frame requires capability-safe native Quick
+#endif
+#include "PortableQuickPendingFrame.h"
 #endif
 #include "quick_atomic.inc"
 #define quick_take_action() quick_atomic_take_action()
@@ -149,9 +151,9 @@ static bool low_battery_poll_inner(void) {
  if(!portable_radio_suspend())return false;
 #endif
  if(!pqa_session_load(&quick,rt)||!pqa_radios_load(&quick_radios,&quick.ui,rt) ||
-    !pqa_session_restore(&quick,display))return false;
+    !pqa_session_restore(&quick,shared_home_outputs(display)))return false;
 #ifdef PORTABLE_PAPER_TRANSITIONS
- if(quick.ui.paper && !pqa_session_sync_brightness(&quick,display))return false;
+ if(quick.ui.paper && !pqa_session_sync_brightness(&quick,shared_home_outputs(display)))return false;
 #endif
  rt->diagnostic(result&PORTABLE_LOW_BATTERY_ERROR?"LOW_BATTERY crossing=partial-once":"LOW_BATTERY crossing=applied-once");return true;
 }
@@ -228,7 +230,7 @@ static bool quick_apply(uint32_t actions) {
 #endif
  bool changed=false;
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
- if(!pqa_session_apply(&quick,rt,display,actions,&changed)){
+ if(!pqa_session_apply(&quick,rt,shared_home_outputs(display),actions,&changed)){
 #if defined(PORTABLE_FRONTLIGHT_TONE) && defined(PORTABLE_ALARM_TERMINAL_RETENTION)
   if(quick.retained)portable_adapter_retain_silent();else
 #endif
@@ -236,7 +238,7 @@ static bool quick_apply(uint32_t actions) {
   return false;
  }
 #else
- if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
+ if(!pqa_session_apply(&quick,rt,shared_home_outputs(display),actions,&changed))return false;
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
  if(actions&PQA_CONTEXTS)portable_contexts_settings_changed(&contexts_client,quick.ui.contexts_valid);
@@ -297,7 +299,13 @@ static bool quick_restore_step(void) {
 #endif
  if(!quick_copy_background())return false;
  quick_restore_pending=false;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+ quick_restoring=true;
+#endif
  present(!quick.ui.paper);
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+ quick_restoring=false;
+#endif
  if(failed)return false;
  free(quick_background);quick_background=NULL;
  return true;
@@ -308,11 +316,11 @@ static bool quick_render_watch(const char *time,bool battery_valid,uint8_t batte
  if(raster_recording){
   /* Copy controller values and the bounded label, never retain a caller's
    * stack or live Quick state while input continues to change it. */
-#ifdef PORTABLE_QUICK_NATIVE
-  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || quick.ui.paper ||
-     pqa_width(&quick.ui)!=info.width || pqa_height(&quick.ui)!=info.height)return false;
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565)return false;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+  if(quick.ui.native_width!=info.width||quick.ui.logical_height!=info.height)return false;
 #else
-  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565||info.width!=240||info.height!=240)return false;
+  if(info.width!=240||info.height!=240)return false;
 #endif
   pqa_state *snapshot=malloc(sizeof(*snapshot));
   if(!snapshot){if(!raster_immediate())return false;}
@@ -344,7 +352,7 @@ static bool quick_interrupt(void) {
  if(raster_sealed)raster_saved_app_frame=false;
 #endif
  if(quick_background && alarm_pixels){memcpy(alarm_pixels,quick_background,quick_frame_bytes());alarm_pixels_valid=true;}
- return !quick.ui.torch_valid || pqa_session_restore(&quick,display);
+ return !quick.ui.torch_valid || pqa_session_restore(&quick,shared_home_outputs(display));
 }
 static void quick_time(char out[6]) {
  memcpy(out,"--:--",6);
@@ -432,13 +440,11 @@ static bool quick_dispatch_destination(const char *quick_destination) {
  }
  return !failed;
 }
+#ifdef PORTABLE_QUICK_PENDING_FRAME
+#include "quick_pending_frame.inc"
+#endif
 static bool quick_foreground(bool *consumed) {
  *consumed=false;
-#ifdef PORTABLE_HOME_PROVISION
- if(quick_open_requested||pqa_visible(&quick.ui)||pqa_capture(&quick.ui)){
-  int rc=home_provision_close();if(rc!=INSTALLED_APPS_OK){*consumed=true;return rc==INSTALLED_APPS_WORKING;}
- }
-#endif
  if(!quick_restore_step())return false;
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(failed || native_custody_retained)return false;
@@ -502,7 +508,7 @@ static bool quick_foreground(bool *consumed) {
  if(!pqa_session_load(&quick,rt))return false;
  quick_paper_capabilities();
 #ifdef PORTABLE_PAPER_TRANSITIONS
- if(quick.ui.paper && quick.ui.torch_valid && !pqa_session_sync_brightness(&quick,display)) {
+ if(quick.ui.paper && quick.ui.torch_valid && !pqa_session_sync_brightness(&quick,shared_home_outputs(display))) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
 #if defined(PORTABLE_FRONTLIGHT_TONE) && defined(PORTABLE_ALARM_TERMINAL_RETENTION)
   if(quick.retained)portable_adapter_retain_silent();else
@@ -556,6 +562,12 @@ static bool quick_foreground(bool *consumed) {
    * Keep the existing idle policy for the animated Watch sheet. */
   if(!quick.ui.paper && (uint32_t)(now-last_activity)>=portable_idle_ms())pqa_cancel(&quick.ui);
 #endif
+#ifdef PORTABLE_QUICK_PENDING_FRAME
+  /* Use the last displayed telemetry in the explicit pending frame; preparing
+   * a Save must not introduce a new clock/battery read or change its meaning. */
+  memcpy(quick_pending_time,time,sizeof(quick_pending_time));
+  quick_pending_battery_valid=battery_valid;quick_pending_battery=(uint8_t)battery.percent;
+#endif
   uint32_t actions=quick_take_action();
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
   clean_pending|=quick.ui.clean_refresh_valid&&!!(actions&PQA_CLEAN_REFRESH);
@@ -598,6 +610,11 @@ static bool quick_foreground(bool *consumed) {
     quick_clean_present=false;clean_pending=false;
 #else
     present(!quick.ui.paper);
+#endif
+#ifdef PORTABLE_QUICK_NATIVE_GEOMETRY
+    /* The new native direct-frame composition must not yield or close grants
+     * after an uncertain submission. Keep Runtime-owned resources untouched. */
+    if(failed || native_custody_retained)return false;
 #endif
     painted=true;*consumed=true;
    }

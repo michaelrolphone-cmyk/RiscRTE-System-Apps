@@ -4,16 +4,25 @@
 static PortableSettingsAvailability home_settings_status;
 static uint32_t home_settings_state=RISC_KEY_VALUE_UNAVAILABLE;
 static uint64_t home_settings_generation;
+static bool home_settings_status_missing;
 bool portable_home_settings_poll(void) {
  if(native_custody_retained||failed)return false;
- if(!portable_settings_availability_open(&home_settings_status,rt,1)){portable_adapter_retain();return false;}
+ if(!portable_settings_availability_open(&home_settings_status,rt,1)){
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  const risc_runtime_capability_v1*g=&home_settings_status.grant;
+  if(!native_custody_retained&&g->struct_size==sizeof(*g)&&!g->api&&!g->slot&&!g->generation){
+   home_settings_state=RISC_KEY_VALUE_UNAVAILABLE;home_settings_status_missing=true;return true;
+  }
+#endif
+  portable_adapter_retain();return false;
+ }
  uint32_t state=home_settings_status.state.availability;uint64_t generation=home_settings_status.state.generation;
- if(generation<home_settings_generation||(generation==home_settings_generation&&home_settings_generation&&state!=home_settings_state)){
+ if(generation<home_settings_generation||(generation==home_settings_generation&&home_settings_generation&&!home_settings_status_missing&&state!=home_settings_state)){
   portable_adapter_retain();return false;
  }
  if(!portable_settings_availability_close(&home_settings_status,rt)){portable_adapter_retain();return false;}
  if(native_custody_retained||failed)return false;
- home_settings_state=state;home_settings_generation=generation;return true;
+ home_settings_state=state;home_settings_generation=generation;home_settings_status_missing=false;return true;
 }
 uint64_t portable_home_settings_generation(void) {return home_settings_generation;}
 bool portable_home_settings_available(void) {return home_settings_state==RISC_KEY_VALUE_AVAILABLE;}

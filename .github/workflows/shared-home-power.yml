@@ -1,0 +1,40 @@
+name: Shared Home generic power
+on:
+  pull_request:
+    paths: ['lib/PortableApps/include/PortableHomePower.h', 'test/native_apps/home_power_test.c', 'scripts/test_home_power.py', '.github/workflows/shared-home-power.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: 4c50cf717f6fa5a5fb8a64cd7253cff56d5ab219
+          path: deps/watch
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python scripts/test_home_power.py --watch deps/watch --output qualification/power
+      - name: Exact source receipts
+        if: always()
+        run: |
+          mkdir -p qualification/source
+          git archive HEAD | gzip -n > qualification/source/system.tar.gz
+          git -C deps/watch archive HEAD sdk/driver | gzip -n > qualification/source/watch-power-sdk.tar.gz
+          git rev-parse HEAD > qualification/source/system.head
+          git -C deps/watch rev-parse HEAD > qualification/source/watch.head
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-power-${{ github.event.pull_request.head.sha || github.sha }}
+          path: qualification/
+          retention-days: 30

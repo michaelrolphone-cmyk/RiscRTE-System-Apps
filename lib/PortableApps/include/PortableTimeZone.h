@@ -33,6 +33,10 @@ typedef struct {
     int32_t standard_offset,daylight_offset; /* Seconds EAST of UTC. */
     uint8_t has_daylight;
     portable_timezone_transition start,end;
+    /* App-internal compiled rule, never a Runtime table or serialized payload.
+     * Zero retains the existing one-era POSIX behavior. */
+    uint16_t era_year;
+    portable_timezone_transition era_start,era_end;
 } portable_timezone_rule;
 typedef struct { int64_t epoch; int32_t offset; uint8_t daylight; } portable_timezone_candidate;
 typedef struct { unsigned count; portable_timezone_candidate candidate[2]; } portable_timezone_inverse;
@@ -46,7 +50,11 @@ unsigned portable_timezone_region_count(unsigned region);
 int portable_timezone_city_index(unsigned region,unsigned city); /* Complete catalog; -1 if invalid. */
 int portable_timezone_display_name(unsigned index,char *out,size_t capacity); /* RANGE if insufficient. */
 int portable_timezone_parse(const char *posix,size_t capacity,portable_timezone_rule *out);
-/* Unknown/malformed IDs return FALLBACK and a usable UTC0 rule. */
+/* Unknown IDs return FALLBACK and a usable UTC0 rule. Provider-owned retained
+ * tokens use @YYYY:std,dst;start,end;start,end with POSIX offsets/transitions.
+ * The first transition pair applies before YYYY, the second from YYYY.
+ * A malformed @ token returns BAD_RULE, never an implicit UTC fallback.
+ * At most39 printable bytes plus NUL fit the existing retained zone field. */
 int portable_timezone_resolve(const char *id,size_t capacity,portable_timezone_rule *out);
 int portable_timezone_civil_to_epoch(const portable_timezone_civil *civil,int64_t *out);
 int portable_timezone_epoch_to_civil(int64_t epoch,portable_timezone_civil *out);

@@ -169,7 +169,7 @@ bool Client::buildHeader(){
  char auth[1536]{};
 if(!handshake_){if(nonceCount_==UINT32_MAX)return false;
 char nc[9],ha2[65],response[65],joined[512];
-std::snprintf(nc,sizeof(nc),"%08x",++nonceCount_);
+std::snprintf(nc,sizeof(nc),"%08x",static_cast<unsigned>(++nonceCount_));
  // HA2 is method:uri, without an extra separator.
  dtls_sha256_ctx h;
 dtls_sha256_init(&h);

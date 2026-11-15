@@ -1,0 +1,165 @@
+name: Shared Touchpad cumulative delivery
+on:
+  push:
+    branches: ['work/shared-touchpad-pointer-20261103']
+  pull_request:
+    paths: ['scripts/*touchpad*', 'docs/shared-touchpad/**', '.github/workflows/touchpad-delivery.yml']
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 286f70ef6ef9b2f7142a37d45fcc7717312c77df
+          path: Utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 712ecc3f894dba99d9c9638941778a82f5856b97
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: X4Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: e361e73de14314bb4b8d2fb3a24eb81e2390b0ee
+          path: X4Product
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: c69d7914935fccdc04749f7bfa429c74219bf88a
+          path: WatchProduct
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06
+          ref: 97ca6157aa9c3bba7c7fee3858aa7d0ff896d13b
+          path: WaveProduct
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: ab9ff33975680c5bb8d9a2e7ed346d0300732a4e
+          path: Bootfs
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retain exact source closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/source evidence/logs
+          for source in System Utilities Runtime X4Runtime X4Product WatchProduct WaveProduct Bootfs; do
+            git -C "$source" diff --exit-code HEAD --
+            git -C "$source" archive --format=tar HEAD | gzip -n > "evidence/source/$source.tar.gz"
+            git -C "$source" rev-parse HEAD > "evidence/source/$source.head"
+          done
+          sha256sum evidence/source/*.tar.gz > evidence/source/archives.sha256
+      - name: Held input and unchanged prefix regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/test_scene_sdk.py
+          for mode in normal sanitized; do
+            san=(); if [ "$mode" = sanitized ]; then san=(--sanitize); fi
+            python System/scripts/test_scene_pointer.py --runtime X4Runtime --output "evidence/pointer-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/pointer-$mode.log"
+            python System/scripts/test_scene_hold.py --runtime X4Runtime --output "evidence/hold-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/hold-$mode.log"
+            mkdir -p "evidence/original-$mode"
+            python -c 'import sys; from pathlib import Path; sys.path.insert(0,"System/scripts"); import test_scene_host; n=test_scene_host.run(Path("X4Runtime").resolve(),Path(sys.argv[1]).resolve(),sys.argv[2]=="sanitized"); Path(sys.argv[1],"result.txt").write_text(str(n)+" passed\n"); print(n,"passed")' "evidence/original-$mode" "$mode" 2>&1 | tee "evidence/logs/original-$mode.log"
+            python System/scripts/test_scene_canvas.py --runtime X4Runtime --output "evidence/canvas-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/canvas-$mode.log"
+            python System/scripts/test_scene_keypad.py --runtime X4Runtime --output "evidence/keypad-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/keypad-$mode.log"
+          done
+      - name: Actual app and scene lifecycle qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in normal sanitized; do
+            flags=(); if [ "$mode" = sanitized ]; then flags=(--sanitize); fi
+            python Utilities/scripts/test_ble_buttons_session.py --runtime X4Runtime --system System --output "evidence/focused-$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/focused-$mode.log"
+            python Utilities/scripts/test_scanner_background.py --runtime X4Runtime --system System --utilities Utilities --output "evidence/background-$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/background-$mode.log"
+            python Utilities/scripts/test_ble_touchpad_session.py --runtime X4Runtime --system System --output "evidence/controller-$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/controller-$mode.log"
+            python Utilities/scripts/test_ble_touchpad_runtime.py --runtime X4Runtime --system-apps System --output "evidence/runtime-$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/runtime-$mode.log"
+          done
+      - name: Repeat canonical application and independent provider profiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash Utilities/scripts/install_badge_catalog_toolchain.sh "$RUNNER_TEMP/touchpad-toolchain" 2>&1 | tee evidence/logs/compiler.log
+          export NATIVE_APP_CC="$RUNNER_TEMP/touchpad-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc"
+          python Utilities/scripts/build_shared_scene_apps.py --runtime X4Runtime --system-apps System --app ble_touchpad --output evidence/application 2>&1 | tee evidence/logs/application-build.log
+          for profile in full watch-compact color-dynamic; do
+            python System/scripts/build_scene_services.py --runtime X4Runtime --host-profile "$profile" --output "evidence/providers/$profile" 2>&1 | tee "evidence/logs/provider-$profile.log"
+          done
+      - name: Preserve cumulative product bytes and pack original stores
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/assemble_touchpad_delivery.py --bootfs-tools Bootfs/scripts --output evidence/assembly --application evidence/application/packages/ble_touchpad --providers evidence/providers 2>&1 | tee evidence/logs/assembly.log
+      - name: Admit actual candidate graphs and ELFs against owning native profiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in normal sanitized; do
+            flags=(); if [ "$mode" = sanitized ]; then flags=(--sanitize); fi
+            python System/scripts/test_home_product_admission.py --runtime Runtime --x4-runtime X4Runtime --x4-product X4Product --watch-product WatchProduct --wave-product WaveProduct --assembly evidence/assembly --output "evidence/admission/$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/admission-$mode.log"
+          done
+      - name: Verify publication boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/publish_touchpad_shared.py --build evidence --expected-source "${{ github.event.pull_request.head.sha || github.sha }}"
+          python System/scripts/test_touchpad_publication.py --build evidence --source "${{ github.event.pull_request.head.sha || github.sha }}" | tee evidence/logs/publication-boundary.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: touchpad-delivery-${{ github.sha }}
+          path: evidence/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+  publish:
+    needs: qualify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/work/shared-touchpad-pointer-20261103' && github.repository == 'michaelrolphone-cmyk/RiscRTE-System-Apps'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: touchpad-delivery-${{ github.sha }}
+          path: evidence
+      - name: Publish and verify exact qualified bytes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python System/scripts/publish_touchpad_shared.py --build evidence --publish --expected-source "${{ github.sha }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: touchpad-publication-${{ github.sha }}
+          path: |
+            evidence/publication-plan.json
+            evidence/publication.json
+          if-no-files-found: error
