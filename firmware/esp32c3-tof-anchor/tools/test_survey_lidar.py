@@ -77,18 +77,18 @@ class Floors(unittest.TestCase):
             s.sample=sample
             s.zero(nav,ID,'4873bf63-0b0a-4afa-9c32-d481951f22c3',10.)
             for tick in range(1,61):
-                sample.update(at=10.+tick,gyro=Rotation.from_euler('Z',.001*tick).as_matrix())
+                sample.update(at=10.+tick,gyro=Rotation.from_euler('ZYX',[.001*tick,.0005*tick,-.0003*tick]).as_matrix())
                 s.update_rotation(nav,sample['at'])
                 np.testing.assert_allclose(s.rotation,NORTH[:3,:3],atol=1e-9)
                 if tick==26:
                     s=SurveyPose(p)
                     s.sample=sample
-            sample.update(at=71.,gyro=Rotation.from_euler('Z',.56).as_matrix(),rate=np.array([0,0,.5]),turning=True)
+            sample.update(at=71.,gyro=Rotation.from_euler('ZYX',[.56,.03+.17,-.018-.14]).as_matrix(),rate=np.array([0,0,.5]),turning=True)
             s.update_rotation(nav,71.)
-            np.testing.assert_allclose(s.rotation,NORTH[:3,:3]@Rotation.from_euler('Z',.5).as_matrix(),atol=1e-9)
+            np.testing.assert_allclose(s.rotation,NORTH[:3,:3]@Rotation.from_euler('ZYX',[.5,.17,-.14]).as_matrix(),atol=1e-9)
             sample.update(at=71.1,rate=None)
             s.update_rotation(nav,71.1)
-            np.testing.assert_allclose(s.rotation,NORTH[:3,:3]@Rotation.from_euler('Z',.5).as_matrix(),atol=1e-9)
+            np.testing.assert_allclose(s.rotation,NORTH[:3,:3]@Rotation.from_euler('ZYX',[.5,.17,-.14]).as_matrix(),atol=1e-9)
 
     def test_floor_fit_uncertainty_rejects_jitter_and_corrects_gyro_tilt(self):
         import time
