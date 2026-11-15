@@ -61,3 +61,29 @@ class Floors(unittest.TestCase):
             self.assertAlmostEqual(math.atan2(s.rotation[1,0],s.rotation[0,0]),math.pi/2+.5)
             self.assertEqual(s.zero(nav,ID,req,20.)['reset_id'],req)
             with self.assertRaises(ValueError):s.zero(nav,ID,'7cc3facd-78d0-46ff-bdc8-5de49d5ad308',20.)
+
+    def test_stationary_yaw_drift_restart_and_real_turn(self):
+        with TemporaryDirectory() as td:
+            p=Path(td)
+            (p/'survey-world.json').write_text(json.dumps(dict(world_id=ID,reference=dict(
+                T_enu_body=NORTH.tolist(),T_enu_camera=(NORTH@CAM).tolist(),T_enu_imu=NORTH.tolist()))))
+            s=SurveyPose(p)
+            world=SimpleNamespace(display=lambda *a: None)
+            nav=SimpleNamespace(reset_motion=lambda:None,world_body=world,rest_gate={'imu_quiet':True})
+            sample=dict(at=10.,gyro=np.eye(3),identity=['front','boot',1,0],persistent=None,
+                        profile=None,rate=np.zeros(3),rate_noise=.0001,turning=False)
+            s.sample=sample
+            s.zero(nav,ID,'4873bf63-0b0a-4afa-9c32-d481951f22c3',10.)
+            for tick in range(1,61):
+                sample.update(at=10.+tick,gyro=Rotation.from_euler('Z',.001*tick).as_matrix())
+                s.update_rotation(nav,sample['at'])
+                np.testing.assert_allclose(s.rotation,NORTH[:3,:3],atol=1e-9)
+                if tick==26:
+                    s=SurveyPose(p)
+                    s.sample=sample
+            sample.update(at=71.,gyro=Rotation.from_euler('Z',.56).as_matrix(),rate=np.array([0,0,.5]),turning=True)
+            s.update_rotation(nav,71.)
+            np.testing.assert_allclose(s.rotation,NORTH[:3,:3]@Rotation.from_euler('Z',.5).as_matrix(),atol=1e-9)
+            sample.update(at=71.1,rate=None)
+            s.update_rotation(nav,71.1)
+            np.testing.assert_allclose(s.rotation,NORTH[:3,:3]@Rotation.from_euler('Z',.5).as_matrix(),atol=1e-9)
