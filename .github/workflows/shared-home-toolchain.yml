@@ -1,7 +1,7 @@
 name: Shared Home common compiler
 on:
   pull_request:
-    paths: ['scripts/qualify_home_toolchain.py', '.github/workflows/shared-home-toolchain.yml']
+    paths: ['scripts/qualify_home_toolchain.py', 'scripts/capture_home_link_failure.py', 'scripts/test_capture_home_link_failure.py', '.github/workflows/shared-home-toolchain.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -47,6 +47,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Diagnostic parser regression tests
+        run: python scripts/test_capture_home_link_failure.py
       - name: Exact modern compiler and selected SDK
         run: |
           pip install pyelftools==0.32 Pillow==11.3.0
@@ -56,6 +58,9 @@ jobs:
       - name: Complete selected source, modern code generation, exact repeat
         run: |
           python scripts/qualify_home_toolchain.py --x4 deps/x4 --runtime deps/runtime --reader deps/reader --utilities deps/utilities --compiler "$RUNNER_TEMP/home-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc" --output qualification/toolchain
+      - name: Retain first failed linker invocation and intermediates (diagnostic only)
+        if: failure()
+        run: python scripts/capture_home_link_failure.py --qualification qualification/toolchain
       - name: Exact source archive
         if: always()
         run: |
