@@ -13,9 +13,6 @@ from scipy.optimize import least_squares
 
 SCHEMA = "rover.tof.geometry-config/1"
 
-def _finite(value):
-    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
-
 def validate(document):
     if not isinstance(document, dict) or document.get("schema") != SCHEMA:
         raise ValueError("unsupported geometry configuration schema")
@@ -26,18 +23,6 @@ def validate(document):
         raise ValueError("units must be in or m")
     if not isinstance(document.get("frame_id"), str) or not document["frame_id"].strip():
         raise ValueError("frame_id required")
-    plane = document.get("ground_plane")
-    if plane is not None:
-        if not isinstance(plane, dict) or not _finite(plane.get("elevation")):
-            raise ValueError("ground_plane requires a finite elevation in configuration units")
-    contact = document.get("rover_ground_contact")
-    if contact is not None:
-        if plane is None or not isinstance(contact, dict) or not isinstance(contact.get("grounded"), bool):
-            raise ValueError("rover_ground_contact requires a ground plane and boolean grounded")
-        if not _finite(contact.get("confirmed_at")) or contact["confirmed_at"] < 0:
-            raise ValueError("ground contact requires a Unix confirmation timestamp")
-        if "radio_height" in contact and (not _finite(contact["radio_height"]) or contact["radio_height"] < 0):
-            raise ValueError("radio_height must be a nonnegative offset above the floor")
     rows = document.get("anchors")
     if not isinstance(rows, list):
         raise ValueError("anchors must be a list")
@@ -100,25 +85,6 @@ def replace_configuration(path, document, expected_revision):
                 os.unlink(temporary)
     return digest(raw)
 
-def display_range_edges(baseline, accepted_edges, now):
-    """Include immature or disagreeing range pairs in display estimates only."""
-    from tof_baseline import median_sigma
-    result = {tuple(sorted((e["a"],e["b"]))):e for e in accepted_edges}
-    samples = {}
-    for key, rows in baseline.history.items():
-        pair = tuple(sorted(key.split(">")))
-        if pair in result:
-            continue
-        values = [r[2] for r in rows if now-baseline.window_s <= r[0] <= now+1 and r[2]>0]
-        if values:
-            samples.setdefault(pair,[]).append(median_sigma(values))
-    for (a,b),groups in samples.items():
-        values = [m for m,_ in groups]
-        result[a,b] = dict(a=a,b=b,distance_m=float(np.median(values)),
-            sigma_m=max(.25,max(values)-min(values),max(s for _,s in groups)),display_only=True)
-    return list(result.values())
-
-
 def anchored_fit(fixed, active, edges):
     """Laterate observable unknown nodes; fixed coordinates never enter optimization."""
     points = {k: list(v) for k, v in fixed.items()}
@@ -172,12 +138,6 @@ class RuntimeGeometry:
         self.error = None
         self.active = False
         self.epoch = 0
-        self.display_upstairs = set()
-        # Floor membership is a display constraint only. The accepted solver is independent.
-        floor_priors = self.path.parent/"display-floor-priors.json" if self.path else None
-        if floor_priors and floor_priors.is_file():
-            priors = json.loads(floor_priors.read_text()).get("anchors",{})
-            self.display_upstairs = {k.lower() for k,v in priors.items() if v.get("floor")=="upstairs"}
 
     def update(self, baseline, now):
         if self.path is None:
@@ -236,12 +196,10 @@ class RuntimeGeometry:
         active = sorted(k for k, seen in baseline.last_seen.items() if now-seen <= 30)
         fit = anchored_fit(fixed, active, edges)
         old = baseline.fit
-        same_geometry = (old and old.get("configuration_revision") == revision and
-                         old.get("positions") == fit["positions"])
         fit.update(configured_geometry=True, configuration_revision=revision,
                    fixed_anchors=sorted(fixed), frame_id=document["frame_id"] + ":" + revision,
                    epoch=baseline.epoch, created_at=now if changed or not old else old["created_at"],
-                   revision=(old["revision"] if same_geometry else 1 if changed or not old else old.get("revision", 0)+1))
+                   revision=1 if changed or not old else old.get("revision", 0)+1)
         baseline.fit = fit
         baseline.spatial_dimension = 3
         baseline.recalibrating = False
@@ -261,26 +219,6 @@ class RuntimeGeometry:
                       positions=[dict(p, position_source="measured_fixed" if p["bssid"] in fixed else "range_estimated",
                                       label=next((a.get("label", "") for a in enabled if a["bssid"].lower()==p["bssid"]), ""))
                                  for p in result["positions"]])
-        from tof_display_fit import display_fits
-        display_edges = display_range_edges(baseline, edges, now)
-        key = (revision,tuple(active),tuple(sorted((e["a"],e["b"],round(e["distance_m"],2),
-            round(e["sigma_m"],2),bool(e.get("display_only"))) for e in display_edges)))
-        if getattr(self,"display_key",None)!=key:
-            previous = {p["bssid"]:[p[k] for k in ("x_m","y_m","z_m")]
-                        for p in getattr(self,"display_positions",[]) if not changed}
-            upstairs = self.display_upstairs if document.get("ground_plane",{}).get("elevation")==0 else set()
-            self.display_positions = display_fits(fixed,active,display_edges,fit["positions"],previous,upstairs)
-            self.display_key = key
-        result["display_positions"] = self.display_positions
-        from tof_ground import radio_calibration, surveyed_floor
-        plane = surveyed_floor(document, scale, fit["frame_id"], fixed)
-        if plane is not None:
-            result["ground_plane"] = plane
-            result["radio_calibration"] = radio_calibration(baseline.history, fixed, now)
-            contact = dict(document.get("rover_ground_contact") or {})
-            if "radio_height" in contact:
-                contact["radio_height_m"] = contact.pop("radio_height") * scale
-            result["rover_ground_contact"] = contact
         return result
 
 def main():

@@ -1,0 +1,19 @@
+name: Reciprocal FTM collector
+on:
+  pull_request:
+    paths:
+      - 'firmware/esp32c3-tof-anchor/**'
+      - '.github/workflows/reciprocal-ftm.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  collector-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r firmware/esp32c3-tof-anchor/tools/requirements-tof.txt
+      - run: python -m unittest discover -s firmware/esp32c3-tof-anchor/tools -p 'test_*.py' -v
