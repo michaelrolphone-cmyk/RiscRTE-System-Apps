@@ -1,0 +1,63 @@
+import json
+import math
+import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from types import SimpleNamespace
+import numpy as np
+from scipy.spatial.transform import Rotation
+from tof_survey_pose import SurveyPose
+from tof_lidar_floor import fit_floor
+
+CAM=np.array([[0,0,1,.048],[-1,0,0,0],[0,-1,0,.0635],[0,0,0,1.]])
+NORTH=np.array([[0,-1,0,0],[1,0,0,0],[0,0,1,0],[0,0,0,1.]])
+ID='8f2a45a8-2761-4980-a1f8-d5492537f929'
+
+def grid(rear=False,wall=False):
+    r=np.diag([-1,1,-1,1]) if rear else np.eye(4)
+    r[1,3]=-.02
+    mount=dict(T_front_camera_sensor_m=r.tolist(),flip_x=True,flip_y=True,
+               distance_semantics='axial_z',valid_statuses=[5,9],fov_horizontal_deg=45,fov_vertical_deg=45)
+    m=CAM@r
+    mm=[]; status=[]
+    for i in range(64):
+        u=(1-2*(i%8+.5)/8)*math.tan(math.pi/8)
+        v=(1-2*(i//8+.5)/8)*math.tan(math.pi/8)
+        ray=m[:3,:3]@np.array([u,v,1])
+        depth=.5 if wall else -m[2,3]/ray[2]
+        mm.append(round(1000*depth) if depth>0 else 0)
+        status.append(5 if depth>0 else 0)
+    return dict(ready=True,valid=True,distance_mm=mm,target_status=status),mount
+
+class Floors(unittest.TestCase):
+    def test_each_mount_observes_floor_without_accepting_wall(self):
+        for rear in (False,True):
+            raw,mount=grid(rear)
+            fit=fit_floor(raw,mount,CAM)
+            self.assertGreaterEqual(fit['inliers'],12)
+            np.testing.assert_allclose(fit['normal'],[0,0,1],atol=.002)
+            self.assertIsNone(fit_floor(grid(rear,True)[0],mount,CAM))
+
+    def test_reset_maps_west_tilt_to_survey_and_tracks_turns(self):
+        with TemporaryDirectory() as td:
+            p=Path(td)
+            (p/'survey-world.json').write_text(json.dumps(dict(world_id=ID,reference=dict(
+                T_enu_body=NORTH.tolist(),T_enu_camera=(NORTH@CAM).tolist(),T_enu_imu=NORTH.tolist()))))
+            s=SurveyPose(p)
+            q=Rotation.from_euler('ZYX',[85,16,-20],degrees=True).as_matrix()
+            s.sample=dict(at=10.,gyro=q,identity=['front','boot',1,0],persistent=q,profile='firmware')
+            world=SimpleNamespace(display=lambda *a: None)
+            nav=SimpleNamespace(reset_motion=lambda:None,world_body=world)
+            req='4873bf63-0b0a-4afa-9c32-d481951f22c3'
+            self.assertEqual(s.zero(nav,ID,req,10.)['reset_id'],req)
+            np.testing.assert_allclose(s.rotation,NORTH[:3,:3],atol=1e-9)
+            restored=SurveyPose(p)
+            self.assertEqual(restored.reference['id'],req)
+            s.sample['gyro']=q@Rotation.from_euler('Z',.5).as_matrix()
+            s.update_rotation(nav,10.2)
+            np.testing.assert_allclose(s.rotation,NORTH[:3,:3]@Rotation.from_euler('Z',.5).as_matrix(),atol=1e-9)
+            # A plane tilt correction cannot manufacture or erase a yaw turn.
+            s.tilt_bias[:]=[.2,-.1];s.update_rotation(nav,10.2)
+            self.assertAlmostEqual(math.atan2(s.rotation[1,0],s.rotation[0,0]),math.pi/2+.5)
+            self.assertEqual(s.zero(nav,ID,req,20.)['reset_id'],req)
+            with self.assertRaises(ValueError):s.zero(nav,ID,'7cc3facd-78d0-46ff-bdc8-5de49d5ad308',20.)
