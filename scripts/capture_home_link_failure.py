@@ -10,6 +10,8 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shlex
+import shutil
 import subprocess
 
 
@@ -64,6 +66,35 @@ def main():
             if path.is_file() and path.suffix in ('.o', '.i', '.s', '.elf', '.map')
         ]
         save()
+        # Replay only the captured linker driver on the preserved objects.
+        # Follow its child into ld; a successful debugger exit is not a pass.
+        collect = [
+            shlex.split(line) for line in (diagnostic / 'replay.log').read_text().splitlines()
+            if line.lstrip().startswith('/') and '/collect2 ' in line
+        ]
+        if result.returncode and len(collect) == 1 and shutil.which('gdb'):
+            link = collect[0]
+            link[link.index('-o') + 1] = str(diagnostic / 'debugger-output.elf')
+            debug = ['gdb', '--batch',
+                     '-ex', 'set pagination off',
+                     '-ex', 'set follow-fork-mode child',
+                     '-ex', 'set detach-on-fork on',
+                     '-ex', 'run', '-ex', 'thread apply all bt full',
+                     '-ex', 'info sharedlibrary', '--args'] + link
+            receipt['debugger_command'] = debug
+            save()
+            with (diagnostic / 'debugger.log').open('w') as log:
+                debug_result = subprocess.run(debug, stdout=log, stderr=subprocess.STDOUT,
+                                              timeout=180, check=False)
+            receipt['debugger_returncode'] = debug_result.returncode
+            receipt['objects_unchanged_after_debugger'] = all(
+                hashlib.sha256((root / entry['path']).read_bytes()).hexdigest() == entry['sha256']
+                for entry in receipt['intermediates'] if entry['path'].endswith('.o')
+            )
+            save()
+        else:
+            receipt['debugger_skipped'] = {'collect2_lines': len(collect), 'gdb_available': bool(shutil.which('gdb'))}
+            save()
     except BaseException as error:
         receipt.update(state='diagnostic-error', error=type(error).__name__, message=str(error))
         save()
