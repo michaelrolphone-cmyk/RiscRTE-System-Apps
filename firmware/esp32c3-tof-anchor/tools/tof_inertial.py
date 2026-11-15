@@ -13,6 +13,7 @@ import time
 import numpy as np
 from scipy.spatial.transform import Rotation
 from tof_world_motion import WorldBodyPose
+from tof_survey_pose import start_survey_control
 
 
 def vector(value, size):
@@ -280,6 +281,9 @@ class InertialNavigator:
                    stationary_reference=self.rest_gate.copy())
         world = self.world_body.display(self, h)
         if world is not None:
+            survey_pose = getattr(self, 'survey_pose', None)
+            if survey_pose is not None:
+                world.update(survey_pose.fields(now))
             out["world_body_pose"] = world
         if h is None:
             return out
@@ -352,6 +356,7 @@ class VisionFeed(threading.Thread):
         self.nav, self.path = nav, str(path)
 
     def run(self):
+        self.nav.survey_pose = start_survey_control(self.nav)
         while True:
             try:
                 with socket.socket(socket.AF_UNIX) as sock:
@@ -373,6 +378,8 @@ class VisionFeed(threading.Thread):
                             now = time.time()
                             self.nav.ingest(meta,now)
                             with self.nav.lock:
+                                if self.nav.survey_pose is not None:
+                                    self.nav.survey_pose.observe(meta,now,self.nav)
                                 self.nav.world_body.visual(self.nav,meta,now)
                             self.nav.feed_error = None
             except (OSError, ValueError, TypeError, KeyError, struct.error, http.client.HTTPException) as exc:
@@ -488,6 +495,7 @@ class InertialRefinement:
     def publish(self, result, now):
         nav = self.nav
         with nav.lock:
+            nav.world_body.observe_floor(nav, result)
             h = nav.at(now)
             rejected = False
             refinement = result.get('rover_refinement') or {}
