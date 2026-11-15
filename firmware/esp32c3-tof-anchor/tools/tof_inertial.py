@@ -376,6 +376,8 @@ class VisionFeed(threading.Thread):
                             meta = json.loads(r.read(size))
                             r.read(total-4-size)
                             now = time.time()
+                            dual=getattr(self.nav,'dual_radio',None)
+                            if dual is not None:dual.receive(meta)
                             self.nav.ingest(meta,now)
                             with self.nav.lock:
                                 if self.nav.survey_pose is not None:
@@ -405,7 +407,8 @@ class InertialRefinement:
         nav, b = self.nav, self.baseline
         with nav.lock:
             h = nav.at(observed)
-            key = (anchor, direction)
+            receiver = 'rear' if str(session_id).startswith('rear/') else 'front'
+            key = (anchor, direction, receiver)
             if now-observed > 30 or observed > now:
                 return
             prev = nav.seen.get(key)
@@ -431,7 +434,7 @@ class InertialRefinement:
                 refinement.observe(anchor,distance,observed,now=now,direction=direction,session_id=session_id)
                 return
             nav.pending[key] = dict(target_bssid=anchor,distance_m=distance,observed=observed,
-                                    direction=direction,session_id=session_id)
+                                    direction=direction,session_id=session_id,receiver=receiver)
             batch = [r for r in nav.pending.values() if now-r['observed'] <= 30 and nav.at(r['observed']) is not None]
             per_anchor = {}
             for r in sorted(batch,key=lambda x:x['observed']):
@@ -445,6 +448,17 @@ class InertialRefinement:
                 nav.last_decision = 'awaiting_independent_ranges'
                 return
             chosen = list(per_anchor.values())
+            used = []
+            for i,r in enumerate(chosen):
+                t=r['observed']
+                other=next((v for v in reversed(sorted(batch,key=lambda v:v['observed']))
+                            if v['target_bssid']==r['target_bssid'] and v['receiver']!=r['receiver']
+                            and abs(t-v['observed']) <= (10. if nav.rest_gate.get('quiet_duration_s',0)>=abs(t-v['observed']) else 1.)
+                            and abs(v['distance_m']-r['distance_m'])<=max(1.,.25*r['distance_m'])),None)
+                used.append(r)
+                if other:
+                    chosen[i]=dict(r,distance_m=(r['distance_m']+other['distance_m'])/2)
+                    used.append(other)
             # During motion, compensate each sphere to the common fix time when
             # ENU position is known. Otherwise retain only near-simultaneous data.
             h = nav.at(max(r['observed'] for r in chosen))
@@ -484,10 +498,10 @@ class InertialRefinement:
                 # Range evidence can still refine a first fix with unresolved
                 # geometry. Never promote an ambiguous candidate to a pose.
                 nav.last_decision = 'range_only_bootstrap'
-            for r in chosen:
+            for r in used:
                 target, direction = r['target_bssid'], r['direction']
                 t = nav.at(r['observed'])
-                refs = nav.links.setdefault((target,direction),deque(maxlen=7))
+                refs = nav.links.setdefault((target,direction,r['receiver']),deque(maxlen=7))
                 refs.append((r['distance_m'],t))
                 refinement.observe(target,r['distance_m'],r['observed'],now=now,
                                    direction=direction,session_id=r['session_id'])
