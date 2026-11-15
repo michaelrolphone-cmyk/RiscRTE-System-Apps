@@ -57,8 +57,7 @@ WebSocket protocol: /sensors, Authorization: Sensor <token>, boot identity,
 biome.sensor_tick.v1, clock exchanges and sequence acknowledgements.
 A separate low-priority task emits rear LiDAR, UART health and FTM telemetry;
 it never invokes the camera or front AHRS. Missing devices do not stop ticks.
-One packet may be outstanding; disconnect/reconnect or a missing acknowledgement
-resets the exchange instead of blocking the camera or accumulating a backlog.
+A connected sensor sender publishes at its own cadence. A late or missing application acknowledgment does not pause publication or close the connection.
 These ticks carry the latest valid ranges, not a retained history of every range.
 Payload documents and send buffers use PSRAM. OTA pauses optional publication.
 
