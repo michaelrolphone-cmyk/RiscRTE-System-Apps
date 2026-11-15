@@ -13,6 +13,9 @@ class WorldBodyPose:
         self.body = self.world_id = self.lever = None
         self.segment = self.origin = self.local_origin = None
         self.aligned = False
+        self.floor_z = None
+        self.on_floor = False
+        self.supported_z = None
         self.visual_frame = None
         self.origin_time = 0.
         self.last_write = None
@@ -34,9 +37,34 @@ class WorldBodyPose:
                 self.time = float(saved['observed_at'])
                 self.source = saved['source']
                 self.body, self.world_id = p, survey['world_id']
+                if saved.get('height_source') in ('surveyed_floor_contact', 'last_supported_world_height'):
+                    self.supported_z = float(p[2])
                 self.last_write = p.copy()
             except (OSError, ValueError, TypeError, KeyError, IndexError):
                 return
+
+    def observe_floor(self, nav, result):
+        """Use the same survey datum and pickup-aware contact as the ranging solver."""
+        baseline = result.get('baseline') or {}
+        plane = result.get('ground_plane') or {}
+        contact = result.get('ground_contact') or {}
+        if (self.body is None or not baseline.get('frame_id') or
+                baseline.get('world_alignment') != 'configured_east_north_up' or
+                plane.get('frame_id') != baseline['frame_id'] or not plane.get('valid') or
+                plane.get('axes') != 'east_north_up' or
+                not isinstance(contact.get('active'), bool) or
+                nav.world_id not in (None, self.world_id)):
+            return
+        elevation = plane.get('elevation_m')
+        if not isinstance(elevation, (int, float)) or not np.isfinite(elevation):
+            return
+        self.floor_z = float(elevation)
+        self.on_floor = contact['active']
+        if self.on_floor:
+            self.supported_z = self.floor_z
+        elif self.supported_z is None:
+            self.supported_z = self.body[2]
+        self.body[2] = self.supported_z
 
     def track(self, nav, h):
         if self.body is None or h is None:
@@ -54,6 +82,8 @@ class WorldBodyPose:
         if aligned:
             self.body = self.origin + nav.alignment @ (h[1] - self.local_origin)
             self.source = 'AHRS displacement from accepted world pose'
+            if self.supported_z is not None:
+                self.body[2] = self.supported_z
         self.time = h[0]
 
     def supports(self, nav, camera, h):
@@ -66,9 +96,12 @@ class WorldBodyPose:
         tolerance = 2*np.linalg.norm(self.lever) + 3*abs(h[2]-self.origin_sigma)
         delta = camera - (self.origin+self.lever)
         if nav.alignment is not None and nav.world_id == self.world_id:
-            return np.linalg.norm(delta-nav.alignment@travel) <= tolerance
+            predicted = nav.alignment @ travel
+            if self.on_floor:
+                predicted[2] = self.floor_z - self.origin[2]
+            return np.linalg.norm(delta-predicted) <= tolerance
         # Gravity gives vertical displacement even without absolute yaw.
-        return (abs(delta[2]-travel[2]) <= tolerance and
+        return (abs(delta[2]-(self.floor_z-self.origin[2] if self.on_floor else travel[2])) <= tolerance and
                 np.linalg.norm(delta[:2]) <= np.linalg.norm(travel[:2])+tolerance)
 
     def correct(self, nav, camera, h, rms=.5, visual_body=None):
@@ -97,6 +130,13 @@ class WorldBodyPose:
             if length:
                 self.body[:2] += direction / length * np.linalg.norm(travel[:2])
             self.body[2] += travel[2]
+        if self.supported_z is not None:
+            if not self.on_floor:
+                # An unbounded IMU integral can agree with a fix only because its
+                # uncertainty grew. Commit at most the height change both support.
+                lower, upper = sorted((self.supported_z, measurement[2]))
+                self.supported_z = float(np.clip(self.body[2], lower, upper))
+            self.body[2] = self.supported_z
         self.origin, self.local_origin, self.origin_sigma = self.body.copy(), h[1].copy(), h[2]
         self.source = 'AHRS-constrained ranging' if visual_body is None else 'AHRS-constrained visual tracking'
         self.origin_time = h[0]
@@ -149,6 +189,9 @@ class WorldBodyPose:
         result = dict(schema='rover.world-body-pose/1', world_id=self.world_id,
                       position_enu_m=self.body.tolist(), observed_at=self.time,
                       source=self.source, held=bool(h is None or h[3] or (not self.aligned and self.origin_time != h[0])))
+        if self.supported_z is not None:
+            result['height_source'] = ('surveyed_floor_contact' if self.on_floor else
+                                       'last_supported_world_height')
         if not np.array_equal(self.body,self.last_write):
             tmp = self.path.with_suffix('.tmp')
             tmp.write_text(json.dumps(result,allow_nan=False))
