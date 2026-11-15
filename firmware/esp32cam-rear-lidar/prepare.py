@@ -47,6 +47,7 @@ def main():
 
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/camera_websocket.inc',out/'src/camera_websocket.inc')
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/sensor_mailbox.inc',out/'src/sensor_mailbox.inc')
+ shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/live_websocket.h',out/'src/live_websocket.h')
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'camera-main.patch')],cwd=out,check=True)
  if a.provisioning_json:
   secret=json.loads(a.provisioning_json.expanduser().read_text())

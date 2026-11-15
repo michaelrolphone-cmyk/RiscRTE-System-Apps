@@ -9,7 +9,7 @@ struct CameraMessage {
 
 QueueHandle_t cameraMailbox = nullptr;
 std::atomic<uint32_t> cameraCaptureSession{0}, cameraFrames{0}, cameraAcks{0}, cameraSuperseded{0};
-WebSocketsClient videoSocket;
+LiveWebSocket videoSocket;
 String videoHeaders;
 uint32_t cameraSession = 0;
 
@@ -23,6 +23,7 @@ void nextCameraSession() {
 
 void cameraEvent(WStype_t type, uint8_t *payload, size_t length) {
     if (type == WStype_CONNECTED || type == WStype_DISCONNECTED) {
+        videoSocket.transportChanged(false);
         nextCameraSession();
         videoConnected = type == WStype_CONNECTED;
         return;
@@ -33,15 +34,7 @@ void cameraEvent(WStype_t type, uint8_t *payload, size_t length) {
     if (deserializeJson(message, payload, length)) return;
     const String kind = message["type"] | "";
     if (kind == "clock") {
-        StaticJsonDocument<384> reply;
-        reply["type"] = "clock";
-        reply["id"] = message["id"];
-        reply["boot_id"] = boot;
-        reply["received_monotonic_us"] = received;
-        reply["served_monotonic_us"] = static_cast<uint64_t>(esp_timer_get_time());
-        String bytes;
-        serializeJson(reply, bytes);
-        videoSocket.sendTXT(bytes);
+        videoSocket.noteClock(message["id"], received);
     } else if (kind == "camera_ready" && String(message["boot_id"] | "") == boot) {
         videoReady = true;
         cameraCaptureSession.store(cameraSession);
@@ -76,13 +69,12 @@ void cameraWorker(void *) {
             }
         }
         if (wifi && route.host.length()) videoSocket.loop();
+        if (videoConnected) videoSocket.flushClock(boot);
         CameraMessage frame{};
         if (xQueueReceive(cameraMailbox, &frame, 0) == pdTRUE) {
             if (videoConnected && videoReady && frame.session == cameraSession) {
-                if (videoSocket.sendBIN(frame.buffer, frame.length, true)) {
+                if (videoSocket.writeLive(WSop_binary, frame.buffer, frame.length)) {
                     ++cameraFrames;
-                } else {
-                    videoSocket.disconnect();
                 }
             }
             heap_caps_free(frame.buffer);

@@ -6,7 +6,7 @@
 #include "radio_telemetry.h"
 #include <ArduinoJson.h>
 #include <Preferences.h>
-#include <WebSocketsClient.h>
+#include "live_websocket.h"
 #include <WiFi.h>
 #include <esp_heap_caps.h>
 #include <esp_timer.h>
@@ -26,7 +26,7 @@ struct Config { String host,token; uint16_t port=9877; uint32_t revision=0; } co
 SemaphoreHandle_t mutex=nullptr;
 WebServer *server=nullptr;
 bool (*authorizeRequest)()=nullptr;
-WebSocketsClient socket;
+LiveWebSocket socket;
 String headers,boot;
 volatile bool connected=false,paused=false;
 bool workerReady=false;
@@ -54,6 +54,7 @@ void writePacket(JsonObject packet,bool streaming=true) {
     const uint64_t sample = streaming ? ++sequence : sequence;
     portEXIT_CRITICAL(&sampleLock);
     radio_telemetry::writeFrameJson(packet, now, streaming && cursor ? cursor : 1);
+    packet["wire_mode"] = "interleaved_fragments";
     packet["sampling_mode"] = "latest_mailbox";
     packet["delivery_mode"] = "continuous";
     packet["camera_id"]="rear";
@@ -69,6 +70,7 @@ bool sensorPaused() { return paused; }
 
 void event(WStype_t type,uint8_t *payload,size_t length) {
     if (type == WStype_CONNECTED) {
+        socket.transportChanged(true);
         portENTER_CRITICAL(&sampleLock);
         lastSentSampleUs = 0;
         portEXIT_CRITICAL(&sampleLock);
@@ -77,6 +79,7 @@ void event(WStype_t type,uint8_t *payload,size_t length) {
         ++socketConnections;
     }
     if (type == WStype_DISCONNECTED) {
+        socket.transportChanged(false);
         if (connected) {
             ++socketDisconnects;
             lastSocketDisconnectMs = millis();
@@ -92,11 +95,7 @@ void event(WStype_t type,uint8_t *payload,size_t length) {
     if(deserializeJson(request,payload,length)) return;
     const String kind=request["type"]|"";
     if(kind=="clock") {
-        DynamicJsonDocument reply(512);
-        reply["type"]="clock";reply["id"]=request["id"];
-        reply["boot_id"]=boot;reply["received_monotonic_us"]=received;
-        reply["served_monotonic_us"]=static_cast<uint64_t>(esp_timer_get_time());
-        String text;serializeJson(reply,text);clockReady=socket.sendTXT(text);
+        socket.noteClock(request["id"], received);
     }
 }
 
@@ -126,6 +125,7 @@ void worker(void *) {
             }
         }
         if (wifi && route.host.length()) socket.loop();
+        if (connected && socket.flushClock(boot)) clockReady = true;
         if (connected && !sensorPaused() && !Update.isRunning()) sendLatestSample();
         vTaskDelay(pdMS_TO_TICKS(2));
     }
@@ -137,6 +137,7 @@ void status() {
     DynamicJsonDocument d(2048);
     d["camera_frames_superseded"]=cameraSuperseded.load();
     d["camera_frames_sent"]=cameraFrames.load();d["camera_frames_acknowledged"]=cameraAcks.load();
+    d["rssi_dbm"]=WiFi.RSSI();d["channel"]=WiFi.channel();
     d["transport"]="websocket_push";d["camera_id"]="rear";d["worker_ready"]=workerReady;d["paused"]=paused;d["configured"]=!current.host.isEmpty();
     d["host"]=current.host;d["port"]=current.port;d["connected"]=connected;
     d["sent"]=sent;d["failed"]=failed;
@@ -145,6 +146,7 @@ void status() {
     const uint64_t sentSequence = lastSentSequence;
     const uint64_t preparedSequence = sequence;
     portEXIT_CRITICAL(&sampleLock);
+    d["wire_mode"]="interleaved_fragments";
     d["sampling_mode"]="latest_mailbox";
     d["producer_sequence"]=preparedSequence;
     d["samples_prepared"]=samplesPrepared.load();

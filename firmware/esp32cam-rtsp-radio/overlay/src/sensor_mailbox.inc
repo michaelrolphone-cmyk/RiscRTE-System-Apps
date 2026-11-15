@@ -63,7 +63,7 @@ void sendLatestSample() {
     SensorMessage frame{};
     if (xQueueReceive(sensorMailbox, &frame, 0) != pdTRUE) return;
     const uint32_t start = millis();
-    const bool delivered = socket.sendTXT(frame.buffer, frame.size, true);
+    const bool delivered = socket.writeLive(WSop_text, frame.buffer, frame.size);
     lastSendDurationMs = millis() - start;
     if (delivered) {
         ++sent;
@@ -74,8 +74,7 @@ void sendLatestSample() {
         portEXIT_CRITICAL(&sampleLock);
     } else {
         ++failed;
-        // A partially written WebSocket frame cannot be followed by a new frame.
-        socket.disconnect();
+        // writeLive closes only the connection that owned the failed fragment.
     }
     heap_caps_free(frame.buffer);
 }

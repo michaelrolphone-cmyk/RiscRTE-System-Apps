@@ -29,3 +29,5 @@ The native LAN ingress accepts only the provisioned device and token and carries
 drive commands. Existing authenticated gateway connections carry data onward to the GUI.
 
 Sampling runs on its own 100 ms FreeRTOS task. The WebSocket writer takes the newest pending sample. A blocked write supersedes older unsent samples, while capture timestamps and stream sequence numbers continue advancing. Status exposes the producer sequence, superseded count, sampling gaps, send duration and established socket disconnects separately from failed connection attempts.
+
+Each WebSocket message uses masked fragments sized to fit one TCP segment. The writer services ping and pong between fragments, including while the socket is waiting for buffer space. Application clock replies go between complete messages. JPEG and sensor data keep their original message boundaries and independent pending slots.
