@@ -101,3 +101,27 @@ class TestWorldBody(unittest.TestCase):
         saved=nav.world_body.body.copy()
         nav.correct(self.radio+[.55,0,0],h,.4)
         np.testing.assert_allclose(nav.world_body.body,saved)
+
+    def test_surveyed_floor_survives_vertical_drift_dropout_and_pickup(self):
+        nav = self.nav
+        plane = dict(valid=True, axes='east_north_up', frame_id='enu', elevation_m=0.)
+        packet = dict(baseline=dict(frame_id='enu', world_alignment='configured_east_north_up'),
+                      ground_plane=plane, ground_contact=dict(active=True))
+        self.sample(2, [0,0,0], True)
+        nav.world_body.observe_floor(nav, packet)
+        h = self.sample(3, [.25,0,14.17], False)
+        def position(t):
+            return np.array(nav.display(t)['world_body_pose']['position_enu_m'])
+        np.testing.assert_allclose(position(3), self.start+[.25,0,0])
+        self.assertTrue(nav.position_gate(self.radio+[.25,0,0], h, .1))
+        self.assertFalse(nav.position_gate(self.radio+[.25,0,14.17], h, .1))
+        np.testing.assert_allclose(position(9), self.start+[.25,0,0])
+        nav.correct(self.radio+[.25,0,0], h, .1)
+        packet['ground_contact']['active'] = False
+        nav.world_body.observe_floor(nav, packet)
+        raised = self.sample(4, [.25,0,14.57], False)
+        np.testing.assert_allclose(position(4), self.start+[.25,0,0])
+        nav.correct(self.radio+[.25,0,.4], raised, .1)
+        np.testing.assert_allclose(position(4), self.start+[.25,0,.4])
+        np.testing.assert_allclose(InertialNavigator(self.root).display(5)['world_body_pose']['position_enu_m'],
+                                   self.start+[.25,0,.4])
