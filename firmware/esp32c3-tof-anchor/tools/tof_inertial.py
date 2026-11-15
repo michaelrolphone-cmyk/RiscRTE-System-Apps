@@ -488,6 +488,7 @@ class InertialRefinement:
     def publish(self, result, now):
         nav = self.nav
         with nav.lock:
+            nav.world_body.observe_floor(nav, result)
             h = nav.at(now)
             rejected = False
             refinement = result.get('rover_refinement') or {}
