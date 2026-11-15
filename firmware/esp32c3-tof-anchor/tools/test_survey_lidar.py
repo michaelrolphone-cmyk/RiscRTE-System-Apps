@@ -3,6 +3,7 @@ import math
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 from types import SimpleNamespace
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -35,6 +36,7 @@ class Floors(unittest.TestCase):
             raw,mount=grid(rear)
             fit=fit_floor(raw,mount,CAM)
             self.assertGreaterEqual(fit['inliers'],12)
+            self.assertGreaterEqual(fit['tilt_sigma_rad'],0.)
             np.testing.assert_allclose(fit['normal'],[0,0,1],atol=.002)
             self.assertIsNone(fit_floor(grid(rear,True)[0],mount,CAM))
 
@@ -87,3 +89,30 @@ class Floors(unittest.TestCase):
             sample.update(at=71.1,rate=None)
             s.update_rotation(nav,71.1)
             np.testing.assert_allclose(s.rotation,NORTH[:3,:3]@Rotation.from_euler('Z',.5).as_matrix(),atol=1e-9)
+
+    def test_floor_fit_uncertainty_rejects_jitter_and_corrects_gyro_tilt(self):
+        import time
+        from collections import deque
+        with TemporaryDirectory() as td:
+            p=Path(td)
+            (p/'survey-world.json').write_text(json.dumps(dict(world_id=ID,reference=dict(
+                T_enu_body=NORTH.tolist(),T_enu_camera=(NORTH@CAM).tolist(),T_enu_imu=NORTH.tolist()))))
+            s=SurveyPose(p)
+            s.reference={'floor_tilt_at_zero':{}}
+            gyro=np.eye(3)
+            for observed_deg in [1.,12.]:
+                r=Rotation.from_euler('Y',observed_deg,degrees=True).as_matrix()
+                fit=dict(normal=r[2],tilt_sigma_rad=math.radians(1.),inliers=18,residual_m=.003)
+                with patch('tof_survey_pose.fit_floor',return_value=fit):
+                    for seq in range(20):
+                        now=100.+observed_deg*10+seq*.3
+                        s.attitudes=deque([(now,gyro)])
+                        scan=dict(received_monotonic=time.monotonic(),sensors=[
+                            dict(sensor_id=sid,mount={'configured':True},sequence=int(now*10))
+                            for sid in ('front','rear')])
+                        s.observe_scans({'lidar':scan},now,now)
+                if observed_deg==1.:
+                    np.testing.assert_allclose(s.tilt_bias,0.,atol=1e-10)
+                else:
+                    self.assertGreater(math.degrees(s.tilt_bias[0]),8.)
+                    self.assertEqual(s.floor_sources,['front','rear'])
