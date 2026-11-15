@@ -12,15 +12,15 @@ std::atomic<uint32_t> cameraDemand{0}, cameraFrames{0}, cameraAcks{0};
 WebSocketsClient videoSocket;
 String videoHeaders;
 uint32_t cameraSession = 0;
-uint64_t cameraInflight = 0;
-uint32_t cameraSentAt = 0;
+
+
 bool videoConnected = false, videoReady = false;
 
 void nextCameraSession() {
     cameraDemand.store(0);
     if (++cameraSession == 0) ++cameraSession;
     videoReady = false;
-    cameraInflight = 0;
+
 }
 
 void cameraEvent(WStype_t type, uint8_t *payload, size_t length) {
@@ -46,9 +46,7 @@ void cameraEvent(WStype_t type, uint8_t *payload, size_t length) {
         videoSocket.sendTXT(bytes);
     } else if (kind == "camera_ready" && String(message["boot_id"] | "") == boot) {
         videoReady = true;
-    } else if (kind == "camera_ack" && cameraInflight &&
-               String(message["frame_id"] | "") == boot + ":" + String(cameraInflight)) {
-        cameraInflight = 0;
+     } else if (kind == "camera_ack" && String(message["frame_id"] | "").startsWith(boot + ":")) {
         ++cameraAcks;
     }
 }
@@ -81,10 +79,10 @@ void cameraWorker(void *) {
         if (wifi && route.host.length()) videoSocket.loop();
         CameraMessage frame{};
         if (xQueueReceive(cameraMailbox, &frame, 0) == pdTRUE) {
-            if (videoConnected && videoReady && !cameraInflight && frame.session == cameraSession) {
+            if (videoConnected && videoReady && frame.session == cameraSession) {
                 if (videoSocket.sendBIN(frame.buffer, frame.length, true)) {
-                    cameraInflight = frame.captureUs;
-                    cameraSentAt = millis();
+
+
                     ++cameraFrames;
                 } else {
                     videoSocket.disconnect();
@@ -92,8 +90,8 @@ void cameraWorker(void *) {
             }
             heap_caps_free(frame.buffer);
         }
-        if (videoConnected && videoReady && !cameraInflight) cameraDemand.store(cameraSession);
-        if (cameraInflight && millis() - cameraSentAt >= 5000) videoSocket.disconnect();
+        if (videoConnected && videoReady) cameraDemand.store(cameraSession);
+
         vTaskDelay(pdMS_TO_TICKS(2));
     }
 }

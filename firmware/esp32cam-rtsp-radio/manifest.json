@@ -151,7 +151,7 @@
     },
     {
       "path": "overlay/src/camera_websocket.inc",
-      "sha256": "144d215803048cc2be1f1257eee55eecaea666ff76712ae887671bceb545f6e9"
+      "sha256": "57fe5fcfe78e1ac87703af18b1aa483f8b5b38880c120a7ddb95d80e715cff26"
     }
   ]
 }

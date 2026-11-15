@@ -12,11 +12,11 @@ connection state and counters without disclosing the token. Calibration remains 
 
 Every 100 ms, the sender emits `biome.sensor_tick.v1`, explicitly with no image.
 Packets include boot identity, increasing stream sequence, device monotonic capture
-and service timestamps, and actual measured IMU samples since the acknowledged
-sample. The PSRAM history can recover up to 2.5 seconds within its physical capacity.
-Longer outages remain explicit observation gaps. An acknowledgement advances only
-after the native receiver validates and publishes the batch. Reconnects resend
-retained samples; sample identity prevents reintegration.
+and service timestamps, and IMU samples since the previous successful socket write.
+Ticks advertise `delivery_mode: continuous`. Each connected emitter publishes on its
+own cadence. Legacy receivers can acknowledge ticks. The firmware never waits for
+that reply or reconnects because it is late. After reconnect, boot and sample identity
+allow consumers to use the available PSRAM history within their own freshness window.
 
 The native receiver sends `{type:"clock",id:...}` once per second. The ESP32 replies
 with the same ID, boot identity and device receipt/service times. Host send/receive
