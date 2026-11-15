@@ -59,7 +59,11 @@ class WorldBodyPose:
         if not isinstance(elevation, (int, float)) or not np.isfinite(elevation):
             return
         self.floor_z = float(elevation)
-        self.on_floor = contact['active']
+        zero = getattr(getattr(nav, 'survey_pose', None), 'reference', None)
+        pickup = contact.get('last_pickup_at')
+        confirmed = bool(zero and zero['world_id'] == self.world_id and
+                         (pickup is None or zero['at'] > pickup))
+        self.on_floor = contact['active'] or confirmed
         if self.on_floor:
             self.supported_z = self.floor_z
         elif self.supported_z is None:
