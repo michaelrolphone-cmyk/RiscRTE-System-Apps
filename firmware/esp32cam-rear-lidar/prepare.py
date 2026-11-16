@@ -43,7 +43,7 @@ def main():
  s=re.sub(r'#define WIFI_SSID .*','#define WIFI_SSID "Rover-Rear-Camera"',s);settings.write_text(s)
  ini=out/'platformio.ini';s=ini.read_text()
  s=s.replace('build_flags =','board_build.partitions = partitions/rear-ota.csv\n\nbuild_flags =\n  -D VL53L5CX_NB_TARGET_PER_ZONE=1')
- s=s.replace('lib_deps =','lib_deps =\n  sparkfun/SparkFun VL53L5CX Arduino Library@1.0.3\n  links2004/WebSockets@2.7.2');ini.write_text(s)
+ s=s.replace('lib_deps =','lib_deps =\n  sparkfun/SparkFun VL53L5CX Arduino Library@1.0.3\n  sparkfun/SparkFun BNO08x Cortex Based IMU@1.0.6\n  links2004/WebSockets@2.7.2');ini.write_text(s)
 
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/camera_websocket.inc',out/'src/camera_websocket.inc')
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/sensor_mailbox.inc',out/'src/sensor_mailbox.inc')
