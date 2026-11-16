@@ -158,6 +158,8 @@ inline const char *resetReasonName(ResetReason reason) {
 class Attitude {
 public:
     void reset(ResetReason reason) {
+        // A new gyro bias changes future integration, not the current pose.
+        if (reason == ResetReason::Calibration && initialized_) return;
         initialized_=false;
         accelCorrection_=false;
         reason_=reason;

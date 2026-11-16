@@ -13,7 +13,7 @@ index da95f57..35350d5 100644
      <hr>
  
 diff --git a/include/settings.h b/include/settings.h
-index b8db461..4ad565e 100644
+index b8db461..4d9714a 100644
 --- a/include/settings.h
 +++ b/include/settings.h
 @@ -1,7 +1,7 @@
@@ -21,14 +21,20 @@ index b8db461..4ad565e 100644
  
  #define APP_TITLE "ESP32CAM-RTSP"
 -#define APP_VERSION "1.0"
-+#define APP_VERSION "1.0-radio.13-radio-slices"
++#define APP_VERSION "1.0-radio.15-reciprocal-ftm"
  
  #define WIFI_SSID "ESP32CAM-RTSP"
  #define WIFI_PASSWORD nullptr
 diff --git a/src/main.cpp b/src/main.cpp
+index bae860b..a5ee5be 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
-@@ -17,13 +17,20 @@
+@@ -1,3 +1,4 @@
++#include "sensor_push.h"
+ #include <Arduino.h>
+ #include <esp_wifi.h>
+ #include <soc/rtc_cntl_reg.h>
+@@ -17,13 +18,20 @@
  #include <format_number.h>
  #include <moustache.h>
  #include <settings.h>
@@ -50,7 +56,7 @@ diff --git a/src/main.cpp b/src/main.cpp
  
  auto param_group_camera = iotwebconf::ParameterGroup("camera", "Camera settings");
  auto param_frame_duration = iotwebconf::Builder<iotwebconf::UIntTParameter<unsigned long>>("fd").label("Frame duration (ms)").defaultValue(DEFAULT_FRAME_DURATION).min(10).build();
-@@ -166,7 +172,7 @@
+@@ -166,7 +174,7 @@ void handle_root()
        {"OtaSupported", String(esp_ota_get_next_update_partition(nullptr) != nullptr)}};
  
    web_server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -59,12 +65,10 @@ diff --git a/src/main.cpp b/src/main.cpp
    web_server.send(200, "text/html", html);
  }
  
-@@ -273,6 +279,42 @@
-   log_v("client disconnected");
-   client.stop();
+@@ -275,6 +283,42 @@ void handle_stream()
    log_v("stopped streaming");
-+}
-+
+ }
+ 
 +struct CaptureJsonAllocator {
 +  void *allocate(size_t size){return heap_caps_malloc(size,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);}
 +  void deallocate(void *ptr){heap_caps_free(ptr);}
@@ -99,10 +103,25 @@ diff --git a/src/main.cpp b/src/main.cpp
 +  client.write(first.c_str(),first.length());client.write(metadata,metadataSize);
 +  client.write(second.c_str(),second.length());client.write(fb->buf,fb->len);client.write(end.c_str(),end.length());
 +  heap_caps_free(metadata);
++}
++
+ void handle_restart()
+ {
+   log_v("handle_restart");
+@@ -360,8 +404,12 @@ void start_rtsp_server()
+   MDNS.addService("rtsp", "tcp", rtsp_server.get_rtsp_port());
  }
  
- void handle_restart()
-@@ -422,6 +464,7 @@
++void setup_ota();
++
+ void on_connected()
+ {
++  setup_ota();
++  Serial0.printf("[front-network] connected ip=%s gateway=%s\n",WiFi.localIP().toString().c_str(),WiFi.gatewayIP().toString().c_str());
+   log_v("on_connected");
+ 
+   // Start the RTSP Server if initialized
+@@ -422,6 +470,7 @@ void setup_ota()
                 { 
        // Free memory for the update: stop the RTSP server and release the camera frame buffers, so Update.write() has all the heap it needs
        // On a successful update the device reboots; onError() restores these.
@@ -110,7 +129,7 @@ diff --git a/src/main.cpp b/src/main.cpp
        rtsp_server.end();
        if (camera_init_result == ESP_OK)
        {
-@@ -443,6 +486,7 @@
+@@ -443,6 +492,7 @@ void setup_ota()
        case OTA_END_ERROR: log_e("OTA: end failed - %s", Update.errorString()); break;
        default: log_e("OTA error: %u", error);
        }
@@ -118,23 +137,57 @@ diff --git a/src/main.cpp b/src/main.cpp
        // Restore the camera and RTSP server after a failed update (on success the
        // device reboots, so no restore is needed there).
        update_camera_settings();
-@@ -498,7 +542,9 @@
+@@ -458,8 +508,11 @@ void setup()
+   // Disable brownout
+   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+ 
++  Serial0.begin(115200);
++  Serial0.println("[front-startup] setup entered");
+   Serial.begin(115200);
+   Serial.setDebugOutput(true);
++  Serial0.setDebugOutput(true);
+ #ifdef CAMERA_POWER_GPIO
+   pinMode(CAMERA_POWER_GPIO, OUTPUT);
+   digitalWrite(CAMERA_POWER_GPIO, CAMERA_POWER_ON_LEVEL);
+@@ -498,6 +551,8 @@ void setup()
      log_e("Failed to initialize the I2S microphone");
  #endif
  
--  WiFi.setSleep(false);
 +  // ESP-IDF 4.4 coexistence aborts when BLE is enabled with WIFI_PS_NONE.
-+  // Modem sleep must remain enabled while Wi-Fi and BLE share the radio.
-+  WiFi.setSleep(true);
++  // BLE coexistence is removed; keep the camera station awake.
+   WiFi.setSleep(false);
  
  #ifdef MICRO_RTSP_ENABLE_SRTP
-   // Stream video over Secure RTP (RFC 3711), negotiated with "a=crypto"
-@@ -592,6 +638,18 @@
+@@ -545,7 +600,11 @@ void setup()
+ #ifdef USER_LED_GPIO
+   iotWebConf.setStatusPin(USER_LED_GPIO, USER_LED_ON_LEVEL);
+ #endif
++  Serial0.println("[front-startup] before configuration loaded");
+   iotWebConf.init();
++  // Configured devices connect directly; missing credentials retain AP fallback.
++  iotWebConf.skipApStartup();
++  Serial0.println("[front-startup] configuration loaded");
+ 
+   // Set the time servers
+   configTime(0, 0, NTP_SERVERS);
+@@ -553,7 +612,9 @@ void setup()
+   // Initialize the camera with the now-loaded configuration and apply the
+   // sensor settings. update_camera_settings() is also called on config save,
+   // so a changed frame size / quality takes effect immediately.
++  Serial0.println("[front-startup] before camera initialized");
+   update_camera_settings();
++  Serial0.println("[front-startup] camera initialized");
+ 
+   // Apply RTSP Basic authentication credentials (RFC 2617); empty username disables it.
+   rtsp_server.set_credentials(param_auth_user.value(), param_auth_pass.value());
+@@ -592,15 +653,35 @@ void setup()
    web_server.onNotFound([]()
                          { iotWebConf.handleNotFound(); });
  
 +  // Radio telemetry uses its own Preferences namespace, preserving camera configuration.
++  Serial0.println("[front-startup] before sensors initialized");
 +  radio_telemetry::begin(web_server, is_authenticated);
++  Serial0.println("[front-startup] sensors initialized");
 +  camera_light::begin(web_server, is_authenticated);
 +  camera_exposure::begin(web_server, is_authenticated);
 +  web_server.on("/telemetry", HTTP_GET, []() {
@@ -146,13 +199,21 @@ diff --git a/src/main.cpp b/src/main.cpp
 +
 +  web_server.on("/api/capture",HTTP_GET,[](){if(is_authenticated())handle_synchronized_capture();});
    // Start the ArduinoOTA (espota) service for network firmware uploads.
-   setup_ota();
+-  setup_ota();
++  Serial0.println("[front-startup] before OTA initialized");
++  // OTA and HTTP start in on_connected after Wi-Fi is available.
++  Serial0.println("[front-startup] OTA awaiting Wi-Fi");
  }
-@@ -601,6 +658,7 @@
+ 
+ void loop()
+ {
++  static uint32_t lastDiagnostic=0;
++  if(millis()-lastDiagnostic>=5000){lastDiagnostic=millis();Serial0.printf("[front-health] uptime=%lu wifi=%d heap=%u config_state=%d mode=%d\n",millis(),int(WiFi.status()),ESP.getFreeHeap(),int(iotWebConf.getState()),int(WiFi.getMode()));}
    iotWebConf.doLoop();
    rtsp_server.loop();
    ArduinoOTA.handle();
 +  radio_telemetry::loop();
++  if (camera_init_result == ESP_OK && !Update.isRunning()) sensor_push::offerCamera(param_frame_duration.value());
  
    // OTA diagnostics: once an update is running, log progress + heap so the
    // serial monitor shows whether the firmware stream is actually arriving.
