@@ -30,10 +30,13 @@ struct Sample {
 } sample;
 
 // SPI pins: SCK=14, MOSI=2, MISO=47, CS=40
+// Optional: INT=45, RST=46 (strapping pins — leave floating at boot if unused)
 constexpr int SCK_PIN = 14;
 constexpr int MOSI_PIN = 2;
 constexpr int MISO_PIN = 47;
 constexpr int CS_PIN = 40;
+constexpr int INT_PIN = 45;
+constexpr int RST_PIN = 46;
 
 void loadStoredCalibration() {
   Preferences prefs;
@@ -53,8 +56,12 @@ void saveCalibrationToEsp() {
 bool tryInit() {
   pinMode(CS_PIN, OUTPUT);
   digitalWrite(CS_PIN, HIGH);
+  pinMode(INT_PIN, INPUT);
+  pinMode(RST_PIN, OUTPUT);
+  digitalWrite(RST_PIN, HIGH);
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
-  if (!imu.beginSPI(CS_PIN, SPI)) {
+  // Library signature: beginSPI(CS, INT, RST, speed=1e6, SPIClass=SPI)
+  if (!imu.beginSPI(CS_PIN, INT_PIN, RST_PIN, 1000000, SPI)) {
     error = "init_failed";
     SPI.end();
     return false;
@@ -143,6 +150,8 @@ void writeJson(JsonObject out, uint64_t at) {
   out["pins"]["mosi"] = MOSI_PIN;
   out["pins"]["miso"] = MISO_PIN;
   out["pins"]["cs"] = CS_PIN;
+  out["pins"]["int"] = INT_PIN;
+  out["pins"]["rst"] = RST_PIN;
   out["present"] = present;
   out["ready"] = ready;
   out["sequence"] = sequence;
