@@ -195,9 +195,6 @@ bool handleCommand(JsonObjectConst cmd, JsonObject reply) {
     if (ok) saveCalibrationToEsp();
     reply["ok"] = ok;
     reply["stored_on_esp"] = ok;
-  } else if (!strcmp(op, "calibration_status")) {
-    reply["ok"] = true;
-    reply["status"] = imu.calibrationStatus;
   } else if (!strcmp(op, "tare_now")) {
     bool z = cmd["z_axis"] | false;
     reply["ok"] = imu.tareNow(z);
