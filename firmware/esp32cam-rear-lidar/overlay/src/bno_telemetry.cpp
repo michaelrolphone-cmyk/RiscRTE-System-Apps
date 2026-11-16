@@ -1,5 +1,6 @@
 #include "bno_telemetry.h"
 #include <SparkFun_BNO08x_Arduino_Library.h>
+#include <SPI.h>
 #include <Preferences.h>
 #include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
@@ -9,7 +10,6 @@
 namespace bno_telemetry {
 namespace {
 BNO08x imu;
-TwoWire *bus = nullptr;
 SemaphoreHandle_t lock = nullptr;
 bool present = false;
 bool ready = false;
@@ -19,7 +19,6 @@ uint32_t sequence = 0;
 uint64_t lastRead = 0;
 const char *error = "not_detected";
 
-// Latest sample
 struct Sample {
   bool valid = false;
   float quatI = 0, quatJ = 0, quatK = 0, quatReal = 0;
@@ -30,19 +29,16 @@ struct Sample {
   uint8_t magAccuracy = 0;
 } sample;
 
-constexpr uint8_t ADDR = 0x4A; // default; 0x4B if ADR high
-
-bool probe() {
-  if (!bus) return false;
-  bus->beginTransmission(ADDR);
-  return bus->endTransmission() == 0;
-}
+// SPI pins: SCK=14, MOSI=2, MISO=47, CS=40
+constexpr int SCK_PIN = 14;
+constexpr int MOSI_PIN = 2;
+constexpr int MISO_PIN = 47;
+constexpr int CS_PIN = 40;
 
 void loadStoredCalibration() {
   Preferences prefs;
   if (!prefs.begin("bno-cal", true)) return;
-  // Placeholder: if library later supports importing a DCD blob, load it here.
-  // Currently the chip retains its own flash calibration after saveCalibration().
+  // Chip retains its own DCD after saveCalibration(); ESP stores the timestamp.
   prefs.end();
 }
 
@@ -55,15 +51,14 @@ void saveCalibrationToEsp() {
 }
 
 bool tryInit() {
-  if (!probe()) {
-    error = "not_detected";
-    return false;
-  }
-  if (!imu.begin(ADDR, *bus)) {
+  pinMode(CS_PIN, OUTPUT);
+  digitalWrite(CS_PIN, HIGH);
+  SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
+  if (!imu.beginSPI(CS_PIN, SPI)) {
     error = "init_failed";
+    SPI.end();
     return false;
   }
-  // Enable useful reports. Interval in ms.
   imu.enableRotationVector(50);
   imu.enableAccelerometer(50);
   imu.enableGyro(50);
@@ -118,19 +113,18 @@ void task(void *) {
         xSemaphoreGive(lock);
       }
     } else if (esp_timer_get_time() - lastRead > 5000000) {
-      // No data for 5s — treat as lost
       ready = false;
       present = false;
       error = "data_timeout";
       retryAt = millis() + 2000;
+      SPI.end();
     }
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 } // namespace
 
-void begin(TwoWire &wire) {
-  bus = &wire;
+void begin() {
   lock = xSemaphoreCreateMutex();
   if (lock) xTaskCreate(task, "bno-telemetry", 6144, nullptr, 1, nullptr);
 }
@@ -144,7 +138,11 @@ void writeJson(JsonObject out, uint64_t at) {
     xSemaphoreGive(lock);
   }
   out["schema"] = "rover.bno085.v1";
-  out["address_7bit"] = ADDR;
+  out["interface"] = "spi";
+  out["pins"]["sck"] = SCK_PIN;
+  out["pins"]["mosi"] = MOSI_PIN;
+  out["pins"]["miso"] = MISO_PIN;
+  out["pins"]["cs"] = CS_PIN;
   out["present"] = present;
   out["ready"] = ready;
   out["sequence"] = sequence;
