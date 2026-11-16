@@ -29,8 +29,6 @@ struct Sample {
   uint8_t magAccuracy = 0;
 } sample;
 
-// SPI pins: SCK=14, MOSI=2, MISO=47, CS=40
-// Optional: INT=45, RST=46 (strapping pins — leave floating at boot if unused)
 constexpr int SCK_PIN = 14;
 constexpr int MOSI_PIN = 2;
 constexpr int MISO_PIN = 47;
@@ -41,7 +39,6 @@ constexpr int RST_PIN = 46;
 void loadStoredCalibration() {
   Preferences prefs;
   if (!prefs.begin("bno-cal", true)) return;
-  // Chip retains its own DCD after saveCalibration(); ESP stores the timestamp.
   prefs.end();
 }
 
@@ -60,7 +57,6 @@ bool tryInit() {
   pinMode(RST_PIN, OUTPUT);
   digitalWrite(RST_PIN, HIGH);
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
-  // Library signature: beginSPI(CS, INT, RST, speed=1e6, SPIClass=SPI)
   if (!imu.beginSPI(CS_PIN, INT_PIN, RST_PIN, 1000000, SPI)) {
     error = "init_failed";
     SPI.end();
@@ -92,22 +88,23 @@ void task(void *) {
     }
     if (imu.getSensorEvent()) {
       Sample next = sample;
-      if (imu.getSensorEventID() == SENSOR_REPORTID_ROTATION_VECTOR) {
+      uint8_t id = imu.getSensorEventID();
+      if (id == SENSOR_REPORTID_ROTATION_VECTOR) {
         next.quatI = imu.getQuatI();
         next.quatJ = imu.getQuatJ();
         next.quatK = imu.getQuatK();
         next.quatReal = imu.getQuatReal();
         next.quatAccuracy = imu.getQuatAccuracy();
         next.valid = true;
-      } else if (imu.getSensorEventID() == SENSOR_REPORTID_ACCELEROMETER) {
+      } else if (id == SENSOR_REPORTID_ACCELEROMETER) {
         next.accelX = imu.getAccelX();
         next.accelY = imu.getAccelY();
         next.accelZ = imu.getAccelZ();
-      } else if (imu.getSensorEventID() == SENSOR_REPORTID_GYROSCOPE) {
+      } else if (id == SENSOR_REPORTID_GYROSCOPE_CALIBRATED) {
         next.gyroX = imu.getGyroX();
         next.gyroY = imu.getGyroY();
         next.gyroZ = imu.getGyroZ();
-      } else if (imu.getSensorEventID() == SENSOR_REPORTID_MAGNETIC_FIELD) {
+      } else if (id == SENSOR_REPORTID_MAGNETIC_FIELD) {
         next.magX = imu.getMagX();
         next.magY = imu.getMagY();
         next.magZ = imu.getMagZ();
@@ -184,35 +181,30 @@ bool handleCommand(JsonObjectConst cmd, JsonObject reply) {
     return true;
   }
   if (!strcmp(op, "calibrate_all")) {
-    imu.calibrateAll();
-    reply["ok"] = true;
+    reply["ok"] = imu.setCalibrationConfig(SH2_CAL_ACCEL | SH2_CAL_GYRO | SH2_CAL_MAG);
   } else if (!strcmp(op, "calibrate_accel")) {
-    imu.calibrateAccelerometer();
-    reply["ok"] = true;
+    reply["ok"] = imu.setCalibrationConfig(SH2_CAL_ACCEL);
   } else if (!strcmp(op, "calibrate_gyro")) {
-    imu.calibrateGyro();
-    reply["ok"] = true;
+    reply["ok"] = imu.setCalibrationConfig(SH2_CAL_GYRO);
   } else if (!strcmp(op, "calibrate_mag")) {
-    imu.calibrateMagnetometer();
-    reply["ok"] = true;
+    reply["ok"] = imu.setCalibrationConfig(SH2_CAL_MAG);
   } else if (!strcmp(op, "end_calibration")) {
-    imu.endCalibration();
-    reply["ok"] = true;
+    reply["ok"] = imu.setCalibrationConfig(0);
   } else if (!strcmp(op, "save_calibration")) {
     bool ok = imu.saveCalibration();
     if (ok) saveCalibrationToEsp();
     reply["ok"] = ok;
     reply["stored_on_esp"] = ok;
-  } else if (!strcmp(op, "request_calibration_status")) {
-    imu.requestCalibrationStatus();
+  } else if (!strcmp(op, "calibration_status")) {
     reply["ok"] = true;
+    reply["status"] = imu.calibrationStatus;
   } else if (!strcmp(op, "tare_now")) {
     bool z = cmd["z_axis"] | false;
-    imu.tareNow(z);
-    reply["ok"] = true;
+    reply["ok"] = imu.tareNow(z);
   } else if (!strcmp(op, "save_tare")) {
-    imu.saveTare();
-    reply["ok"] = true;
+    reply["ok"] = imu.saveTare();
+  } else if (!strcmp(op, "clear_tare")) {
+    reply["ok"] = imu.clearTare();
   } else {
     reply["ok"] = false;
     reply["error"] = "unknown_op";
