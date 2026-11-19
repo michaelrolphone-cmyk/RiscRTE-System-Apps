@@ -1,0 +1,85 @@
+{
+  "baseline_git_revision": "0c7fb85c5d9fc766ac1eeca0853cc2b5c71b51f5",
+  "files": {
+    "test_inertial_reference_recovery.py": {
+      "bytes": 7755,
+      "sha256": "0d1c1149cf9c54df4c9d0b5660770f708ad87fb624f48131b29120d4791ab208"
+    },
+    "tof_anchor_packets.py": {
+      "bytes": 3003,
+      "sha256": "04e8cb360a748b6b18a33b48943354e47ced0d7fea8b3f7512dd14acb8e425c7"
+    },
+    "tof_anchor_transport.py": {
+      "bytes": 5583,
+      "sha256": "9497c1b4fc245456b63a2595a088810557214b69292b303c082b850e1682b382"
+    },
+    "tof_baseline.py": {
+      "bytes": 34771,
+      "sha256": "58239267b8f449f3ea6bc137802ec4ea5ab7aad22d6bfb1899324dd4fc97424f"
+    },
+    "tof_config.py": {
+      "bytes": 15676,
+      "sha256": "3ddf933dae4e422f722c222a03e1a41441d6427885368fa03d2fec9a50a1e3a8"
+    },
+    "tof_coordinator.py": {
+      "bytes": 9170,
+      "sha256": "71db5197bdaff23bc52d0e4342d1c86a116854a9e917065247b12901d2d6f423"
+    },
+    "tof_discovery.py": {
+      "bytes": 2009,
+      "sha256": "a7e0cdcfa1e2c59959dc3a9575edefe6f201ac0acaefeef199e8a0aa7409fe4e"
+    },
+    "tof_display_fit.py": {
+      "bytes": 4554,
+      "sha256": "0f1bd3aea3c3828e04b15145f098cf180f80a99b3cd6b712c7deb889402b4fdb"
+    },
+    "tof_dual_radio.py": {
+      "bytes": 10494,
+      "sha256": "5f1134dd2e4017558db1f359bec55cafcdb8dbaa788558e5280198d95c68107a"
+    },
+    "tof_gateway_routes.py": {
+      "bytes": 2542,
+      "sha256": "262ffa18e7b87b2327265e949521ee0eec9ece9f4a6615f0f2f4d5f10e5e6e72"
+    },
+    "tof_geometry.py": {
+      "bytes": 22341,
+      "sha256": "086981c33f154b5528b6146c96a6c5904f7aefd17d9b935a1d1cb0aae80b37bc"
+    },
+    "tof_ground.py": {
+      "bytes": 8861,
+      "sha256": "1f9d71d3b447559a38a8a5356d34c9d29123e3db8d7a932c57131691ded60dab"
+    },
+    "tof_inertial.py": {
+      "bytes": 27067,
+      "sha256": "ba92ec8810e528aca1481e664031c1f6c3fcbac187e9a6d29e3b44a846bfb700"
+    },
+    "tof_lidar_floor.py": {
+      "bytes": 3049,
+      "sha256": "98adcd6b8e5077b2aa7bda3e0692da2f47c613f648b8176368e3964513920d92"
+    },
+    "tof_magnetic_reference.py": {
+      "bytes": 6751,
+      "sha256": "7eb87eedb50c63a160f77cb0b99db449b0157f9965b999ea2fa942f58fefe649"
+    },
+    "tof_provider_wrapper.py": {
+      "bytes": 1633,
+      "sha256": "7ce7ae2c8df9aa9406b039a61ffc20077c67e8baa65ba187b833c3e1b34b401d"
+    },
+    "tof_rover.py": {
+      "bytes": 13212,
+      "sha256": "dceef3216d48fab6805215b7ff03d44eb788c8d222f94ff13228b97ee9f7b83d"
+    },
+    "tof_survey_pose.py": {
+      "bytes": 17017,
+      "sha256": "6fd69309da76c9a4f3229eabcb7dc014af86a941953040bf4921f624450ab4fd"
+    },
+    "tof_world_motion.py": {
+      "bytes": 10458,
+      "sha256": "fc0a679f2a08ca2c404a2fb20b403ec81b94c8cff463523f672430b930cac1c9"
+    }
+  },
+  "installed_source": "/Users/micahelbyrns/.local/share/biome-tof/release-1.0.0",
+  "note": "Complete active standalone ToF module closure captured before portability changes. Several later deployed modules had no matching clean Git revision. Runtime data and secrets are excluded.",
+  "repository": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "schema": "biomerte.installed-source-provenance/1"
+}

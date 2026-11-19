@@ -13,9 +13,14 @@ import urllib.error
 from tof_geometry import RangeGraph
 from tof_baseline import AnchorBaseline
 from tof_rover import RoverRefinement
-from tof_anchor_transport import AnchorHTTPFallback
+from tof_inertial import InertialNavigator, InertialRefinement, VisionFeed
+from tof_anchor_packets import AnchorReports, PushAnchorRegistry
+from tof_discovery import publish_responders
+from tof_gateway_routes import GatewayRoutes
+from functools import partial
 
-def http_json(base,path,payload=None):
+def http_json(base,path,payload=None,route_registry=None,device_id=None):
+    if route_registry and device_id:base=GatewayRoutes(route_registry).origin(base,device_id)
     data=None if payload is None else json.dumps(payload).encode()
     request=urllib.request.Request(base+path,data=data,headers={"Content-Type":"application/json"})
     with urllib.request.urlopen(request,timeout=3) as response:
@@ -62,6 +67,8 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--camera",required=True)
     parser.add_argument("--state",required=True)
+    parser.add_argument("--device-routes")
+    parser.add_argument("--camera-id")
     parser.add_argument("--port",type=int,default=7446)
     parser.add_argument("--rover-height",type=float,default=.0635)
     args=parser.parse_args()
@@ -69,44 +76,59 @@ def main():
     sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
     sock.bind(("",args.port));sock.settimeout(.2)
-    transport=AnchorHTTPFallback(state/"anchor-registry.json")
+    routes=GatewayRoutes(args.device_routes) if args.device_routes else None
+    camera_request=partial(http_json,args.camera,route_registry=args.device_routes,device_id=args.camera_id)
+    transport=PushAnchorRegistry(state/"anchor-registry.json",routes=routes)
     # Last observed endpoints are discovery seeds, not accepted measurements.
     try:
         for anchor in json.loads((state/"latest.json").read_text()).get("anchors",[]):
             transport.register(anchor.get("bssid"),anchor.get("ip"))
     except (OSError,ValueError,TypeError):pass
-    transport.start()
+    reports=AnchorReports()
     baseline=AnchorBaseline(state/"baseline.json")
     rover_refinement=RoverRefinement(state/"rover-refinement.json")
-    graph=RangeGraph(baseline=baseline,rover_refinement=rover_refinement)
-    last_rover=last_write=last_request=0.
+    vision_dir = Path.home()/".local/share/biome-robot-vision"
+    nav = InertialNavigator(vision_dir)
+    inertial = InertialRefinement(nav)
+    vision_feed=VisionFeed(nav, vision_dir/"vision.sock")
+    vision_feed.start()
+    graph=RangeGraph(baseline=baseline,rover_refinement=rover_refinement,inertial=inertial)
+    from tof_dual_radio import DualRadioRanging
+    if (vision_dir/'camera-rig.json').is_file() and (vision_dir/'survey-world.json').is_file():
+        graph.dual_radio=nav.dual_radio=DualRadioRanging(vision_dir,nav)
+
+    last_write=last_request=last_discovery=0.
+    last_sample=None
+    discovery_status={}
     channel_cache={}
     last_requested={};error=None;request_state=RoverRequest();retired=False
     while True:
         now=time.monotonic()
         try:
             payload,addr=sock.recvfrom(16384)
-            packet=json.loads(payload)
-            # Packet source supplies its reachability address, not an arbitrary advertised host.
-            packet["ip"]=addr[0]
-            graph.ingest(packet,now)
-            transport.note_udp(packet,addr[0],now)
+            now=time.monotonic()
+            packet=reports.receive(addr,payload,now)
+            if packet is not None:
+                packet["ip"]=addr[0]
+                transport.note_udp(packet,addr[0],now)
+                graph.ingest(packet,now)
         except (socket.timeout,ValueError,TypeError):pass
-        for packet,received in transport.drain():graph.ingest(packet,received)
-        if now-last_rover>=1:
-            last_rover=now
+        reading=vision_feed.take_ranging()
+        if reading is not None:
+            snapshot,observed=reading
+            now=time.monotonic()
+            last_sample=observed
             try:
-                snapshot=http_json(args.camera,"/api/telemetry")
                 if request_state.observe(snapshot):
                     # Do not combine measurements from different camera boots.
                     graph.rover.clear()
                 rover_refinement.observe_boot(snapshot.get("boot_id"))
-                rover_refinement.observe_motion(snapshot.get("ahrs",{}))
+                rover_refinement.observe_motion(snapshot.get("ahrs",{}),now=observed)
                 try:
                     visual=json.loads((Path.home()/".local/share/biome-robot-vision/rover-motion.json").read_text())
                     rover_refinement.observe_visual(visual)
                 except (OSError,ValueError,TypeError):pass
-                graph.observe_rover_responder(snapshot,now)
+                graph.observe_rover_responder(snapshot,observed)
                 ftm=snapshot.get("ftm",{})
                 for observation in snapshot.get("wifi",[]):
                     address=str(observation.get("address") or observation.get("bssid") or observation.get("mac") or "").lower()
@@ -115,7 +137,7 @@ def main():
                         channel_cache[address]=channel
                 if ftm.get("status")=="success" and isinstance(ftm.get("channel"),int):
                     channel_cache[str(ftm.get("target","")).lower()]=ftm["channel"]
-                graph.ingest_rover(ftm,now)
+                graph.ingest_rover(ftm,observed)
                 # Existing camera requests from other consumers are never cancelled.
                 # A stuck FTM driver is reported, not reset under another controller.
                 if request_state.pending and now-request_state.started>15:
@@ -125,18 +147,28 @@ def main():
                     if nodes:
                         target=choose_target(nodes,last_requested)
                         address=target["bssid"].lower()
-                        http_json(args.camera,"/api/telemetry/ftm",{"address":address,"channel":channel_cache.get(address,target["channel"])})
+                        camera_request("/api/telemetry/ftm",{"address":address,"channel":channel_cache.get(address,target["channel"])})
                         request_state.submitted(address,now);last_requested[address]=now;last_request=now;retired=False
                 if not retired:error=None
             except (OSError,ValueError,urllib.error.HTTPError) as e:
                 error=type(e).__name__+": "+str(e)
                 # A timed-out POST has uncertain effect. Observe status before retry.
                 last_request=now
+        if getattr(graph,'dual_radio',None) is not None:
+            graph.dual_radio.tick(graph,time.monotonic())
         if now-last_write>=1:
             last_write=now
             out=graph.snapshot(now,args.rover_height)
+            if getattr(graph,'dual_radio',None) is not None:
+                out['dual_radio']=graph.dual_radio.status()
+            inertial.publish(out,time.time())
+            out["rover_measurements"]={"transport":"websocket_push","age_s":None if last_sample is None else max(0.,now-last_sample),"boot_id":request_state.boot_id}
             out["anchor_transport"]=transport.status()
-            out.update(updated_at=time.time(),camera=args.camera,camera_error=error,pending_target=request_state.pending,camera_boot_id=request_state.boot_id,request_age_s={k:now-v for k,v in last_requested.items()})
+            if now-last_discovery>=5:
+                last_discovery=now
+                discovery_status=publish_responders(sock,out,args.port)
+            out["responder_discovery"]=discovery_status
+            out.update(updated_at=time.time(),camera=routes.origin(args.camera,args.camera_id) if routes and args.camera_id else args.camera,camera_error=error,pending_target=request_state.pending,camera_boot_id=request_state.boot_id,request_age_s={k:now-v for k,v in last_requested.items()})
             temp=state/"latest.json.tmp";temp.write_text(json.dumps(out,allow_nan=False))
             os.replace(temp,state/"latest.json")
 if __name__=="__main__":main()

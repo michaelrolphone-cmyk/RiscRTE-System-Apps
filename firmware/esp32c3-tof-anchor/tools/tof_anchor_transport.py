@@ -10,8 +10,9 @@ import time
 import urllib.request
 
 class AnchorHTTPFallback:
-    def __init__(self,path,fetch=None,clock=time.monotonic):
+    def __init__(self,path,fetch=None,clock=time.monotonic,routes=None):
         self.path=Path(path)
+        self.routes=routes
         self.fetch=fetch or self._fetch
         self.clock=clock
         self.lock=threading.Lock()
@@ -55,23 +56,31 @@ class AnchorHTTPFallback:
             with self.lock:self.last_udp[mac]=received
 
     def poll_once(self,mac,ip):
+        candidates=[ip]
         try:
-            packet=self.fetch(ip)
-            if (not isinstance(packet,dict) or packet.get("schema")!="rover.tof.anchor/1"
-                    or str(packet.get("bssid","")).lower()!=mac or not packet.get("ftm_responder")):
-                raise ValueError("anchor_identity_mismatch")
-            packet=dict(packet,ip=ip)
-            now=self.clock()
-            with self.lock:
-                if self.anchors.get(mac)!=ip:return False
-                # Coalesce by anchor: there is no accumulating telemetry queue.
-                self.latest[mac]=(packet,now)
-                self.health[mac]={"last_success":now,"error":None}
-            return True
+            if self.routes:candidates.extend(self.routes.candidates(mac))
         except Exception as error:
-            with self.lock:
-                self.health[mac]=dict(self.health.get(mac,{}),error=type(error).__name__+":"+str(error)[:100])
-            return False
+            with self.lock:self.health[mac]={"route_error":str(error)}
+        last_error=None
+        for candidate in dict.fromkeys(candidates):
+            try:
+                packet=self.fetch(candidate)
+                if (not isinstance(packet,dict) or packet.get("schema")!="rover.tof.anchor/1"
+                        or str(packet.get("bssid","")).lower()!=mac or not packet.get("ftm_responder")):
+                    raise ValueError("anchor_identity_mismatch")
+                with self.lock:
+                    if self.anchors.get(mac)!=ip:return False
+                if self.routes:self.routes.observe_anchor(mac,candidate)
+                self.register(mac,candidate)
+                packet=dict(packet,ip=candidate);now=self.clock()
+                with self.lock:
+                    self.latest[mac]=(packet,now)
+                    self.health[mac]={"last_success":now,"error":None}
+                return True
+            except Exception as error:last_error=error
+        with self.lock:
+            self.health[mac]=dict(self.health.get(mac,{}),error=type(last_error).__name__+":"+str(last_error)[:100])
+        return False
 
     def start(self):
         self.executor=concurrent.futures.ThreadPoolExecutor(max_workers=12,thread_name_prefix="anchor-status")
