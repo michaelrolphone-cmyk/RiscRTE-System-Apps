@@ -23,12 +23,16 @@ def neighbor_hosts(bssid):
 class GatewayRoutes:
     def __init__(self,path):
         self.path=str(path)
+        from tof_host_io import client
+        self.client=client()
     def get(self,device_id):
+        if self.client is not None:return self.client.route(device_id)
         with sqlite3.connect(self.path,timeout=3) as db:
             db.row_factory=sqlite3.Row
             row=db.execute("SELECT * FROM routes WHERE device_id=?",(device_id,)).fetchone()
         return dict(row) if row else None
     def origin(self,url,device_id):
+        if self.client is not None:return self.client.origin(url,device_id)
         row=self.get(device_id)
         if not row:return url
         parsed=urlsplit(url);host=str(ipaddress.ip_address(row["host"]))
@@ -37,9 +41,11 @@ class GatewayRoutes:
         if "@" in parsed.netloc:host=parsed.netloc.rsplit("@",1)[0]+"@"+host
         return urlunsplit(parsed._replace(netloc=host))
     def candidates(self,bssid):
+        if self.client is not None:return self.client.candidates(bssid)
         row=self.get("ftm:"+bssid)
         return list(dict.fromkeys(([row["host"]] if row else [])+neighbor_hosts(bssid)))
     def observe_anchor(self,bssid,host):
+        if self.client is not None:return self.client.observe_anchor(bssid,host)
         host=str(ipaddress.ip_address(host));identity={"kind":"ftm_anchor","bssid":bssid}
         with sqlite3.connect(self.path,timeout=3) as db:
             db.execute("BEGIN IMMEDIATE")

@@ -54,6 +54,7 @@ class DualRadioRanging:
         ftm=p.get('ftm') or {}
         interval=meta.get('capture_host_monotonic_interval_s')
         if not isinstance(interval,list) or len(interval)!=2 or interval[1]<interval[0] or interval[1]-interval[0]>1.:return
+        if meta.get("_host_io_clock") and (time.monotonic()-interval[0]>=2 or interval[1]>time.monotonic()+.05):return
         stamp=sum(interval)/2
         if not -.05<=time.monotonic()-stamp<2:return
         with self.lock:
@@ -72,6 +73,9 @@ class DualRadioRanging:
                                           target=target,observed=stamp-age/1000)
 
     def request(self,target,channel):
+        from tof_host_io import client
+        if client() is not None:
+            return client().device_request(self.rear_id,"/api/telemetry/ftm",dict(address=target,channel=channel))
         with sqlite3.connect('file:'+str(self.directory/'device-routes.sqlite3')+'?mode=ro',uri=True) as db:
             route=db.execute('SELECT host FROM routes WHERE device_id=?',(self.rear_id,)).fetchone()
         if not route:raise ValueError('rear radio route unavailable')

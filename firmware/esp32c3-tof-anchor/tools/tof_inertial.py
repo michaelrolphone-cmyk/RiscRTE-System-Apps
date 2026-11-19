@@ -351,9 +351,10 @@ class InertialNavigator:
 
 class VisionFeed(threading.Thread):
     """Reuse the local push stream including the firmware IMU history ring."""
-    def __init__(self, nav, path):
+    def __init__(self, nav, path, host_io=None):
         super().__init__(daemon=True, name='tof-imu-stream')
         self.nav, self.path = nav, str(path)
+        self.host_io = host_io
         self._radio_lock = threading.Lock()
         self._radio = None
 
@@ -367,6 +368,8 @@ class VisionFeed(threading.Thread):
         low, high = interval
         if not all(isinstance(x, (int, float)) and math.isfinite(x) for x in interval) or low > high:
             return
+        if meta.get("_host_io_clock") and (time.monotonic()-low>=2 or high>time.monotonic()+.05):
+            return
         observed = (low + high) / 2
         snapshot = dict(packet, ahrs=(meta.get("ahrs") or {}).get("ahrs") or {})
         with self._radio_lock:
@@ -379,37 +382,44 @@ class VisionFeed(threading.Thread):
             return value
 
 
+    def _consume(self, meta):
+        now = time.time()
+        self._ranging(meta)
+        dual=getattr(self.nav,'dual_radio',None)
+        if dual is not None:dual.receive(meta)
+        self.nav.ingest(meta,now)
+        with self.nav.lock:
+            if self.nav.survey_pose is not None:
+                self.nav.survey_pose.observe(meta,now,self.nav)
+            self.nav.world_body.visual(self.nav,meta,now)
+        self.nav.feed_error = None
+
     def run(self):
         self.nav.survey_pose = start_survey_control(self.nav)
         while True:
             try:
-                with socket.socket(socket.AF_UNIX) as sock:
-                    sock.settimeout(5)
-                    sock.connect(self.path)
-                    conn = http.client.HTTPConnection('localhost')
-                    conn.sock = sock
-                    conn.request('GET','/v1/live')
-                    with conn.getresponse() as r:
-                        if r.status != 200:
-                            raise OSError(f'vision HTTP {r.status}')
-                        while True:
-                            total, = struct.unpack('!I',r.read(4))
-                            size, = struct.unpack('!I',r.read(4))
-                            if size > total-4:
-                                raise ValueError('invalid live frame')
-                            meta = json.loads(r.read(size))
-                            r.read(total-4-size)
-                            now = time.time()
-                            self._ranging(meta)
-                            dual=getattr(self.nav,'dual_radio',None)
-                            if dual is not None:dual.receive(meta)
-                            self.nav.ingest(meta,now)
-                            with self.nav.lock:
-                                if self.nav.survey_pose is not None:
-                                    self.nav.survey_pose.observe(meta,now,self.nav)
-                                self.nav.world_body.visual(self.nav,meta,now)
-                            self.nav.feed_error = None
-            except (OSError, ValueError, TypeError, KeyError, struct.error, http.client.HTTPException) as exc:
+                if self.host_io is not None:
+                    for meta, _jpeg in self.host_io.vision_frames():
+                        self._consume(meta)
+                else:
+                    with socket.socket(socket.AF_UNIX) as sock:
+                        sock.settimeout(5)
+                        sock.connect(self.path)
+                        conn = http.client.HTTPConnection('localhost')
+                        conn.sock = sock
+                        conn.request('GET','/v1/live')
+                        with conn.getresponse() as r:
+                            if r.status != 200:
+                                raise OSError(f'vision HTTP {r.status}')
+                            while True:
+                                total, = struct.unpack('!I',r.read(4))
+                                size, = struct.unpack('!I',r.read(4))
+                                if size > total-4:
+                                    raise ValueError('invalid live frame')
+                                meta = json.loads(r.read(size))
+                                r.read(total-4-size)
+                                self._consume(meta)
+            except (OSError, ValueError, TypeError, KeyError, EOFError, struct.error, http.client.HTTPException) as exc:
                 self.nav.feed_error = type(exc).__name__
                 time.sleep(.3)
 

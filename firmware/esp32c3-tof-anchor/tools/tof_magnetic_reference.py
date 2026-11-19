@@ -13,6 +13,9 @@ import numpy as np
 
 
 def profile_request(directory, receiver, payload=None):
+    from tof_host_io import client
+    if client() is not None:
+        return client().device_request(receiver,"/api/ahrs/calibration",payload)
     cfg=json.loads((directory/'config.json').read_text())['camera']
     if cfg['device_id']!=receiver:raise ValueError('Wrong calibration receiver')
     with sqlite3.connect('file:'+str(directory/'device-routes.sqlite3')+'?mode=ro',uri=True) as db:

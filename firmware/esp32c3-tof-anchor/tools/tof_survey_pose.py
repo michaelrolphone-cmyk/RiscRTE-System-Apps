@@ -324,6 +324,10 @@ def start_survey_control(nav):
     pose = SurveyPose(nav.directory)
     if pose.reference and (nav.world_body.body is None or nav.world_body.time < pose.reference['at']):
         pose.apply_zero(nav)
+    from tof_host_io import survey_settings, start_survey_http
+    if survey_settings() is not None:
+        pose.control_server=start_survey_http(nav,pose,survey_settings())
+        return pose
     class Reset(socketserver.StreamRequestHandler):
         def handle(self):
             try:

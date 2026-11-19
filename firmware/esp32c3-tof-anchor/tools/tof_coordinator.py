@@ -18,8 +18,13 @@ from tof_anchor_packets import AnchorReports, PushAnchorRegistry
 from tof_discovery import publish_responders
 from tof_gateway_routes import GatewayRoutes
 from functools import partial
+from tof_host_io import (configure, configure_survey, AnchorSocket, RuntimeHealth,
+                         native_output_clock, wall_observed, prepare)
 
-def http_json(base,path,payload=None,route_registry=None,device_id=None):
+def http_json(base,path,payload=None,route_registry=None,device_id=None,host_io=None):
+    if host_io is not None:
+        if not device_id:raise ValueError("portable device identity is required")
+        return host_io.device_request(device_id,path,payload)
     if route_registry and device_id:base=GatewayRoutes(route_registry).origin(base,device_id)
     data=None if payload is None else json.dumps(payload).encode()
     request=urllib.request.Request(base+path,data=data,headers={"Content-Type":"application/json"})
@@ -71,13 +76,37 @@ def main():
     parser.add_argument("--camera-id")
     parser.add_argument("--port",type=int,default=7446)
     parser.add_argument("--rover-height",type=float,default=.0635)
+    parser.add_argument("--vision-state",default=str(Path.home()/".local/share/biome-robot-vision"))
+    parser.add_argument("--host-io-config")
+    parser.add_argument("--health-port",type=int)
+    parser.add_argument("--health-listen",default="127.0.0.1")
+    parser.add_argument("--survey-port",type=int)
+    parser.add_argument("--survey-listen",default="127.0.0.1")
+    parser.add_argument("--survey-token-file")
+    parser.add_argument("--prepare-only",action="store_true")
+    parser.add_argument("--check",action="store_true")
     args=parser.parse_args()
+    host_io=configure(args.host_io_config)
+    if host_io is not None and not args.camera_id:
+        parser.error("--camera-id is required with --host-io-config")
+    # Existing staged runner preparation never starts an authoritative loop.
+    # No activation endpoint is claimed until the ToF checkpoint/fence adapter
+    # has been qualified for every native JSON reader and effect path.
+    if args.check or args.prepare_only or os.environ.get("BIOME_SERVICE_PHASE")=="preparing":
+        return prepare(args)
+    configure_survey(args.survey_port,args.survey_listen,args.survey_token_file)
+    health=RuntimeHealth(args.health_port,args.health_listen)
     state=Path(args.state);state.mkdir(parents=True,exist_ok=True)
-    sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-    sock.bind(("",args.port));sock.settimeout(.2)
-    routes=GatewayRoutes(args.device_routes) if args.device_routes else None
-    camera_request=partial(http_json,args.camera,route_registry=args.device_routes,device_id=args.camera_id)
+    if host_io is not None:
+        sock=AnchorSocket(host_io)
+    else:
+        sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+        sock.bind(("",args.port))
+    sock.settimeout(.2)
+    routes=GatewayRoutes(args.device_routes) if args.device_routes or host_io else None
+    camera_request=partial(http_json,args.camera,route_registry=args.device_routes,
+                           device_id=args.camera_id,host_io=host_io)
     transport=PushAnchorRegistry(state/"anchor-registry.json",routes=routes)
     # Last observed endpoints are discovery seeds, not accepted measurements.
     try:
@@ -87,10 +116,10 @@ def main():
     reports=AnchorReports()
     baseline=AnchorBaseline(state/"baseline.json")
     rover_refinement=RoverRefinement(state/"rover-refinement.json")
-    vision_dir = Path.home()/".local/share/biome-robot-vision"
+    vision_dir = Path(args.vision_state)
     nav = InertialNavigator(vision_dir)
     inertial = InertialRefinement(nav)
-    vision_feed=VisionFeed(nav, vision_dir/"vision.sock")
+    vision_feed=VisionFeed(nav, vision_dir/"vision.sock", host_io=host_io)
     vision_feed.start()
     graph=RangeGraph(baseline=baseline,rover_refinement=rover_refinement,inertial=inertial)
     from tof_dual_radio import DualRadioRanging
@@ -106,7 +135,8 @@ def main():
         now=time.monotonic()
         try:
             payload,addr=sock.recvfrom(16384)
-            now=time.monotonic()
+            now=getattr(sock,"received_at",None) or time.monotonic()
+            if getattr(sock,"reset_required",False):reports.partial.clear()
             packet=reports.receive(addr,payload,now)
             if packet is not None:
                 packet["ip"]=addr[0]
@@ -123,9 +153,9 @@ def main():
                     # Do not combine measurements from different camera boots.
                     graph.rover.clear()
                 rover_refinement.observe_boot(snapshot.get("boot_id"))
-                rover_refinement.observe_motion(snapshot.get("ahrs",{}),now=observed)
+                rover_refinement.observe_motion(snapshot.get("ahrs",{}),now=wall_observed(observed))
                 try:
-                    visual=json.loads((Path.home()/".local/share/biome-robot-vision/rover-motion.json").read_text())
+                    visual=json.loads((vision_dir/"rover-motion.json").read_text())
                     rover_refinement.observe_visual(visual)
                 except (OSError,ValueError,TypeError):pass
                 graph.observe_rover_responder(snapshot,observed)
@@ -169,6 +199,13 @@ def main():
                 discovery_status=publish_responders(sock,out,args.port)
             out["responder_discovery"]=discovery_status
             out.update(updated_at=time.time(),camera=routes.origin(args.camera,args.camera_id) if routes and args.camera_id else args.camera,camera_error=error,pending_target=request_state.pending,camera_boot_id=request_state.boot_id,request_age_s={k:now-v for k,v in last_requested.items()})
+            if host_io is not None:
+                try:out=native_output_clock(out,host_io)
+                except (OSError,ValueError):
+                    # Never publish Linux monotonic values under legacy native fields.
+                    health.clock_qualified=False
+                    continue
             temp=state/"latest.json.tmp";temp.write_text(json.dumps(out,allow_nan=False))
             os.replace(temp,state/"latest.json")
+            health.note(out,nav,host_io)
 if __name__=="__main__":main()
