@@ -3,10 +3,13 @@ ARG PYTHON_BASE=python:3.11-slim-bookworm
 FROM $PYTHON_BASE
 ARG SOURCE_REVISION
 ARG HOST_IO_REVISION
+ARG TARGETPLATFORM
 LABEL org.opencontainers.image.source="https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps" \
       org.opencontainers.image.revision="$SOURCE_REVISION" \
       org.opencontainers.image.title="Biome ToF coordinator" \
-      org.biomerte.host-io.revision="$HOST_IO_REVISION"
+      org.biomerte.host-io.revision="$HOST_IO_REVISION" \
+      io.biomerte.image="tof-coordinator" \
+      io.biomerte.platform="$TARGETPLATFORM"
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
 WORKDIR /app
 COPY deploy/tof/requirements.txt /tmp/requirements.txt

@@ -12,8 +12,8 @@
     "reviewed_revision": "c6cf46c1fc8b47ab31fdae00f261db95bcfcec55"
   },
   "files": {
-    "deploy/tof/Dockerfile": "88459a0b81e480447a8eaea9ec76b04b9eb57423684ec49970ba68ce9f9903f7",
-    "deploy/tof/README.md": "1f759fe66e9c3ee8aec26915c42d47028fda186635a9cb213452e5be50627a47",
+    "deploy/tof/Dockerfile": "6940626523199ec4796639ceecf4d3395729397b39472bcee091ab499125fb9c",
+    "deploy/tof/README.md": "02cdbe0884474d15be3e9da58c7b4b6a83751f5d2a95983b08fb41c415aa490e",
     "deploy/tof/installed-source-provenance.json": "407a94c0901a560bd308a133ac36dacfb2d493ad11dbb9622fdab94609a09e9d",
     "deploy/tof/requirements.txt": "7023242b770d49ce9ecb20d09f5fe72417242ce3c99aa142bd6cbd175a4d4753",
     "deploy/tof/service.template.json": "a1430cd3ed6b7714f7807438bdbac30ab031ffcaa83d072cc7e6bdbd80cd2b6a",

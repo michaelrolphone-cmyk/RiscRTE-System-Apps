@@ -97,19 +97,37 @@ GET /healthz is liveness. GET /readyz stays503 while preparing; active readiness
 requires a current loop, fresh vision and anchor data, a qualified clock and
 no camera error. A running inert child does not imply application readiness.
 
-## Local build
+## Local build and registry handoff
 
-Use the reviewed core checkout as the named client source:
+Use the qualification harness from a committed checkout. It creates bounded
+Git archives for this package and the pinned reviewed core client, leaving
+credentials and native state outside the build contexts:
 
-    /usr/local/bin/docker build \
-      --build-context host_io=/path/to/reviewed/BiomeRTE \
-      --build-arg SOURCE_REVISION=RISC_GIT_COMMIT \
-      --build-arg HOST_IO_REVISION=CORE_GIT_COMMIT \
-      --build-arg PYTHON_BASE=RESOLVED_IMMUTABLE_PYTHON_BASE \
-      -f deploy/tof/Dockerfile -t biomerte-tof:local-REVISION .
+    python deploy/tof/ci.py \
+      --core-repo /path/to/BiomeRTE \
+      --docker /usr/local/bin/docker \
+      --output /path/to/new/tof-release
 
-Retain immutable image IDs, OCI provenance, checksums and Docker-save exports
-through the parent release pipeline. No registry provision/push is required.
+The output contains image.tar, images.lock.json, image-receipt.json and
+source-proof.json. The common lock records the immutable image ID, source
+commit, platform, base digest and archive checksum. Image labels include
+io.biomerte.image=tof-coordinator and io.biomerte.platform, plus both OCI
+source/revision and the reviewed secondary core source. Use the shared
+BiomeRTE release utility to verify and render the candidate:
+
+    python /path/to/BiomeRTE/deploy/docker-services/images.py verify \
+      --lock /path/to/new/tof-release/images.lock.json
+    python /path/to/BiomeRTE/deploy/docker-services/images.py render \
+      --lock /path/to/new/tof-release/images.lock.json \
+      --image tof-coordinator --local \
+      --template deploy/tof/service.template.json \
+      --output /path/to/new/tof-release/service.local.json
+
+Rendering records the local immutable image reference; it does not declare
+or activate a service. Keep the result outside the live catalog pending the
+state and fence qualification below. Once a registry is available, the same
+BiomeRTE images.py publish command accepts this lock and records the resulting
+immutable registry references. There is no separate ToF publication path.
 
 NumPy1.26.4 and SciPy1.11.4 match the audited native versions. Binary wheels
 are required; do not silently compile numerical libraries on a small host.

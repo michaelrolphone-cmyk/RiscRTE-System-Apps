@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Qualify this ToF image from exact source archives; never publish or activate."""
 import argparse
+import datetime
 import hashlib
 import io
 import json
@@ -107,8 +108,14 @@ def main():
         raise RuntimeError("ToF isolated image tests failed; see tests.log")
     inspected = json.loads(command([docker, "image", "inspect", image]))[0]
     labels = inspected["Config"]["Labels"]
-    if labels.get("org.opencontainers.image.revision") != revision:
-        raise ValueError("Image source label mismatch")
+    expected_labels = {
+        "org.opencontainers.image.source": lock["source_repository"],
+        "org.opencontainers.image.revision": revision,
+        "io.biomerte.image": "tof-coordinator",
+        "io.biomerte.platform": platform,
+    }
+    if any(labels.get(key) != value for key, value in expected_labels.items()):
+        raise ValueError("Image source or common release label mismatch")
     if labels.get("org.biomerte.host-io.revision") != core["ci_revision"]:
         raise ValueError("Image secondary source label mismatch")
     if inspected["Os"] + "/" + inspected["Architecture"] != platform:
@@ -122,6 +129,16 @@ def main():
                    export_sha256=sha_file(export), export_bytes=export.stat().st_size,
                    production_activated=False, registry_pushed=False)
     (out / "image-receipt.json").write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n")
+    # Use the shared BiomeRTE verify/publish/render commands for registry handoff.
+    release = dict(schema="biomerte-container-release/1", source_commit=revision,
+                   source_url=lock["source_repository"],
+                   created_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                   complete=True, images=[dict(
+                       id="tof-coordinator", platform=platform, image_id=image, tag=tag,
+                       dockerfile="deploy/tof/Dockerfile", base_image=base,
+                       archive=dict(file=export.name, sha256=receipt["export_sha256"],
+                                    bytes=receipt["export_bytes"]), registry_ref=None)])
+    (out / "images.lock.json").write_text(json.dumps(release, sort_keys=True, indent=2) + "\n")
     print(json.dumps(receipt, sort_keys=True))
 
 if __name__ == "__main__":
