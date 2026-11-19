@@ -1,0 +1,58 @@
+name: Portable ToF container
+on:
+  pull_request:
+    paths:
+      - 'firmware/esp32c3-tof-anchor/tools/**'
+      - 'deploy/tof/**'
+      - '.github/workflows/tof-container.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'firmware/esp32c3-tof-anchor/tools/**'
+      - 'deploy/tof/**'
+      - '.github/workflows/tof-container.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tof-container-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  portable-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check out reviewed shared host client
+        uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/BiomeRTE
+          ref: a68b63035d0407c3fac121868e04bf067554ae47
+          path: .ci-deps/BiomeRTE
+          persist-credentials: false
+      - name: Verify sources, build immutable image, and run isolated tests
+        run: |
+          python deploy/tof/ci.py \
+            --core-repo .ci-deps/BiomeRTE \
+            --output "$RUNNER_TEMP/tof-artifacts"
+      - name: Preserve image and provenance without a registry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tof-container-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/tof-artifacts/image.tar
+            ${{ runner.temp }}/tof-artifacts/image-receipt.json
+            ${{ runner.temp }}/tof-artifacts/images.lock.json
+            ${{ runner.temp }}/tof-artifacts/source-proof.json
+            ${{ runner.temp }}/tof-artifacts/build.log
+            ${{ runner.temp }}/tof-artifacts/tests.log
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 1

@@ -1,0 +1,67 @@
+{
+  "id": "tof-coordinator",
+  "images": {
+    "linux/arm64": "REPLACE_WITH_IMMUTABLE_IMAGE_ID_OR_DIGEST"
+  },
+  "state_policy": "externally_managed",
+  "effect_policy": "externally_fenced",
+  "activation": {
+    "protocol": "biomerte-service-adapter/1",
+    "binding": "tof-state-authority"
+  },
+  "mounts": [
+    {
+      "binding": "tof-config",
+      "target": "/config",
+      "role": "config",
+      "read_only": true
+    },
+    {
+      "binding": "tof-private",
+      "target": "/private",
+      "role": "private",
+      "read_only": true
+    },
+    {
+      "binding": "tof-state",
+      "target": "/state",
+      "role": "state",
+      "read_only": false
+    }
+  ],
+  "network": "biomerte-services",
+  "memory_bytes": 536870912,
+  "read_only_root": true,
+  "entrypoint": [
+    "python",
+    "/app/tof_coordinator.py"
+  ],
+  "command": [
+    "--prepare-only",
+    "--camera",
+    "http://registered-camera",
+    "--camera-id",
+    "REGISTERED_FRONT_CAMERA_REFERENCE",
+    "--state",
+    "/state/tof",
+    "--vision-state",
+    "/state/vision",
+    "--host-io-config",
+    "/config/host-io.json",
+    "--health-port",
+    "8771",
+    "--health-listen",
+    "0.0.0.0"
+  ],
+  "health": {
+    "Test": [
+      "CMD",
+      "python",
+      "-c",
+      "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8771/healthz',timeout=2).read()"
+    ],
+    "Interval": 10000000000,
+    "Timeout": 3000000000,
+    "Retries": 3
+  }
+}
