@@ -5,12 +5,14 @@ ToF runtime/tests and its container preparation. It does not import the
 unmerged ESP32 firmware, OTA provisioning or earlier firmware workflow edits
 from the original deployment worktree.
 
-source-lock.json records exact hashes for 31 runtime, test and package files.
+source-lock.json records exact hashes for the runtime, test and package files.
 The original qualified source is
 72a725bf2f7fce388d1a6cf761fe7b70b0965ad8, retained on its public source
 branch. The locked Dockerfile and README now add common release metadata and
-handoff instructions; the runtime and tests remain byte-identical to that
-captured revision. Shared core client
+handoff instructions. That captured revision remains the recorded baseline;
+the current direct-activation revision adds local ownership, persistent front
+request custody and active integration tests while preserving the estimation
+modules. Every current file is checked by the source lock. Shared core client
 c6cf46c1fc8b47ab31fdae00f261db95bcfcec55 is also retained remotely.
 CI pins reachable core a68b63035d0407c3fac121868e04bf067554ae47; its client
 is byte-identical to c6 and its SHA256 is checked before the build.
@@ -18,7 +20,7 @@ is byte-identical to c6 and its SHA256 is checked before the build.
 The qualification harness verifies committed file hashes, creates exact Git
 archives for the ToF package and pinned shared client, selects the immutable
 base platform manifest, builds and checks OCI and common release labels, runs
---help and all 83 tests in a read-only 512 MiB container with no network or live
+--help and the complete test suite in a read-only 512 MiB container with no network or live
 mounts, then saves the image and its SHA256. Only an isolated /tmp tmpfs is
 writable. Pull requests build their actual head commit so image provenance
 names a fetchable branch commit, rather than an ephemeral merge revision.
@@ -129,3 +131,8 @@ partial output remains available for diagnosis. The complete runtime test suite
 and its network, filesystem, memory, CPU and process isolation remain unchanged.
 Two small subprocess checks cover live log visibility before child exit and
 retained stdout/stderr plus the actual failure exit code.
+
+The complete suite now also exercises a real active coordinator subprocess
+with isolated anchor/vision/clock fixtures, persistent request custody and a
+second-process ownership rejection. The default image command remains inert;
+the explicit same-Mac Compose deployment supplies the active command.

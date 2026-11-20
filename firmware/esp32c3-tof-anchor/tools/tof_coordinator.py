@@ -3,6 +3,9 @@
 Writes one bounded latest-state JSON, never an unbounded measurement journal.
 """
 import argparse
+import atexit
+import signal
+import threading
 import json
 import os
 from pathlib import Path
@@ -18,6 +21,7 @@ from tof_anchor_packets import AnchorReports, PushAnchorRegistry
 from tof_discovery import publish_responders
 from tof_gateway_routes import GatewayRoutes
 from functools import partial
+from tof_runtime import OwnerLock, RoverRequest
 from tof_host_io import (configure, configure_survey, AnchorSocket, RuntimeHealth,
                          native_output_clock, wall_observed, prepare)
 
@@ -31,42 +35,23 @@ def http_json(base,path,payload=None,route_registry=None,device_id=None,host_io=
     with urllib.request.urlopen(request,timeout=3) as response:
         return json.load(response)
 
-class RoverRequest:
-    """Reconcile local request custody with the camera's authoritative boot."""
-    def __init__(self):
-        self.boot_id = None
-        self.uptime_ms = None
-        self.pending = None
-        self.started = 0.
-
-    def observe(self, snapshot):
-        ftm = snapshot.get("ftm", {})
-        boot = snapshot.get("boot_id")
-        uptime = snapshot.get("uptime_ms")
-        rebooted = ((boot is not None and self.boot_id is not None and boot != self.boot_id)
-                    or (isinstance(uptime, (int, float)) and isinstance(self.uptime_ms, (int, float))
-                        and uptime < self.uptime_ms))
-        if boot is not None:
-            self.boot_id = boot
-        if isinstance(uptime, (int, float)):
-            self.uptime_ms = uptime
-        idle = not ftm.get("busy") and not ftm.get("retiring")
-        reset = idle and ftm.get("status") == "never_requested" and not ftm.get("target")
-        completed = idle and self.pending and str(ftm.get("target") or "").lower() == self.pending
-        if rebooted or reset or completed:
-            self.pending = None
-        return rebooted
-
-    def submitted(self, address, now):
-        self.pending = address.lower()
-        self.started = now
-
 def choose_target(nodes, last_requested):
     # Rotating an index over a changing idle list can repeatedly skip a node.
     # Request age is stable across eligibility changes and failed measurements.
     return min(nodes, key=lambda node: (
         last_requested.get(node["bssid"].lower(), float("-inf")),
         node["bssid"].lower()))
+
+def camera_metadata(camera, device_id, routes, error):
+    """Route metadata may fail without abandoning the solver's live custody."""
+    origin=camera
+    try:
+        if routes and device_id:origin=routes.origin(camera,device_id)
+    except (OSError,ValueError):
+        # Keep the registered reference, not a cached or guessed device address.
+        # Commands still resolve through camera_request with their device identity.
+        error=error or "camera_route_unavailable"
+    return dict(camera=origin,camera_error=error)
 
 def main():
     parser=argparse.ArgumentParser()
@@ -89,14 +74,18 @@ def main():
     host_io=configure(args.host_io_config)
     if host_io is not None and not args.camera_id:
         parser.error("--camera-id is required with --host-io-config")
-    # Existing staged runner preparation never starts an authoritative loop.
-    # No activation endpoint is claimed until the ToF checkpoint/fence adapter
-    # has been qualified for every native JSON reader and effect path.
+    # Preparation remains inert. Explicit direct deployment activates only
+    # after the previous native owner has stopped and state is bound.
     if args.check or args.prepare_only or os.environ.get("BIOME_SERVICE_PHASE")=="preparing":
         return prepare(args)
+    state=Path(args.state);state.mkdir(parents=True,exist_ok=True)
+    owner=OwnerLock(state/"coordinator.owner.lock").acquire()
+    atexit.register(owner.close)
+    stopping=threading.Event()
+    signal.signal(signal.SIGTERM,lambda *_:stopping.set())
+    signal.signal(signal.SIGINT,lambda *_:stopping.set())
     configure_survey(args.survey_port,args.survey_listen,args.survey_token_file)
     health=RuntimeHealth(args.health_port,args.health_listen)
-    state=Path(args.state);state.mkdir(parents=True,exist_ok=True)
     if host_io is not None:
         sock=AnchorSocket(host_io)
     else:
@@ -130,8 +119,9 @@ def main():
     last_sample=None
     discovery_status={}
     channel_cache={}
-    last_requested={};error=None;request_state=RoverRequest();retired=False
-    while True:
+    last_requested={};error=None;request_state=RoverRequest(
+        state/"request-custody.json",state/"latest.json");retired=False
+    while not stopping.is_set():
         now=time.monotonic()
         try:
             payload,addr=sock.recvfrom(16384)
@@ -177,8 +167,9 @@ def main():
                     if nodes:
                         target=choose_target(nodes,last_requested)
                         address=target["bssid"].lower()
+                        request_state.submitted(address,now)
+                        last_requested[address]=now;last_request=now;retired=False
                         camera_request("/api/telemetry/ftm",{"address":address,"channel":channel_cache.get(address,target["channel"])})
-                        request_state.submitted(address,now);last_requested[address]=now;last_request=now;retired=False
                 if not retired:error=None
             except (OSError,ValueError,urllib.error.HTTPError) as e:
                 error=type(e).__name__+": "+str(e)
@@ -198,7 +189,8 @@ def main():
                 last_discovery=now
                 discovery_status=publish_responders(sock,out,args.port)
             out["responder_discovery"]=discovery_status
-            out.update(updated_at=time.time(),camera=routes.origin(args.camera,args.camera_id) if routes and args.camera_id else args.camera,camera_error=error,pending_target=request_state.pending,camera_boot_id=request_state.boot_id,request_age_s={k:now-v for k,v in last_requested.items()})
+            out.update(updated_at=time.time(),pending_target=request_state.pending,camera_boot_id=request_state.boot_id,request_age_s={k:now-v for k,v in last_requested.items()})
+            out.update(camera_metadata(args.camera,args.camera_id,routes,error))
             if host_io is not None:
                 try:out=native_output_clock(out,host_io)
                 except (OSError,ValueError):
