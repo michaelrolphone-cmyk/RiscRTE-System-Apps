@@ -46,6 +46,8 @@ def main():
     parser.add_argument("--core-repo", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--docker", default="docker")
+    parser.add_argument("--platform", choices=("linux/amd64", "linux/arm64"),
+                        help="Explicit build/test platform; default is the Docker server platform")
     parser.add_argument("--verify-only", action="store_true")
     args = parser.parse_args()
     revision = command(["git", "rev-parse", "HEAD"], cwd=ROOT).strip()
@@ -69,7 +71,7 @@ def main():
         print(json.dumps(proof, sort_keys=True))
         return
     docker = args.docker
-    platform = command([docker, "version", "--format",
+    platform = args.platform or command([docker, "version", "--format",
                         "{{.Server.Os}}/{{.Server.Arch}}"]).strip()
     if platform not in lock["bases"]:
         raise ValueError("No qualified binary-wheel/base platform: " + platform)
@@ -94,7 +96,7 @@ def main():
     if result.returncode:
         raise RuntimeError("ToF build failed; see build.log")
     image = (out / "image-id").read_text().strip()
-    limits = ["--rm", "--network", "none", "--read-only", "--tmpfs",
+    limits = ["--platform", platform, "--rm", "--network", "none", "--read-only", "--tmpfs",
               "/tmp:rw,nosuid,nodev,size=64m", "--cap-drop", "ALL",
               "--security-opt", "no-new-privileges", "--memory", "512m",
               "--cpus", "1", "--pids-limit", "128"]
