@@ -107,3 +107,14 @@ checkpoint, pending-command custody, native-reader and output-fence handoff
 has been qualified. Private pulls on a Mac or Pi require appropriately scoped
 host credentials; a successful Actions publication does not establish those
 credentials or physical-host compatibility.
+
+## Qualification progress and completion
+
+The qualification harness waits for actual subprocess completion, without fixed
+wall-clock cutoffs. ARM64 emulation can legitimately take longer than a native
+run. Build, help-smoke and verbose unittest output is streamed immediately to
+the Actions log and flushed stage logs. A nonzero exit still fails qualification;
+partial output remains available for diagnosis. The complete runtime test suite
+and its network, filesystem, memory, CPU and process isolation remain unchanged.
+Two small subprocess checks cover live log visibility before child exit and
+retained stdout/stderr plus the actual failure exit code.
