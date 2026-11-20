@@ -69,7 +69,9 @@ survey control by default.
 The service-specific checkpoint must cover these revisions consistently.
 Native readers must follow the qualified authority or receive atomic
 publications. A one-time directory copy does not provide failover. Native
-DeviceRoutes SQLite and vision.sock are never image/mount inputs.
+DeviceRoutes SQLite and vision.sock are not opened by the portable solver.
+The same-Mac direct deployment reuses the existing JSON state directories;
+route and Unix-stream access still goes through host-I/O.
 
 Preserve pending FTM request custody and uncertain POST effects during
 handoff. A timeout does not establish that a device command did not apply.
@@ -139,3 +141,21 @@ externally_managed state, externally_fenced effects and staged activation.
 Its image/authority placeholders are deliberately not deployable. Keep it
 outside the live catalog until the checkpoint receiver, exact grant proof,
 physical fence and native-reader handoff have been qualified.
+
+## Explicit same-Mac activation
+
+BiomeRTE deploy/workers/tof contains an actual active Compose command and a
+root-controlled native-stop/container-start/verified-rollback procedure. It
+reuses the existing JSON state paths for native consumers instead of claiming
+a distributed state transfer. The native launch agent must be disabled and
+fully stopped; Docker Desktop file locks cannot fence a native Mac writer.
+
+The coordinator now holds a container-side process lock and persists pending
+FTM custody before issuing device commands. It restores pending custody across
+process/VM restarts, reconciles it from device observations, and keeps only one
+bounded state record. SIGTERM completes the current iteration and exits.
+
+The isolated active integration test starts the actual coordinator against
+synthetic host-I/O streams, checks real solution publication and the native
+clock boundary, preserves a trained baseline, and repeats after restart.
+This is active-image qualification, not evidence of production cutover.
