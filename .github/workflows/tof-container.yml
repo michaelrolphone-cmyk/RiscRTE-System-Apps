@@ -80,7 +80,6 @@ jobs:
       contents: read
       packages: write
     env:
-      DOCKER_CONFIG: ${{ runner.temp }}/tof-registry-auth
       REGISTRY_OWNER: michaelrolphone-cmyk
     steps:
       - uses: actions/checkout@v4
@@ -157,6 +156,10 @@ jobs:
           python .ci-deps/release-tools/deploy/docker-services/ghcr.py private \
             --owner "$REGISTRY_OWNER" --image tof-coordinator \
             --output "$RUNNER_TEMP/tof-release/private-before.json"
+      - name: Isolate ephemeral registry credentials
+        run: |
+          mkdir -p "$RUNNER_TEMP/tof-registry-auth"
+          printf 'DOCKER_CONFIG=%s/tof-registry-auth\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Authenticate publication with this job's token
         env:
           GH_TOKEN: ${{ github.token }}
