@@ -16,11 +16,21 @@ permissions:
   contents: read
 concurrency:
   group: tof-container-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   portable-image:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main' || github.repository != 'michaelrolphone-cmyk/RiscRTE-System-Apps'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: amd64
+            platform: linux/amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            platform: linux/arm64
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,17 +47,20 @@ jobs:
           path: .ci-deps/BiomeRTE
           persist-credentials: false
       - name: Verify sources, build immutable image, and run isolated tests
+        env:
+          EXPECTED_PLATFORM: ${{ matrix.platform }}
         run: |
+          test "$(docker version --format '{{.Server.Os}}/{{.Server.Arch}}')" = "$EXPECTED_PLATFORM"
           python deploy/tof/ci.py \
             --core-repo .ci-deps/BiomeRTE \
+            --platform "$EXPECTED_PLATFORM" \
             --output "$RUNNER_TEMP/tof-artifacts"
-      - name: Preserve image and provenance without a registry
+      - name: Preserve qualification metadata
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tof-container-${{ github.event.pull_request.head.sha || github.sha }}
+          name: tof-qualification-${{ github.event.pull_request.head.sha || github.sha }}-${{ matrix.arch }}
           path: |
-            ${{ runner.temp }}/tof-artifacts/image.tar
             ${{ runner.temp }}/tof-artifacts/image-receipt.json
             ${{ runner.temp }}/tof-artifacts/images.lock.json
             ${{ runner.temp }}/tof-artifacts/source-proof.json
@@ -56,3 +69,129 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           compression-level: 1
+
+  publish-private:
+    if: >-
+      github.repository == 'michaelrolphone-cmyk/RiscRTE-System-Apps' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      DOCKER_CONFIG: ${{ runner.temp }}/tof-registry-auth
+      REGISTRY_OWNER: michaelrolphone-cmyk
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check out reviewed shared host client
+        uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/BiomeRTE
+          ref: a68b63035d0407c3fac121868e04bf067554ae47
+          path: .ci-deps/BiomeRTE
+          persist-credentials: false
+      - name: Check out reviewed common release tooling
+        uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/BiomeRTE
+          ref: f28bdd38524b9946c45113501a271581b6d8983a
+          path: .ci-deps/release-tools
+          persist-credentials: false
+      - name: Enable explicit ARM64 emulation
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
+        with:
+          platforms: arm64
+      - name: Qualify both exact platform images before publication
+        run: |
+          for arch in amd64 arm64; do
+            python deploy/tof/ci.py \
+              --core-repo .ci-deps/BiomeRTE --platform "linux/$arch" \
+              --output "$RUNNER_TEMP/tof-$arch"
+          done
+      - name: Verify and combine exact qualified sources
+        run: |
+          python .ci-deps/release-tools/deploy/docker-services/images.py combine \
+            --lock "$RUNNER_TEMP/tof-amd64/images.lock.json" \
+            --lock "$RUNNER_TEMP/tof-arm64/images.lock.json" \
+            --output-dir "$RUNNER_TEMP/tof-release"
+          python - <<'PY'
+          import json, os, pathlib, shutil
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          expected_sha = os.environ['GITHUB_SHA']
+          source_lock = json.loads(pathlib.Path('deploy/tof/source-lock.json').read_text())
+          combined = json.loads((root / 'tof-release/images.lock.json').read_text())
+          if combined['source_commit'] != expected_sha or combined['source_url'] != source_lock['source_repository']:
+              raise ValueError('Qualified release source differs from this main run')
+          expected_platforms = {'linux/amd64', 'linux/arm64'}
+          if len(combined['images']) != 2 or {(x['id'], x['platform']) for x in combined['images']} != {('tof-coordinator', p) for p in expected_platforms}:
+              raise ValueError('Incomplete or unexpected ToF release platforms')
+          for item in combined['images']:
+              arch = item['platform'].split('/')[1]
+              folder = root / ('tof-' + arch)
+              proof = json.loads((folder / 'source-proof.json').read_text())
+              receipt = json.loads((folder / 'image-receipt.json').read_text())
+              if proof['source_revision'] != expected_sha or proof['source_repository'] != source_lock['source_repository'] or proof['core'] != source_lock['core']:
+                  raise ValueError('ToF primary or secondary source proof mismatch')
+              if receipt['source'] != proof or receipt['image_id'] != item['image_id'] or receipt['platform'] != item['platform'] or receipt['tests_exit_code'] != 0:
+                  raise ValueError('ToF qualification receipt mismatch')
+              if receipt['export_sha256'] != item['archive']['sha256'] or receipt['export_bytes'] != item['archive']['bytes']:
+                  raise ValueError('ToF qualification archive mismatch')
+              evidence = root / 'tof-release' / 'qualification' / arch
+              evidence.mkdir(parents=True)
+              for name in ('source-proof.json', 'image-receipt.json', 'build.log', 'tests.log'):
+                  shutil.copyfile(folder / name, evidence / name)
+          PY
+          python .ci-deps/release-tools/deploy/docker-services/images.py verify \
+            --lock "$RUNNER_TEMP/tof-release/images.lock.json"
+      - name: Require private registry packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python .ci-deps/release-tools/deploy/docker-services/ghcr.py private \
+            --owner "$REGISTRY_OWNER" --image tof-coordinator \
+            --output "$RUNNER_TEMP/tof-release/private-before.json"
+      - name: Authenticate publication with this job's token
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Publish qualified images through the common release tool
+        run: |
+          python .ci-deps/release-tools/deploy/docker-services/images.py publish \
+            --lock "$RUNNER_TEMP/tof-release/images.lock.json" \
+            --registry ghcr.io --namespace "$REGISTRY_OWNER"
+      - name: Verify private visibility and render an inert candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python .ci-deps/release-tools/deploy/docker-services/ghcr.py private \
+            --owner "$REGISTRY_OWNER" --image tof-coordinator --require-existing \
+            --output "$RUNNER_TEMP/tof-release/private-after.json"
+          python .ci-deps/release-tools/deploy/docker-services/images.py render \
+            --lock "$RUNNER_TEMP/tof-release/images.lock.json" \
+            --image tof-coordinator --template deploy/tof/service.template.json \
+            --output "$RUNNER_TEMP/tof-release/service.prepared.json"
+      - name: Preserve publication and qualification metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tof-ghcr-release-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/tof-amd64/*.json
+            ${{ runner.temp }}/tof-amd64/*.log
+            ${{ runner.temp }}/tof-arm64/*.json
+            ${{ runner.temp }}/tof-arm64/*.log
+            ${{ runner.temp }}/tof-release/*.json
+            ${{ runner.temp }}/tof-release/qualification/**/*.json
+            ${{ runner.temp }}/tof-release/qualification/**/*.log
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Remove ephemeral registry login
+        if: always()
+        run: docker logout ghcr.io
