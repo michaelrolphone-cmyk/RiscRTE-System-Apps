@@ -6,6 +6,7 @@
 #include <driver/rmt_encoder.h>
 #include <esp_timer.h>
 #include <atomic>
+#include <mutex>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 namespace RelayBoard {
@@ -14,8 +15,10 @@ static bool active=false;static rmt_channel_handle_t pixels=nullptr;static rmt_e
 static std::atomic<uint8_t> mask{0};static uint8_t pixel[3]{};
 static unsigned toneHz=0;
 static std::atomic<bool> streamOwned{false};
-static std::atomic<uint8_t> streamMask{0};
-static std::atomic<uint64_t> streamDeadline{0}, streamSequence{0}, appliedSequence{0};
+struct DesiredOutput {uint8_t mask=0;uint64_t deadline=0,sequence=0;};
+static std::mutex streamMutex;static DesiredOutput streamDesiredState;
+static std::atomic<uint64_t> appliedSequence{0};
+static std::atomic<uint32_t> streamChanges{0},streamExpired{0};
 static TaskHandle_t streamTask=nullptr;
 static bool setRelay(unsigned channel,bool on){
  const uint8_t bit=1u<<(channel-1);
@@ -47,26 +50,30 @@ static void runStream(void*){
  for(;;){
   if(streamOwned.load()){
    const uint64_t now=esp_timer_get_time()/1000;
-   const uint8_t desired=now<streamDeadline.load()?streamMask.load():0;
+   DesiredOutput frame;{std::lock_guard<std::mutex> guard(streamMutex);frame=streamDesiredState;}
+   const uint8_t desired=now<frame.deadline?frame.mask:0;
    const uint8_t old=mask;
    // Break before make and avoid toggling contacts for same-state intent.
    bool ok=true;
    for(unsigned ch=1;ch<=6;++ch)if((old&~desired)&(1u<<(ch-1)))ok=setRelay(ch,false)&&ok;
    if(ok)for(unsigned ch=1;ch<=6&&ok;++ch)if((desired&~old)&(1u<<(ch-1)))ok=setRelay(ch,true);
-   if(ok)appliedSequence.store(streamSequence.load());
-   else{streamMask=0;streamDeadline=0;}
+   if(ok){
+    if(old!=desired){++streamChanges;if(old&&!desired&&now>=frame.deadline)++streamExpired;}
+    appliedSequence.store(frame.sequence);
+   }else{std::lock_guard<std::mutex> guard(streamMutex);streamDesiredState.mask=0;streamDesiredState.deadline=0;}
   }
   vTaskDelay(pdMS_TO_TICKS(5));
  }
 }
 bool streamBegin(){
  if(!active||streamOwned.load()||batchStateBusy())return false;
- streamMask=0;streamDeadline=0;streamSequence=0;appliedSequence=0;streamOwned=true;return true;
+ {std::lock_guard<std::mutex> guard(streamMutex);streamDesiredState={};}
+ appliedSequence=0;streamOwned=true;return true;
 }
 void streamDesired(uint8_t desired,uint64_t deadline,uint64_t sequence){
- streamMask=desired;streamDeadline=deadline;streamSequence=sequence;
+ std::lock_guard<std::mutex> guard(streamMutex);streamDesiredState={desired,deadline,sequence};
 }
-void streamNeutral(){streamMask=0;streamDeadline=0;}
+void streamNeutral(){std::lock_guard<std::mutex> guard(streamMutex);streamDesiredState.mask=0;streamDesiredState.deadline=0;}
 void streamEnd(){
  streamNeutral();
  // Keep local task custody until neutral has been applied.
@@ -75,6 +82,8 @@ void streamEnd(){
 }
 uint64_t streamApplied(){return appliedSequence.load();}
 uint8_t streamOutput(){return mask;}
+uint32_t streamTransitions(){return streamChanges.load();}
+uint32_t streamExpirations(){return streamExpired.load();}
 
 enum class BatchState { Idle, Running, Cancelling, Complete, Failed };
 static std::atomic<BatchState> batchState{BatchState::Idle};

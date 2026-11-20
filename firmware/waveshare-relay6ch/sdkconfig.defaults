@@ -31,8 +31,13 @@ CONFIG_MBEDTLS_PKCS1_V15=y
 CONFIG_MBEDTLS_SHA256_C=y
 
 # The signed Stream authorization header exceeds the transport's 1 KiB default.
-# Keep data bounds independent and free handshake/data/TLS buffers when idle.
+# Free the large upgrade buffer; retain small control RX/TX buffers for the
+# connection lifetime so unrelated HTTP work cannot starve a held input.
 CONFIG_WS_BUFFER_SIZE=6144
 CONFIG_WS_DYNAMIC_BUFFER=y
-CONFIG_ESP_WS_CLIENT_ENABLE_DYNAMIC_BUFFER=y
+CONFIG_ESP_WS_CLIENT_ENABLE_DYNAMIC_BUFFER=n
 CONFIG_MBEDTLS_DYNAMIC_BUFFER=y
+
+# Keep acknowledgments from blocking control receive on the SDK state lock.
+CONFIG_ESP_WS_CLIENT_SEPARATE_TX_LOCK=y
+CONFIG_ESP_WS_CLIENT_TX_LOCK_TIMEOUT_MS=20

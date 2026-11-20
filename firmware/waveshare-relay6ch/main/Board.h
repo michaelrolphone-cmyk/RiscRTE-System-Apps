@@ -5,4 +5,5 @@ namespace RelayBoard {bool begin();int poll(void*,JsonObject);bool cancel(void*)
 namespace RelayBoard {
  bool streamBegin();void streamDesired(uint8_t,uint64_t,uint64_t);void streamNeutral();void streamEnd();
  uint64_t streamApplied();uint8_t streamOutput();
+ uint32_t streamTransitions();uint32_t streamExpirations();
 }
