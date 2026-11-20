@@ -80,8 +80,19 @@ remain unchanged.
 The common release utility gives each platform a source-commit tag and records
 its confirmed immutable registry digest. Before the first push, the shared
 GHCR helper rejects an existing package unless its visibility is private.
-An absent package is created with GitHub's default private visibility. A second
-check requires the published package to exist and remain private.
+An absent package is allowed only after the actual publishing repository is
+verified private through the GitHub API. This source repository is public, so
+its workflow refuses first creation before registry login or push. The package
+must already be private and grant this workflow access before it can publish.
+
+First creation belongs in a verified private publishing workflow. GitHub
+Actions package creation inherits its publishing repository's visibility;
+the generic Container registry default-private statement is insufficient.
+The helper is pinned to the reviewed cbc7431 correction. Private publisher
+metadata is a prerequisite, not proof of the resulting package's visibility,
+particularly when the OCI source label links a different public repository.
+A second check requires the published package to exist and remain private;
+bootstrap must also confirm that fresh anonymous access is denied.
 
 Publication checks out the reviewed common release-tool revision separately
 from the unchanged a68b630 shared host-client source. Both platform archives
@@ -107,3 +118,14 @@ checkpoint, pending-command custody, native-reader and output-fence handoff
 has been qualified. Private pulls on a Mac or Pi require appropriately scoped
 host credentials; a successful Actions publication does not establish those
 credentials or physical-host compatibility.
+
+## Qualification progress and completion
+
+The qualification harness waits for actual subprocess completion, without fixed
+wall-clock cutoffs. ARM64 emulation can legitimately take longer than a native
+run. Build, help-smoke and verbose unittest output is streamed immediately to
+the Actions log and flushed stage logs. A nonzero exit still fails qualification;
+partial output remains available for diagnosis. The complete runtime test suite
+and its network, filesystem, memory, CPU and process isolation remain unchanged.
+Two small subprocess checks cover live log visibility before child exit and
+retained stdout/stderr plus the actual failure exit code.
