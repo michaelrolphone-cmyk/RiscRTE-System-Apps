@@ -42,6 +42,17 @@ def choose_target(nodes, last_requested):
         last_requested.get(node["bssid"].lower(), float("-inf")),
         node["bssid"].lower()))
 
+def camera_metadata(camera, device_id, routes, error):
+    """Route metadata may fail without abandoning the solver's live custody."""
+    origin=camera
+    try:
+        if routes and device_id:origin=routes.origin(camera,device_id)
+    except (OSError,ValueError):
+        # Keep the registered reference, not a cached or guessed device address.
+        # Commands still resolve through camera_request with their device identity.
+        error=error or "camera_route_unavailable"
+    return dict(camera=origin,camera_error=error)
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--camera",required=True)
@@ -178,7 +189,8 @@ def main():
                 last_discovery=now
                 discovery_status=publish_responders(sock,out,args.port)
             out["responder_discovery"]=discovery_status
-            out.update(updated_at=time.time(),camera=routes.origin(args.camera,args.camera_id) if routes and args.camera_id else args.camera,camera_error=error,pending_target=request_state.pending,camera_boot_id=request_state.boot_id,request_age_s={k:now-v for k,v in last_requested.items()})
+            out.update(updated_at=time.time(),pending_target=request_state.pending,camera_boot_id=request_state.boot_id,request_age_s={k:now-v for k,v in last_requested.items()})
+            out.update(camera_metadata(args.camera,args.camera_id,routes,error))
             if host_io is not None:
                 try:out=native_output_clock(out,host_io)
                 except (OSError,ValueError):

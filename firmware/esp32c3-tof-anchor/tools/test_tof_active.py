@@ -19,6 +19,7 @@ import threading
 import time
 import unittest
 from urllib.request import urlopen
+from urllib.error import HTTPError
 from biomerte.host_io_client import PROTOCOL
 from test_tof_baseline import Fixture, IDS, XYZ
 
@@ -33,6 +34,8 @@ class FixtureHost:
         self.stop = threading.Event()
         self.lock = threading.Lock()
         self.requests = []
+        self.route_timeout = threading.Event()
+        self.route_timeouts = 0
         self.ftm = dict(status="never_requested", target=None, busy=False, retiring=False)
         self.producer = Fixture()
         self.producer.sequence = 20
@@ -65,6 +68,12 @@ class FixtureHost:
                 if operation == "clock":
                     result = host.clock()
                 elif operation == "routes.get":
+                    if host.route_timeout.is_set():
+                        host.route_timeouts += 1
+                        # Outlast the fixture client deadline: exercise a real socket timeout.
+                        host.stop.wait(.75)
+                        self.close_connection = True
+                        return
                     result = dict(device_id=args["device_id"], host="192.0.2.20")
                 elif operation == "routes.observe_anchor":
                     result = dict(device_id="ftm:" + args["bssid"],host=args["host"])
@@ -153,6 +162,98 @@ def free_port():
 
 
 class ActiveCoordinatorTests(unittest.TestCase):
+    def test_route_lookup_timeout_keeps_solver_alive_and_recovers_readiness(self):
+        with tempfile.TemporaryDirectory() as name:
+            root=Path(name);state=root/"tof";vision=root/"vision"
+            state.mkdir();vision.mkdir()
+            fixture=Fixture(state/"baseline.json")
+            fixture.now=time.time()-80
+            baseline=fixture.train()
+            host=FixtureHost()
+            host.route_timeout.set()
+            try:
+                token=root/"host.token";token.write_text(host.token);token.chmod(0o600)
+                config=root/"host.json"
+                config.write_text(json.dumps(dict(
+                    url="http://127.0.0.1:"+str(host.server.server_port),
+                    allow_local_http=True,host_id=host.host_id,token_file=str(token),
+                    timeout_s=.25)))
+                port=free_port()
+                command=[sys.executable,"-u",str(Path(__file__).with_name("tof_coordinator.py")),
+                         "--camera","http://registered-camera","--camera-id","fixture-front",
+                         "--state",str(state),"--vision-state",str(vision),
+                         "--host-io-config",str(config),"--health-port",str(port)]
+                process=subprocess.Popen(command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,
+                                         text=True,env=dict(os.environ,PYTHONDONTWRITEBYTECODE="1"))
+                try:
+                    failed_updates=[]
+                    deadline=time.monotonic()+20
+                    while time.monotonic()<deadline:
+                        if process.poll() is not None:
+                            self.fail("Route timeout killed solver: "+process.stdout.read())
+                        try:
+                            latest=json.loads((state/"latest.json").read_text())
+                            if latest.get("camera_error")=="camera_route_unavailable":
+                                self.assertEqual(latest["camera"],"http://registered-camera")
+                                self.assertEqual(latest["baseline"]["frame_id"],baseline["frame_id"])
+                                if not failed_updates or latest["updated_at"]!=failed_updates[-1]:
+                                    failed_updates.append(latest["updated_at"])
+                                if len(failed_updates)>=2 and latest.get("anchor_count")==5:
+                                    break
+                        except (OSError,ValueError):
+                            pass
+                        time.sleep(.05)
+                    else:
+                        self.fail("Solver did not checkpoint through repeated route timeouts")
+                    self.assertGreaterEqual(host.route_timeouts,2)
+                    with urlopen("http://127.0.0.1:"+str(port)+"/healthz",timeout=1) as response:
+                        self.assertTrue(json.load(response)["live"])
+                    with self.assertRaises(HTTPError) as failed:
+                        urlopen("http://127.0.0.1:"+str(port)+"/readyz",timeout=1)
+                    self.assertEqual(failed.exception.code,503)
+                    unavailable=json.load(failed.exception)
+                    self.assertFalse(unavailable["ready"])
+                    self.assertFalse(unavailable["camera_ok"])
+                    host.route_timeout.clear()
+                    deadline=time.monotonic()+15
+                    while time.monotonic()<deadline:
+                        if process.poll() is not None:
+                            self.fail("Solver exited during route recovery: "+process.stdout.read())
+                        try:
+                            with urlopen("http://127.0.0.1:"+str(port)+"/readyz",timeout=1) as response:
+                                recovered=json.load(response)
+                            latest=json.loads((state/"latest.json").read_text())
+                            if latest.get("camera")=="http://192.0.2.20":
+                                break
+                        except (OSError,ValueError):
+                            pass
+                        time.sleep(.05)
+                    else:
+                        self.fail("Readiness did not recover after route lookup recovered")
+                    self.assertTrue(recovered["ready"])
+                    self.assertIsNone(latest["camera_error"])
+                    self.assertEqual(latest["baseline"]["frame_id"],baseline["frame_id"])
+                    self.assertIsNone(process.poll())
+                finally:
+                    if process.poll() is None:process.terminate()
+                    try:logs=process.communicate(timeout=10)[0]
+                    except subprocess.TimeoutExpired:
+                        process.kill();logs=process.communicate()[0]
+                        self.fail("Fixture solver did not stop cleanly: "+logs)
+                    self.assertEqual(process.returncode,0,logs)
+            finally:
+                host.close()
+
+    def test_route_timeout_preserves_existing_pending_camera_error(self):
+        from tof_coordinator import camera_metadata
+        class UnavailableRoutes:
+            def origin(self, *_):
+                raise TimeoutError("fixture route timeout")
+        metadata=camera_metadata("http://registered-camera","fixture-front",
+                                 UnavailableRoutes(),"rover_ftm_pending")
+        self.assertEqual(metadata,dict(camera="http://registered-camera",
+                                       camera_error="rover_ftm_pending"))
+
     def test_actual_solver_process_consumes_streams_and_restarts_with_same_baseline(self):
         with tempfile.TemporaryDirectory() as name:
             root=Path(name);state=root/"tof";vision=root/"vision"
