@@ -103,7 +103,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/BiomeRTE
-          ref: f28bdd38524b9946c45113501a271581b6d8983a
+          ref: cbc7431ca432a6957b96cfd7ee2ef9cc17cc0740
           path: .ci-deps/release-tools
           persist-credentials: false
       - name: Enable explicit ARM64 emulation
