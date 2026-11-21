@@ -13,6 +13,12 @@ import stat
 import time
 
 
+REQUEST_SETTLE_SECONDS = 15.
+TERMINAL_FTM_STATES = (
+    "success", "unsupported", "configuration_rejected", "no_response", "failed", "start_failed",
+)
+
+
 class OwnerLock:
     def __init__(self, path):
         self.path = Path(path)
@@ -103,7 +109,7 @@ class RoverRequest:
             os.fsync(target.fileno())
         os.replace(temporary, self.path)
 
-    def observe(self, snapshot):
+    def observe(self, snapshot, observed=None):
         before = self.boot_id, self.pending
         ftm = snapshot.get("ftm", {})
         boot = snapshot.get("boot_id")
@@ -118,7 +124,17 @@ class RoverRequest:
         idle = not ftm.get("busy") and not ftm.get("retiring")
         reset = idle and ftm.get("status") == "never_requested" and not ftm.get("target")
         completed = idle and self.pending and str(ftm.get("target") or "").lower() == self.pending
-        if rebooted or reset or completed:
+        # An uncertain POST can leave the camera's previous terminal report in
+        # place. Fresh same-boot evidence that the radio is idle reopens the
+        # slot after the settle interval without treating that report as ours.
+        settled_idle = (
+            self.pending is not None and isinstance(boot, str) and boot and boot == before[0]
+            and ftm.get("busy") is False and ftm.get("retiring") is False
+            and ftm.get("status") in TERMINAL_FTM_STATES
+            and type(observed) in (int, float) and observed >= self.started + REQUEST_SETTLE_SECONDS
+            and 0 <= self.clock() - observed < 2
+        )
+        if rebooted or reset or completed or settled_idle:
             self.pending = None
         # One bounded state record, written for custody/boot changes only.
         if before != (self.boot_id, self.pending):
