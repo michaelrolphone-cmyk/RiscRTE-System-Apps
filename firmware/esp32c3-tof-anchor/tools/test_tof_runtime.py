@@ -24,6 +24,26 @@ class RuntimeCustodyTests(unittest.TestCase):
                                ftm=dict(target=other.pending,status="success")))
             self.assertIsNone(RoverRequest(path).pending)
 
+    def test_expired_mismatched_request_requires_fresh_definite_idle_report(self):
+        with tempfile.TemporaryDirectory() as name:
+            path = Path(name) / "request.json"
+            request = RoverRequest(path, clock=lambda: 100., wall=lambda: 200.)
+            idle = dict(target="previous", status="success", busy=False, retiring=False)
+            request.observe(dict(boot_id="camera-boot"))
+            request.submitted("different", 80.)
+            for boot, observed, report in (
+                ("camera-boot", 94., idle),
+                ("camera-boot", 96., idle),
+                ("camera-boot", 99., dict(idle, busy=True)),
+                ("camera-boot", 99., dict(idle, retiring=True)),
+                ("camera-boot", 99., dict(idle, status="measuring")),
+                (None, 99., idle),
+            ):
+                request.observe(dict(boot_id=boot, ftm=report), observed)
+                self.assertEqual(request.pending, "different")
+            self.assertFalse(request.observe(dict(boot_id="camera-boot", ftm=idle), 99.))
+            self.assertIsNone(RoverRequest(path).pending)
+
     def test_legacy_native_pending_state_is_retained_at_handoff(self):
         with tempfile.TemporaryDirectory() as name:
             root=Path(name);legacy=root/"latest.json"
