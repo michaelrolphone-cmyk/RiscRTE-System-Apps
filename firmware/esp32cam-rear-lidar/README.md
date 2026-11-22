@@ -36,7 +36,7 @@ upload_protocol=espota or pass --upload-protocol espota. Serial commands do not
 enable OTA or grant permission to reconfigure the front camera.
 
 For updates on a slow station link, run the verified uploader on the maintenance
-host with the enrolled IPv4 address, receiver ID, prepared normal build directory
+Mac or Linux host with the enrolled IPv4 address, receiver ID, prepared normal build directory
 and independently verified SHA-256 of the application:
 
 `python3 upload_ota.py HOST RECEIVER_ID BUILD_DIR IMAGE_SHA256`
@@ -44,9 +44,34 @@ and independently verified SHA-256 of the application:
 Supply the existing ArduinoOTA password in `REAR_OTA_PASSWORD`. For devices
 that require HTTP authentication, also supply `REAR_CAMERA_USER` and
 `REAR_CAMERA_PASSWORD` from the host enrollment. The uploader checks the physical
-identity before sending, maintains one transfer while the TCP socket is backpressured,
-and verifies the running release, alternate partition and new boot identity afterward.
-The camera's authenticated capture and live stream still require separate qualification.
+identity before sending and maintains one transfer while the TCP socket is backpressured.
+
+Before inviting the board, it atomically saves a credential-free receipt containing the
+expected image SHA-256 and release, receiver identity, and original boot and partition.
+The default path is `BUILD_DIR/ota-receipts/RECEIVER_ID-IMAGE_SHA256.json`; use
+`--receipt /absolute/new-attempt.json` to choose a new path. Transfer acceptance and
+physical boot confirmation are separate states. A 90-second observation window that
+expires leaves confirmation pending and exits with code 3, with a command to resume:
+
+`python3 upload_ota.py --verify-only /absolute/saved-receipt.json`
+
+This mode reads the original receipt and observes HTTP identity only. It sends no OTA
+invitation or image, needs no `REAR_OTA_PASSWORD`, and can run after the original process
+exits; a retained receipt also works after the build directory is removed. HTTP
+credentials are still needed if configured.
+Confirmation requires the expected receiver and release, a changed boot ID, and the
+originally expected alternate partition. The image digest was checked before upload and
+is retained in the receipt; the HTTP endpoint does not provide a running-image hash.
+
+An existing receipt prevents an upload replay, including after an interrupted process.
+A nonblocking process lock serializes upload and verification of the same receipt;
+cancelling or exiting the process releases the lock automatically.
+Resume observation with `--verify-only`; choose a new receipt only for an independently
+reconciled new upload attempt. Exit code 0 means boot confirmation succeeded or the
+requested release was already running before any upload. Every `--verify-only` run obtains
+a fresh HTTP observation; the receipt retains the most recent positive boot witness
+separately from the current verification status. The camera's authenticated capture
+and live stream still require separate qualification.
 
 ## UART
 921600baud,8N1,3.3V; newline-delimited JSON:
