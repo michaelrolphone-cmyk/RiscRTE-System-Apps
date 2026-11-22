@@ -44,7 +44,7 @@ def main():
  settings=out/'include/settings.h';s=settings.read_text()
  import re
  s=re.sub(r'#define APP_TITLE .*','#define APP_TITLE "ROVER-REAR-CAMERA"',s)
- s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.7"',s)
+ s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.8"',s)
  for name,value in (('DEFAULT_FRAME_SIZE','"HD (1280x720)"'),('DEFAULT_FRAME_DURATION','200')):
   s,count=re.subn(r'^#define '+name+r' .+$','#define '+name+' '+value,s,flags=re.M)
   if count!=1:raise ValueError('Unexpected camera setting definition: '+name)
@@ -58,6 +58,7 @@ def main():
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/live_websocket.h',out/'src/live_websocket.h')
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/live_write_progress.h',out/'src/live_write_progress.h')
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'camera-main.patch')],cwd=out,check=True)
+ subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'camera-websocket.patch')],cwd=out,check=True)
  if a.provisioning_json:
   secret=json.loads(a.provisioning_json.expanduser().read_text())
   ssid=secret.get('ssid');password=secret.get('password')
@@ -87,7 +88,7 @@ def main():
   }
 ''')
   main.write_text(text)
-  settings.write_text(settings.read_text().replace('"1.0-rear.7"','"1.0-rear.7-factory"'))
+  settings.write_text(settings.read_text().replace('"1.0-rear.8"','"1.0-rear.8-factory"'))
 
  print('Prepared rear variant:',out)
  if a.build:subprocess.run(['pio','run','-d',str(out),'-e','esp32cam_s3_wroom_n16r8'],check=True)
