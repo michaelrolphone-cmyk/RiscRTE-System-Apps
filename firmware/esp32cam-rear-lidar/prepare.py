@@ -44,7 +44,7 @@ def main():
  settings=out/'include/settings.h';s=settings.read_text()
  import re
  s=re.sub(r'#define APP_TITLE .*','#define APP_TITLE "ROVER-REAR-CAMERA"',s)
- s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.6"',s)
+ s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.7"',s)
  for name,value in (('DEFAULT_FRAME_SIZE','"HD (1280x720)"'),('DEFAULT_FRAME_DURATION','200')):
   s,count=re.subn(r'^#define '+name+r' .+$','#define '+name+' '+value,s,flags=re.M)
   if count!=1:raise ValueError('Unexpected camera setting definition: '+name)
@@ -87,7 +87,7 @@ def main():
   }
 ''')
   main.write_text(text)
-  settings.write_text(settings.read_text().replace('"1.0-rear.6"','"1.0-rear.6-factory"'))
+  settings.write_text(settings.read_text().replace('"1.0-rear.7"','"1.0-rear.7-factory"'))
 
  print('Prepared rear variant:',out)
  if a.build:subprocess.run(['pio','run','-d',str(out),'-e','esp32cam_s3_wroom_n16r8'],check=True)
