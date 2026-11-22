@@ -13,11 +13,15 @@ struct CameraMessage {
 QueueHandle_t cameraMailbox = nullptr;
 std::atomic<uint32_t> cameraCaptureSession{0}, cameraFrames{0}, cameraAcks{0}, cameraSuperseded{0};
 std::atomic<uint32_t> cameraCapturePeriodMs{0}, cameraCaptureWidth{0}, cameraCaptureHeight{0};
+std::atomic<uint32_t> cameraConnections{0}, cameraDisconnects{0}, cameraDialFailures{0};
+std::atomic<uint32_t> cameraCaptureAttempts{0}, cameraCaptures{0}, cameraCaptureFailures{0};
+std::atomic<uint32_t> cameraLastCaptureDurationMs{0};
+std::atomic<uint32_t> cameraLastJpegBytes{0}, cameraLastPayloadBytes{0}, cameraLastSendDurationMs{0};
 LiveWebSocket videoSocket;
 String videoHeaders;
 uint32_t cameraSession = 0;
 
-bool videoConnected = false, videoReady = false;
+std::atomic<bool> videoConnected{false}, videoReady{false};
 
 void nextCameraSession() {
     cameraCaptureSession.store(0);
@@ -27,6 +31,9 @@ void nextCameraSession() {
 
 void cameraEvent(WStype_t type, uint8_t *payload, size_t length) {
     if (type == WStype_CONNECTED || type == WStype_DISCONNECTED) {
+        if (type == WStype_CONNECTED) ++cameraConnections;
+        else if (videoConnected.load()) ++cameraDisconnects;
+        else ++cameraDialFailures;
         videoSocket.transportChanged(false);
         nextCameraSession();
         videoConnected = type == WStype_CONNECTED;
@@ -77,10 +84,12 @@ void cameraWorker(void *) {
         CameraMessage frame{};
         if (xQueueReceive(cameraMailbox, &frame, 0) == pdTRUE) {
             if (videoConnected && videoReady && frame.session == cameraSession) {
-                if (videoSocket.writeLive(WSop_binary, frame.buffer, frame.length,
-                                          CAMERA_SOCKET_YIELD_BETWEEN_FRAGMENTS)) {
-                    ++cameraFrames;
-                }
+                const uint32_t sendStartMs = millis();
+                cameraLastPayloadBytes.store(frame.length);
+                const bool delivered = videoSocket.writeLive(WSop_binary, frame.buffer, frame.length,
+                                                            CAMERA_SOCKET_YIELD_BETWEEN_FRAGMENTS);
+                cameraLastSendDurationMs.store(millis() - sendStartMs);
+                if (delivered) ++cameraFrames;
             }
             heap_caps_free(frame.buffer);
         }
@@ -100,9 +109,14 @@ void captureForSocket(uint32_t intervalMs) {
     const uint32_t session = cameraCaptureSession.load();
     if (!session || millis() - lastCapture < intervalMs) return;
     lastCapture = millis();
+    ++cameraCaptureAttempts;
+    const uint32_t captureStartMs = millis();
     camera_fb_t *fb = esp_camera_fb_get();
-    if (!fb) return;
+    cameraLastCaptureDurationMs.store(millis() - captureStartMs);
+    if (!fb) { ++cameraCaptureFailures; return; }
     if (fb->format == PIXFORMAT_JPEG && fb->len) {
+        ++cameraCaptures;
+        cameraLastJpegBytes.store(fb->len);
         cameraCaptureWidth.store(fb->width);
         cameraCaptureHeight.store(fb->height);
         const uint64_t captureUs = static_cast<uint64_t>(fb->timestamp.tv_sec) * 1000000ULL + fb->timestamp.tv_usec;

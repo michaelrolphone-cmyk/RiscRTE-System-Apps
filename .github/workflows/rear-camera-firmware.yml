@@ -32,6 +32,8 @@ jobs:
         run: |
           g++ -std=c++11 -Wall -Wextra -Werror firmware/esp32cam-rtsp-radio/overlay/test/live_write_progress/test_progress.cpp -o /tmp/live-write-progress
           /tmp/live-write-progress
+          g++ -std=c++11 -Wall -Wextra -Werror -I firmware/esp32cam-rtsp-radio/overlay/test/live_write_progress/stubs firmware/esp32cam-rtsp-radio/overlay/test/live_write_progress/test_transport.cpp -o /tmp/live-write-transport
+          /tmp/live-write-transport
       - name: Test receiver qualification on loopback WebSockets
         run: |
           python -m pip install 'aiohttp>=3.9,<4' 'Pillow>=10,<13'

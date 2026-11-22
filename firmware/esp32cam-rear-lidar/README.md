@@ -1,6 +1,6 @@
 # Rear ESP32-S3-CAM with two VL53L5CX sensors
 Derived from the sibling front-camera firmware package at its pinned upstream revision.
-The front package is not modified. The rear variant retains RTSP, authenticated
+The rear variant is prepared from pinned camera sources and retains RTSP, authenticated
 capture at /api/capture, provisioning, exposure/light controls and password-protected
 ArduinoOTA on port3232. Two 6MiB OTA application slots are provided.
 
@@ -115,6 +115,14 @@ The rear sensor tasks have priority over the video task. Video yields between
 fragments, and a socket with no TCP write progress is closed independently so its
 next session can resume with the newest sample. The stream status reports the
 configured capture interval and the dimensions of the last captured JPEG.
+Version 1.0-rear.5 uses the same nonblocking, progress-bounded writer for
+WebSocket handshakes, heartbeat pings, pong replies and data fragments. Its
+stream status distinguishes camera connection/readiness, capture attempts and
+duration, completed frames, and per-socket write stalls/progress. A host
+regression uses real backpressured sockets and inherited control-frame dispatch
+to verify that a stalled video writer closes only that connection while the
+sensor connection remains usable.
+
 GET /api/rear reports the actual running partition, firmware version, flash/PSRAM
 sizes and whether an OTA target partition exists. Verify a real network update
 and a post-update camera capture before relying on OTA.

@@ -1,4 +1,5 @@
 #include "rear_ranging.h"
+#include "settings.h"
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
@@ -274,7 +275,7 @@ void putResponder(JsonObject output) {
     output["error"] = state.error;
     output["role"] = "rover";
     output["mode"] = "reciprocal_ftm";
-    output["firmware"] = "1.0-rear.2";
+    output["firmware"] = APP_VERSION;
 }
 
 void putFtm(JsonObject output, const FtmState &copy) {
