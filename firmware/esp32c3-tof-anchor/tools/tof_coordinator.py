@@ -21,7 +21,7 @@ from tof_anchor_packets import AnchorReports, PushAnchorRegistry
 from tof_discovery import publish_responders
 from tof_gateway_routes import GatewayRoutes
 from functools import partial
-from tof_runtime import OwnerLock, RoverRequest
+from tof_runtime import OwnerLock, REQUEST_SETTLE_SECONDS, RoverRequest
 from tof_host_io import (configure, configure_survey, AnchorSocket, RuntimeHealth,
                          native_output_clock, wall_observed, prepare)
 
@@ -139,7 +139,7 @@ def main():
             now=time.monotonic()
             last_sample=observed
             try:
-                if request_state.observe(snapshot):
+                if request_state.observe(snapshot, observed):
                     # Do not combine measurements from different camera boots.
                     graph.rover.clear()
                 rover_refinement.observe_boot(snapshot.get("boot_id"))
@@ -160,7 +160,7 @@ def main():
                 graph.ingest_rover(ftm,observed)
                 # Existing camera requests from other consumers are never cancelled.
                 # A stuck FTM driver is reported, not reset under another controller.
-                if request_state.pending and now-request_state.started>15:
+                if request_state.pending and now-request_state.started>REQUEST_SETTLE_SECONDS:
                     error="rover_ftm_pending";retired=True
                 if not ftm.get("busy") and not ftm.get("retiring") and request_state.pending is None and now-last_request>=2:
                     nodes=[v["packet"] for k,v in sorted(graph.nodes.items()) if now-v["received"]<30 and v["packet"].get("ftm_state")=="idle"]
@@ -170,7 +170,7 @@ def main():
                         request_state.submitted(address,now)
                         last_requested[address]=now;last_request=now;retired=False
                         camera_request("/api/telemetry/ftm",{"address":address,"channel":channel_cache.get(address,target["channel"])})
-                if not retired:error=None
+                if request_state.pending is None or not retired:error=None
             except (OSError,ValueError,urllib.error.HTTPError) as e:
                 error=type(e).__name__+": "+str(e)
                 # A timed-out POST has uncertain effect. Observe status before retry.
