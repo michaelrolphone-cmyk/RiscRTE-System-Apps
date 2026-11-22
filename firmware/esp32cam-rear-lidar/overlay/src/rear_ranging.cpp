@@ -3,699 +3,169 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <Preferences.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
 #include <esp_system.h>
 #include <freertos/FreeRTOS.h>
-#include <freertos/semphr.h>
 #include <freertos/task.h>
+#include <atomic>
+#include <string>
 #include <sys/time.h>
-#include <cmath>
-#include <cstring>
-#include <cstdlib>
-
-#if defined(CONFIG_ESP_WIFI_FTM_INITIATOR_SUPPORT) && CONFIG_ESP_WIFI_FTM_INITIATOR_SUPPORT
-#define RADIO_HAS_FTM 1
-#else
-#define RADIO_HAS_FTM 0
-#endif
-
-#if defined(CONFIG_ESP_WIFI_FTM_RESPONDER_SUPPORT) && CONFIG_ESP_WIFI_FTM_RESPONDER_SUPPORT
-#define RADIO_HAS_FTM_RESPONDER 1
-#else
-#define RADIO_HAS_FTM_RESPONDER 0
-#endif
-
-#if !RADIO_HAS_FTM || !RADIO_HAS_FTM_RESPONDER
-#error Rear firmware requires both Wi-Fi FTM initiator and responder support.
-#endif
 
 namespace rear_ranging {
 namespace {
-constexpr uint32_t FTM_TIMEOUT_MS = 12000;
-
-struct Config {
-    bool ftmResponderEnabled = true;
-    uint32_t publishInterval = 5000;
-    uint32_t ahrsPublishInterval = 100;
-    char udpHost[16] = {};
-    uint16_t udpPort = 9876;
-};
-struct Status {
-    bool workerReady = false;
-    uint32_t udpSent = 0;
-    uint32_t udpFailed = 0;
-};
-
-struct ResponderState {
-    bool active = false;
-    bool owned = false;
-    uint8_t channel = 0;
-    char bssid[18] = {};
-    char ssid[33] = {};
-    int error = 0;
-};
-ResponderState responder;
-char responderPassword[17] = {};
-uint32_t lastResponderCheck = 0;
-int8_t actualTxPower=0;
-esp_err_t txPowerReadError=ESP_ERR_INVALID_STATE;
-
-struct FtmState {
-    bool busy = false;
-    bool pending = false;
-    bool hasReport = false;
-    bool successful = false;
-    bool retiring = false;
-    uint32_t retiredAt = 0;
-    uint32_t generation = 0;
-    int cancelError = 0;
-    char stopReason[24] = {};
-    uint8_t target[6] = {};
-    uint8_t channel = 0;
-    char status[32] = "never_requested";
-    uint32_t started = 0;
-    uint32_t completed = 0;
-    uint32_t rtt = 0;
-    uint32_t distanceCm = 0;
-    uint8_t samples = 0;
-};
-
-Config configuration;
-Status status;
-FtmState ftm;
-bool isPaused = false;
-uint32_t configurationRevision = 0;
-uint32_t packetSequence = 0;
-uint32_t ftmGeneration = 0;
-SemaphoreHandle_t stateMutex = nullptr;
-TaskHandle_t workerHandle = nullptr;
+constexpr char DISABLED_REASON[] = "disabled_in_firmware";
+constexpr int8_t TX_POWER_QUARTER_DBM = 60;
 WebServer *httpServer = nullptr;
 bool (*authorizeRequest)() = nullptr;
 char receiverId[25] = {};
 char bootId[17] = {};
-struct Lock {
-    Lock() { xSemaphoreTake(stateMutex, portMAX_DELAY); }
-    ~Lock() { xSemaphoreGive(stateMutex); }
-};
+std::atomic<bool> paused{false};
+std::atomic<int> actualTxPower{0}, txPowerReadError{ESP_ERR_INVALID_STATE};
 
-bool pauseRequested() {
-    Lock lock;
-    return isPaused;
+// The rear keeps its established power limit independently of ranging. This
+// worker never changes Wi-Fi mode, starts an AP, scans, or initiates FTM.
+void updateTxPower() {
+    if (paused.load() || WiFi.status() != WL_CONNECTED) return;
+    int8_t power = 0;
+    if (esp_wifi_get_max_tx_power(&power) != ESP_OK || power != TX_POWER_QUARTER_DBM)
+        esp_wifi_set_max_tx_power(TX_POWER_QUARTER_DBM);
+    const esp_err_t result = esp_wifi_get_max_tx_power(&power);
+    actualTxPower.store(power);
+    txPowerReadError.store(result);
 }
 
-void formatMac(const uint8_t address[6], char output[18]) {
-    snprintf(output, 18, "%02x:%02x:%02x:%02x:%02x:%02x",
-             address[0], address[1], address[2], address[3], address[4], address[5]);
-}
-
-void putConfig(JsonObject output, const Config &config) {
-    output["ftm_responder_enabled"] = config.ftmResponderEnabled;
-    output["publish_interval_ms"] = config.publishInterval;
-    output["ahrs_publish_interval_ms"] = config.ahrsPublishInterval;
-    output["udp_host"] = String(config.udpHost);
-    output["udp_port"] = config.udpPort;
-}
-
-bool readUnsigned(JsonVariantConst value, uint32_t &target, uint32_t low, uint32_t high) {
-    if (!value.is<uint32_t>()) return false;
-    uint32_t result = value.as<uint32_t>();
-    if (result < low || result > high) return false;
-    target = result;
-    return true;
-}
-
-bool validDestination(const char *text) {
-    if (!text || !text[0]) return true; // empty disables publication
-    IPAddress destination;
-    if (!destination.fromString(text)) return false;
-    // Numeric unicast IPv4 keeps publication bounded and avoids DNS work.
-    return destination[0] != 0 && destination[0] != 127 && destination[0] < 224 &&
-           destination != IPAddress(255, 255, 255, 255);
-}
-
-bool patchConfig(JsonObjectConst input, Config &config, String &error) {
-    for (JsonPairConst item : input) {
-        const char *key = item.key().c_str();
-        JsonVariantConst value = item.value();
-        bool valid = false;
-        if (!strcmp(key, "ftm_responder_enabled")) {
-            valid = value.is<bool>();
-            if (valid) config.ftmResponderEnabled = value.as<bool>();
-        }
-        else if (!strcmp(key, "publish_interval_ms")) valid = readUnsigned(value, config.publishInterval, 1000, 86400000);
-        else if (!strcmp(key, "ahrs_publish_interval_ms")) valid = readUnsigned(value, config.ahrsPublishInterval, 50, 86400000);
-        else if (!strcmp(key, "udp_port")) {
-            uint32_t port = config.udpPort;
-            valid = readUnsigned(value, port, 1, 65535);
-            if (valid) config.udpPort = static_cast<uint16_t>(port);
-        } else if (!strcmp(key, "udp_host")) {
-            const char *host = value.is<const char *>() ? value.as<const char *>() : nullptr;
-            valid = host && strlen(host) < sizeof(config.udpHost) && validDestination(host);
-            if (valid) snprintf(config.udpHost, sizeof(config.udpHost), "%s", host);
-        } else {
-            error = String("Unknown configuration key: ") + key;
-            return false;
-        }
-        if (!valid) {
-            error = String("Invalid configuration value: ") + key;
-            return false;
-        }
-    }
-    return true;
-}
-
-void loadConfig() {
-    Preferences preferences;
-    if (!preferences.begin("rear-ranging", true)) return;
-    String saved = preferences.getString("settings", "");
-    preferences.end();
-    if (!saved.length() || saved.length() > 2048) return;
-    DynamicJsonDocument document(2048);
-    if (deserializeJson(document, saved) || !document.is<JsonObject>()) return;
-    Config candidate;
-    String error;
-    // Preserve sensor delivery settings while retiring saved scan/calibration keys.
-    for (const char *key : {"wifi_enabled", "ble_enabled", "wifi_interval_ms",
-            "ble_interval_ms", "ble_duration_ms", "wifi_reference_rssi_1m_dbm",
-            "ble_reference_rssi_1m_dbm", "path_loss_exponent", "wifi_calibrated",
-            "ble_calibrated"}) document.remove(key);
-    if (patchConfig(document.as<JsonObjectConst>(), candidate, error))
-        configuration = candidate;
-}
-
-bool saveConfig(const Config &config) {
-    DynamicJsonDocument document(2048);
-    putConfig(document.to<JsonObject>(), config);
-    if (document.overflowed()) return false;
-    String serialized;
-    serializeJson(document, serialized);
-    if (serialized.length() != measureJson(document)) return false;
-    Preferences preferences;
-    if (!preferences.begin("rear-ranging", false)) return false;
-    size_t count = preferences.putString("settings", serialized);
-    preferences.end();
-    return count == serialized.length();
-}
-
-void putEnvelope(JsonObject output, const char *type, uint32_t sequence) {
-    output["schema"] = 1;
-    if (type) output["type"] = type;
-    output["receiver_id"] = receiverId;
-    output["boot_id"] = bootId;
-    output["uptime_ms"] = millis();
-    output["sequence"] = sequence;
-    timeval clock;
-    gettimeofday(&clock, nullptr);
-    if (clock.tv_sec >= 1700000000) {
-        output["timestamp_ms"] = static_cast<uint64_t>(clock.tv_sec) * 1000ULL + clock.tv_usec / 1000;
-    } else output["timestamp_ms"] = nullptr;
-}
-
-// Called only by the radio worker, with no application mutex held. Preserve
-// STA and its existing sockets: never enter IotWebConf's AP-only setup path.
-void maintainResponder(const Config &config, uint32_t now) {
-    if (now-lastResponderCheck < 1000) return;
-    lastResponderCheck = now;
-    ResponderState next;
-    { Lock lock; next = responder; }
-#if RADIO_HAS_FTM_RESPONDER
-    wifi_config_t ap = {};
-    const bool hasAP = (WiFi.getMode() & WIFI_MODE_AP) != 0;
-    const bool haveConfig = hasAP && esp_wifi_get_config(WIFI_IF_AP, &ap) == ESP_OK;
-    next.active = haveConfig && ap.ap.ftm_responder && WiFi.status() == WL_CONNECTED;
-    if (!config.ftmResponderEnabled) {
-        if (next.owned && haveConfig && ap.ap.ftm_responder) {
-            ap.ap.ftm_responder = false;
-            next.error = esp_wifi_set_config(WIFI_IF_AP, &ap);
-        }
-        next.active = false;
-    } else if (WiFi.status() == WL_CONNECTED && !pauseRequested()) {
-        if (!next.active || strncmp(reinterpret_cast<const char *>(ap.ap.ssid), next.ssid, sizeof(ap.ap.ssid))) {
-            // Existing C3 firmware discovers this prefix and can range without
-            // associating. A private AP password prevents general LAN use.
-            next.error = WiFi.softAP(next.ssid, responderPassword, WiFi.channel(), 0, 1, true) ? 0 : -1;
-            next.owned = next.error == 0;
-        }
-        wifi_config_t actual = {};
-        next.active = next.error == 0 && WiFi.status() == WL_CONNECTED &&
-            esp_wifi_get_config(WIFI_IF_AP, &actual) == ESP_OK && actual.ap.ftm_responder;
-        next.channel = WiFi.channel();
-        uint8_t mac[6] = {};
-        if (esp_wifi_get_mac(WIFI_IF_AP, mac) == ESP_OK) formatMac(mac, next.bssid);
-    }
-#else
-    next.active = false;
-    next.error = -2;
-#endif
-    // ESP-IDF uses quarter-dBm units: 60 = 15 dBm. Apply after AP changes
-    // and after reconnection, without restarting STA or its streaming sockets.
-    int8_t power=0;
-    if (WiFi.status()==WL_CONNECTED &&
-        (esp_wifi_get_max_tx_power(&power)!=ESP_OK || power!=60)) {
-        const esp_err_t powerResult=esp_wifi_set_max_tx_power(60);
-        if(powerResult!=ESP_OK)next.error=powerResult;
-    }
-    const esp_err_t powerRead=esp_wifi_get_max_tx_power(&power);
-    { Lock lock; responder=next;actualTxPower=power;txPowerReadError=powerRead; }
-}
-
-void putResponder(JsonObject output) {
-    ResponderState state; bool enabled;
-    { Lock lock; state = responder; enabled = configuration.ftmResponderEnabled; }
-    output["supported"] = static_cast<bool>(RADIO_HAS_FTM_RESPONDER);
-    output["enabled"] = enabled;
-    output["active"] = enabled && state.active && (WiFi.getMode() & WIFI_MODE_AP) &&
-        WiFi.status() == WL_CONNECTED;
-    output["bssid"] = String(state.bssid);
-    output["ssid"] = String(state.ssid);
-    output["channel"] = state.channel;
-    output["station_connected"] = WiFi.status() == WL_CONNECTED;
-    output["error"] = state.error;
-    output["role"] = "rover";
-    output["mode"] = "reciprocal_ftm";
-    output["firmware"] = APP_VERSION;
-}
-
-void putFtm(JsonObject output, const FtmState &copy) {
-    output["supported"] = static_cast<bool>(RADIO_HAS_FTM);
-    output["report_id"] = copy.generation;
-    output["busy"] = copy.busy;
-    output["retiring"] = copy.retiring;
-    output["status"] = String(copy.status);
-    output["cancel_error"] = copy.cancelError;
-    if (copy.retiring) output["recovery"] = "Wait for cancellation report; restart device if it never arrives";
-    else output["recovery"] = nullptr;
-    if (copy.channel) {
-        char address[18];
-        formatMac(copy.target, address);
-        output["target"] = String(address);
-        output["channel"] = copy.channel;
-    } else output["target"] = nullptr;
-    output["distance_method"] = "wifi_ftm";
-    if (copy.hasReport) output["age_ms"] = millis() - copy.completed;
-    else output["age_ms"] = nullptr;
-    if (copy.successful && copy.hasReport) {
-        output["rtt_ns"] = copy.rtt;
-        output["distance_m"] = copy.distanceCm / 100.0;
-        output["samples"] = copy.samples;
-    } else {
-        output["rtt_ns"] = nullptr;
-        output["distance_m"] = nullptr;
-        output["samples"] = 0;
-    }
-}
-
-void putSummary(JsonObject output, bool withConfig) {
-    Config config; Status state; FtmState ftmCopy; bool paused; uint32_t sequence;
-    {
-        Lock lock;
-        config=configuration; state=status; ftmCopy=ftm;
-        paused=isPaused; sequence=packetSequence;
-    }
-    putEnvelope(output, withConfig ? nullptr : "summary", sequence);
-    output["paused"]=paused;
-    JsonObject capabilities=output.createNestedObject("capabilities");
-    capabilities["ftm"]=static_cast<bool>(RADIO_HAS_FTM);
-    capabilities["ftm_responder"]=static_cast<bool>(RADIO_HAS_FTM_RESPONDER);
-    capabilities["ahrs"]=false;
-    capabilities["ultrasonic"]=false;
-    JsonObject report=output.createNestedObject("status");
-    report["worker_ready"]=state.workerReady;
-    report["udp_sent"]=state.udpSent;
-    report["udp_failed"]=state.udpFailed;
-    if (withConfig) {
-        putConfig(output.createNestedObject("config"),config);
-    }
-    putFtm(output.createNestedObject("ftm"),ftmCopy);
-    putResponder(output.createNestedObject("ftm_responder"));
-}
-
-#if RADIO_HAS_FTM
-const char *ftmStatusName(wifi_ftm_status_t value) {
-    switch (value) {
-        case FTM_STATUS_SUCCESS: return "success";
-        case FTM_STATUS_UNSUPPORTED: return "unsupported";
-        case FTM_STATUS_CONF_REJECTED: return "configuration_rejected";
-        case FTM_STATUS_NO_RESPONSE: return "no_response";
-        default: return "failed";
-    }
-}
-
-void onFtmReport(arduino_event_t *event) {
-    const wifi_event_ftm_report_t &report = event->event_info.wifi_ftm_report;
-    {
-        Lock lock;
-        if (ftm.busy && !ftm.pending && !memcmp(ftm.target, report.peer_mac, 6)) {
-            ftm.busy = false;
-            ftm.hasReport = true;
-            ftm.completed = millis();
-            if (ftm.retiring) {
-                // A cancelled request must drain before another session can start.
-                // The SDK has no request ID, so MAC matching alone cannot correlate
-                // a late report with a second request to the same responder.
-                ftm.retiring = false;
-                ftm.successful = false;
-                ftm.rtt = 0;
-                ftm.distanceCm = 0;
-                ftm.samples = 0;
-                snprintf(ftm.status, sizeof(ftm.status), "%s", ftm.stopReason);
-            } else {
-                ftm.successful = report.status == FTM_STATUS_SUCCESS;
-                ftm.rtt = report.rtt_est;
-                ftm.distanceCm = report.dist_est;
-                ftm.samples = report.ftm_report_num_entries;
-                snprintf(ftm.status, sizeof(ftm.status), "%s", ftmStatusName(report.status));
-            }
-        }
-    }
-    // Ownership follows Arduino's bundled FTM example: release report entries.
-    free(report.ftm_report_data);
-}
-#endif
-
-void cancelFtm(const char *reason, uint32_t now) {
-    bool wasRunning;
-    uint32_t generation;
-    {
-        Lock lock;
-        if (!ftm.busy || ftm.retiring) return;
-        wasRunning = !ftm.pending;
-        generation = ftm.generation;
-        ftm.pending = false;
-        ftm.hasReport = true;
-        ftm.successful = false;
-        ftm.completed = now;
-        ftm.retiring = wasRunning;
-        ftm.retiredAt = now;
-        ftm.busy = wasRunning;
-        snprintf(ftm.stopReason, sizeof(ftm.stopReason), "%s", reason);
-        snprintf(ftm.status, sizeof(ftm.status), "%s", wasRunning ? "cancelling" : reason);
-    }
-#if RADIO_HAS_FTM
-    if (wasRunning) {
-        const esp_err_t result = esp_wifi_ftm_end_session();
-        Lock lock;
-        if (ftm.generation == generation) ftm.cancelError = result;
-    }
-#else
-    (void)wasRunning;
-    (void)generation;
-#endif
-}
-
-void startPendingFtm(uint32_t now) {
-#if RADIO_HAS_FTM
-    FtmState requested;
-    {
-        Lock lock;
-        if (!ftm.pending || isPaused) return;
-        ftm.pending = false;
-        ftm.started = now;
-        snprintf(ftm.status, sizeof(ftm.status), "measuring");
-        requested = ftm;
-    }
-    if (!WiFi.initiateFTM(16, 2, requested.channel, requested.target)) {
-        Lock lock;
-        if (ftm.generation != requested.generation) return;
-        ftm.busy = false;
-        ftm.hasReport = true;
-        ftm.successful = false;
-        ftm.completed = millis();
-        snprintf(ftm.status, sizeof(ftm.status), "start_failed");
-    }
-#else
-    (void)now;
-#endif
-}
-
-void worker(void *) {
-    { Lock lock; status.workerReady=true; }
+void powerWorker(void *) {
     for (;;) {
-        const uint32_t now=millis();
-        Config config; FtmState ftmCopy; bool paused;
-        { Lock lock; config=configuration;ftmCopy=ftm;paused=isPaused; }
-        if (paused || WiFi.status()!=WL_CONNECTED) {
-            cancelFtm(paused ? "paused" : "disconnected",now);
-            vTaskDelay(pdMS_TO_TICKS(50));
-            continue;
-        }
-        if (ftmCopy.retiring && now-ftmCopy.retiredAt>=2000) {
-            Lock lock;
-            if (ftm.retiring && ftm.generation==ftmCopy.generation)
-                snprintf(ftm.status,sizeof(ftm.status),"retirement_stalled");
-        }
-        if (ftmCopy.busy && !ftmCopy.pending && !ftmCopy.retiring &&
-                now-ftmCopy.started>=FTM_TIMEOUT_MS)
-            cancelFtm("timeout",now);
-        // Configuration changes never overlap our own initiating session.
-        if (!ftmCopy.busy) maintainResponder(config,now);
-        if (ftmCopy.pending) startPendingFtm(now);
-        vTaskDelay(pdMS_TO_TICKS(20));
+        updateTxPower();
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
+}
+
+void putCapabilities(JsonObject output) {
+    output["ftm"] = false;
+    output["ftm_initiator"] = false;
+    output["ftm_responder"] = false;
+    output["ahrs"] = false;
+    output["ultrasonic"] = false;
+}
+
+void putDisabledRanging(JsonObject output) {
+    output["ranging_available"] = false;
+    output["ranging_enabled"] = false;
+    output["ranging_disabled_reason"] = DISABLED_REASON;
+    putCapabilities(output.createNestedObject("capabilities"));
+    JsonObject ftm = output.createNestedObject("ftm");
+    ftm["supported"] = false;
+    ftm["enabled"] = false;
+    ftm["status"] = DISABLED_REASON;
+    ftm["report_id"] = 0;
+    ftm["busy"] = false;
+    ftm["retiring"] = false;
+    ftm["cancel_error"] = 0;
+    ftm["recovery"] = nullptr;
+    ftm["target"] = nullptr;
+    ftm["channel"] = nullptr;
+    ftm["distance_method"] = "wifi_ftm";
+    ftm["age_ms"] = nullptr;
+    ftm["rtt_ns"] = nullptr;
+    ftm["distance_m"] = nullptr;
+    ftm["samples"] = 0;
+    JsonObject responder = output.createNestedObject("ftm_responder");
+    responder["supported"] = false;
+    responder["enabled"] = false;
+    responder["active"] = false;
+    responder["status"] = DISABLED_REASON;
+    responder["bssid"] = nullptr;
+    responder["ssid"] = nullptr;
+    responder["channel"] = nullptr;
+    responder["station_connected"] = WiFi.status() == WL_CONNECTED;
+    responder["error"] = 0;
+    responder["role"] = "rover";
+    responder["mode"] = "disabled";
+    responder["firmware"] = APP_VERSION;
+    output["tx_power_requested_dbm"] = TX_POWER_QUARTER_DBM / 4.0;
+    const int error = txPowerReadError.load();
+    output["tx_power_read_error"] = error;
+    if (error == ESP_OK) output["tx_power_actual_dbm"] = actualTxPower.load() / 4.0;
+    else output["tx_power_actual_dbm"] = nullptr;
 }
 
 bool authorized() {
     if (!httpServer) return false;
-    if (!authorizeRequest || !authorizeRequest()) {
-        if (!authorizeRequest) httpServer->send(403, "application/json", "{\"error\":\"Authentication callback unavailable\"}");
-        return false;
-    }
-    if (!stateMutex) {
-        httpServer->send(503, "application/json", "{\"error\":\"Telemetry memory unavailable\"}");
-        return false;
-    }
-    return true;
+    if (authorizeRequest) return authorizeRequest();
+    httpServer->send(403, "application/json", "{\"error\":\"Authentication callback unavailable\"}");
+    return false;
 }
 
-void sendError(int code, const String &message) {
-    DynamicJsonDocument document(512);
-    document["error"] = message;
-    String serialized;
-    serializeJson(document, serialized);
+void sendJson(const JsonDocument &document, int code = 200) {
+    std::string text;
+    serializeJson(document, text);
     httpServer->sendHeader("Cache-Control", "no-store");
-    httpServer->send(code, "application/json", serialized);
+    httpServer->send(code, "application/json", text.c_str());
 }
 
 void handleSnapshot() {
     if (!authorized()) return;
-    DynamicJsonDocument document(12288);
-    putSummary(document.to<JsonObject>(),true);
-    if (document.overflowed()) { sendError(503,"Telemetry summary allocation failed");return; }
-    String serialized;
-    serializeJson(document,serialized);
-    httpServer->sendHeader("Cache-Control","no-store");
-    httpServer->send(200,"application/json",serialized);
-}
-
-void handleGetConfig() {
-    if (!authorized()) return;
-    Config config;
-    {
-        Lock lock;
-        config = configuration;
-    }
     DynamicJsonDocument document(2048);
-    putConfig(document.to<JsonObject>(), config);
-    String serialized;
-    serializeJson(document, serialized);
-    httpServer->sendHeader("Cache-Control", "no-store");
-    httpServer->send(200, "application/json", serialized);
+    JsonObject output = document.to<JsonObject>();
+    output["schema"] = 1;
+    output["receiver_id"] = receiverId;
+    output["boot_id"] = bootId;
+    output["uptime_ms"] = millis();
+    output["sequence"] = 0;
+    output["paused"] = paused.load();
+    timeval clock;
+    gettimeofday(&clock, nullptr);
+    if (clock.tv_sec >= 1700000000)
+        output["timestamp_ms"] = static_cast<uint64_t>(clock.tv_sec) * 1000ULL + clock.tv_usec / 1000;
+    else output["timestamp_ms"] = nullptr;
+    putDisabledRanging(output);
+    JsonObject config = output.createNestedObject("config");
+    config["ftm_initiator_enabled"] = false;
+    config["ftm_responder_enabled"] = false;
+    config["mutable"] = false;
+    config["disabled_reason"] = DISABLED_REASON;
+    JsonObject status = output.createNestedObject("status");
+    status["worker_ready"] = false;
+    sendJson(document);
 }
 
-bool requireJsonContentType() {
-    String type = httpServer->header("Content-Type");
-    const int separator = type.indexOf(';');
-    if (separator >= 0) type.remove(separator);
-    type.trim();
-    type.toLowerCase();
-    if (type != "application/json") {
-        sendError(415, "Content-Type must be application/json");
-        return false;
-    }
-    return true;
-}
-
-void handleSetConfig() {
-    if (!authorized() || !requireJsonContentType()) return;
-    const String body = httpServer->arg("plain");
-    if (!body.length() || body.length() > 2048) {
-        sendError(body.length() ? 413 : 400, "Provide a JSON configuration object of at most 2048 bytes");
-        return;
-    }
-    DynamicJsonDocument document(3072);
-    if (deserializeJson(document, body) || !document.is<JsonObject>()) {
-        sendError(400, "Invalid JSON configuration object");
-        return;
-    }
-    Config candidate;
-    {
-        Lock lock;
-        candidate = configuration;
-    }
-    String error;
-    if (!patchConfig(document.as<JsonObjectConst>(), candidate, error)) {
-        sendError(400, error);
-        return;
-    }
-    if (!saveConfig(candidate)) {
-        sendError(500, "Could not persist telemetry configuration");
-        return;
-    }
-    {
-        Lock lock;
-        configuration = candidate;
-        ++configurationRevision;
-    }
-    handleGetConfig();
-}
-
-bool parseTarget(const char *address,uint8_t target[6]) {
-    if (!address || strlen(address)!=17) return false;
-    bool nonzero=false;
-    for (int i=0;i<6;++i) {
-        if (i && address[i*3-1]!=':') return false;
-        unsigned value=0;
-        for (int j=0;j<2;++j) {
-            char c=address[i*3+j];
-            unsigned digit;
-            if (c>='0' && c<='9') digit=c-'0';
-            else if (c>='a' && c<='f') digit=c-'a'+10;
-            else if (c>='A' && c<='F') digit=c-'A'+10;
-            else return false;
-            value=(value<<4)|digit;
-        }
-        target[i]=value;nonzero|=value!=0;
-    }
-    return nonzero && !(target[0]&1);
-}
-
-void handleFtm() {
-    if (!authorized() || !requireJsonContentType()) return;
-#if !RADIO_HAS_FTM
-    sendError(501, "Wi-Fi FTM is not supported by this chip and SDK build");
-#else
-    const String body = httpServer->arg("plain");
-    if (!body.length() || body.length() > 256) {
-        sendError(body.length() ? 413 : 400, "Provide address and channel as a JSON object");
-        return;
-    }
-    DynamicJsonDocument document(512);
-    if (deserializeJson(document, body) || !document.is<JsonObject>()) {
-        sendError(400, "Invalid FTM JSON");
-        return;
-    }
-    JsonObjectConst object = document.as<JsonObjectConst>();
-    for (JsonPairConst item : object) {
-        if (strcmp(item.key().c_str(), "address") && strcmp(item.key().c_str(), "channel")) {
-            sendError(400, "FTM accepts only address and channel");
-            return;
-        }
-    }
-    uint8_t target[6];
-    const char *address = object["address"].as<const char *>();
-    uint32_t channel = 0;
-    if (!parseTarget(address, target) ||
-        !readUnsigned(object["channel"], channel, 1, 14)) {
-        sendError(400, "FTM requires a unicast MAC address and channel from 1 to 14");
-        return;
-    }
-    if (WiFi.status() != WL_CONNECTED) {
-        sendError(503, "FTM requires a connected Wi-Fi station");
-        return;
-    }
-    int failure = 0;
-    {
-        Lock lock;
-        if (isPaused || !status.workerReady) failure = 503;
-        else if (ftm.busy) failure = 409;
-        else {
-            ftm = FtmState();
-            ftm.generation = ++ftmGeneration;
-            ftm.pending = true;
-            ftm.busy = true;
-            memcpy(ftm.target, target, 6);
-            ftm.channel = static_cast<uint8_t>(channel);
-            snprintf(ftm.status, sizeof(ftm.status), "queued");
-        }
-    }
-    if (failure) {
-        sendError(failure, failure == 409 ? "An FTM measurement is already pending" : "Telemetry is paused or unavailable");
-        return;
-    }
-    httpServer->sendHeader("Cache-Control", "no-store");
-    httpServer->send(202, "application/json", "{\"status\":\"queued\"}");
-#endif
+void handleDisabledWrite() {
+    if (!authorized()) return;
+    DynamicJsonDocument document(256);
+    document["error"] = "Wi-Fi ranging is disabled in this rear firmware";
+    document["reason"] = DISABLED_REASON;
+    document["firmware"] = APP_VERSION;
+    sendJson(document, 501);
 }
 } // namespace
 
 void writeJson(JsonObject output, uint64_t captureUs) {
-    if (!stateMutex) { output["ranging_available"]=false; return; }
-    FtmState copy;
-    { Lock lock; copy=ftm; }
-    // Never attach a report completed after this image's capture.
-    if (!copy.hasReport || static_cast<uint32_t>(captureUs/1000)-copy.completed<0x80000000UL) {
-        JsonObject range=output.createNestedObject("ftm"); putFtm(range,copy);
-        if(copy.hasReport)range["age_ms"]=static_cast<uint32_t>(captureUs/1000)-copy.completed;
-    }
-    putResponder(output.createNestedObject("ftm_responder"));
-    JsonObject caps=output.createNestedObject("capabilities");
-    caps["ftm"]=static_cast<bool>(RADIO_HAS_FTM);
-    caps["ftm_responder"]=static_cast<bool>(RADIO_HAS_FTM_RESPONDER);
-    int8_t actual;esp_err_t result;
-    { Lock lock;actual=actualTxPower;result=txPowerReadError; }
-    output["tx_power_requested_dbm"]=15;
-    output["tx_power_actual_dbm"]=result==ESP_OK ? actual/4.0 : 0;
-    output["tx_power_read_error"]=result;
+    (void)captureUs;
+    // Never expose a saved or previous-boot range as a current observation.
+    putDisabledRanging(output);
 }
 
 void begin(WebServer &server, bool (*authorize)()) {
     if (httpServer) return;
     httpServer = &server;
     authorizeRequest = authorize;
-    // WebServer always retains Authorization in addition to these headers.
-    const char *headers[] = {"Content-Type"};
-    server.collectHeaders(headers, 1);
-    stateMutex = xSemaphoreCreateMutex();
     snprintf(receiverId, sizeof(receiverId), "rear-%012llx",
              static_cast<unsigned long long>(ESP.getEfuseMac()));
     snprintf(bootId, sizeof(bootId), "%08lx%08lx",
              static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
     server.on("/api/ranging", HTTP_GET, handleSnapshot);
-    server.on("/api/telemetry/config", HTTP_GET, handleGetConfig);
-    server.on("/api/telemetry/config", HTTP_POST, handleSetConfig);
-    server.on("/api/telemetry/ftm", HTTP_POST, handleFtm);
-    if (!stateMutex) return;
-    loadConfig();
-    uint8_t apMac[6] = {};
-    esp_wifi_get_mac(WIFI_IF_AP, apMac);
-    // get_mac may require AP to be enabled on some SDK builds. The efuse MAC
-    // plus one is not assumed: refresh the actual identity after AP starts.
-    snprintf(responder.ssid, sizeof(responder.ssid), "C3-TOF-ROVER-REAR-%08lx",
-             static_cast<unsigned long>(ESP.getEfuseMac()));
-    snprintf(responderPassword, sizeof(responderPassword), "%08lx%08lx",
-             static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
-    formatMac(apMac, responder.bssid);
-#if RADIO_HAS_FTM
-    WiFi.onEvent(onFtmReport, ARDUINO_EVENT_WIFI_FTM_REPORT);
-#else
-    snprintf(ftm.status, sizeof(ftm.status), "unsupported");
-#endif
-    if (xTaskCreate(worker, "rear-ranging", 6144, nullptr, 1, &workerHandle) != pdPASS) {
-        workerHandle = nullptr;
-        status.workerReady = false;
-    }
+    server.on("/api/telemetry/config", HTTP_GET, handleSnapshot);
+    server.on("/api/telemetry/config", HTTP_POST, handleDisabledWrite);
+    server.on("/api/telemetry/ftm", HTTP_POST, handleDisabledWrite);
+    // Saved rear-ranging Preferences are deliberately not loaded. IotWebConf
+    // remains the sole owner of the provisioning/recovery AP; no ranging SSID
+    // is advertised and no FTM event handler or ranging worker is installed.
+    xTaskCreate(powerWorker, "rear-txpower", 2048, nullptr, 1, nullptr);
 }
 
-void loop() {
-    // Radio work belongs to its own low-priority task, never the camera service loop.
-}
-
-void pause(bool paused) {
-    if (!stateMutex) return;
-    Lock lock;
-    isPaused = paused;
+void pause(bool value) {
+    paused.store(value);
 }
 } // namespace rear_ranging
-

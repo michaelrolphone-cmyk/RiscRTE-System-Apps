@@ -40,6 +40,8 @@ jobs:
           python -m unittest discover -s firmware/esp32cam-rear-lidar -p 'test_qualify_viewer.py'
       - run: python -m pip install platformio==6.1.19
       - run: python firmware/esp32cam-rear-lidar/prepare.py --output /tmp/rear-camera-build --build
+      - name: Test disabled rear Wi-Fi ranging behavior
+        run: python firmware/esp32cam-rear-lidar/test_ranging_disabled.py --prepared /tmp/rear-camera-build
       - run: python firmware/esp32cam-rear-lidar/check_ota_image.py /tmp/rear-camera-build
       - name: Compile factory provisioning path with test credentials
         run: |
