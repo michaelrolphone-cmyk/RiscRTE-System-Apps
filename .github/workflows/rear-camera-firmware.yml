@@ -26,6 +26,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Check ArduinoOTA transfer and terminal acknowledgement
+        run: python -m unittest discover -s firmware/esp32cam-rear-lidar -p test_upload_ota.py
       - name: Check independent video and sensor socket progress
         run: |
           g++ -std=c++11 -Wall -Wextra -Werror firmware/esp32cam-rtsp-radio/overlay/test/live_write_progress/test_progress.cpp -o /tmp/live-write-progress

@@ -35,6 +35,19 @@ with the configured device hostname/IP and existing OTA password. Rebuild with
 upload_protocol=espota or pass --upload-protocol espota. Serial commands do not
 enable OTA or grant permission to reconfigure the front camera.
 
+For updates on a slow station link, run the verified uploader on the maintenance
+host with the enrolled IPv4 address, receiver ID, prepared normal build directory
+and independently verified SHA-256 of the application:
+
+`python3 upload_ota.py HOST RECEIVER_ID BUILD_DIR IMAGE_SHA256`
+
+Supply the existing ArduinoOTA password in `REAR_OTA_PASSWORD`. For devices
+that require HTTP authentication, also supply `REAR_CAMERA_USER` and
+`REAR_CAMERA_PASSWORD` from the host enrollment. The uploader checks the physical
+identity before sending, maintains one transfer while the TCP socket is backpressured,
+and verifies the running release, alternate partition and new boot identity afterward.
+The camera's authenticated capture and live stream still require separate qualification.
+
 ## UART
 921600baud,8N1,3.3V; newline-delimited JSON:
 {"schema":"rover.uart.v1","op":"time_sync","request_id":"unique","t1_primary_us":123}
