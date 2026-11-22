@@ -294,6 +294,32 @@ class OtaReceiptTests(unittest.TestCase):
         state.assert_not_called()
         sender.assert_not_called()
 
+    def test_first_check_interruption_persists_pending_before_http(self):
+        self.pending()
+        with mock.patch.object(upload_ota, "board_state", return_value=self.after), \
+                redirect_stdout(io.StringIO()):
+            self.assertTrue(upload_ota.verify_receipt(self.receipt))
+        prior = json.loads(self.receipt.read_text())
+
+        def interrupted(host, receiver):
+            saved = json.loads(self.receipt.read_text())
+            self.assertEqual(saved["verification_status"], "pending")
+            self.assertEqual(saved["verification_attempts"], prior["verification_attempts"] + 1)
+            self.assertTrue(saved["last_check_at"])
+            self.assertEqual(saved["confirmed_observation"], prior["confirmed_observation"])
+            raise KeyboardInterrupt
+
+        with mock.patch.object(upload_ota, "board_state", side_effect=interrupted):
+            with self.assertRaises(KeyboardInterrupt):
+                upload_ota.verify_receipt(self.receipt)
+        saved = json.loads(self.receipt.read_text())
+        self.assertEqual(saved["verification_status"], "pending")
+        self.assertEqual(saved["before"], prior["before"])
+        self.assertEqual(saved["confirmed_observation"], prior["confirmed_observation"])
+        with mock.patch.object(upload_ota, "board_state", return_value=self.after), \
+                redirect_stdout(io.StringIO()):
+            self.assertTrue(upload_ota.verify_receipt(self.receipt))
+
     def test_previously_confirmed_receipt_requires_a_fresh_board_observation(self):
         self.pending()
         with mock.patch.object(upload_ota, "board_state", return_value=self.after), \

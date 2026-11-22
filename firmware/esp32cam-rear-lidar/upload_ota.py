@@ -247,6 +247,10 @@ def _verify_receipt(path, *, timeout=90):
     while time.monotonic() < deadline:
         receipt["verification_attempts"] = receipt.get("verification_attempts", 0) + 1
         receipt["last_check_at"] = _timestamp()
+        receipt.pop("last_check_error_type", None)
+        # A cancelled HTTP call must leave a durable pending attempt, even
+        # when the preceding observation window confirmed the image.
+        _save_receipt(path, receipt)
         try:
             current = board_state(receipt["host"], receipt["receiver_id"])
             receipt["observation"] = _snapshot(current)
