@@ -4,11 +4,15 @@ on:
   pull_request:
     paths:
       - 'firmware/esp32cam-rear-lidar/**'
+      - 'firmware/esp32cam-rtsp-radio/overlay/src/**'
+      - 'firmware/esp32cam-rtsp-radio/overlay/test/live_write_progress/**'
       - '.github/workflows/rear-camera-firmware.yml'
   push:
-    branches: ['work/rear-camera-lidar-*']
+    branches: ['work/rear-camera-lidar-*', 'fix/rear-camera-*']
     paths:
       - 'firmware/esp32cam-rear-lidar/**'
+      - 'firmware/esp32cam-rtsp-radio/overlay/src/**'
+      - 'firmware/esp32cam-rtsp-radio/overlay/test/live_write_progress/**'
       - '.github/workflows/rear-camera-firmware.yml'
 permissions:
   contents: read
@@ -22,6 +26,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Check independent video and sensor socket progress
+        run: |
+          g++ -std=c++11 -Wall -Wextra -Werror firmware/esp32cam-rtsp-radio/overlay/test/live_write_progress/test_progress.cpp -o /tmp/live-write-progress
+          /tmp/live-write-progress
       - run: python -m pip install platformio==6.1.19
       - run: python firmware/esp32cam-rear-lidar/prepare.py --output /tmp/rear-camera-build --build
       - name: Compile factory provisioning path with test credentials
