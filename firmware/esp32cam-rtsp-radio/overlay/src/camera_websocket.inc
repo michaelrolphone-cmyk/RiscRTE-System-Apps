@@ -1,5 +1,8 @@
 // Independently paced JPEG connection. Socket I/O never runs on the sensor worker.
 // Capture on the Arduino loop to serialize with camera initialization and OTA.
+#ifndef CAMERA_SOCKET_YIELD_BETWEEN_FRAGMENTS
+#define CAMERA_SOCKET_YIELD_BETWEEN_FRAGMENTS false
+#endif
 struct CameraMessage {
     uint8_t *buffer;
     size_t length;
@@ -9,6 +12,7 @@ struct CameraMessage {
 
 QueueHandle_t cameraMailbox = nullptr;
 std::atomic<uint32_t> cameraCaptureSession{0}, cameraFrames{0}, cameraAcks{0}, cameraSuperseded{0};
+std::atomic<uint32_t> cameraCapturePeriodMs{0}, cameraCaptureWidth{0}, cameraCaptureHeight{0};
 LiveWebSocket videoSocket;
 String videoHeaders;
 uint32_t cameraSession = 0;
@@ -73,7 +77,8 @@ void cameraWorker(void *) {
         CameraMessage frame{};
         if (xQueueReceive(cameraMailbox, &frame, 0) == pdTRUE) {
             if (videoConnected && videoReady && frame.session == cameraSession) {
-                if (videoSocket.writeLive(WSop_binary, frame.buffer, frame.length)) {
+                if (videoSocket.writeLive(WSop_binary, frame.buffer, frame.length,
+                                          CAMERA_SOCKET_YIELD_BETWEEN_FRAGMENTS)) {
                     ++cameraFrames;
                 }
             }
@@ -91,12 +96,15 @@ void startCameraPush() {
 
 void captureForSocket(uint32_t intervalMs) {
     static uint32_t lastCapture = 0;
+    cameraCapturePeriodMs.store(intervalMs);
     const uint32_t session = cameraCaptureSession.load();
     if (!session || millis() - lastCapture < intervalMs) return;
     lastCapture = millis();
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb) return;
     if (fb->format == PIXFORMAT_JPEG && fb->len) {
+        cameraCaptureWidth.store(fb->width);
+        cameraCaptureHeight.store(fb->height);
         const uint64_t captureUs = static_cast<uint64_t>(fb->timestamp.tv_sec) * 1000000ULL + fb->timestamp.tv_usec;
         Document metadata(131072);
         JsonObject packet = metadata.to<JsonObject>();

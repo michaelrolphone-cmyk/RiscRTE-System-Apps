@@ -8,6 +8,7 @@
 #include <lwip/sockets.h>
 #include <lwip/opt.h>
 #include <errno.h>
+#include "live_write_progress.h"
 
 // The Links2004 client owns the handshake, incoming messages and control frames.
 // Keep its reader running between outgoing fragments, including when TCP is full.
@@ -34,22 +35,26 @@ public:
 
     bool flushClock(const String &boot) {
         if (clockId.isEmpty()) return false;
+        const String replyingTo = clockId;
         StaticJsonDocument<512> reply;
         reply["type"] = "clock";
-        reply["id"] = serialized(clockId);
+        reply["id"] = serialized(replyingTo);
         reply["boot_id"] = boot;
         reply["received_monotonic_us"] = clockReceived;
         reply["served_monotonic_us"] = static_cast<uint64_t>(esp_timer_get_time());
-        String text;
-        serializeJson(reply, text);
-        if (!sendTXT(text)) return false;
-        clockId = "";
+        uint8_t buffer[WEBSOCKETS_MAX_HEADER_SIZE + 512];
+        char *payload = reinterpret_cast<char *>(buffer + WEBSOCKETS_MAX_HEADER_SIZE);
+        const size_t size = serializeJson(reply, payload, 512);
+        if (!writeLive(WSop_text, buffer, size)) return false;
+        if (clockId == replyingTo) clockId = "";
         return true;
     }
 
-    bool writeLive(WSopcode_t kind, uint8_t *buffer, size_t size) {
+    bool writeLive(WSopcode_t kind, uint8_t *buffer, size_t size,
+                   bool yieldBetweenFragments = false) {
         const uint32_t session = epoch;
         const size_t maximum = TCP_MSS - WEBSOCKETS_MAX_HEADER_SIZE;
+        LiveWriteProgress progress(esp_timer_get_time());
         size_t offset = 0;
         while (offset < size) {
             if (!_client.tcp || epoch != session) return false;
@@ -73,19 +78,31 @@ public:
                     headerSize + length - written, MSG_DONTWAIT);
                 if (count > 0) {
                     written += static_cast<size_t>(count);
+                    progress.wroteBytes(esp_timer_get_time());
                 } else if (count < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
+                    if (progress.stalled(esp_timer_get_time())) {
+                        // A close frame cannot be written into a partial fragment.
+                        abortWrite("Live write stopped making progress");
+                        return false;
+                    }
                     vTaskDelay(1);
                 } else {
-                    if (epoch == session) disconnect();
+                    if (epoch == session) abortWrite("Live write failed");
                     return false;
                 }
             }
             offset += length;
+            if (yieldBetweenFragments && offset < size) vTaskDelay(1);
         }
         return true;
     }
 
 private:
+    void abortWrite(const char *reason) {
+        _client.tcp->stop();
+        clientDisconnect(&_client, reason);
+    }
+
     uint32_t epoch = 0;
     String clockId;
     uint64_t clockReceived = 0;

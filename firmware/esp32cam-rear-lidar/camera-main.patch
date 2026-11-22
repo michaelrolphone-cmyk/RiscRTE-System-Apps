@@ -1,18 +1,19 @@
 --- a/src/main.cpp
 +++ b/src/main.cpp
-@@ -1,3 +1,4 @@
+@@ -1,3 +1,5 @@
 +#include "sensor_push.h"
++#include <Preferences.h>
  #include <Arduino.h>
  #include <esp_wifi.h>
  #include <soc/rtc_cntl_reg.h>
-@@ -321,6 +322,5 @@
+@@ -321,6 +323,5 @@
  void handle_restart()
  {
    log_v("handle_restart");
 -  WiFi.disconnect(false, true);
    ESP.restart();
  }
-@@ -460,5 +460,8 @@
+@@ -460,5 +461,8 @@
    // Network OTA via the espota protocol (port 3232), which allows PlatformIO / Arduino IDE to push new firmware over WiFi.
    ArduinoOTA.setHostname(thingName.c_str());
    ArduinoOTA.setPassword(OTA_PASSWORD);
@@ -21,7 +22,35 @@
 +  ArduinoOTA.setTimeout(10000);
    ArduinoOTA
        .onStart([]()
-@@ -661,6 +664,7 @@
+@@ -589,12 +593,25 @@
+   param_group_auth.addItem(&param_auth_pass);
+   iotWebConf.addParameterGroup(&param_group_auth);
+
+   iotWebConf.getApTimeoutParameter()->visible = true;
+-  iotWebConf.setConfigSavedCallback(on_config_saved);
+   iotWebConf.setWifiConnectionCallback(on_connected);
+ #ifdef USER_LED_GPIO
+   iotWebConf.setStatusPin(USER_LED_GPIO, USER_LED_ON_LEVEL);
+ #endif
+-  iotWebConf.init();
++  const bool savedConfigLoaded = iotWebConf.init();
++  Preferences cameraProfile;
++  if (savedConfigLoaded && cameraProfile.begin("rear-camera", false)) {
++    if (!cameraProfile.getBool("profile-v1", false)) {
++      if (strcmp(param_frame_size.value(), DEFAULT_FRAME_SIZE) != 0 ||
++          param_frame_duration.value() != DEFAULT_FRAME_DURATION) {
++        strlcpy(param_frame_size.value(), DEFAULT_FRAME_SIZE, sizeof(param_frame_size.value()));
++        param_frame_duration.value() = DEFAULT_FRAME_DURATION;
++        iotWebConf.saveConfig();
++      }
++      cameraProfile.putBool("profile-v1", true);
++    }
++    cameraProfile.end();
++  }
++  iotWebConf.setConfigSavedCallback(on_config_saved);
+
+   // Set the time servers
+@@ -661,6 +678,7 @@
    rtsp_server.loop();
    ArduinoOTA.handle();
    radio_telemetry::loop();

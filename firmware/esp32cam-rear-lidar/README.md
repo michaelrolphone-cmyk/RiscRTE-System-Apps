@@ -92,9 +92,16 @@ and AP settings, saves them, and reboots once. The generated credential header
 is owner-readable; treat the factory binary as private and never publish it.
 Flash that image by USB, then upload the normal build over Wi-Fi using espota.
 Normal OTA images omit the factory seed and retain the saved network settings.
-Version 1.0-rear.3 also preserves the Wi-Fi driver profile on an authenticated
+Version 1.0-rear.4 preserves the Wi-Fi driver profile on an authenticated
 camera restart. It allows ten seconds of inactivity per OTA receive attempt so
 brief wireless stalls can recover before the receiver gives up.
+It also migrates the rear camera's saved capture profile once to 1280×720 at
+200 ms per frame, matching the deployed front camera, and retains those defaults
+for new provisioning. Later camera settings changes remain configurable.
+The rear sensor tasks have priority over the video task. Video yields between
+fragments, and a socket with no TCP write progress is closed independently so its
+next session can resume with the newest sample. The stream status reports the
+configured capture interval and the dimensions of the last captured JPEG.
 GET /api/rear reports the actual running partition, firmware version, flash/PSRAM
 sizes and whether an OTA target partition exists. Verify a real network update
 and a post-update camera capture before relying on OTA.

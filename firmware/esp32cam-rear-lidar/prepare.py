@@ -44,7 +44,10 @@ def main():
  settings=out/'include/settings.h';s=settings.read_text()
  import re
  s=re.sub(r'#define APP_TITLE .*','#define APP_TITLE "ROVER-REAR-CAMERA"',s)
- s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.3"',s)
+ s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.4"',s)
+ for name,value in (('DEFAULT_FRAME_SIZE','"HD (1280x720)"'),('DEFAULT_FRAME_DURATION','200')):
+  s,count=re.subn(r'^#define '+name+r' .+$','#define '+name+' '+value,s,flags=re.M)
+  if count!=1:raise ValueError('Unexpected camera setting definition: '+name)
  s=re.sub(r'#define WIFI_SSID .*','#define WIFI_SSID "Rover-Rear-Camera"',s);settings.write_text(s)
  ini=out/'platformio.ini';s=ini.read_text()
  s=s.replace('build_flags =','board_build.partitions = partitions/rear-ota.csv\n\nbuild_flags =\n  -D VL53L5CX_NB_TARGET_PER_ZONE=1')
@@ -53,6 +56,7 @@ def main():
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/camera_websocket.inc',out/'src/camera_websocket.inc')
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/sensor_mailbox.inc',out/'src/sensor_mailbox.inc')
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/live_websocket.h',out/'src/live_websocket.h')
+ shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/live_write_progress.h',out/'src/live_write_progress.h')
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'camera-main.patch')],cwd=out,check=True)
  if a.provisioning_json:
   secret=json.loads(a.provisioning_json.expanduser().read_text())
@@ -62,8 +66,8 @@ def main():
   header.write_text('#pragma once\n#define REAR_FACTORY_SSID '+json.dumps(ssid)+'\n#define REAR_FACTORY_PASSWORD '+json.dumps(password)+'\n')
   header.chmod(0o600)
   main=out/'src/main.cpp';text=main.read_text()
-  text='#include "rear_factory_wifi.h"\n#include <Preferences.h>\n'+text
-  marker='  iotWebConf.init();'
+  text='#include "rear_factory_wifi.h"\n'+text
+  marker='  const bool savedConfigLoaded = iotWebConf.init();'
   if text.count(marker)!=1:raise ValueError('Factory provisioning insertion point changed')
   text=text.replace(marker,marker+'''
   // Factory-only seed. Normal OTA images omit this code and retain saved settings.
@@ -83,7 +87,7 @@ def main():
   }
 ''')
   main.write_text(text)
-  settings.write_text(settings.read_text().replace('"1.0-rear.3"','"1.0-rear.3-factory"'))
+  settings.write_text(settings.read_text().replace('"1.0-rear.4"','"1.0-rear.4-factory"'))
 
  print('Prepared rear variant:',out)
  if a.build:subprocess.run(['pio','run','-d',str(out),'-e','esp32cam_s3_wroom_n16r8'],check=True)
