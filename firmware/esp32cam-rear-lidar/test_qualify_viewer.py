@@ -124,3 +124,46 @@ class SocketReconnect(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(closed["passed"])
         self.assertIn("closed", closed["error"])
         self.assertEqual(closed["streams"]["rear_jpeg"]["count"], 3)
+
+    async def test_real_socket_compression_and_replayed_reconnect(self):
+        payload = jpeg()
+        for requested, allow, negotiated in ((None, True, 0), (15, True, 15), (15, False, 0)):
+            with self.subTest(requested=requested, server_compression=allow):
+                handshakes = []
+
+                async def handler(request):
+                    socket = web.WebSocketResponse(compress=allow)
+                    await socket.prepare(request)
+                    handshakes.append((request.headers.get("Sec-WebSocket-Extensions"), socket.compress))
+                    for i in range(1, 4):
+                        for camera in ("front", "rear"):
+                            await socket.send_bytes(image_frame(camera, i, payload))
+                        await socket.send_bytes(scan(i, i, i))
+                    async for _ in socket:
+                        pass
+                    return socket
+
+                app = web.Application()
+                app.router.add_get("/vision", handler)
+                async with TestServer(app) as server, ClientSession() as session:
+                    args = SimpleNamespace(url=str(server.make_url("/vision")), seconds=0.5,
+                                           width=8, height=6, target_fps=5, fps_tolerance=1, max_gap=1)
+                    if requested is not None:
+                        args.compression = requested
+                    identities = {name: set() for name in
+                                  ("front_jpeg", "rear_jpeg", "front_lidar", "rear_lidar")}
+                    first = await measure(session, args, identities)
+                    replay = await measure(session, args, identities)
+                self.assertTrue(first["passed"])
+                self.assertFalse(replay["passed"])
+                self.assertTrue(all(row["count"] == 0 for row in replay["streams"].values()))
+                for result in (first, replay):
+                    self.assertEqual(result["compression_requested"], requested or 0)
+                    self.assertEqual(result["compression_negotiated"], negotiated)
+                self.assertEqual(len(handshakes), 2)
+                for extension, server_compression in handshakes:
+                    self.assertEqual(bool(server_compression), bool(negotiated))
+                    if requested:
+                        self.assertIn("permessage-deflate", extension or "")
+                    else:
+                        self.assertIsNone(extension)

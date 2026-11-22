@@ -104,10 +104,14 @@ async def measure(session, args, identities=None):
     start = time.monotonic()
     window = StreamWindow(start, (args.width, args.height), identities)
     error = None
+    compression_requested = getattr(args, "compression", 0)
+    compression_negotiated = None
     deadline = start + args.seconds
     try:
         async with asyncio.timeout_at(asyncio.get_running_loop().time() + args.seconds):
-            async with session.ws_connect(args.url, max_msg_size=0) as socket:
+            async with session.ws_connect(args.url, max_msg_size=0,
+                                          compress=compression_requested) as socket:
+                compression_negotiated = socket.compress
                 async for message in socket:
                     if message.type in (aiohttp.WSMsgType.TEXT, aiohttp.WSMsgType.BINARY):
                         window.observe(message.data, time.monotonic())
@@ -121,6 +125,8 @@ async def measure(session, args, identities=None):
         # Keep credentials and signed query strings out of qualification logs.
         error = f"{type(exc).__name__}: {exc}" if isinstance(exc, ValueError) else type(exc).__name__
     status = window.report(time.monotonic(), args.target_fps, args.fps_tolerance, args.max_gap)
+    status.update(compression_requested=compression_requested,
+                  compression_negotiated=compression_negotiated)
     if error:
         status.update(error=error, passed=False)
     return status
@@ -144,6 +150,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("url", help="Authorized rover viewer vision WebSocket URL")
     parser.add_argument("--seconds", type=float, default=60, help="Observation time per attachment")
+    parser.add_argument("--compression", type=int, choices=(0, 15), default=0,
+                        help="WebSocket compression: 0 disables it (default); 15 requests permessage-deflate")
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)
     parser.add_argument("--target-fps", type=float, default=5, help="Deployed front camera frame rate")

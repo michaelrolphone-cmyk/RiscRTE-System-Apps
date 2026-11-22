@@ -149,6 +149,19 @@ a bearer credential, supply its full Authorization value in
 python3 firmware/esp32cam-rear-lidar/qualify_viewer.py "$ROVER_VIEWER_VISION_URL"
 ```
 
+Compression remains disabled by default (`--compression 0`). To match a viewer
+that requests WebSocket `permessage-deflate`, select it explicitly:
+
+```sh
+python3 firmware/esp32cam-rear-lidar/qualify_viewer.py "$ROVER_VIEWER_VISION_URL" --compression 15
+```
+
+Each attachment reports `compression_requested` and `compression_negotiated`.
+The server can decline compression: the negotiated value is then `0`, or `null`
+if the WebSocket handshake did not complete. Keep these fields with the firmware
+identity when comparing runs. Selecting compression changes the transport only;
+all qualification thresholds and sample-identity checks remain the same.
+
 The command opens two successive 60-second connections and reports a sample count,
 rate, and longest delivery gap for each camera and each LiDAR head. It decodes
 each JPEG and verifies 1280×720 pixels. Each camera must deliver 5 ±0.5 fps,
