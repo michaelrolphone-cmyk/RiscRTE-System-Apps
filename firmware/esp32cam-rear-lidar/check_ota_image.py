@@ -26,6 +26,7 @@ def check_image(build_dir, release, factory=False):
     first, second = sorted(slots.values())
     if first[0] + first[1] > second[0] or len(image) > min(first[1], second[1]):
         raise ValueError("Update cannot be stored independently in either OTA slot")
+    return image
 
 
 if __name__ == "__main__":
