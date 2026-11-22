@@ -105,6 +105,24 @@ ArduinoJson dependency:
 
 The rear firmware CI runs this check after the normal firmware build.
 
+Version 1.0-rear.7 adds a `wifi_driver` snapshot to rear telemetry. It reads actual
+driver mode, power-save mode and AP FTM configuration; it never publishes an SSID
+or password. Unknown values are null with the SDK read error, and snapshot sequence
+and age distinguish current evidence from a deferred sample. Mode values are
+0=off, 1=STA, 2=AP and 3=APSTA; power-save values are 0=none, 1=minimum modem
+sleep and 2=maximum modem sleep.
+
+The existing maintenance task conditionally restores actual power save to NONE
+only while the station is connected. It clears an observed AP FTM flag while
+preserving all other AP settings, and retires an AP only when its SSID exactly
+matches this board's former generated ranging identity. A shared ownership mutex
+serializes these corrections with the sole IotWebConf main-loop call. The main
+loop never waits for the mutex and continues camera/OTA work when it is busy;
+maintenance waits at most 20 ms for ownership, then defers without driver changes.
+Paused or disconnected maintenance performs no corrective writes. A correction
+counts as successful only after driver readback confirms it. These diagnostics
+test for a state mismatch; no such mismatch is assumed to explain slow delivery.
+
 ## One-time USB Wi-Fi provisioning
 For a board without saved camera settings, prepare a private factory image:
 `python3 prepare.py --output /absolute/new/factory-build --provisioning-json /private/wifi.json --build`
