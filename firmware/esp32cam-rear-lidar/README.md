@@ -52,7 +52,7 @@ until measured. Rear intrinsics must be independently calibrated.
 
 
 ## Independent sensor WebSocket and reciprocal Wi-Fi FTM
-Version 1.0-rear.2 implements the front camera's authenticated outbound
+The rear camera implements the front camera's authenticated outbound
 WebSocket protocol: /sensors, Authorization: Sensor <token>, boot identity,
 biome.sensor_tick.v1, clock exchanges and sequence acknowledgements.
 A separate low-priority task emits rear LiDAR, UART health and FTM telemetry;
@@ -92,6 +92,9 @@ and AP settings, saves them, and reboots once. The generated credential header
 is owner-readable; treat the factory binary as private and never publish it.
 Flash that image by USB, then upload the normal build over Wi-Fi using espota.
 Normal OTA images omit the factory seed and retain the saved network settings.
+Version 1.0-rear.3 also preserves the Wi-Fi driver profile on an authenticated
+camera restart. It allows ten seconds of inactivity per OTA receive attempt so
+brief wireless stalls can recover before the receiver gives up.
 GET /api/rear reports the actual running partition, firmware version, flash/PSRAM
 sizes and whether an OTA target partition exists. Verify a real network update
 and a post-update camera capture before relying on OTA.

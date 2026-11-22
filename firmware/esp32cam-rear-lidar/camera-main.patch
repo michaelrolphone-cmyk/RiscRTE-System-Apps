@@ -5,7 +5,23 @@
  #include <Arduino.h>
  #include <esp_wifi.h>
  #include <soc/rtc_cntl_reg.h>
-@@ -661,6 +662,7 @@
+@@ -321,6 +322,5 @@
+ void handle_restart()
+ {
+   log_v("handle_restart");
+-  WiFi.disconnect(false, true);
+   ESP.restart();
+ }
+@@ -460,5 +460,8 @@
+   // Network OTA via the espota protocol (port 3232), which allows PlatformIO / Arduino IDE to push new firmware over WiFi.
+   ArduinoOTA.setHostname(thingName.c_str());
+   ArduinoOTA.setPassword(OTA_PASSWORD);
++  // The receiver sees multi-second gaps on the rear radio. Keep an update
++  // open through those gaps while retaining its image checksum and abort path.
++  ArduinoOTA.setTimeout(10000);
+   ArduinoOTA
+       .onStart([]()
+@@ -661,6 +664,7 @@
    rtsp_server.loop();
    ArduinoOTA.handle();
    radio_telemetry::loop();
