@@ -45,6 +45,7 @@ uint64_t sequence=0;
 uint32_t sent=0,failed=0;
 
 #define CAMERA_SOCKET_ROLE "rear"
+#define CAMERA_SOCKET_YIELD_BETWEEN_FRAGMENTS true
 #include "camera_websocket.inc"
 
 void writePacket(JsonObject packet,bool streaming=true) {
@@ -137,6 +138,9 @@ void status() {
     DynamicJsonDocument d(2048);
     d["camera_frames_superseded"]=cameraSuperseded.load();
     d["camera_frames_sent"]=cameraFrames.load();d["camera_frames_acknowledged"]=cameraAcks.load();
+    d["camera_capture_period_ms"]=cameraCapturePeriodMs.load();
+    d["camera_capture_width"]=cameraCaptureWidth.load();
+    d["camera_capture_height"]=cameraCaptureHeight.load();
     d["rssi_dbm"]=WiFi.RSSI();d["channel"]=WiFi.channel();
     d["transport"]="websocket_push";d["camera_id"]="rear";d["worker_ready"]=workerReady;d["paused"]=paused;d["configured"]=!current.host.isEmpty();
     d["host"]=current.host;d["port"]=current.port;d["connected"]=connected;
@@ -215,8 +219,9 @@ void begin(WebServer &http,bool (*authorize)()) {
     http.on("/api/telemetry/stream",HTTP_GET,status);
     http.on("/api/telemetry/stream",HTTP_POST,configure);
     sensorMailbox = xQueueCreate(1, sizeof(SensorMessage));
-    if (!sensorMailbox || xTaskCreate(sampleSensors, "sensor-sampling", 8192, nullptr, 1, nullptr) != pdPASS) return;
-    workerReady=xTaskCreate(worker,"rear-sensor-websocket",8192,nullptr,1,nullptr)==pdPASS;
+    constexpr UBaseType_t sensorPriority = tskIDLE_PRIORITY + 2;
+    if (!sensorMailbox || xTaskCreate(sampleSensors, "sensor-sampling", 8192, nullptr, sensorPriority, nullptr) != pdPASS) return;
+    workerReady=xTaskCreate(worker,"rear-sensor-websocket",8192,nullptr,sensorPriority,nullptr)==pdPASS;
 }
 void pause(bool value) {paused=value;}
 } // namespace sensor_push
