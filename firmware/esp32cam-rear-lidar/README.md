@@ -64,11 +64,11 @@ same height,180degree yaw,0.0762m behind the FRONT CAMERA OPTICAL ORIGIN, provis
 until measured. Rear intrinsics must be independently calibrated.
 
 
-## Independent sensor WebSocket and reciprocal Wi-Fi FTM
+## Independent sensor WebSocket and disabled Wi-Fi ranging
 The rear camera implements the front camera's authenticated outbound
 WebSocket protocol: /sensors, Authorization: Sensor <token>, boot identity,
 biome.sensor_tick.v1, clock exchanges and sequence acknowledgements.
-A separate low-priority task emits rear LiDAR, UART health and FTM telemetry;
+A separate low-priority task emits rear LiDAR, UART health and ranging availability;
 it never invokes the camera or front AHRS. Missing devices do not stop ticks.
 A connected sensor sender publishes at its own cadence. A late or missing application acknowledgment does not pause publication or close the connection.
 These ticks carry the latest valid ranges, not a retained history of every range.
@@ -81,21 +81,29 @@ The host's rear receiver must use matching receiver_id, port and token.
 GET /api/sensors/capture returns the identical tick schema for diagnostics.
 The front receiver remains on its existing port and identity.
 
-Both FTM initiator and responder roles are enabled when provided by the S3 SDK.
-Responder SSID C3-TOF-ROVER-REAR-<id> is discoverable by the existing C3 fleet.
-The responder shares the STA channel and keeps existing station sockets alive.
-The requested maximum transmit power is 15 dBm (60 quarter-dBm SDK units),
-reapplied after AP changes/reconnection; /api/telemetry reports measured readback.
-Actual transmit power remains subject to the SDK/radio's per-rate behavior.
-Authenticated POST /api/telemetry/ftm accepts {"address":"aa:bb:cc:dd:ee:ff","channel":6}
-and queues a session; /api/telemetry and /api/ranging expose report_id, status,
-distance, sample count and responder identity. No synchronous ranging in HTTP
-or image capture. Cancellation drains late reports before admitting a new session.
-The existing fleet coordinator can target this rear endpoint as another initiator;
-sensor receiver configuration may also list known peers for automatic rear sessions.
-No BLE/RSSI scanning is added. FTM and video share one radio, so simultaneous
-performance and off-channel ranging need physical qualification.
+Version 1.0-rear.6 disables Wi-Fi FTM initiation and response on this rear board.
+No ranging worker, FTM event handler, or C3-TOF-ROVER-REAR ranging AP is started.
+The normal Wi-Fi station and IotWebConf provisioning/recovery AP keep their existing
+behavior. Both VL53L5CX LiDAR heads remain enabled at their existing settings;
+camera capture remains 1280×720 at a configured 200 ms interval.
 
+Authenticated POST /api/telemetry/ftm and POST /api/telemetry/config return HTTP501
+with reason disabled_in_firmware. Saved rear-ranging preferences cannot re-enable
+the feature. GET /api/telemetry/config and GET /api/ranging report immutable disabled
+configuration. Rear telemetry explicitly advertises ftm, ftm_initiator and
+ftm_responder capabilities as false, with null range, RTT, age and target fields.
+A zero sample count represents unavailable ranging; it is never a zero-distance
+measurement. The front-camera firmware is not changed by this rear-only adapter.
+
+A separate small task preserves the existing requested maximum transmit power of
+15 dBm (60 quarter-dBm SDK units). /api/telemetry reports the measured readback.
+Actual transmit power remains subject to the SDK/radio's per-rate behavior.
+The executable host regression uses the production adapter and the prepared build's
+ArduinoJson dependency:
+
+`python3 test_ranging_disabled.py --prepared /absolute/new/rear-build`
+
+The rear firmware CI runs this check after the normal firmware build.
 
 ## One-time USB Wi-Fi provisioning
 For a board without saved camera settings, prepare a private factory image:

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-rear.5",
+  "variant": "1.0-rear.6",
   "front_source_commit": "b92bb4bbd179027ae7ed378ef04fc17417f4265e",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
   "inherited_files": [
@@ -118,5 +118,5 @@
     }
   ],
   "reused_transport_source": "e937be1c92288c1080a3b086522d09e768efbb93:firmware/esp32cam-rtsp-radio",
-  "transport_notes": "Rear-only copy of front sensor push/FTM protocol; independent receiver identity; 15 dBm maximum request."
+  "transport_notes": "Rear-only front sensor push protocol; independent receiver identity; 15 dBm maximum request. Wi-Fi FTM initiator and responder disabled; both VL53L5CX heads retained."
 }
