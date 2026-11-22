@@ -121,3 +121,25 @@ and a post-update camera capture before relying on OTA.
 
 The rear build routes application logging to UART0 (USB CDC on boot disabled).
 This avoids a disconnected USB-OTG debug channel stalling first-run setup.
+
+## Verify delivery at the viewer
+
+On Python 3.11 or newer, install `aiohttp` and `Pillow`. Run the following
+against the same vision WebSocket used by the viewer. If the endpoint requires
+a bearer credential, supply its full Authorization value in
+`ROVER_VISION_AUTHORIZATION` through the existing credential mechanism.
+
+```sh
+python3 firmware/esp32cam-rear-lidar/qualify_viewer.py "$ROVER_VIEWER_VISION_URL"
+```
+
+The command opens two successive 60-second connections and reports a sample count,
+rate, and longest delivery gap for each camera and each LiDAR head. It decodes
+each JPEG and verifies 1280×720 pixels. Each camera must deliver 5 ±0.5 fps,
+and their rates must agree within 0.5 fps. Each LiDAR head must advance from
+dedicated rear sensor ticks with both 64-cell arrays present. A gap over one
+second, a premature socket close, or an invalid image fails the run. The gap
+includes startup and the end of the observation. Replayed samples are counted once
+across both connections. Use `--help` for other front profiles or test durations.
+CI exercises the checker with loopback fixtures. A deployed release needs its
+own run on the viewer connection.
