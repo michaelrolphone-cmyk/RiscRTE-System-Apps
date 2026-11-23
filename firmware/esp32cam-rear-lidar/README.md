@@ -1,6 +1,6 @@
 # Rear ESP32-S3-CAM with two VL53L5CX sensors
 
-Current normal release: **1.0-rear.12**.
+Current normal release: **1.0-rear.13**.
 
 Derived from the sibling front-camera firmware package at its pinned upstream revision.
 The rear variant is prepared from pinned camera sources and retains RTSP, authenticated
@@ -423,7 +423,7 @@ The tests inject syscall/wakeup elapsed time and control/data failures to verify
 accounting and unchanged wire/pacing decisions. They do not reproduce Wi-Fi,
 CPU scheduling in the device, or prove which bucket explains live throughput.
 
-## Rear WebSocket read-timeout unit correction
+## Rear WebSocket read-timeout unit correction (1.0-rear.13)
 
 The rear materializer applies `patch_websocket_library.py` to the local pinned
 WebSockets 2.7.2 dependency. Its connection callback previously supplied the
