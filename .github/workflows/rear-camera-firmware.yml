@@ -44,6 +44,8 @@ jobs:
           python -m unittest discover -s firmware/esp32cam-rear-lidar -p 'test_qualify_viewer.py'
       - run: python -m pip install platformio==6.1.19
       - run: python firmware/esp32cam-rear-lidar/prepare.py --output /tmp/rear-camera-build --build
+      - name: Test bounded rear TCP diagnostic custody and actual SDK guards
+        run: python firmware/esp32cam-rear-lidar/test_tcp_diagnostic.py --prepared /tmp/rear-camera-build
       - name: Test actual ESP32 WebSocket read-timeout units and unchanged negative control
         run: python firmware/esp32cam-rear-lidar/test_websocket_timeout.py --prepared /tmp/rear-camera-build
       - name: Test disabled rear Wi-Fi ranging behavior

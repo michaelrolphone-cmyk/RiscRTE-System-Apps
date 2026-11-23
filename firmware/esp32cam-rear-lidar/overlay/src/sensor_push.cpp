@@ -1,4 +1,5 @@
 #include "sensor_push.h"
+#include "settings.h"
 #include <atomic>
 #include <Update.h>
 #include <esp_camera.h>
@@ -8,6 +9,7 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 #define LIVE_WEBSOCKET_SEND_TIMING 1
+#define LIVE_WEBSOCKET_TCP_DIAGNOSTIC 1
 #include "live_websocket.h"
 #include <WiFi.h>
 #include <esp_heap_caps.h>
@@ -29,7 +31,9 @@ SemaphoreHandle_t mutex=nullptr;
 WebServer *server=nullptr;
 bool (*authorizeRequest)()=nullptr;
 LiveWebSocket socket;
-String headers,boot;
+// Fixed storage outlives every queued callback; allocate on the first connection.
+RearTcpDiagnostic sensorTcpDiagnostic, cameraTcpDiagnostic;
+String headers,boot,tcpReceiver;
 volatile bool connected=false,paused=false;
 bool workerReady=false;
 
@@ -74,6 +78,7 @@ bool sensorPaused() { return paused; }
 void event(WStype_t type,uint8_t *payload,size_t length) {
     if (type == WStype_CONNECTED) {
         socket.transportChanged(true);
+        socket.diagnosticTransportChanged(true);
         portENTER_CRITICAL(&sampleLock);
         lastSentSampleUs = 0;
         portEXIT_CRITICAL(&sampleLock);
@@ -83,6 +88,7 @@ void event(WStype_t type,uint8_t *payload,size_t length) {
     }
     if (type == WStype_DISCONNECTED) {
         socket.transportChanged(false);
+        socket.diagnosticTransportChanged(false);
         if (connected) {
             ++socketDisconnects;
             lastSocketDisconnectMs = millis();
@@ -180,6 +186,115 @@ void writeCameraSendTiming(JsonObject object) {
         object["last"] = nullptr;
     }
     writeSendCounters(object.createNestedObject("cumulative"), snapshot.cumulative);
+}
+
+// Cached TCP observations only; this endpoint never touches sockets or PCBs.
+void writeTcpSegments(JsonObject out, const RearTcpDiagnostic::Segments &s) {
+    out["visited"] = s.visited;
+    out["payload_bytes"] = s.payload_bytes;
+    out["truncated"] = s.truncated;
+    out["not_visited"] = s.not_visited;
+    if (s.visited) { out["first_seq"] = s.first_seq; out["last_end_seq"] = s.last_end_seq; }
+    else { out["first_seq"] = nullptr; out["last_end_seq"] = nullptr; }
+}
+
+void writeTcpDiagnostic(JsonObject out, const RearTcpDiagnostic::Snapshot &view, uint64_t now) {
+    out["initialized"] = view.initialized;
+    out["message_ready"] = view.message_ready;
+    out["connected"] = view.connected;
+    out["generation"] = view.generation;
+    out["tuple_valid"] = view.tuple_valid;
+    out["tuple_error"] = view.tuple_error;
+    if (view.tuple_valid) {
+        out["local_port"] = view.tuple.localPort; out["remote_port"] = view.tuple.remotePort;
+    } else { out["local_port"] = nullptr; out["remote_port"] = nullptr; }
+    out["pending"] = view.pending; // Includes READY awaiting owner consumption.
+    if (view.pending) {
+        out["pending_generation"] = view.pending_generation;
+        out["pending_age_us"] = now >= view.pending_since_us ? now - view.pending_since_us : 0;
+    } else { out["pending_generation"] = nullptr; out["pending_age_us"] = nullptr; }
+    if (view.totals.attempts) out["last_post_error"] = view.last_post_error;
+    else out["last_post_error"] = nullptr;
+    const auto &t = view.totals;
+    JsonObject totals = out.createNestedObject("totals");
+#define REAR_TCP_TOTAL(field) totals[#field] = t.field
+    REAR_TCP_TOTAL(attempts); REAR_TCP_TOTAL(queued); REAR_TCP_TOTAL(queue_rejected);
+    REAR_TCP_TOTAL(completed); REAR_TCP_TOTAL(stale_discarded); REAR_TCP_TOTAL(not_found);
+    REAR_TCP_TOTAL(matched); REAR_TCP_TOTAL(blocked_trigger); REAR_TCP_TOTAL(truncated);
+    REAR_TCP_TOTAL(snd_buf_zero); REAR_TCP_TOTAL(snd_wnd_zero); REAR_TCP_TOTAL(retransmitting_samples);
+    REAR_TCP_TOTAL(dispatch_us_sum); REAR_TCP_TOTAL(dispatch_us_max);
+    REAR_TCP_TOTAL(callback_us_sum); REAR_TCP_TOTAL(callback_us_max);
+#undef REAR_TCP_TOTAL
+    if (t.matched) {
+        totals["min_snd_buf"] = t.min_snd_buf; totals["min_cwnd"] = t.min_cwnd;
+        totals["min_snd_wnd"] = t.min_snd_wnd;
+        totals["max_unsent_bytes"] = t.max_unsent_bytes;
+        totals["max_unacked_bytes"] = t.max_unacked_bytes;
+        totals["max_nrtx"] = t.max_nrtx; totals["max_dupacks"] = t.max_dupacks;
+    } else {
+        totals["min_snd_buf"] = nullptr; totals["min_cwnd"] = nullptr;
+        totals["min_snd_wnd"] = nullptr; totals["max_unsent_bytes"] = nullptr;
+        totals["max_unacked_bytes"] = nullptr; totals["max_nrtx"] = nullptr;
+        totals["max_dupacks"] = nullptr;
+    }
+    if (!view.observed) { out["last"] = nullptr; return; }
+    const auto &s = view.last;
+    JsonObject last = out.createNestedObject("last");
+    last["generation"] = s.generation;
+    last["current_generation"] = view.connected && s.generation == view.generation;
+    last["requested_us"] = s.requested_us;
+    last["source_snapshot_us"] = s.started_us;
+    last["source_complete_us"] = s.completed_us;
+    last["age_us"] = now >= s.started_us ? now - s.started_us : 0;
+    last["stale"] = !view.connected || s.generation != view.generation ||
+                    now < s.started_us || now - s.started_us > RearTcpDiagnostic::staleAfterUs;
+    last["post_attempt_to_callback_us"] = s.started_us - s.requested_us;
+    last["callback_us"] = s.completed_us - s.started_us;
+    last["trigger"] = s.would_block ? "would_block" : "not_would_block";
+    last["found"] = s.found; last["pcbs_visited"] = s.pcbs_visited;
+    last["pcb_walk_truncated"] = s.pcb_walk_truncated;
+    last["tcp_ticks"] = s.tcp_ticks;
+    if (!s.found) { last["tcp"] = nullptr; return; }
+    JsonObject tcp = last.createNestedObject("tcp");
+#define REAR_TCP_VALUE(field) tcp[#field] = s.field
+    REAR_TCP_VALUE(state); REAR_TCP_VALUE(flags); REAR_TCP_VALUE(mss);
+    REAR_TCP_VALUE(snd_buf); REAR_TCP_VALUE(cwnd); REAR_TCP_VALUE(snd_wnd);
+    REAR_TCP_VALUE(ssthresh); REAR_TCP_VALUE(snd_queuelen);
+    REAR_TCP_VALUE(lastack); REAR_TCP_VALUE(snd_nxt); REAR_TCP_VALUE(snd_lbb);
+    REAR_TCP_VALUE(rto_end); REAR_TCP_VALUE(bytes_acked); REAR_TCP_VALUE(rtseq);
+    REAR_TCP_VALUE(nrtx); REAR_TCP_VALUE(dupacks);
+#undef REAR_TCP_VALUE
+    tcp["rtime_ticks"] = s.rtime; tcp["rto_ticks"] = s.rto;
+    tcp["sa_raw"] = s.sa; tcp["sv_raw"] = s.sv; tcp["rttest_ticks"] = s.rttest;
+    writeTcpSegments(tcp.createNestedObject("unacked"), s.unacked);
+    writeTcpSegments(tcp.createNestedObject("unsent"), s.unsent);
+}
+
+void tcpStatus() {
+    if (!authorizeRequest || !authorizeRequest()) return;
+    const auto camera = cameraTcpDiagnostic.snapshot();
+    const auto sensor = sensorTcpDiagnostic.snapshot();
+    const uint64_t now = esp_timer_get_time();
+    DynamicJsonDocument d(8192);
+    d["schema"] = "rover.rear_tcp_diagnostic.v1";
+    d["receiver_id"] = tcpReceiver; d["boot_id"] = boot; d["firmware"] = APP_VERSION;
+    d["clock"] = "esp_timer"; d["observed_at_monotonic_us"] = now;
+    d["sampling_interval_us"] = static_cast<uint64_t>(RearTcpDiagnostic::intervalUs);
+    d["stale_after_us"] = static_cast<uint64_t>(RearTcpDiagnostic::staleAfterUs);
+    d["tcp_slow_tick_ms"] = TCP_SLOW_INTERVAL;
+    d["configured_send_buffer_bytes"] = TCP_SND_BUF;
+    d["configured_send_queue_pbufs"] = TCP_SND_QUEUELEN;
+    d["configured_mss_bytes"] = TCP_MSS;
+    d["max_pcbs"] = static_cast<unsigned>(RearTcpDiagnostic::maxPcbs);
+    d["max_segments_total"] = static_cast<unsigned>(RearTcpDiagnostic::maxSegments);
+    writeTcpDiagnostic(d.createNestedObject("camera"), camera, now);
+    writeTcpDiagnostic(d.createNestedObject("sensor"), sensor, now);
+    if (d.overflowed()) {
+        server->send(503, "application/json", "{\"error\":\"TCP diagnostic allocation failed\"}");
+        return;
+    }
+    String text; serializeJson(d, text);
+    server->sendHeader("Cache-Control", "no-store"); server->send(200, "application/json", text);
 }
 
 void status() {
@@ -284,9 +399,12 @@ void begin(WebServer &http,bool (*authorize)()) {
     Preferences prefs;
     if(prefs.begin("rover-push",true)) {config.host=prefs.getString("host","");config.token=prefs.getString("token","");config.port=prefs.getUShort("port",9877);prefs.end();}
     Document initial(131072);writePacket(initial.to<JsonObject>(),false);boot=String(initial["boot_id"]|"");
+    tcpReceiver=String(initial["receiver_id"]|"");
+    socket.attachTcpDiagnostic(sensorTcpDiagnostic); videoSocket.attachTcpDiagnostic(cameraTcpDiagnostic);
     startCameraPush();
     http.on("/api/sensors/capture",HTTP_GET,capture);
     http.on("/api/telemetry/stream",HTTP_GET,status);
+    http.on("/api/telemetry/tcp",HTTP_GET,tcpStatus);
     http.on("/api/telemetry/stream",HTTP_POST,configure);
     sensorMailbox = xQueueCreate(1, sizeof(SensorMessage));
     constexpr UBaseType_t sensorPriority = tskIDLE_PRIORITY + 2;
