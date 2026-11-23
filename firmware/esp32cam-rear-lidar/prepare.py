@@ -44,13 +44,13 @@ def main():
  settings=out/'include/settings.h';s=settings.read_text()
  import re
  s=re.sub(r'#define APP_TITLE .*','#define APP_TITLE "ROVER-REAR-CAMERA"',s)
- s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.12"',s)
+ s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.13"',s)
  for name,value in (('DEFAULT_FRAME_SIZE','"HD (1280x720)"'),('DEFAULT_FRAME_DURATION','200')):
   s,count=re.subn(r'^#define '+name+r' .+$','#define '+name+' '+value,s,flags=re.M)
   if count!=1:raise ValueError('Unexpected camera setting definition: '+name)
  s=re.sub(r'#define WIFI_SSID .*','#define WIFI_SSID "Rover-Rear-Camera"',s);settings.write_text(s)
  ini=out/'platformio.ini';s=ini.read_text()
- s=s.replace('build_flags =','board_build.partitions = partitions/rear-ota.csv\nextra_scripts =\n  pre:patch_bno_library.py\n  pre:patch_lidar_library.py\n\nbuild_flags =\n  -D VL53L5CX_NB_TARGET_PER_ZONE=1')
+ s=s.replace('build_flags =','board_build.partitions = partitions/rear-ota.csv\nextra_scripts =\n  pre:patch_bno_library.py\n  pre:patch_lidar_library.py\n  pre:patch_websocket_library.py\n\nbuild_flags =\n  -D VL53L5CX_NB_TARGET_PER_ZONE=1')
  s=s.replace('lib_deps =','lib_deps =\n  sparkfun/SparkFun BNO08x Cortex Based IMU@1.0.6\n  sparkfun/SparkFun VL53L5CX Arduino Library@1.0.3\n  links2004/WebSockets@2.7.2');ini.write_text(s)
 
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/camera_websocket.inc',out/'src/camera_websocket.inc')
@@ -90,16 +90,19 @@ def main():
   }
 ''')
   main.write_text(text)
-  settings.write_text(settings.read_text().replace('"1.0-rear.12"','"1.0-rear.12-factory"'))
+  settings.write_text(settings.read_text().replace('"1.0-rear.13"','"1.0-rear.13-factory"'))
 
  shutil.copyfile(ROOT/'patch_bno_library.py',out/'patch_bno_library.py')
  shutil.copyfile(ROOT/'patch_lidar_library.py',out/'patch_lidar_library.py')
+ shutil.copyfile(ROOT/'patch_websocket_library.py',out/'patch_websocket_library.py')
  # Resolve the pinned dependency, then bind the rear-only safety fixes to exact bytes.
  subprocess.run(['pio','pkg','install','-d',str(out),'-e','esp32cam_s3_wroom_n16r8'],check=True)
  from patch_bno_library import apply as patch_bno_library
  patch_bno_library(out)
  from patch_lidar_library import apply as patch_lidar_library
  patch_lidar_library(out)
+ from patch_websocket_library import apply as patch_websocket_library
+ patch_websocket_library(out)
  print('Prepared rear variant:',out)
  if a.build:subprocess.run(['pio','run','-d',str(out),'-e','esp32cam_s3_wroom_n16r8'],check=True)
 if __name__=='__main__':main()
