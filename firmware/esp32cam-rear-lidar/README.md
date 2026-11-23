@@ -1,6 +1,28 @@
 # Rear ESP32-S3-CAM with two VL53L5CX sensors
 
-Current normal release: **1.0-rear.16**.
+Current normal release: **1.0-rear.17**.
+
+## Allocation recovery and reset reason (1.0-rear.17)
+
+Each LiDAR head now retries its missing configuration/results allocation
+independently while retaining an object that was already allocated. The prior
+paired guard could leave results permanently unallocated, or overwrite and
+leak a successful results object after the configuration allocation failed.
+This defect was present in the retained .10, .11 and .16 adapter; the .11
+low-level driver fixes did not cover these adapter allocations.
+
+Authenticated `GET /api/rear` adds `reset_reason_code` (the ESP-IDF enum value) and
+`reset_reason` (a stable label such as `panic`, `task_watchdog` or `brownout`).
+The value is captured once at startup. It describes only that boot and cannot
+recover the cause of earlier resets. Other status aliases and normal
+camera/sensor payloads receive no new fields.
+
+Actual-adapter fault tests reproduce both original allocation defects and
+verify recovery, retained pointer ownership, the other head, full grids,
+authentication and cached route-only reset fields. This is not evidence that
+OOM caused a live reset or that delivery performance has recovered. Both
+LiDAR heads, optional BNO absence handling, camera cadence, transport settings
+and the prior fixes remain in place.
 
 ## Latest measured status — 2026-11-23 08:38 UTC
 
