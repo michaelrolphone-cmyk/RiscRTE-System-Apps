@@ -1,6 +1,6 @@
 # Rear ESP32-S3-CAM with two VL53L5CX sensors
 
-Current normal release: **1.0-rear.14**.
+Current normal release: **1.0-rear.15**.
 
 Derived from the sibling front-camera firmware package at its pinned upstream revision.
 The rear variant is prepared from pinned camera sources and retains RTSP, authenticated
@@ -499,3 +499,61 @@ pass; retain the .13 image for comparison or rollback.
 
 Reference:
 [ESP-IDF 4.4.7 Wi-Fi QoS](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-guides/wifi.html#wifi-qos).
+
+## Rear Wi-Fi static-buffer comparison (1.0-rear.15)
+
+The only runtime change from .14 is `WiFi.useStaticBuffers(true)` as the first
+statement in the rear materialized `setup()`, before camera setup,
+`WiFi.setSleep(false)`, IotWebConf initialization, or any telemetry worker.
+Arduino 2.0.17's setter selects the profile used by the first
+`wifiLowLevelInit()`; it does not restart or reconfigure a running interface.
+The reviewed IotWebConf 3.2.1 constructor only binds configuration objects,
+and its `init()` loads settings. Connection/AP work occurs later in its
+network state machine. No front/shared file is changed.
+
+The pinned Arduino initializer otherwise replaces several SDK defaults
+when static buffers have not been requested. The actual rear N16R8 qio_opi
+configuration and Arduino 2.0.17 source select:
+
+| Buffer field | Arduino default used through .14 | Static profile requested in .15 |
+|---|---:|---:|
+| Static RX buffers | 4 | 8 |
+| Dynamic RX buffers | 32 | 32 |
+| TX buffer type | Dynamic (1) | Static (0) |
+| Static TX buffers | 0 | 8 |
+| Dynamic TX buffers | 32 | SDK value remains present; static TX type selected |
+| Cached TX buffers | 4 | 16 |
+
+These are initialization values, not a measurement of live occupancy or drops.
+ESP-IDF 4.4.7 advises against fewer than six static RX buffers with AMPDU
+and recommends static TX buffers when PSRAM is enabled. Arduino documents
+static allocation as the performance-oriented choice for multitasking,
+with greater memory use than its default dynamic allocation.
+This comparison uses that supported API rather than editing SDK constants.
+
+The .14 strict viewer test still failed rear throughput/gap checks, and sender
+timing remained dominated by backpressure waits with explicit fragment-yield
+time at zero. A later root-page snapshot reported 120.94 KB free internal heap
+and a 109.99 KB largest internal block. Those rounded point-in-time values do
+not rule out transient allocation pressure and do not establish this buffer
+profile as the cause of slow delivery. A verified .15 boot and the unchanged
+camera/LiDAR acceptance checks are required to assess the comparison.
+
+The .14 no-yield setting, CS5, four-second write-progress budget, read-timeout
+correction, camera 1280×720/200-ms profile, sensor cadence/priorities, both
+LiDARs, BNO absence handling, disabled FTM, requested power and OTA behavior
+remain unchanged. No additional metadata is added to normal messages.
+
+Materialize and build in a new directory, require the production-file
+comparison to contain only this setup insertion and the release identity,
+then run the existing transport-budget, materialized timing and actual
+timeout regressions plus the OTA-image check. Preserve the .14 image and
+receipts. The build also records the exact initializer/SDK identities and
+the setup ordering; host tests do not simulate Wi-Fi buffer performance.
+
+References:
+
+- [Arduino 2.0.17 initializer and setter](https://github.com/espressif/arduino-esp32/blob/2.0.17/libraries/WiFi/src/WiFiGeneric.cpp)
+- [Pinned N16R8 SDK configuration](https://github.com/espressif/arduino-esp32/blob/2.0.17/tools/sdk/esp32s3/qio_opi/include/sdkconfig.h)
+- [ESP-IDF 4.4.7 Wi-Fi buffer guidance](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-guides/wifi.html#wi-fi-buffer-usage)
+- [Arduino useStaticBuffers API](https://docs.espressif.com/projects/arduino-esp32/en/latest/api/wifi.html#usestaticbuffers)
