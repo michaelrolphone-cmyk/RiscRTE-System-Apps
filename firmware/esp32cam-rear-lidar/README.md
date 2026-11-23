@@ -5,8 +5,8 @@ capture at /api/capture, provisioning, exposure/light controls and password-prot
 ArduinoOTA on port3232. Two 6MiB OTA application slots are provided.
 
 Camera frames are delivered directly over Wi-Fi regardless of UART or LiDAR state.
-Each optional peripheral has an independent worker; no sensor or UART operations
-run in the capture/HTTP path. Capture returns null/unavailable sensor evidence rather
+LiDAR acquisition, BNO and UART use dedicated workers; both LiDAR heads share the
+acquisition worker. No sensor or UART operations run in the capture/HTTP path. Capture returns null/unavailable sensor evidence rather
 than inventing measurements or rejecting the image. Unplugged devices are retried,
 stale samples are excluded and future samples cannot be attached to older captures.
 UART is dedicated UART2. Debug logging uses the programming UART0, so startup
@@ -25,6 +25,31 @@ Do not flash the SDR board or the existing front camera with this variant.
 Both ToFs and boards share ground; confirm the purchased carrier's supply/logic voltage.
 Keep SD slots empty. INT is unused; I2C_RST follows the carrier's required pulldown.
 The rear-camera pins differ from the abandoned plan that used38/39 for LPn.
+
+## Bounded LiDAR recovery (1.0-rear.11)
+
+This release repairs the pinned VL53L5CX driver's error paths. A response poll
+terminates on its two-second elapsed deadline, transport error or sensor MCU
+error. Initialization, configuration and ranging start return at the first failed
+operation. Zero-byte and short I2C reads are errors; readiness and range parsing
+do not reuse a failed read as fresh evidence.
+
+The materializer checks the exact SparkFun VL53L5CX 1.0.3 source blobs and applies
+`patch_lidar_library.py` only to the rear dependency. Both dependency pre-scripts
+verify their reviewed patched bytes on subsequent PlatformIO builds. The BNO,
+camera, LiDAR pins and rates, and radio/transport settings remain unchanged.
+
+Both LiDAR heads still share one acquisition worker. A bounded recovery or sensor
+firmware download can temporarily delay the other head; this is not a claim of
+complete head independence or a measured fix for camera delivery. After a failed
+attempt the adapter disables that head's communications. A retry probes its
+retained/default address, then explicitly selects register bank zero before
+checking identity and restarting initialization.
+
+Run `python3 test_lidar_driver.py --prepared /absolute/new/rear-build` for the
+actual-driver behavioral tests and exact unchanged-source negative controls.
+Host tests use fake Wire/time boundaries; an installed release still needs live
+camera and both-head qualification.
 
 ## Build
 python3 prepare.py --output /absolute/new/rear-build
