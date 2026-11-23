@@ -1,8 +1,64 @@
 # Rear ESP32-S3-CAM with two VL53L5CX sensors
 
-Current normal release: **1.0-rear.16**.
+Current normal release: **1.0-rear.17**.
 
-## Latest measured status — 2026-11-23 08:38 UTC
+## Allocation recovery and reset reason (1.0-rear.17)
+
+Each LiDAR head now retries its missing configuration/results allocation
+independently while retaining an object that was already allocated. The prior
+paired guard could leave results permanently unallocated, or overwrite and
+leak a successful results object after the configuration allocation failed.
+This defect was present in the retained .10, .11 and .16 adapter; the .11
+low-level driver fixes did not cover these adapter allocations.
+
+Authenticated `GET /api/rear` adds `reset_reason_code` (the ESP-IDF enum value) and
+`reset_reason` (a stable label such as `panic`, `task_watchdog` or `brownout`).
+The value is captured once at startup. It describes only that boot and cannot
+recover the cause of earlier resets. Other status aliases and normal
+camera/sensor payloads receive no new fields.
+
+Actual-adapter fault tests reproduce both original allocation defects and
+verify recovery, retained pointer ownership, the other head, full grids,
+authentication and cached route-only reset fields. This is not evidence that
+OOM caused a live reset or that delivery performance has recovered. Both
+LiDAR heads, optional BNO absence handling, camera cadence, transport settings
+and the prior fixes remain in place.
+
+## Latest measured status — 2026-11-23 11:58 UTC
+
+**The incident remains open; the unchanged delivery gates failed.**
+[Tracked incident](https://tasker-workboard.cantikash.chatgpt.site/?task=7b8aa6d4-bc05-49c0-9b35-359323fa1c53).
+
+The measured board was **1.0-rear.16**, app0, boot `51ceb200aeaf372d`.
+The .17 allocation/reset-diagnostic candidate above had not been installed.
+Strict run `rearperf-v16-lidar-db-isolation-public-native-20261123-70`
+ran the two 60-second public/native windows at **11:56:35.764895–11:58:35.864952 UTC**.
+Native camera rates were:
+
+| Metric | First 60 seconds | Reconnect 60 seconds |
+|---|---:|---:|
+| Front camera, fps | 4.950 | 3.147 |
+| Rear camera, fps | 2.483 | 1.748 |
+
+A common native LiDAR delivery gap reached **13.297 s**. The outside-core
+counter bracket recorded **695 captures, 375 completed sends and 320
+superseded camera frames**; mean send wall time was about **366 ms**, with
+about **73%** in backpressure wait. Those cumulative-counter deltas cover a
+different span from the two viewer windows. No new transport errors were recorded; boot, map and
+calibration identities were unchanged in the run. Expected absent-BNO behavior passed all
+four route/window checks.
+
+The receiver database-lock change was present in this run, but these results
+do not prove it caused or resolved a particular live gap. The conditional
+allocation defect likewise has no observed live OOM trigger or reset
+attribution. Delivery, localization and unexplained resets remain separate
+open questions.
+
+Run 70 ended with exit 1 and a quiescent managed receipt; passive capture
+ended at 11:58:50.515356 UTC with no additional live run implied. Full stdout
+SHA256: `2e26864e6fb95ca05d6fb283b5c8c8dc12626f4ffb7a5499973c7b34ba54a485`.
+
+## Historical measured status — 2026-11-23 08:38 UTC
 
 **The incident remains open; the unchanged delivery gates failed.**
 [Tracked incident](https://tasker-workboard.cantikash.chatgpt.site/?task=7b8aa6d4-bc05-49c0-9b35-359323fa1c53).
