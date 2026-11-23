@@ -147,6 +147,9 @@ public:
         phase.store(Pending, std::memory_order_release);
         publish();
         const err_t error = tcpip_callbackmsg_trycallback(message);
+        // Submission can be descheduled. Space the next attempt from return,
+        // while keeping requestedUs as the dispatch-latency measurement origin.
+        lastAttemptUs = esp_timer_get_time();
         owner.last_post_error = error;
         if (error == ERR_OK) {
             ++owner.totals.queued;

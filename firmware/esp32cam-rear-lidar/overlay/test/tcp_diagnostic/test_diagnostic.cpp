@@ -23,6 +23,7 @@ struct tcpip_callback_msg { tcpip_callback_fn function; void *context; };
 namespace {
 tcpip_callback_msg pool[64];
 unsigned allocations = 0, posts = 0, names = 0;
+uint64_t postCostUs = 0;
 bool allocationFail = false, queueFail = false, immediate = false;
 bool sending = false, wouldBlock = false;
 uint16_t localPort = 40001;
@@ -40,7 +41,7 @@ void runOne() {
 void reset() {
     assert(mailbox.empty());
     allocationFail = queueFail = immediate = sending = wouldBlock = false;
-    posts = names = 0; localPort = 40001;
+    posts = names = 0; postCostUs = 0; localPort = 40001;
     transportTestClockUs = 1; tcp_active_pcbs = nullptr;
 }
 tcp_pcb matching() {
@@ -104,13 +105,13 @@ void callbackBeforePostReturnIsRetained() {
 }
 
 void queueFullIsBoundedAndDoesNotHoldCustody() {
-    reset(); RearTcpDiagnostic d; connect(d); queueFail = true;
+    reset(); RearTcpDiagnostic d; connect(d); queueFail = true; postCostUs = 300000;
     d.service(true);
     assert(!d.snapshot().pending && d.snapshot().totals.queue_rejected == 1);
     for (int i = 0; i < 1000; ++i) d.service(true);
-    transportTestClockUs = 250000; d.service(true);
+    transportTestClockUs = 550000; d.service(true);
     assert(posts == 1);
-    transportTestClockUs = 250001; queueFail = false; d.service(false);
+    transportTestClockUs = 550001; queueFail = false; postCostUs = 0; d.service(false);
     assert(posts == 2 && d.snapshot().pending);
     transportTestClockUs += 42000;
     runOne(); d.service(false);
@@ -230,6 +231,7 @@ tcpip_callback_msg *tcpip_callbackmsg_new(tcpip_callback_fn fn, void *ctx) {
 err_t tcpip_callbackmsg_trycallback(tcpip_callback_msg *msg) {
     assert(!diagnosticInCallback);
     ++posts;
+    transportTestClockUs += postCostUs;
     if(queueFail) return ERR_MEM;
     mailbox.push_back(msg);
     if(immediate) runOne();
