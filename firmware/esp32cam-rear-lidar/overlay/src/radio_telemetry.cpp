@@ -7,6 +7,7 @@
 #include "sensor_push.h"
 #include "settings.h"
 #include <esp_ota_ops.h>
+#include <esp_system.h>
 #include <Arduino.h>
 #include <Wire.h>
 #include <HardwareSerial.h>
@@ -56,6 +57,7 @@ SemaphoreHandle_t snapshots=nullptr;
 Sample published[2];
 volatile bool paused=false;
 bool started=false;
+esp_reset_reason_t bootResetReason=ESP_RST_UNKNOWN;
 bool lidarWorker=false,uartWorker=false;
 uint64_t lastPeerRx=0;
 uint32_t uartErrors=0;
@@ -88,10 +90,12 @@ bool initialize(int i) {
   if(devices[1-i].ready)digitalWrite(LPN[1-i],HIGH);
   fail(i,"not_detected");return false;
  }
- if (!d.config) {
+ // Each allocation can fail independently. Retain either successful object
+ // for the next attempt instead of leaking it or permanently skipping its peer.
+ if (!d.config)
   d.config=static_cast<VL53L5CX_Configuration *>(heap_caps_calloc(1,sizeof(VL53L5CX_Configuration),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
+ if (!d.results)
   d.results=static_cast<VL53L5CX_ResultsData *>(heap_caps_calloc(1,sizeof(VL53L5CX_ResultsData),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
- }
  if (!d.config || !d.results) {
   if(devices[1-i].ready)digitalWrite(LPN[1-i],HIGH);
   fail(i,"sensor_memory_unavailable");return false;
@@ -213,12 +217,31 @@ void uartTask(void *) {
   vTaskDelay(pdMS_TO_TICKS(2));
  }
 }
-void sendStatus(WebServer &server) {
+const char *resetReasonLabel(esp_reset_reason_t reason) {
+ switch(reason) {
+ case ESP_RST_POWERON:return "power_on";
+ case ESP_RST_EXT:return "external";
+ case ESP_RST_SW:return "software";
+ case ESP_RST_PANIC:return "panic";
+ case ESP_RST_INT_WDT:return "interrupt_watchdog";
+ case ESP_RST_TASK_WDT:return "task_watchdog";
+ case ESP_RST_WDT:return "watchdog";
+ case ESP_RST_DEEPSLEEP:return "deep_sleep";
+ case ESP_RST_BROWNOUT:return "brownout";
+ case ESP_RST_SDIO:return "sdio";
+ case ESP_RST_UNKNOWN:default:return "unknown";
+ }
+}
+void sendStatus(WebServer &server,bool includeResetReason=false) {
  DynamicJsonDocument document(12288);JsonObject out=document.to<JsonObject>();
  writeIdentity(out);writeSensors(out.createNestedObject("lidar"),nowUs());
  writeLink(out.createNestedObject("uart"),nowUs());out["camera_independent"]=true;
  bno_telemetry::writeJson(out.createNestedObject("bno"),nowUs());
  out["firmware"]=APP_VERSION;
+ if(includeResetReason) {
+  out["reset_reason_code"]=static_cast<int>(bootResetReason);
+  out["reset_reason"]=resetReasonLabel(bootResetReason);
+ }
  rear_ranging::writeJson(out,nowUs());out["ota_supported"]=esp_ota_get_next_update_partition(nullptr)!=nullptr;
  const esp_partition_t *running=esp_ota_get_running_partition();
  out["running_partition"]=running?running->label:"unknown";
@@ -228,6 +251,7 @@ void sendStatus(WebServer &server) {
 }
 void begin(WebServer &server,bool (*authorize)()) {
  if(started)return;started=true;
+ bootResetReason=esp_reset_reason();
  snprintf(receiver,sizeof(receiver),"rear-%012llx",static_cast<unsigned long long>(ESP.getEfuseMac()));
  snprintf(boot,sizeof(boot),"%08lx%08lx",static_cast<unsigned long>(esp_random()),static_cast<unsigned long>(esp_random()));
  for(int pin:LPN){pinMode(pin,OUTPUT);digitalWrite(pin,LOW);}
@@ -236,7 +260,7 @@ void begin(WebServer &server,bool (*authorize)()) {
  uartWorker=xTaskCreate(uartTask,"rear-uart",12288,nullptr,1,nullptr)==pdPASS;
  server.on("/api/telemetry",HTTP_GET,[&server,authorize](){if(authorize())sendStatus(server);});
  server.on("/api/lidar",HTTP_GET,[&server,authorize](){if(authorize())sendStatus(server);});
- server.on("/api/rear",HTTP_GET,[&server,authorize](){if(authorize())sendStatus(server);});
+ server.on("/api/rear",HTTP_GET,[&server,authorize](){if(authorize())sendStatus(server,true);});
  bno_telemetry::begin(server,authorize);
  rear_ranging::begin(server,authorize);
  sensor_push::begin(server,authorize);
