@@ -17,10 +17,30 @@
 #include "live_send_timing.h"
 #endif
 
+#ifndef LIVE_WEBSOCKET_TCP_DIAGNOSTIC
+#define LIVE_WEBSOCKET_TCP_DIAGNOSTIC 0
+#endif
+#if LIVE_WEBSOCKET_TCP_DIAGNOSTIC
+#include "rear_tcp_diagnostic.h"
+#endif
+
 // The Links2004 client owns the handshake, incoming messages and control frames.
 // Keep its reader running between outgoing fragments, including when TCP is full.
 class LiveWebSocket : public WebSocketsClient {
 public:
+#if LIVE_WEBSOCKET_TCP_DIAGNOSTIC
+    void attachTcpDiagnostic(RearTcpDiagnostic &context) { tcpDiagnostic = &context; }
+    void diagnosticTransportChanged(bool online) {
+        if (tcpDiagnostic) {
+            if (online) tcpDiagnostic->begin(); // First established socket proves lwIP is initialized.
+            tcpDiagnostic->connection(online, online && _client.tcp ? _client.tcp->fd() : -1);
+        }
+    }
+    void loop() {
+        WebSocketsClient::loop();
+        if (tcpDiagnostic) tcpDiagnostic->service(false);
+    }
+#endif
     uint32_t writeTimeoutCount() const { return writeTimeouts.load(); }
     uint32_t lastWriteProgressMs() const { return lastProgressMs.load(); }
 
@@ -171,6 +191,10 @@ private:
                 if (count > 0) timing->counters.wire_bytes += static_cast<size_t>(count);
             }
 #endif
+#if LIVE_WEBSOCKET_TCP_DIAGNOSTIC
+            if (tcpDiagnostic) tcpDiagnostic->service(
+                count < 0 && (sendError == EAGAIN || sendError == EWOULDBLOCK));
+#endif
             if (count > 0) {
                 written += static_cast<size_t>(count);
                 const uint64_t nowUs = esp_timer_get_time();
@@ -212,6 +236,9 @@ private:
         clientDisconnect(&_client, reason);
     }
 
+#if LIVE_WEBSOCKET_TCP_DIAGNOSTIC
+    RearTcpDiagnostic *tcpDiagnostic = nullptr; // Bound to a process-lifetime rear context.
+#endif
     std::atomic<uint32_t> writeTimeouts{0}, lastProgressMs{0};
     uint32_t epoch = 0;
     String clockId;

@@ -1,6 +1,6 @@
 # Rear ESP32-S3-CAM with two VL53L5CX sensors
 
-Current normal release: **1.0-rear.14**.
+Current normal release: **1.0-rear.16**.
 
 ## Latest measured status — 2026-11-23 08:38 UTC
 
@@ -183,6 +183,53 @@ Run `python3 test_lidar_driver.py --prepared /absolute/new/rear-build` for the
 actual-driver behavioral tests and exact unchanged-source negative controls.
 Host tests use fake Wire/time boundaries; an installed release still needs live
 camera and both-head qualification.
+
+## Bounded TCP diagnostic (1.0-rear.16)
+
+This release adds observation only. The authenticated
+GET `/api/telemetry/tcp` returns separate cached camera/sensor TCP
+snapshots, bound to receiver ID, boot ID, firmware and the current `esp_timer`
+timestamp. It does not enqueue work from HTTP or enlarge normal JPEG/sensor
+messages. Capture, sensor rates, both LiDAR heads, BNO absence handling, CS5,
+four-second write recovery, fragment pacing and Wi-Fi settings remain unchanged.
+
+Two global contexts each allocate one persistent callback message on their first
+established WebSocket connection, after lwIP initialization. Allocation failure
+disables that diagnostic without blocking streaming. The socket owner caches
+the exact IPv4 tuple once on connection; EAGAIN performs no allocation or socket
+getter. Attempts, including rejected queue posts, are at least 250 ms apart.
+One immutable request/result slot stays in callback custody until the owner
+consumes it. Reconnect changes the current generation without clearing pending
+custody; results from older generations are discarded. No PCB pointer is kept.
+
+Only the tcpip-thread callback reads PCBs. It walks at most 32 active PCBs and
+16 total unacked/unsent segments, with explicit not-found/truncated/not-visited
+flags. It copies scalar send-buffer, congestion/window, ACK/sequence, queue,
+timer and retry state. The HTTP cache has an independent short lock; the
+callback performs no allocation, socket call, JSON, logging or application lock.
+
+`source_snapshot_us`/`source_complete_us` bound the callback's observation.
+Post-attempt-to-callback wall time includes submission and scheduling, not only
+mailbox residence. Pending includes a completed callback awaiting owner
+consumption. Age, generation and a declared one-second stale threshold prevent
+old samples from appearing current. The trigger says whether the request followed
+EAGAIN. Aggregates describe sampled observations, not continuously monitored
+occupancy or an event history.
+
+`tcp_slow_tick_ms=500` applies to raw `rto_ticks`, `rtime_ticks`
+and `rttest_ticks`. `sa_raw` and `sv_raw` are scaled estimator
+accumulators; they are not milliseconds. `nrtx` is current retry state
+that resets on advancing ACK, not a lifetime retransmission count. Segment byte
+sums cover visited payload only and may be truncated.
+
+`check_tcp_diagnostic_sdk.py` verifies the actual Arduino 2.0.17
+ESP32-S3 qio_opi configuration, four lwIP headers and liblwip.a before builds.
+Shared/front hooks are disabled by default. Run
+`python3 test_tcp_diagnostic.py --prepared /absolute/new/rear-build`
+for delayed/reentrant callback, reconnect, queue-full, traversal-limit and
+writer-boundary tests plus changed-SDK rejection. Host boundaries are simulated;
+the target build binds the real ABI. This diagnostic is not a performance fix
+or evidence that the delivery gates pass.
 
 ## Build
 python3 prepare.py --output /absolute/new/rear-build
