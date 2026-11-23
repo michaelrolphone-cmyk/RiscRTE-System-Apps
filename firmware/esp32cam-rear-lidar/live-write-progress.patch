@@ -1,0 +1,10 @@
+--- a/src/live_write_progress.h
++++ b/src/live_write_progress.h
+@@ -6,6 +6,6 @@
+ // Reset only the stalled socket so its latest-value mailbox can make progress.
+ class LiveWriteProgress {
+ public:
+-    static constexpr uint64_t idleLimitUs = 1000000;
++    static constexpr uint64_t idleLimitUs = 4000000;
+
+     explicit LiveWriteProgress(uint64_t nowUs) : lastProgressUs(nowUs) {}

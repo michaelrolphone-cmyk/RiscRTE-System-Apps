@@ -162,6 +162,35 @@ fresh-frame and LiDAR qualification before accepting the trial. Keep the verifie
 1.0-rear.7 application available for rollback if there is no material benefit or
 either stream regresses.
 
+## Experimental rear write-progress budget
+Version 1.0-rear.9 changes only the rear transport's no-progress budget from one
+second to four seconds. The rear materializer patches `live_write_progress.h`;
+the shared front source and its one-second default remain unchanged. Camera and
+sensor sockets each keep their own progress tracking, bounded nonblocking writer
+and independent task. Handshakes, heartbeat pings, pong replies and data fragments
+continue through that same writer. Any successful byte write restarts its idle
+budget; four seconds is not a total frame-delivery deadline.
+
+This is an experiment to test whether allowing more time for TCP recovery reduces
+write-timeout and reconnect churn. It does not establish a cause or a live-delivery
+fix. Both LiDAR heads, disabled FTM, actual driver diagnostics, requested 15 dBm,
+camera/sensor CS5 priority, 1280×720 / 200 ms capture and task priorities are
+unchanged from the verified .8 source.
+
+Run `python3 test_transport_budget.py` to exercise the production writer with
+real backpressured host sockets and a deterministic scheduler clock. The same
+three-second peer pause must fail under the unchanged front budget and recover
+under the materialized rear budget. Regressions also check complete stalls,
+progress restarting the idle budget, control frames, clean reconnects and
+independent sensor writes while the camera is stalled. These host tests do not
+simulate Wi-Fi or establish a real retransmission schedule.
+
+Build and check the OTA image using the commands above, then repeat the unchanged
+two-window viewer qualification after a separately verified new boot. Preserve
+the verified .8 image for comparison or rollback. A longer wait may retain an old
+in-flight frame longer; use measured capture-age bounds and actual delivery gaps
+when deciding whether the experiment helps.
+
 ## One-time USB Wi-Fi provisioning
 For a board without saved camera settings, prepare a private factory image:
 `python3 prepare.py --output /absolute/new/factory-build --provisioning-json /private/wifi.json --build`
