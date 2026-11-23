@@ -1,4 +1,7 @@
 # Rear ESP32-S3-CAM with two VL53L5CX sensors
+
+Current normal release: **1.0-rear.12**.
+
 Derived from the sibling front-camera firmware package at its pinned upstream revision.
 The rear variant is prepared from pinned camera sources and retains RTSP, authenticated
 capture at /api/capture, provisioning, exposure/light controls and password-protected
@@ -377,7 +380,7 @@ Software/build tests and an OTA boot with no module verify absent-device behavio
 They cannot establish the carrier's wiring, physical sensor readings, heading
 calibration, mounting alignment, or successful sensor-present operation.
 
-## Rear sender timing diagnostics
+## Rear sender timing diagnostics (1.0-rear.12)
 
 The rear build opts into HTTP-only sender timing at authenticated
 `GET /api/telemetry/stream`, under `camera_send_timing`. Normal JPEG metadata
