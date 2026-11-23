@@ -521,7 +521,7 @@ configuration and Arduino 2.0.17 source select:
 | Dynamic RX buffers | 32 | 32 |
 | TX buffer type | Dynamic (1) | Static (0) |
 | Static TX buffers | 0 | 8 |
-| Dynamic TX buffers | 32 | SDK value remains present; static TX type selected |
+| Dynamic TX buffers | 32 | 0 (not selected by static TX type) |
 | Cached TX buffers | 4 | 16 |
 
 These are initialization values, not a measurement of live occupancy or drops.
