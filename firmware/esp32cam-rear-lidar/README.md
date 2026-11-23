@@ -258,3 +258,95 @@ includes startup and the end of the observation. Replayed samples are counted on
 across both connections. Use `--help` for other front profiles or test durations.
 CI exercises the checker with loopback fixtures. A deployed release needs its
 own run on the viewer connection.
+
+## Optional GY-BNO08x orientation module (1.0-rear.10)
+
+The rear-only build includes the recovered BNO08x prototype's SPI/report support,
+with an independent optional-sensor worker. It boots normally without a soldered
+module: an unasserted, pulled-up INT yields `present:false`, `ready:false`,
+`valid:false`, and `error:"not_detected"` after the detection window. A brief
+`detecting` state occurs during each retry. It does not generate zero orientations
+or reject camera images. Camera, both VL53L5CX heads, UART, LED, USB and the .9
+transport configuration retain their assignments and settings.
+
+### Wiring profile
+
+This is the implemented signal profile; attached hardware is not yet qualified.
+
+| GY-BNO08x label | SPI function | Rear GPIO / connection |
+|---|---|---:|
+| SCL | SCK |14|
+| ADD / SA0 | MOSI |2|
+| SDA | MISO |47|
+| CS | Chip select |40|
+| INT | Active-low attention |3|
+| RST | Active-low reset |46|
+| PS0 | SPI selection |3.3 V|
+| PS1 | SPI selection |3.3 V|
+| VCC | Supply |3.3 V|
+| GND | Common ground |GND|
+
+Confirm the actual carrier labels before soldering. This corrects the old draft's
+INT45 assignment to INT3, avoiding the ESP32-S3 VDD_SPI voltage strap. GPIO3 is a
+JTAG-selection strap; GPIO46 is also a boot strap. Normal flash boot with GPIO0
+high permits either GPIO46 level, but ROM download with GPIO0 low requires GPIO46
+low. The carrier's RST pull-up must not defeat that level during USB/serial
+recovery; isolate that connection or hold the shared reset signal low for ROM
+download. Native USB19/20 and UART0 recovery43/44 are not reassigned.
+
+PS0/PS1 high follows the pinned SparkFun continuous-report SPI example; separate
+WAKE/sleep control is not exposed by this six-signal profile. Keep BOOT in normal
+application mode according to the actual carrier, and leave the SD slot empty.
+The source pin map avoids camera15/4/5/6–13/16–18, LiDAR41/42/1/21, peer UART38/39,
+LED48, and flash/PSRAM26–37. Module orientation has not been measured: telemetry
+uses `sensor_body_unmounted`, not an invented rover/world alignment.
+
+Primary references:
+- [Pinned SPI example and mode straps](https://github.com/sparkfun/SparkFun_BNO08x_Arduino_Library/blob/v1.0.6/examples/SPI/Example_01_SPI_RotationVector/Example_01_SPI_RotationVector.ino)
+- [ESP32-S3 GPIO capabilities](https://github.com/espressif/esp-idf/blob/v4.4.7/components/soc/esp32s3/include/soc/soc_caps.h)
+- [ESP32-S3 boot strapping](https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s3/schematic-checklist.html)
+- [BNO08x datasheet, SPI and interrupt timing](https://docs.sparkfun.com/SparkFun_VR_IMU_Breakout_BNO086_QWIIC/assets/component_documentation/BNO080_085-Datasheet_v1.16.pdf)
+
+### Failure isolation and data contract
+
+A dedicated HSPI instance runs at1 MHz. Only the idle-priority BNO worker touches
+the sensor or the SH2 singleton. It detects INT after reset before opening SPI,
+retries an unavailable device every5 seconds, closes failed SH2 sessions, checks
+every report-enable result, and reconfigures after sensor reset. A ready worker
+checks for data every2 ms; a missing/paused device uses a20 ms background sleep.
+These are sensor schedules and do not change the camera's200 ms interval.
+
+The pinned dependency contains unbounded missing-response paths. The materializer
+resolves version1.0.6, verifies original Git blob IDs, and applies narrow rear-only
+patches: a2-second fallback for operations with no upstream deadline, a2-second
+write-retry budget, negative SPI write failure, safe close after failed open, and
+the missing HAL receipt timestamp. Existing nonzero upstream operation deadlines
+are preserved. Deadlines are checked between HAL calls: an in-flight INT wait can
+extend an operation beyond its nominal budget. All such work stays outside
+camera/HTTP/socket publication. No new sensor work begins while OTA is paused;
+an already-started bounded operation may finish before the worker stops.
+
+`GET /api/bno`, rear status, dedicated sensor ticks and camera metadata contain
+`rover.bno085.v1` under `bno` (the dedicated endpoint returns that object itself).
+Every report has its own sequence, host receipt timestamp, age and validity.
+Rotation quaternion, acceleration in m/s², calibrated gyro in rad/s and magnetic
+field in µT are requested every50 ms. An event callback decodes every report in a
+packet. A report more than500 ms old, from after the requested camera timestamp,
+from an unavailable/paused device, or containing non-finite values contributes
+no numeric measurements. Missing another report type never refreshes its age.
+After2 seconds without recognized reports, the session closes and retries.
+
+Authenticated `POST /api/bno` and existing sensor WebSocket messages with
+`type:"bno"` accept `op`, optional `command_id` (up to63 characters), and
+`z_axis` for tare. Operations are `calibrate_all`, `calibrate_accel`,
+`calibrate_gyro`, `calibrate_mag`, `end_calibration`, `save_calibration`,
+`tare_now`, `save_tare`, and `clear_tare`. A four-entry nonblocking queue
+serializes all commands with reads. HTTP202 / `accepted:true,state:"queued"`
+is acceptance only; telemetry `last_command` reports the latest command's actual
+completion or failure and ID. Absent/paused sensors and full queues are rejected
+immediately. Saving calibration explicitly requests the sensor's flash save;
+ESP32 calibration payload backup/restore is not claimed or implemented.
+
+Software/build tests and an OTA boot with no module verify absent-device behavior.
+They cannot establish the carrier's wiring, physical sensor readings, heading
+calibration, mounting alignment, or successful sensor-present operation.

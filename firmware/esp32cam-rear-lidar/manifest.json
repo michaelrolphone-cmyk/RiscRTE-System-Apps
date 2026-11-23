@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "variant": "1.0-rear.9",
+  "variant": "1.0-rear.10",
   "front_source_commit": "b92bb4bbd179027ae7ed378ef04fc17417f4265e",
   "upstream_commit": "14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7",
   "inherited_files": [
@@ -118,5 +118,22 @@
     }
   ],
   "reused_transport_source": "e937be1c92288c1080a3b086522d09e768efbb93:firmware/esp32cam-rtsp-radio",
-  "transport_notes": "Rear-only front sensor push protocol; independent receiver identity; 15 dBm maximum request. Wi-Fi FTM initiator and responder disabled; both VL53L5CX heads retained. Actual Wi-Fi state is read back and conditionally enforced under shared provisioning ownership. Experimental rear JPEG socket uses the existing sensor CS5 / AC_VI priority; qualification required. Experimental rear-only write no-progress budget is four seconds; shared front default remains one second. Live qualification remains required."
+  "transport_notes": "Rear-only front sensor push protocol; independent receiver identity; 15 dBm maximum request. Wi-Fi FTM initiator and responder disabled; both VL53L5CX heads retained. Actual Wi-Fi state is read back and conditionally enforced under shared provisioning ownership. Experimental rear JPEG socket uses the existing sensor CS5 / AC_VI priority; qualification required. Experimental rear-only write no-progress budget is four seconds; shared front default remains one second. Live qualification remains required.",
+  "bno08x": {
+    "module": "GY-BNO08x",
+    "optional": true,
+    "interface": "spi",
+    "library": "sparkfun/SparkFun BNO08x Cortex Based IMU@1.0.6",
+    "pins": {
+      "sck": 14,
+      "mosi": 2,
+      "miso": 47,
+      "cs": 40,
+      "int": 3,
+      "rst": 46
+    },
+    "report_interval_ms": 50,
+    "dependency_patch": "patch_bno_library.py",
+    "requires_physical_sensor_validation": true
+  }
 }

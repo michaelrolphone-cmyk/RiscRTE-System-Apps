@@ -2,6 +2,7 @@
 // Camera/RTSP/OTA never waits for a LiDAR initialization or a UART peer.
 #include "radio_telemetry.h"
 #include "rear_health.h"
+#include "bno_telemetry.h"
 #include "rear_ranging.h"
 #include "sensor_push.h"
 #include "settings.h"
@@ -213,9 +214,10 @@ void uartTask(void *) {
  }
 }
 void sendStatus(WebServer &server) {
- DynamicJsonDocument document(8192);JsonObject out=document.to<JsonObject>();
+ DynamicJsonDocument document(12288);JsonObject out=document.to<JsonObject>();
  writeIdentity(out);writeSensors(out.createNestedObject("lidar"),nowUs());
  writeLink(out.createNestedObject("uart"),nowUs());out["camera_independent"]=true;
+ bno_telemetry::writeJson(out.createNestedObject("bno"),nowUs());
  out["firmware"]=APP_VERSION;
  rear_ranging::writeJson(out,nowUs());out["ota_supported"]=esp_ota_get_next_update_partition(nullptr)!=nullptr;
  const esp_partition_t *running=esp_ota_get_running_partition();
@@ -235,16 +237,18 @@ void begin(WebServer &server,bool (*authorize)()) {
  server.on("/api/telemetry",HTTP_GET,[&server,authorize](){if(authorize())sendStatus(server);});
  server.on("/api/lidar",HTTP_GET,[&server,authorize](){if(authorize())sendStatus(server);});
  server.on("/api/rear",HTTP_GET,[&server,authorize](){if(authorize())sendStatus(server);});
+ bno_telemetry::begin(server,authorize);
  rear_ranging::begin(server,authorize);
  sensor_push::begin(server,authorize);
 }
 void loop(){}
-void pause(bool value){paused=value;rear_ranging::pause(value);sensor_push::pause(value);}
+void pause(bool value){paused=value;bno_telemetry::pause(value);rear_ranging::pause(value);sensor_push::pause(value);}
 bool writeFrameJson(JsonObject out,uint64_t captureUs,uint64_t sinceUs) {
  (void)sinceUs;
  out["schema"]="biome.capture.v1";writeIdentity(out);out["capture_clock"]="esp_timer";
  out["capture_monotonic_us"]=captureUs;out["frame_id"]=String(boot)+":"+String(static_cast<unsigned long long>(captureUs));
  writeSensors(out.createNestedObject("lidar"),captureUs);
+ bno_telemetry::writeJson(out.createNestedObject("bno"),captureUs);
  writeLink(out.createNestedObject("uart"),nowUs());
  rear_ranging::writeJson(out,captureUs);
  return true; // Optional peripherals are never a reason to reject an image.
