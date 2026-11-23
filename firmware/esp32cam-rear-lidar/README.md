@@ -1,4 +1,7 @@
 # Rear ESP32-S3-CAM with two VL53L5CX sensors
+
+Current normal release: **1.0-rear.12**.
+
 Derived from the sibling front-camera firmware package at its pinned upstream revision.
 The rear variant is prepared from pinned camera sources and retains RTSP, authenticated
 capture at /api/capture, provisioning, exposure/light controls and password-protected
@@ -376,3 +379,46 @@ ESP32 calibration payload backup/restore is not claimed or implemented.
 Software/build tests and an OTA boot with no module verify absent-device behavior.
 They cannot establish the carrier's wiring, physical sensor readings, heading
 calibration, mounting alignment, or successful sensor-present operation.
+
+## Rear sender timing diagnostics (1.0-rear.12)
+
+The rear build opts into HTTP-only sender timing at authenticated
+`GET /api/telemetry/stream`, under `camera_send_timing`. Normal JPEG metadata
+and sensor messages do not contain these diagnostics and keep their existing
+size/content. This instrumentation changes no capture interval, fragment delay,
+write timeout, socket setting or task priority. Shared/front builds omit it by
+default.
+
+The snapshot contains the most recent **completed attempt**, its capture/start/
+completion timestamps, completion age, outcome and cumulative counters for both
+successful and failed attempts since boot. It is copied under a short lock;
+network work and JSON serialization never hold that lock. A blocked in-flight
+send does not replace the last completed sample, so check its age. A success
+means the writer accepted the whole message, not that the Mac decoded it.
+
+All time fields are elapsed **wall-clock microseconds**, including descheduling
+inside the measured operation. The disjoint buckets are:
+
+| Field | Included work |
+|---|---|
+| `loop_us` | Inherited WebSocket loop calls between fragments, including their control writes |
+| `fragment_yield_us` | Actual elapsed time around the existing one-tick interfragment sleeps |
+| `send_syscall_us` | Raw nonblocking data-send calls, including any descheduling during them |
+| `send_wait_us` | Existing sleeps after data-write EAGAIN/EWOULDBLOCK/EINTR |
+| `other_us` | Nonnegative remainder: framing/masking, checks, accounting and other unassigned time |
+| `total_us` | Whole application-payload send attempt; equals the five disjoint buckets when valid |
+
+An inherited heartbeat/pong/close write is included only in `loop_us`; its
+bytes, syscall time and waits are not counted again as JPEG data. Data
+`wire_bytes` counts bytes accepted by send, including WebSocket headers.
+`payload_bytes` is the requested complete application message (metadata plus
+JPEG); `completed_payload_bytes` counts only fully written fragments and can
+understate partial progress on a failed fragment. Fragment, syscall, retry and
+yield counts distinguish more calls from longer waits. An invalid accounting
+sample is flagged and counted rather than reporting an underflowed remainder.
+
+Run `python3 test_send_timing.py` for deterministic production-writer checks;
+add `--prepared /absolute/rear-build` to verify exact materialized headers too.
+The tests inject syscall/wakeup elapsed time and control/data failures to verify
+accounting and unchanged wire/pacing decisions. They do not reproduce Wi-Fi,
+CPU scheduling in the device, or prove which bucket explains live throughput.

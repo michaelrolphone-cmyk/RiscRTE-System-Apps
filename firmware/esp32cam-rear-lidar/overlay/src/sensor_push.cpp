@@ -7,6 +7,7 @@
 #include "bno_telemetry.h"
 #include <ArduinoJson.h>
 #include <Preferences.h>
+#define LIVE_WEBSOCKET_SEND_TIMING 1
 #include "live_websocket.h"
 #include <WiFi.h>
 #include <esp_heap_caps.h>
@@ -139,10 +140,53 @@ void worker(void *) {
     }
 }
 
+// Detailed sender timings are HTTP-only. Do not add these fields to writePacket
+// or radio_telemetry frame metadata: changing wire sizes would bias the measure.
+void writeSendCounters(JsonObject object, const LiveSendCounters &c) {
+#define LIVE_SEND_JSON(field) object[#field] = c.field
+    LIVE_SEND_JSON(total_us); LIVE_SEND_JSON(loop_us);
+    LIVE_SEND_JSON(fragment_yield_us); LIVE_SEND_JSON(send_syscall_us);
+    LIVE_SEND_JSON(send_wait_us); LIVE_SEND_JSON(other_us);
+    LIVE_SEND_JSON(payload_bytes); LIVE_SEND_JSON(completed_payload_bytes);
+    LIVE_SEND_JSON(wire_bytes); LIVE_SEND_JSON(loop_calls);
+    LIVE_SEND_JSON(fragments_attempted); LIVE_SEND_JSON(fragments_completed);
+    LIVE_SEND_JSON(send_calls); LIVE_SEND_JSON(would_block);
+    LIVE_SEND_JSON(interrupted); LIVE_SEND_JSON(send_waits);
+    LIVE_SEND_JSON(fragment_yields);
+#undef LIVE_SEND_JSON
+}
+
+void writeCameraSendTiming(JsonObject object) {
+    const LiveSendTimingSnapshot snapshot = cameraSendTimingSnapshot();
+    const uint64_t now = esp_timer_get_time();
+    object["schema"] = "rover.camera_send_timing.v1";
+    object["clock"] = "boot_monotonic_us";
+    object["measurement"] = "elapsed_wall_time";
+    object["attempts"] = snapshot.attempts;
+    object["delivered"] = snapshot.delivered;
+    object["failed"] = snapshot.failed;
+    object["invalid_accounting"] = snapshot.invalid_accounting;
+    if (snapshot.attempts) {
+        const LiveSendTiming &last = snapshot.last;
+        JsonObject recent = object.createNestedObject("last");
+        recent["capture_us"] = last.capture_us;
+        recent["started_us"] = last.started_us;
+        recent["completed_us"] = last.completed_us;
+        recent["age_us"] = now >= last.completed_us ? now - last.completed_us : 0;
+        recent["delivered"] = last.delivered;
+        recent["accounting_valid"] = last.accounting_valid;
+        writeSendCounters(recent, last.counters);
+    } else {
+        object["last"] = nullptr;
+    }
+    writeSendCounters(object.createNestedObject("cumulative"), snapshot.cumulative);
+}
+
 void status() {
     if(!authorizeRequest || !authorizeRequest()) return;
     Config current;xSemaphoreTake(mutex,portMAX_DELAY);current=config;xSemaphoreGive(mutex);
-    DynamicJsonDocument d(2048);
+    DynamicJsonDocument d(6144);
+    writeCameraSendTiming(d.createNestedObject("camera_send_timing"));
     d["camera_connected"]=videoConnected.load();d["camera_ready"]=videoReady.load();
     d["camera_socket_connects"]=cameraConnections.load();
     d["camera_socket_disconnects"]=cameraDisconnects.load();
@@ -186,6 +230,10 @@ void status() {
     d["last_socket_disconnect_ms"]=lastSocketDisconnectMs;
     d["station_disconnects"]=stationDisconnects;d["station_disconnect_reason"]=stationDisconnectReason;d["clock_ready"]=clockReady;
     d["last_packet_bytes"]=lastPacketBytes;d["inflight_sequence"]=0;
+    if (d.overflowed()) {
+        server->send(503,"application/json","{\"error\":\"stream status allocation failed\"}");
+        return;
+    }
     String text;serializeJson(d,text);server->send(200,"application/json",text);
 }
 
