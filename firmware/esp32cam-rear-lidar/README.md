@@ -422,3 +422,37 @@ add `--prepared /absolute/rear-build` to verify exact materialized headers too.
 The tests inject syscall/wakeup elapsed time and control/data failures to verify
 accounting and unchanged wire/pacing decisions. They do not reproduce Wi-Fi,
 CPU scheduling in the device, or prove which bucket explains live throughput.
+
+## Rear WebSocket read-timeout unit correction
+
+The rear materializer applies `patch_websocket_library.py` to the local pinned
+WebSockets 2.7.2 dependency. Its connection callback previously supplied the
+intended 5000-millisecond timeout to ESP32 Arduino 2.0.17's
+`WiFiClient::setTimeout(seconds)`. That set the Stream read timeout to
+5,000,000 ms, allowing a partial HTTP upgrade line to hold a sender worker for
+about 83 minutes before its idle timeout. The outer five-second handshake check
+cannot execute while that blocking line read is in progress.
+
+The correction supplies seconds to the socket/client API and explicitly supplies
+milliseconds to `Stream::setTimeout`, before any HTTP response line is read.
+It preserves the intended 5000 ms idle deadline, existing TCP connect/write
+budgets, heartbeat settings and all capture/sensor rates. Exact WebSockets and
+ESP32 framework source blobs guard the API assumption. Only the prepared rear
+project's dependency is changed; shared/front dependency copies are untouched.
+The PlatformIO pre script verifies the same transformation on later builds.
+
+This correction is **not** an incremental or nonblocking reader. A partial HTTP
+line can still occupy its sender until the intended idle deadline, and the
+existing established-frame reader retains its own five-second no-progress
+wait. Byte progress renews the original idle behavior. No live outage is
+attributed to this defect without corresponding receive-state evidence.
+
+Run `python3 test_websocket_timeout.py --prepared /absolute/rear-build`.
+An optional `--framework /absolute/framework-arduinoespressif32` selects a
+non-default framework installation. The harness compiles verbatim, checksum-
+verified production `connectedCb`, `handleClientData`, `WiFiClient::setTimeout`
+and Stream read methods with fake clock/socket boundaries. The same missing-
+newline test must observe 5,000,000 ms and fail on unchanged code, then observe
+5000 ms and pass after the patch. Complete and in-budget fragmented lines,
+existing idle-renewal behavior, patch idempotence and drift rejection are checked.
+This does not simulate Wi-Fi, TLS, or the full established-frame parser.
