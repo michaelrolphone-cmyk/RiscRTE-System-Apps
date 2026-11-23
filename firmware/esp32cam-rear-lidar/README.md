@@ -2,7 +2,7 @@
 
 Current normal release: **1.0-rear.14**.
 
-## Latest measured status — 2026-11-23 08:13 UTC
+## Latest measured status — 2026-11-23 08:38 UTC
 
 **The incident remains open; the unchanged delivery gates failed.**
 [Tracked incident](https://tasker-workboard.cantikash.chatgpt.site/?task=7b8aa6d4-bc05-49c0-9b35-359323fa1c53).
@@ -56,8 +56,8 @@ A separate concurrent **BE-only** ICMP control at
 | Rear | 14.345 / 203.186 / 1022.512 |
 | Router | 1.643 / 6.473 / 38.976 |
 
-Exact cached MAC associations guarded the camera targets. No packet
-capture verified reply TOS, and no CS5 ICMP comparison was performed.
+Exact cached MAC associations guarded the camera targets. That earlier
+BE-only control did not capture reply TOS or include a CS5 comparison.
 BE round trips are not a class-neutral latency measure of the CS5-marked
 rear streams; this contrast does not establish the responsible queue,
 radio condition or per-device capacity.
@@ -72,6 +72,43 @@ inferred from this snapshot. The named configuration values
 relabeled as a socket period. Nested `ftm_responder.firmware` reported
 `1.0-radio.16-capture-imu`; this is not flashed-image attestation.
 
+### Captured BE versus CS5 comparison (08:35 UTC)
+
+One simultaneous six-case run used the front, rear and router with requested
+TOS 0/160, 30 pings per case, 56-byte payloads and 0.5-second intervals.
+Traffic began at 08:35:29.054344 UTC; cleanup completed in 16.920 seconds,
+within the 25-second limit.
+All six ping processes reported **30 sent / 30 received**. The header-only
+capture recorded 352 packets with zero kernel drops, but retained only
+**sequences 0–28: 29 matched study pairs per case**. Final sequence 29 was
+absent for every case. Those uncaptured pairs are not counted as network loss.
+
+The original strict diagnostic returned **exit 1**; it was not rerun.
+Saved-file reanalysis resolved printed versus wire identifier byte order
+(for example 47585 becomes 57785 after byte swapping). Two additional router
+BE requests with wire ID 2935 were unrelated to the six study processes and
+were excluded. Every captured study request and reply had the intended TOS,
+including CS5 sequence 0. The failed full 30-packet capture/association gate
+remains recorded.
+
+Mac kernel-header RTTs for the 29-pair captured subsets:
+
+| Target | Observed class | Minimum / mean / median / maximum RTT, ms |
+|---|---|---:|
+| Front | BE, TOS 0 | 7.098 / 25.266 / 15.626 / 132.354 |
+| Front | CS5, TOS 160 | 6.268 / 15.383 / 12.776 / 46.602 |
+| Rear | BE, TOS 0 | 32.055 / 227.863 / 96.840 / 1205.351 |
+| Rear | CS5, TOS 160 | 11.766 / 63.765 / 55.550 / 240.861 |
+| Router | BE, TOS 0 | 2.070 / 15.231 / 7.084 / 120.046 |
+| Router | CS5, TOS 160 | 1.399 / 8.145 / 6.133 / 41.862 |
+
+**Class sensitivity was observed; the rear remained slower under matched
+CS5.** RTT includes both directions and possible Mac/AP/device scheduling.
+This does not identify a unique queue or firmware cause, prove that the
+camera-priority change helps or harms throughput, or pass the delivery gate.
+The original report and headers remain unchanged. Requested spacing was
+0.5 seconds; observed mean request spacing was approximately 565 ms.
+
 Managed evidence (stdout SHA256 unless marked report):
 
 - `rearperf-v14-rollback-public-native-20261123-46`:
@@ -84,6 +121,14 @@ Managed evidence (stdout SHA256 unless marked report):
   report `567ab859b47a2a5d17ab57facc220ac990d328f4735b8393ec281728c38c51ca`.
 - `front-load-snapshot-20261123-review-01`:
   `1493cf16f7801081782ac8e3fc5c0b28456019d900573a3c67eebe94c1e82ffe`.
+
+- `rear-icmp-class-comparison-20261123-live-01`:
+  stdout `064dd768a185d251487b8d9d3a24a153b61b5c2a2204920c4a0cb807426b962b`;
+  original report `0bcb6d51f29bf5374e1206ba23cb0440290c84c5f0f4b0d8fcb6f88631f097f0`;
+  header-only records `ce3c63cc1fd50105b81c43d4ca9b18f3b280e745938d330bd6b3eae65a728309`.
+- `rear-icmp-class-20261123-saved-reanalysis-01`:
+  stdout `ee3bf1e2c4a6b63fc52e190bf9037dc94fad3ff8bd133c89ac9b623d263f618a`;
+  report `f2de9997da68a743221ce1315aac797985c646a42795bf532b43816227c4d152`.
 
 ## Firmware overview
 
@@ -262,18 +307,24 @@ counts as successful only after driver readback confirms it. These diagnostics
 test for a state mismatch; no such mismatch is assumed to explain slow delivery.
 
 ## Experimental rear camera traffic priority
-Version 1.0-rear.8 is a single-variable trial: the rear JPEG WebSocket requests
+Version 1.0-rear.8 was a single-variable trial: the rear JPEG WebSocket requests
 IP_TOS 0xa0 (CS5 / AC_VI), matching the existing sensor WebSocket. A rear-only
 materialization patch applies this on each successful camera connection; the
 shared front source and disconnect behavior remain unchanged.
 
-The trial retains Wi-Fi ranging disabled, actual driver diagnostics, requested
+The trial retained Wi-Fi ranging disabled, actual driver diagnostics, requested
 15 dBm power, both LiDAR heads, 1280×720 / 200 ms capture and the one-second
 TCP write-progress recovery policy. It does not claim that traffic priority
 caused the prior stalls. Verify the actual outgoing TOS and repeat the same
 fresh-frame and LiDAR qualification before accepting the trial. Keep the verified
 1.0-rear.7 application available for rollback if there is no material benefit or
 either stream regresses.
+
+The outgoing CS5 treatment was subsequently verified on the wire. Raw native
+rear JPEG counts improved in later .8 observations, but all four aggregate
+health gates still failed; host and observer state changes confounded a causal
+comparison. The priority change was neither an accepted causal improvement
+nor a proved regression. See the [PR272 validation record](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/pull/272).
 
 ## Experimental rear write-progress budget
 Version 1.0-rear.9 changes only the rear transport's no-progress budget from one
