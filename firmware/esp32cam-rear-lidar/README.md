@@ -1,6 +1,6 @@
 # Rear ESP32-S3-CAM with two VL53L5CX sensors
 
-Current normal release: **1.0-rear.13**.
+Current normal release: **1.0-rear.14**.
 
 Derived from the sibling front-camera firmware package at its pinned upstream revision.
 The rear variant is prepared from pinned camera sources and retains RTSP, authenticated
@@ -233,9 +233,10 @@ brief wireless stalls can recover before the receiver gives up.
 It also migrates the rear camera's saved capture profile once to 1280×720 at
 200 ms per frame, matching the deployed front camera, and retains those defaults
 for new provisioning. Later camera settings changes remain configurable.
-The rear sensor tasks have priority over the video task. Video yields between
-fragments, and a socket with no TCP write progress is closed independently so its
-next session can resume with the newest sample. The stream status reports the
+The rear sensor tasks have priority over the video task. Through version .13,
+video also slept one tick between successfully written fragments; version .14
+removes that extra pacing as described below. A socket with no TCP write progress
+is closed independently so its next session can resume with the newest sample. The stream status reports the
 configured capture interval and the dimensions of the last captured JPEG.
 Version 1.0-rear.5 uses the same nonblocking, progress-bounded writer for
 WebSocket handshakes, heartbeat pings, pong replies and data fragments. Its
@@ -402,7 +403,7 @@ inside the measured operation. The disjoint buckets are:
 | Field | Included work |
 |---|---|
 | `loop_us` | Inherited WebSocket loop calls between fragments, including their control writes |
-| `fragment_yield_us` | Actual elapsed time around the existing one-tick interfragment sleeps |
+| `fragment_yield_us` | Actual elapsed time around optional one-tick interfragment sleeps; zero when disabled in .14 |
 | `send_syscall_us` | Raw nonblocking data-send calls, including any descheduling during them |
 | `send_wait_us` | Existing sleeps after data-write EAGAIN/EWOULDBLOCK/EINTR |
 | `other_us` | Nonnegative remainder: framing/masking, checks, accounting and other unassigned time |
@@ -456,3 +457,45 @@ newline test must observe 5,000,000 ms and fail on unchanged code, then observe
 5000 ms and pass after the patch. Complete and in-budget fragmented lines,
 existing idle-renewal behavior, patch idempotence and drift rejection are checked.
 This does not simulate Wi-Fi, TLS, or the full established-frame parser.
+
+## Rear JPEG fragment pacing experiment (1.0-rear.14)
+
+This release changes one rear-only behavior:
+`CAMERA_SOCKET_YIELD_BETWEEN_FRAGMENTS` is explicitly false. After a successful
+fragment write, the camera sender continues to its next fragment without the
+extra one-tick sleep. The existing bounded writer still sleeps on
+EAGAIN/EWOULDBLOCK/EINTR, retains its four-second no-progress limit, and services
+the inherited WebSocket loop between fragments. The outer worker's two-ms
+background sleep is unchanged.
+
+The documented front-camera producer also has no successful-fragment sleep.
+In the current rear SDK, TCP_MSS is 1436 bytes; a full fragment uses 1422 payload
+bytes plus its actual eight-byte masked WebSocket header, or 1430 wire bytes.
+The pinned WebSocket connection setup requests TCP_NODELAY, and the sender
+uses MSG_DONTWAIT without MSG_MORE. Spacing these promptly eligible writes can
+change downstream queue occupancy, aggregation opportunities or ACK timing.
+The direct sleep duration alone cannot measure those indirect effects.
+
+The .13 HTTP timing sample recorded about 79% of send wall time in backpressure
+waits, 16% in send calls, and 2.3% in explicit fragment sleeps, while captures
+continued at about five per second. Those observations motivate this comparison;
+they do not establish that fragment pacing caused the slow delivery or that
+disabling it improves performance. Actual Wi-Fi aggregation was not measured.
+
+Camera and sensor IP_TOS 0xa0 (CS5 / AC_VI) remain unchanged. AC_VI supports
+AMPDU according to the pinned Espressif guidance; this experiment does not
+attribute an aggregation disable to CS5. Camera size/200-ms capture interval,
+sensor cadence and priority, BNO absence handling, both LiDAR heads, disabled
+FTM, requested transmit power, read-timeout correction and recovery behavior
+remain unchanged. Shared/front source is not modified.
+
+Run the existing `test_transport_budget.py`,
+`test_send_timing.py --prepared /absolute/rear-build`, and
+`test_websocket_timeout.py --prepared /absolute/rear-build` checks, then build
+and check the OTA image. Compare actual .14 sender timing, bytes and throughput
+with the retained .13 evidence, and repeat the unchanged viewer/LiDAR acceptance
+thresholds after a separately verified boot. A passing build is not a delivery
+pass; retain the .13 image for comparison or rollback.
+
+Reference:
+[ESP-IDF 4.4.7 Wi-Fi QoS](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-guides/wifi.html#wifi-qos).
