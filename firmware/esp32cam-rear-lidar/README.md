@@ -1,6 +1,6 @@
 # Rear ESP32-S3-CAM with two VL53L5CX sensors
 
-Current normal release: **1.0-rear.15**.
+Current normal release: **1.0-rear.14**.
 
 Derived from the sibling front-camera firmware package at its pinned upstream revision.
 The rear variant is prepared from pinned camera sources and retains RTSP, authenticated
@@ -500,9 +500,9 @@ pass; retain the .13 image for comparison or rollback.
 Reference:
 [ESP-IDF 4.4.7 Wi-Fi QoS](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-guides/wifi.html#wifi-qos).
 
-## Rear Wi-Fi static-buffer comparison (1.0-rear.15)
+## Rear Wi-Fi static-buffer comparison (1.0-rear.15, reverted)
 
-The only runtime change from .14 is `WiFi.useStaticBuffers(true)` as the first
+The .15 trial's only runtime change from .14 was `WiFi.useStaticBuffers(true)` as the first
 statement in the rear materialized `setup()`, before camera setup,
 `WiFi.setSleep(false)`, IotWebConf initialization, or any telemetry worker.
 Arduino 2.0.17's setter selects the profile used by the first
@@ -536,8 +536,8 @@ timing remained dominated by backpressure waits with explicit fragment-yield
 time at zero. A later root-page snapshot reported 120.94 KB free internal heap
 and a 109.99 KB largest internal block. Those rounded point-in-time values do
 not rule out transient allocation pressure and do not establish this buffer
-profile as the cause of slow delivery. A verified .15 boot and the unchanged
-camera/LiDAR acceptance checks are required to assess the comparison.
+profile as the cause of slow delivery. The verified .15 boot and unchanged
+camera/LiDAR acceptance checks below record the actual comparison.
 
 The .14 no-yield setting, CS5, four-second write-progress budget, read-timeout
 correction, camera 1280×720/200-ms profile, sensor cadence/priorities, both
@@ -557,3 +557,42 @@ References:
 - [Pinned N16R8 SDK configuration](https://github.com/espressif/arduino-esp32/blob/2.0.17/tools/sdk/esp32s3/qio_opi/include/sdkconfig.h)
 - [ESP-IDF 4.4.7 Wi-Fi buffer guidance](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-guides/wifi.html#wi-fi-buffer-usage)
 - [Arduino useStaticBuffers API](https://docs.espressif.com/projects/arduino-esp32/en/latest/api/wifi.html#usestaticbuffers)
+
+
+### Observed result and return to .14
+
+The .15 image (SHA256
+`4742a72e93e38ac13a4ed53a79630a7a50abcd2d36ab12cb5922521fc1d2e015`)
+was verified running in app0 with boot ID `f4ba2336af91d083` on
+2026-11-23. The subsequent unchanged public/native two-window qualification
+failed. Rear delivery was 0.533 and 0.600 fps on both routes; the native front
+delivered 5.000 and 4.950 fps. The observer ended at 07:40:28.332510 UTC and
+the concurrent passive capture ended at 07:40:43.138712 UTC.
+
+Outside-core counter snapshots recorded 684 camera captures, 87 sends and
+597 superseded frames; the sensor producer prepared 1,370 packets, sent
+455 and superseded 915. Sender accounting recorded 87 attempts and
+135.384855 seconds of send wall time, of which 87.0657% was backpressure
+wait time. Successful-fragment yield time remained zero. There were no new
+socket disconnects or write-progress timeouts in that bracket.
+
+This result did not justify retaining the static-buffer selection. The
+source returns to the exact .14 production inputs from main
+`571af2b0ab1cb6f8426462499bf3cd3295ed7626`: the added setup call is
+removed, and the normal/factory release identities return to .14. All other
+camera, sensor, BNO, LiDAR, transport and recovery behavior is preserved.
+The .15 source, image and observations remain in history.
+
+The prior .14 qualification also failed rear delivery checks. This is a
+return to the previous comparison baseline, not a health fix or proof that
+static buffers caused the difference. These sequential live observations
+do not control every link or scheduling condition.
+
+Production equality permits reuse of the preserved normal .14 image:
+**1,608,960 bytes**, SHA256
+`e0bdc24af5113873f56e27e09cc90d2f878a65c4648ed7377151ddd718b594d1`.
+The rollback verifies all repository production inputs against the .14
+source and rechecks the existing image size/hash; it does not rebuild or
+claim a new image. The original full build, transport/timing/timeout tests
+and OTA-image check remain the qualification evidence. Physical rollback
+is a separate guarded OTA action and requires a fresh .14 boot witness.
