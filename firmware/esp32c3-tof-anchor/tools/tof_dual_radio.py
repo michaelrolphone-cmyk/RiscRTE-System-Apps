@@ -147,6 +147,10 @@ class DualRadioRanging:
             try:self.command.result();self.error=None
             except (OSError,ValueError,sqlite3.Error) as exc:self.error=str(exc)
             self.command=None
+        # Fresh sensor telemetry can explicitly disable FTM without stopping video/LiDAR.
+        # Missing markers retain the legacy behavior; reap prior commands above first.
+        if (state.get('supported') is False or state.get('enabled') is False
+                or state.get('status')=='disabled_in_firmware'):return
         if (now<self.next_send or not state or not 0<=now-state['capture']<2.
                 or state.get('busy') or state.get('retiring')):return
         eligible=[(k,v['packet']['channel']) for k,v in g.nodes.items()
