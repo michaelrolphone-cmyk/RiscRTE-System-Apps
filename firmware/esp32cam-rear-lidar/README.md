@@ -148,6 +148,20 @@ Paused or disconnected maintenance performs no corrective writes. A correction
 counts as successful only after driver readback confirms it. These diagnostics
 test for a state mismatch; no such mismatch is assumed to explain slow delivery.
 
+## Experimental rear camera traffic priority
+Version 1.0-rear.8 is a single-variable trial: the rear JPEG WebSocket requests
+IP_TOS 0xa0 (CS5 / AC_VI), matching the existing sensor WebSocket. A rear-only
+materialization patch applies this on each successful camera connection; the
+shared front source and disconnect behavior remain unchanged.
+
+The trial retains Wi-Fi ranging disabled, actual driver diagnostics, requested
+15 dBm power, both LiDAR heads, 1280×720 / 200 ms capture and the one-second
+TCP write-progress recovery policy. It does not claim that traffic priority
+caused the prior stalls. Verify the actual outgoing TOS and repeat the same
+fresh-frame and LiDAR qualification before accepting the trial. Keep the verified
+1.0-rear.7 application available for rollback if there is no material benefit or
+either stream regresses.
+
 ## One-time USB Wi-Fi provisioning
 For a board without saved camera settings, prepare a private factory image:
 `python3 prepare.py --output /absolute/new/factory-build --provisioning-json /private/wifi.json --build`
