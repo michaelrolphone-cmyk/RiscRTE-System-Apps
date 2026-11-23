@@ -47,7 +47,7 @@ uint64_t sequence=0;
 uint32_t sent=0,failed=0;
 
 #define CAMERA_SOCKET_ROLE "rear"
-#define CAMERA_SOCKET_YIELD_BETWEEN_FRAGMENTS true
+#define CAMERA_SOCKET_YIELD_BETWEEN_FRAGMENTS false
 #include "camera_websocket.inc"
 
 void writePacket(JsonObject packet,bool streaming=true) {
