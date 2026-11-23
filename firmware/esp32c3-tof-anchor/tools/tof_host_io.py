@@ -215,6 +215,12 @@ class RuntimeHealth:
             atexit.register(self.close)
 
     def note(self, snapshot, nav, host_io=None):
+        # Clock exchange may block or reject its bounds. Keep health readable
+        # while it runs, and report failed qualification without exiting.
+        try:
+            clock_qualified = host_io is None or bool(host_io.clock().valid)
+        except (OSError, ValueError):
+            clock_qualified = False
         with self.lock:
             self.phase = "active"
             self.last_loop = time.monotonic()
@@ -223,7 +229,7 @@ class RuntimeHealth:
                                  and not nav.feed_error)
             self.anchor_fresh = any(0 <= row.get("received_age_s", 1e9) < 30
                                     for row in snapshot.get("anchors", []))
-            self.clock_qualified = host_io is None or bool(host_io.clock().valid)
+            self.clock_qualified = clock_qualified
             self.camera_ok = snapshot.get("camera_error") is None
             self.inputs_valid = True
 
