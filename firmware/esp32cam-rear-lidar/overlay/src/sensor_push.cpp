@@ -4,6 +4,7 @@
 #include <esp_camera.h>
 #include <freertos/queue.h>
 #include "radio_telemetry.h"
+#include "bno_telemetry.h"
 #include <ArduinoJson.h>
 #include <Preferences.h>
 #include "live_websocket.h"
@@ -95,6 +96,12 @@ void event(WStype_t type,uint8_t *payload,size_t length) {
     DynamicJsonDocument request(1024);
     if(deserializeJson(request,payload,length)) return;
     const String kind=request["type"]|"";
+    if(kind=="bno") {
+        StaticJsonDocument<512> reply;
+        bno_telemetry::enqueueCommand(request.as<JsonObjectConst>(),reply.to<JsonObject>());
+        reply["type"]="bno";
+        String encoded;serializeJson(reply,encoded);socket.sendTXT(encoded);
+    }
     if(kind=="clock") {
         socket.noteClock(request["id"], received);
     }
