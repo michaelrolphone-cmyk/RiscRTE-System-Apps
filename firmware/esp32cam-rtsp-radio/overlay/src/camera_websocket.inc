@@ -23,6 +23,18 @@ uint32_t cameraSession = 0;
 
 std::atomic<bool> videoConnected{false}, videoReady{false};
 
+#if LIVE_WEBSOCKET_SEND_TIMING
+portMUX_TYPE cameraSendTimingLock = portMUX_INITIALIZER_UNLOCKED;
+LiveSendTimingSnapshot cameraSendTiming;
+
+LiveSendTimingSnapshot cameraSendTimingSnapshot() {
+    portENTER_CRITICAL(&cameraSendTimingLock);
+    const LiveSendTimingSnapshot snapshot = cameraSendTiming;
+    portEXIT_CRITICAL(&cameraSendTimingLock);
+    return snapshot;
+}
+#endif
+
 void nextCameraSession() {
     cameraCaptureSession.store(0);
     if (++cameraSession == 0) ++cameraSession;
@@ -86,9 +98,22 @@ void cameraWorker(void *) {
             if (videoConnected && videoReady && frame.session == cameraSession) {
                 const uint32_t sendStartMs = millis();
                 cameraLastPayloadBytes.store(frame.length);
+#if LIVE_WEBSOCKET_SEND_TIMING
+                LiveSendTiming timing;
+#endif
                 const bool delivered = videoSocket.writeLive(WSop_binary, frame.buffer, frame.length,
-                                                            CAMERA_SOCKET_YIELD_BETWEEN_FRAGMENTS);
+                                                            CAMERA_SOCKET_YIELD_BETWEEN_FRAGMENTS
+#if LIVE_WEBSOCKET_SEND_TIMING
+                                                            , &timing
+#endif
+                                                            );
                 cameraLastSendDurationMs.store(millis() - sendStartMs);
+#if LIVE_WEBSOCKET_SEND_TIMING
+                timing.capture_us = frame.captureUs;
+                portENTER_CRITICAL(&cameraSendTimingLock);
+                cameraSendTiming.record(timing);
+                portEXIT_CRITICAL(&cameraSendTimingLock);
+#endif
                 if (delivered) ++cameraFrames;
             }
             heap_caps_free(frame.buffer);

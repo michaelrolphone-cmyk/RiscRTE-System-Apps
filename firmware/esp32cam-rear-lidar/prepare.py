@@ -57,6 +57,7 @@ def main():
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/sensor_mailbox.inc',out/'src/sensor_mailbox.inc')
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/live_websocket.h',out/'src/live_websocket.h')
  shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/live_write_progress.h',out/'src/live_write_progress.h')
+ shutil.copyfile(source/'firmware/esp32cam-rtsp-radio/overlay/src/live_send_timing.h',out/'src/live_send_timing.h')
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'camera-main.patch')],cwd=out,check=True)
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'camera-websocket.patch')],cwd=out,check=True)
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'live-write-progress.patch')],cwd=out,check=True)

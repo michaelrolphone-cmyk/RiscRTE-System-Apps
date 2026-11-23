@@ -10,6 +10,12 @@
 #include <lwip/opt.h>
 #include <errno.h>
 #include "live_write_progress.h"
+#ifndef LIVE_WEBSOCKET_SEND_TIMING
+#define LIVE_WEBSOCKET_SEND_TIMING 0
+#endif
+#if LIVE_WEBSOCKET_SEND_TIMING
+#include "live_send_timing.h"
+#endif
 
 // The Links2004 client owns the handshake, incoming messages and control frames.
 // Keep its reader running between outgoing fragments, including when TCP is full.
@@ -55,7 +61,14 @@ public:
     }
 
     bool writeLive(WSopcode_t kind, uint8_t *buffer, size_t size,
-                   bool yieldBetweenFragments = false) {
+                   bool yieldBetweenFragments = false
+#if LIVE_WEBSOCKET_SEND_TIMING
+                   , LiveSendTiming *timing = nullptr
+#endif
+                   ) {
+#if LIVE_WEBSOCKET_SEND_TIMING
+        LiveSendAttempt attempt(timing, size);
+#endif
         const uint32_t session = epoch;
         const size_t maximum = TCP_MSS - WEBSOCKETS_MAX_HEADER_SIZE;
         size_t offset = 0;
@@ -74,13 +87,49 @@ public:
             for (size_t i = 0; i < length; ++i) body[i] ^= mask[i % 4];
             // The inherited loop may send heartbeat/pong frames here. Its virtual
             // write() uses the same nonblocking path, including on a full socket.
+#if LIVE_WEBSOCKET_SEND_TIMING
+            const uint64_t loopStart = timing ? esp_timer_get_time() : 0;
+#endif
             loop();
+#if LIVE_WEBSOCKET_SEND_TIMING
+            if (timing) {
+                timing->counters.loop_us += esp_timer_get_time() - loopStart;
+                ++timing->counters.loop_calls;
+            }
+#endif
             if (epoch != session || !_client.tcp) return false;
-            if (write(&_client, wire, headerSize + length) != headerSize + length ||
-                epoch != session) return false;
+#if LIVE_WEBSOCKET_SEND_TIMING
+            if (timing) ++timing->counters.fragments_attempted;
+            // Only the explicit data write receives this result. A heartbeat,
+            // pong or close dispatched by loop() remains solely in loop_us.
+            const size_t count = writeBounded(&_client, wire, headerSize + length, timing);
+#else
+            const size_t count = write(&_client, wire, headerSize + length);
+#endif
+            if (count != headerSize + length || epoch != session) return false;
             offset += length;
-            if (yieldBetweenFragments && offset < size) vTaskDelay(1);
+#if LIVE_WEBSOCKET_SEND_TIMING
+            if (timing) {
+                ++timing->counters.fragments_completed;
+                timing->counters.completed_payload_bytes += length;
+            }
+#endif
+            if (yieldBetweenFragments && offset < size) {
+#if LIVE_WEBSOCKET_SEND_TIMING
+                const uint64_t yieldStart = timing ? esp_timer_get_time() : 0;
+#endif
+                vTaskDelay(1);
+#if LIVE_WEBSOCKET_SEND_TIMING
+                if (timing) {
+                    timing->counters.fragment_yield_us += esp_timer_get_time() - yieldStart;
+                    ++timing->counters.fragment_yields;
+                }
+#endif
+            }
         }
+#if LIVE_WEBSOCKET_SEND_TIMING
+        attempt.delivered();
+#endif
         return true;
     }
 
@@ -89,6 +138,19 @@ protected:
     // this virtual hook. Never fall back to WiFiClient::write(), which can block
     // before writeLive's own progress checks get a chance to run.
     size_t write(WSclient_t *client, uint8_t *out, size_t size) override {
+        return writeBounded(client, out, size
+#if LIVE_WEBSOCKET_SEND_TIMING
+                            , nullptr
+#endif
+                            );
+    }
+
+private:
+    size_t writeBounded(WSclient_t *client, uint8_t *out, size_t size
+#if LIVE_WEBSOCKET_SEND_TIMING
+                        , LiveSendTiming *timing
+#endif
+                        ) {
         if (client != &_client || !client->tcp || !out) return 0;
         const uint32_t session = epoch;
         const int descriptor = client->tcp->fd();
@@ -97,20 +159,46 @@ protected:
         while (written < size) {
             if (epoch != session || !client->tcp ||
                 client->tcp->fd() != descriptor) return written;
+#if LIVE_WEBSOCKET_SEND_TIMING
+            const uint64_t sendStart = timing ? esp_timer_get_time() : 0;
+#endif
             const int count = ::send(descriptor, out + written, size - written, MSG_DONTWAIT);
+            const int sendError = errno;
+#if LIVE_WEBSOCKET_SEND_TIMING
+            if (timing) {
+                timing->counters.send_syscall_us += esp_timer_get_time() - sendStart;
+                ++timing->counters.send_calls;
+                if (count > 0) timing->counters.wire_bytes += static_cast<size_t>(count);
+            }
+#endif
             if (count > 0) {
                 written += static_cast<size_t>(count);
                 const uint64_t nowUs = esp_timer_get_time();
                 progress.wroteBytes(nowUs);
                 lastProgressMs.store(static_cast<uint32_t>(nowUs / 1000));
             } else if (count < 0 &&
-                       (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
+                       (sendError == EAGAIN || sendError == EWOULDBLOCK || sendError == EINTR)) {
+#if LIVE_WEBSOCKET_SEND_TIMING
+                if (timing) {
+                    if (sendError == EINTR) ++timing->counters.interrupted;
+                    else ++timing->counters.would_block;
+                }
+#endif
                 if (progress.stalled(esp_timer_get_time())) {
                     ++writeTimeouts;
                     abortWrite("Live write stopped making progress");
                     return written;
                 }
+#if LIVE_WEBSOCKET_SEND_TIMING
+                const uint64_t waitStart = timing ? esp_timer_get_time() : 0;
+#endif
                 vTaskDelay(1);
+#if LIVE_WEBSOCKET_SEND_TIMING
+                if (timing) {
+                    timing->counters.send_wait_us += esp_timer_get_time() - waitStart;
+                    ++timing->counters.send_waits;
+                }
+#endif
             } else {
                 abortWrite("Live write failed");
                 return written;
@@ -119,7 +207,6 @@ protected:
         return written;
     }
 
-private:
     void abortWrite(const char *reason) {
         _client.tcp->stop();
         clientDisconnect(&_client, reason);
