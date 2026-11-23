@@ -23,7 +23,15 @@
 +  ArduinoOTA.setTimeout(10000);
    ArduinoOTA
        .onStart([]()
-@@ -589,12 +594,25 @@
+@@ -501,4 +506,7 @@
+ void setup()
+ {
++  // Select the SDK static-buffer profile before IotWebConf starts Wi-Fi.
++  WiFi.useStaticBuffers(true);
++
+   // Disable brownout
+   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+@@ -589,12 +597,25 @@
    param_group_auth.addItem(&param_auth_pass);
    iotWebConf.addParameterGroup(&param_group_auth);
 
@@ -51,7 +59,7 @@
 +  iotWebConf.setConfigSavedCallback(on_config_saved);
 
    // Set the time servers
-@@ -658,9 +676,13 @@
+@@ -658,9 +679,13 @@
  void loop()
  {
 -  iotWebConf.doLoop();
