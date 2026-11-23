@@ -198,8 +198,7 @@ void writeTcpSegments(JsonObject out, const RearTcpDiagnostic::Segments &s) {
     else { out["first_seq"] = nullptr; out["last_end_seq"] = nullptr; }
 }
 
-void writeTcpDiagnostic(JsonObject out, RearTcpDiagnostic &diagnostic, uint64_t now) {
-    const auto view = diagnostic.snapshot();
+void writeTcpDiagnostic(JsonObject out, const RearTcpDiagnostic::Snapshot &view, uint64_t now) {
     out["initialized"] = view.initialized;
     out["message_ready"] = view.message_ready;
     out["connected"] = view.connected;
@@ -273,21 +272,23 @@ void writeTcpDiagnostic(JsonObject out, RearTcpDiagnostic &diagnostic, uint64_t 
 
 void tcpStatus() {
     if (!authorizeRequest || !authorizeRequest()) return;
+    const auto camera = cameraTcpDiagnostic.snapshot();
+    const auto sensor = sensorTcpDiagnostic.snapshot();
     const uint64_t now = esp_timer_get_time();
     DynamicJsonDocument d(8192);
     d["schema"] = "rover.rear_tcp_diagnostic.v1";
     d["receiver_id"] = tcpReceiver; d["boot_id"] = boot; d["firmware"] = APP_VERSION;
     d["clock"] = "esp_timer"; d["observed_at_monotonic_us"] = now;
-    d["sampling_interval_us"] = RearTcpDiagnostic::intervalUs;
-    d["stale_after_us"] = RearTcpDiagnostic::staleAfterUs;
+    d["sampling_interval_us"] = static_cast<uint64_t>(RearTcpDiagnostic::intervalUs);
+    d["stale_after_us"] = static_cast<uint64_t>(RearTcpDiagnostic::staleAfterUs);
     d["tcp_slow_tick_ms"] = TCP_SLOW_INTERVAL;
     d["configured_send_buffer_bytes"] = TCP_SND_BUF;
     d["configured_send_queue_pbufs"] = TCP_SND_QUEUELEN;
     d["configured_mss_bytes"] = TCP_MSS;
-    d["max_pcbs"] = RearTcpDiagnostic::maxPcbs;
-    d["max_segments_total"] = RearTcpDiagnostic::maxSegments;
-    writeTcpDiagnostic(d.createNestedObject("camera"), cameraTcpDiagnostic, now);
-    writeTcpDiagnostic(d.createNestedObject("sensor"), sensorTcpDiagnostic, now);
+    d["max_pcbs"] = static_cast<unsigned>(RearTcpDiagnostic::maxPcbs);
+    d["max_segments_total"] = static_cast<unsigned>(RearTcpDiagnostic::maxSegments);
+    writeTcpDiagnostic(d.createNestedObject("camera"), camera, now);
+    writeTcpDiagnostic(d.createNestedObject("sensor"), sensor, now);
     if (d.overflowed()) {
         server->send(503, "application/json", "{\"error\":\"TCP diagnostic allocation failed\"}");
         return;

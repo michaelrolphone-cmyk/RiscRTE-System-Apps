@@ -72,11 +72,15 @@ def main():
                     raise AssertionError("Materialized source differs: " + name)
             source = actual
             sdk_guards(args.framework)
+        # Quoted includes in the inherited WebSockets fixture must resolve to
+        # the same overridden clock as the production include, not two headers.
+        stubs = work / "stubs"
+        shutil.copytree(shared / "test/live_write_progress/stubs", stubs)
+        shutil.copytree(tests / "stubs", stubs, dirs_exist_ok=True)
         binary = work / "test-tcp-diagnostic"
         subprocess.run([
             compiler, "-std=c++11", "-Wall", "-Wextra", "-Werror", "-pthread",
-            "-I", str(tests / "stubs"),
-            "-I", str(shared / "test/live_write_progress/stubs"),
+            "-I", str(stubs),
             "-I", str(source),
             str(tests / "test_diagnostic.cpp"), "-o", str(binary),
         ], check=True)
