@@ -44,6 +44,8 @@ jobs:
       - run: python firmware/esp32cam-rear-lidar/prepare.py --output /tmp/rear-camera-build --build
       - name: Test disabled rear Wi-Fi ranging behavior
         run: python firmware/esp32cam-rear-lidar/test_ranging_disabled.py --prepared /tmp/rear-camera-build
+      - name: Test optional BNO presence, commands, OTA pause and real SH2 deadlines
+        run: python firmware/esp32cam-rear-lidar/test_bno_optional.py --prepared /tmp/rear-camera-build --asan
       - run: python firmware/esp32cam-rear-lidar/check_ota_image.py /tmp/rear-camera-build
       - name: Compile factory provisioning path with test credentials
         run: |
