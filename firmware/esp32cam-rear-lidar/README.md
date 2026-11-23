@@ -309,19 +309,20 @@ Primary references:
 
 ### Failure isolation and data contract
 
-A dedicated HSPI instance runs at1 MHz. Only the idle-priority BNO worker touches
+A dedicated HSPI instance runs at 1 MHz. Only the idle-priority BNO worker touches
 the sensor or the SH2 singleton. It detects INT after reset before opening SPI,
-retries an unavailable device every5 seconds, closes failed SH2 sessions, checks
+retries an unavailable device every 5 seconds, closes failed SH2 sessions, checks
 every report-enable result, and reconfigures after sensor reset. A ready worker
-checks for data every2 ms; a missing/paused device uses a20 ms background sleep.
-These are sensor schedules and do not change the camera's200 ms interval.
+checks for data every 2 ms; a missing/paused device uses a 20 ms background sleep.
+These are sensor schedules and do not change the camera's 200 ms interval.
 
 The pinned dependency contains unbounded missing-response paths. The materializer
-resolves version1.0.6, verifies original Git blob IDs, and applies narrow rear-only
-patches: a2-second fallback for operations with no upstream deadline, a2-second
+resolves version 1.0.6, verifies original Git blob IDs, and applies narrow rear-only
+patches: a 2-second fallback for operations with no upstream deadline, a 2-second
 write-retry budget, negative SPI write failure, safe close after failed open, and
 the missing HAL receipt timestamp. Existing nonzero upstream operation deadlines
-are preserved. Deadlines are checked between HAL calls: an in-flight INT wait can
+are preserved. A PlatformIO pre script verifies the same patched bytes on later
+builds, and rejects an unexpected or missing dependency rather than compiling it. Deadlines are checked between HAL calls: an in-flight INT wait can
 extend an operation beyond its nominal budget. All such work stays outside
 camera/HTTP/socket publication. No new sensor work begins while OTA is paused;
 an already-started bounded operation may finish before the worker stops.
@@ -330,18 +331,18 @@ an already-started bounded operation may finish before the worker stops.
 `rover.bno085.v1` under `bno` (the dedicated endpoint returns that object itself).
 Every report has its own sequence, host receipt timestamp, age and validity.
 Rotation quaternion, acceleration in m/s², calibrated gyro in rad/s and magnetic
-field in µT are requested every50 ms. An event callback decodes every report in a
-packet. A report more than500 ms old, from after the requested camera timestamp,
+field in µT are requested every 50 ms. An event callback decodes every report in a
+packet. A report more than 500 ms old, from after the requested camera timestamp,
 from an unavailable/paused device, or containing non-finite values contributes
 no numeric measurements. Missing another report type never refreshes its age.
-After2 seconds without recognized reports, the session closes and retries.
+After 2 seconds without recognized reports, the session closes and retries.
 
 Authenticated `POST /api/bno` and existing sensor WebSocket messages with
-`type:"bno"` accept `op`, optional `command_id` (up to63 characters), and
+`type:"bno"` accept `op`, optional `command_id` (up to 63 characters), and
 `z_axis` for tare. Operations are `calibrate_all`, `calibrate_accel`,
 `calibrate_gyro`, `calibrate_mag`, `end_calibration`, `save_calibration`,
 `tare_now`, `save_tare`, and `clear_tare`. A four-entry nonblocking queue
-serializes all commands with reads. HTTP202 / `accepted:true,state:"queued"`
+serializes all commands with reads. HTTP 202 / `accepted:true,state:"queued"`
 is acceptance only; telemetry `last_command` reports the latest command's actual
 completion or failure and ID. Absent/paused sensors and full queues are rejected
 immediately. Saving calibration explicitly requests the sensor's flash save;

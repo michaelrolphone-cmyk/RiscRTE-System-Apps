@@ -156,15 +156,15 @@ void runCommand(const Command &cmd){
 }
 // One worker iteration is separately exercised by the host boundary tests.
 void workerStep(){
+    if(isPaused()){
+        // Never start another sensor operation while OTA has requested pause.
+        invalidate();publish();return;
+    }
     if(!pinsReady){
         pinMode(INT_PIN,INPUT_PULLUP);
         pinMode(CS_PIN,OUTPUT);digitalWrite(CS_PIN,HIGH);
         pinMode(RST_PIN,OUTPUT);digitalWrite(RST_PIN,HIGH);
         pinsReady=true;
-    }
-    if(isPaused()){
-        // Never start another sensor operation while OTA has requested pause.
-        invalidate();publish();return;
     }
     const uint64_t now=nowUs();
     if(phase==Phase::Backoff){
@@ -279,13 +279,13 @@ void writeJson(JsonObject out,uint64_t at){
     writeReport(out.createNestedObject("gyro_rads"),s.gyro,at,available);
     writeReport(out.createNestedObject("mag_uT"),s.mag,at,available);
     JsonObject result=out.createNestedObject("last_command");
-    result["command_id"]=s.command.id;result["op"]=s.command.op;
+    result["command_id"]=String(s.command.id);result["op"]=String(s.command.op);
     result["state"]=s.command.state;result["error"]=s.command.error;
     result["completed_monotonic_us"]=s.command.completed;
 }
 bool enqueueCommand(JsonObjectConst input,JsonObject reply){
     const char *op=input["op"]|"";
-    reply["schema"]="rover.bno085.cmd.v1";reply["op"]=op;reply["accepted"]=false;
+    reply["schema"]="rover.bno085.cmd.v1";reply["op"]=String(op);reply["accepted"]=false;
     const char *error=nullptr;
     if(!knownCommand(op))error="unknown_op";
     else if(isPaused())error="paused";
@@ -299,7 +299,7 @@ bool enqueueCommand(JsonObjectConst input,JsonObject reply){
     else snprintf(cmd.id,sizeof(cmd.id),"bno-%lu",static_cast<unsigned long>(++nextCommand));
     cmd.zAxis=input["z_axis"]|false;
     if(!commands || xQueueSend(commands,&cmd,0)!=pdTRUE){reply["error"]="queue_full";return false;}
-    reply["accepted"]=true;reply["state"]="queued";reply["command_id"]=cmd.id;
+    reply["accepted"]=true;reply["state"]="queued";reply["command_id"]=String(cmd.id);
     return true;
 }
 void begin(WebServer &server,bool (*authorize)()){

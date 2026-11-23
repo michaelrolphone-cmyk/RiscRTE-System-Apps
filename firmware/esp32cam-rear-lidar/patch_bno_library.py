@@ -98,7 +98,10 @@ def apply(prepared):
     receipt.write_text(json.dumps(result, indent=2) + "\n")
     return result
 
-if __name__ == "__main__":
+if "Import" in globals():
+    Import("env")
+    apply(Path(env.subst("$PROJECT_DIR")))
+elif __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("prepared", type=Path)
