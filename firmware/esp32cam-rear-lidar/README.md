@@ -2,6 +2,91 @@
 
 Current normal release: **1.0-rear.14**.
 
+## Latest measured status — 2026-11-23 08:13 UTC
+
+**The incident remains open; the unchanged delivery gates failed.**
+[Tracked incident](https://tasker-workboard.cantikash.chatgpt.site/?task=7b8aa6d4-bc05-49c0-9b35-359323fa1c53).
+
+The rear is restored to **1.0-rear.14**, app1, boot
+`a0c71ed56e7f48d6`. Its preserved 1,608,960-byte image has SHA256
+`e0bdc24af5113873f56e27e09cc90d2f878a65c4648ed7377151ddd718b594d1`.
+This retains the .11 LiDAR driver fixes, .13 WebSocket timeout-unit fix,
+sender timing diagnostics, BNO absence handling and other proven fixes.
+The .15 static-buffer selection was rolled back; its failed comparison is
+retained below.
+
+The strict public/native two-window run covered
+**08:05:43.507197–08:07:43.532840 UTC**. Native results were:
+
+| Metric | First 60 seconds | Reconnect 60 seconds |
+|---|---:|---:|
+| Front camera, fps | 4.967 | 4.933 |
+| Rear camera, fps | 2.767 | 2.767 |
+| Fresh LiDAR scans, front/rear heads | 291 / 289 | 295 / 292 |
+| Maximum LiDAR gaps, front/rear heads | 2.068 / 2.048 s | 1.204 / 1.182 s |
+
+All four route/window gates failed. Runtime, map and calibration identities
+were unchanged within this run; the map differed from earlier runs, so
+cross-run comparisons are not controlled capacity tests.
+
+The outside-core device-counter bracket showed camera capture at
+**4.9958 Hz** and completed sends at **2.9100 Hz**.
+**72.3163%** of send wall time was backpressure wait; successful-fragment
+yield time was zero. No new reconnects or write-progress timeouts occurred.
+These bracket rates use a different time span from the strict viewer windows.
+
+Saved source/wire correlation separates acquisition from delivery. During
+the 2.068-second native front-head gap, the next head observation advanced
+by **186.968 ms** (sequence 3007→3008), while its sensor message took
+**1.908725 s** from first to last captured TCP byte. Native acceptance
+followed byte coverage by 71.058 ms. This does not identify every delay as
+radio propagation or CPU work. For 385 rear JPEGs without an observed
+TCP-hole overlap, median first-to-last-byte assembly was **304.950 ms**;
+2 of 387 complete JPEGs overlapped observed holes. All 387 had matching
+application ACKs. Slow baseline assembly therefore remains relevant
+alongside the occasional sequence-hole recovery.
+
+A separate concurrent **BE-only** ICMP control at
+08:02:03.045–08:02:19.973 UTC received 30/30 replies per target
+(request TOS 0, 56-byte payload, 0.5-second interval):
+
+| Target | Minimum / average / maximum RTT, ms |
+|---|---:|
+| Front | 4.811 / 13.430 / 45.600 |
+| Rear | 14.345 / 203.186 / 1022.512 |
+| Router | 1.643 / 6.473 / 38.976 |
+
+Exact cached MAC associations guarded the camera targets. No packet
+capture verified reply TOS, and no CS5 ICMP comparison was performed.
+BE round trips are not a class-neutral latency measure of the CS5-marked
+rear streams; this contrast does not establish the responsible queue,
+radio condition or per-device capacity.
+
+The guarded front API point snapshot at 08:13:03.674–03.781 UTC identified
+`esp32cam-98574b858428`, boot `6bfc8aa84df8ec65`. Its status reported a last sensor
+packet of **6,455 bytes**, latest preparation of 14 ms and last send of 16 ms
+(RSSI −55 dBm, channel 3), versus the rear's 4,458-byte point sample.
+The front socket sampling period was not exposed, so no traffic rate is
+inferred from this snapshot. The named configuration values
+`publish_interval_ms=5000` and `ahrs_publish_interval_ms=100` are not
+relabeled as a socket period. Nested `ftm_responder.firmware` reported
+`1.0-radio.16-capture-imu`; this is not flashed-image attestation.
+
+Managed evidence (stdout SHA256 unless marked report):
+
+- `rearperf-v14-rollback-public-native-20261123-46`:
+  `985dfcc76aabb37c7c758144e13b09c0f2cd9b4330106958608d43cf27637ab2`.
+- `rearperf-v14-rollback-icmp-control-20261123-47`:
+  `eec8aebda632983b1c39f2a0755c6ba4b2bad2eca1da1150e1d65ede4366bfe3`;
+  report `e07f5bce772a5097425c70847665df1e1fefdbe05e7876a57924394c6fe636b0`.
+- `rearperf-v14-rollback-saved-wire-head-correlation-20261123-48`:
+  `c691be5fea20c7bffeee3fc2ac2afbe1659e379be1cbb8bb8af93b9d80b9fbfc`;
+  report `567ab859b47a2a5d17ab57facc220ac990d328f4735b8393ec281728c38c51ca`.
+- `front-load-snapshot-20261123-review-01`:
+  `1493cf16f7801081782ac8e3fc5c0b28456019d900573a3c67eebe94c1e82ffe`.
+
+## Firmware overview
+
 Derived from the sibling front-camera firmware package at its pinned upstream revision.
 The rear variant is prepared from pinned camera sources and retains RTSP, authenticated
 capture at /api/capture, provisioning, exposure/light controls and password-protected
