@@ -44,7 +44,7 @@ def main():
  settings=out/'include/settings.h';s=settings.read_text()
  import re
  s=re.sub(r'#define APP_TITLE .*','#define APP_TITLE "ROVER-REAR-CAMERA"',s)
- s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.18"',s)
+ s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.19"',s)
  for name,value in (('DEFAULT_FRAME_SIZE','"HD (1280x720)"'),('DEFAULT_FRAME_DURATION','200')):
   s,count=re.subn(r'^#define '+name+r' .+$','#define '+name+' '+value,s,flags=re.M)
   if count!=1:raise ValueError('Unexpected camera setting definition: '+name)
@@ -61,6 +61,7 @@ def main():
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'camera-main.patch')],cwd=out,check=True)
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'camera-websocket.patch')],cwd=out,check=True)
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'live-write-progress.patch')],cwd=out,check=True)
+ subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'ota-priority.patch')],cwd=out,check=True)
  if a.provisioning_json:
   secret=json.loads(a.provisioning_json.expanduser().read_text())
   ssid=secret.get('ssid');password=secret.get('password')
@@ -90,7 +91,7 @@ def main():
   }
 ''')
   main.write_text(text)
-  settings.write_text(settings.read_text().replace('"1.0-rear.18"','"1.0-rear.18-factory"'))
+  settings.write_text(settings.read_text().replace('"1.0-rear.19"','"1.0-rear.19-factory"'))
 
  shutil.copyfile(ROOT/'patch_bno_library.py',out/'patch_bno_library.py')
  shutil.copyfile(ROOT/'patch_lidar_library.py',out/'patch_lidar_library.py')

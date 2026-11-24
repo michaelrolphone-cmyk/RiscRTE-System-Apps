@@ -1,0 +1,205 @@
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -448,8 +448,10 @@
+ // used by PlatformIO (`pio run -t upload --upload-protocol espota`) and the
+ // Arduino IDE. This requires a partition table with two app slots
+ // (see partitions/ota.csv); 8MB/16MB boards already ship one.
+ 
++static bool otaMediaPaused = false;
++
+ void setup_ota()
+ {
+   log_v("setup_ota");
+ 
+@@ -469,8 +471,9 @@
+       .onStart([]()
+                { 
+       // Free memory for the update: stop the RTSP server and release the camera frame buffers, so Update.write() has all the heap it needs
+       // On a successful update the device reboots; onError() restores these.
++      otaMediaPaused = true;
+       radio_telemetry::pause(true);
+       rtsp_server.end();
+       if (camera_init_result == ESP_OK)
+       {
+@@ -491,8 +494,11 @@
+       case OTA_RECEIVE_ERROR: log_e("OTA: receive failed"); break;
+       case OTA_END_ERROR: log_e("OTA: end failed - %s", Update.errorString()); break;
+       default: log_e("OTA error: %u", error);
+       }
++      if (!otaMediaPaused) return;
++      if (Update.isRunning()) Update.abort();
++      otaMediaPaused = false;
+       radio_telemetry::pause(false);
+       // Restore the camera and RTSP server after a failed update (on success the
+       // device reboots, so no restore is needed there).
+       update_camera_settings();
+@@ -674,14 +680,14 @@
+ }
+ 
+ void loop()
+ {
++  ArduinoOTA.handle();
+   if (rear_ranging::beginNetworkLoop()) {
+     iotWebConf.doLoop();
+     rear_ranging::endNetworkLoop();
+   }
+   rtsp_server.loop();
+-  ArduinoOTA.handle();
+   radio_telemetry::loop();
+   if (camera_init_result == ESP_OK && !Update.isRunning()) sensor_push::offerCamera(param_frame_duration.value());
+ 
+   // OTA diagnostics: once an update is running, log progress + heap so the
+--- a/src/live_websocket.h
++++ b/src/live_websocket.h
+@@ -40,8 +40,10 @@
+         WebSocketsClient::loop();
+         if (tcpDiagnostic) tcpDiagnostic->service(false);
+     }
+ #endif
++    void deferWritesWhile(const std::atomic<bool> &paused) { otaPause = &paused; }
++
+     uint32_t writeTimeoutCount() const { return writeTimeouts.load(); }
+     uint32_t lastWriteProgressMs() const { return lastProgressMs.load(); }
+ 
+     void transportChanged(bool telemetry) {
+@@ -125,9 +127,12 @@
+             const size_t count = writeBounded(&_client, wire, headerSize + length, timing);
+ #else
+             const size_t count = write(&_client, wire, headerSize + length);
+ #endif
+-            if (count != headerSize + length || epoch != session) return false;
++            if (count != headerSize + length || epoch != session) {
++                if (epoch == session && _client.tcp) abortWrite("Incomplete live frame");
++                return false;
++            }
+             offset += length;
+ #if LIVE_WEBSOCKET_SEND_TIMING
+             if (timing) {
+                 ++timing->counters.fragments_completed;
+@@ -176,8 +181,12 @@
+         const int descriptor = client->tcp->fd();
+         LiveWriteProgress progress(esp_timer_get_time());
+         size_t written = 0;
+         while (written < size) {
++            if (otaPause && otaPause->load()) {
++                if (written && epoch == session && _client.tcp) abortWrite("OTA paused live write");
++                return written;
++            }
+             if (epoch != session || !client->tcp ||
+                 client->tcp->fd() != descriptor) return written;
+ #if LIVE_WEBSOCKET_SEND_TIMING
+             const uint64_t sendStart = timing ? esp_timer_get_time() : 0;
+@@ -238,8 +247,9 @@
+ 
+ #if LIVE_WEBSOCKET_TCP_DIAGNOSTIC
+     RearTcpDiagnostic *tcpDiagnostic = nullptr; // Bound to a process-lifetime rear context.
+ #endif
++    const std::atomic<bool> *otaPause = nullptr;
+     std::atomic<uint32_t> writeTimeouts{0}, lastProgressMs{0};
+     uint32_t epoch = 0;
+     String clockId;
+     uint64_t clockReceived = 0;
+--- a/src/sensor_push.cpp
++++ b/src/sensor_push.cpp
+@@ -33,9 +33,10 @@
+ LiveWebSocket socket;
+ // Fixed storage outlives every queued callback; allocate on the first connection.
+ RearTcpDiagnostic sensorTcpDiagnostic, cameraTcpDiagnostic;
+ String headers,boot,tcpReceiver;
+-volatile bool connected=false,paused=false;
++volatile bool connected=false;
++std::atomic<bool> paused{false};
+ bool workerReady=false;
+ 
+ 
+ bool clockReady=false;
+@@ -71,9 +72,9 @@
+     packet["stream_sequence"]=sample;
+     packet["served_monotonic_us"]=static_cast<uint64_t>(esp_timer_get_time());
+ }
+ 
+-bool sensorPaused() { return paused; }
++bool sensorPaused() { return paused.load(); }
+ #include "sensor_mailbox.inc"
+ 
+ void event(WStype_t type,uint8_t *payload,size_t length) {
+     if (type == WStype_CONNECTED) {
+@@ -120,9 +121,20 @@
+     bool wifi = false;
+     socket.onEvent(event);
+     socket.setReconnectInterval(1000);
+     socket.enableHeartbeat(5000, 2000, 2);
++    bool suspended = false;
+     for (;;) {
++        if (paused.load()) {
++            if (!suspended) socket.disconnect();
++            suspended = true;
++            vTaskDelay(pdMS_TO_TICKS(2));
++            continue;
++        }
++        if (suspended) {
++            revision = UINT32_MAX;
++            suspended = false;
++        }
+         xSemaphoreTake(mutex, portMAX_DELAY);
+         const bool changed = revision != config.revision;
+         if (changed) route = config;
+         xSemaphoreGive(mutex);
+@@ -322,9 +334,9 @@
+     d["camera_capture_period_ms"]=cameraCapturePeriodMs.load();
+     d["camera_capture_width"]=cameraCaptureWidth.load();
+     d["camera_capture_height"]=cameraCaptureHeight.load();
+     d["rssi_dbm"]=WiFi.RSSI();d["channel"]=WiFi.channel();
+-    d["transport"]="websocket_push";d["camera_id"]="rear";d["worker_ready"]=workerReady;d["paused"]=paused;d["configured"]=!current.host.isEmpty();
++    d["transport"]="websocket_push";d["camera_id"]="rear";d["worker_ready"]=workerReady;d["paused"]=paused.load();d["configured"]=!current.host.isEmpty();
+     d["host"]=current.host;d["port"]=current.port;d["connected"]=connected;
+     d["sent"]=sent;d["failed"]=failed;
+     d["delivery_mode"]="continuous";d["awaiting_ack"]=false;
+     portENTER_CRITICAL(&sampleLock);
+@@ -399,8 +411,10 @@
+     Preferences prefs;
+     if(prefs.begin("rover-push",true)) {config.host=prefs.getString("host","");config.token=prefs.getString("token","");config.port=prefs.getUShort("port",9877);prefs.end();}
+     Document initial(131072);writePacket(initial.to<JsonObject>(),false);boot=String(initial["boot_id"]|"");
+     tcpReceiver=String(initial["receiver_id"]|"");
++    socket.deferWritesWhile(paused);
++    videoSocket.deferWritesWhile(paused);
+     socket.attachTcpDiagnostic(sensorTcpDiagnostic); videoSocket.attachTcpDiagnostic(cameraTcpDiagnostic);
+     startCameraPush();
+     http.on("/api/sensors/capture",HTTP_GET,capture);
+     http.on("/api/telemetry/stream",HTTP_GET,status);
+@@ -410,6 +424,6 @@
+     constexpr UBaseType_t sensorPriority = tskIDLE_PRIORITY + 2;
+     if (!sensorMailbox || xTaskCreate(sampleSensors, "sensor-sampling", 8192, nullptr, sensorPriority, nullptr) != pdPASS) return;
+     workerReady=xTaskCreate(worker,"rear-sensor-websocket",8192,nullptr,sensorPriority,nullptr)==pdPASS;
+ }
+-void pause(bool value) {paused=value;}
++void pause(bool value) {paused.store(value);}
+ } // namespace sensor_push
+--- a/src/camera_websocket.inc
++++ b/src/camera_websocket.inc
+@@ -77,9 +77,25 @@
+     videoSocket.onEvent(cameraEvent);
+     videoSocket.setReconnectInterval(1000);
+     videoSocket.enableHeartbeat(5000, 2000, 2);
+     bool wifi = false;
++    bool suspended = false;
+     for (;;) {
++        if (paused.load()) {
++            if (!suspended) {
++                videoSocket.disconnect();
++                nextCameraSession();
++            }
++            suspended = true;
++            CameraMessage discarded{};
++            if (xQueueReceive(cameraMailbox, &discarded, 0) == pdTRUE) heap_caps_free(discarded.buffer);
++            vTaskDelay(pdMS_TO_TICKS(2));
++            continue;
++        }
++        if (suspended) {
++            revision = UINT32_MAX;
++            suspended = false;
++        }
+         xSemaphoreTake(mutex, portMAX_DELAY);
+         const bool changed = revision != config.revision;
+         if (changed) route = config;
+         xSemaphoreGive(mutex);
