@@ -291,21 +291,39 @@ or evidence that the delivery gates pass.
 python3 prepare.py --output /absolute/new/rear-build
 pio run -d /absolute/new/rear-build -e esp32cam_s3_wroom_n16r8
 
-First installation must include the partition table. Subsequent updates use espota
-with the configured device hostname/IP and existing OTA password. Rebuild with
-upload_protocol=espota or pass --upload-protocol espota. Serial commands do not
-enable OTA or grant permission to reconfigure the front camera.
+The serial installation must include the two-slot partition table if the board
+does not already have it. On an existing rear camera, preserve its settings and
+partition table. Build a private serial image once to enroll a per-device key:
 
-For updates on a slow station link, run the verified uploader on the maintenance
-Mac or Linux host with the enrolled IPv4 address, receiver ID, prepared normal build directory
-and independently verified SHA-256 of the application:
+```sh
+umask 077
+openssl rand -hex 32 > /private/path/rear-ota.key
+python3 prepare.py --output /absolute/new/serial-build --ota-key-file /private/path/rear-ota.key --build
+```
 
-`python3 upload_ota.py HOST RECEIVER_ID BUILD_DIR IMAGE_SHA256`
+Keep the key and serial image on the maintenance host. The normal build has no
+embedded key and reads the existing enrollment from NVS. If first installing
+Wi-Fi credentials as well, use the same command with `--provisioning-json`.
 
-Supply the existing ArduinoOTA password in `REAR_OTA_PASSWORD`. For devices
-that require HTTP authentication, also supply `REAR_CAMERA_USER` and
-`REAR_CAMERA_PASSWORD` from the host enrollment. The uploader checks the physical
-identity before sending and maintains one transfer while the TCP socket is backpressured.
+For subsequent network updates, use the normal build and its checked image hash:
+
+```sh
+python3 upload_ota.py HOST RECEIVER_ID BUILD_DIR IMAGE_SHA256 --recovery-key-file /private/path/rear-ota.key
+```
+
+The maintenance endpoint on TCP 3233 runs independently from the camera web
+server. The uploader reads the board's boot challenge and authenticates a request
+to restart into OTA recovery. The recovery boot connects to the saved Wi-Fi and
+starts ArduinoOTA on UDP 3232. It skips camera, RTSP, LiDAR, IMU, and streaming
+startup. A failed transfer leaves the current boot slot intact and the listener
+available for another attempt. After five idle minutes the camera restarts into
+normal operation. The Mac must be able to receive ArduinoOTA's TCP connection
+back from the camera.
+
+For legacy rear firmware without an enrolled recovery key, omit
+`--recovery-key-file` and supply its ArduinoOTA password in `REAR_OTA_PASSWORD`.
+If that firmware requires HTTP authentication, use `REAR_CAMERA_USER` and
+`REAR_CAMERA_PASSWORD` from the existing host enrollment.
 
 Before inviting the board, it atomically saves a credential-free receipt containing the
 expected image SHA-256 and release, receiver identity, and original boot and partition.
@@ -466,6 +484,8 @@ and AP settings, saves them, and reboots once. The generated credential header
 is owner-readable; treat the factory binary as private and never publish it.
 Flash that image by USB, then upload the normal build over Wi-Fi using espota.
 Normal OTA images omit the factory seed and retain the saved network settings.
+For an isolated OTA recovery installation, use the same private provisioning
+build to enroll the recovery key with `--ota-key-file`.
 Version 1.0-rear.4 preserves the Wi-Fi driver profile on an authenticated
 camera restart. It allows ten seconds of inactivity per OTA receive attempt so
 brief wireless stalls can recover before the receiver gives up.

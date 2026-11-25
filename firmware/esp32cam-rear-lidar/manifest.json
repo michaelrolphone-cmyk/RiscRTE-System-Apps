@@ -118,7 +118,7 @@
     }
   ],
   "reused_transport_source": "e937be1c92288c1080a3b086522d09e768efbb93:firmware/esp32cam-rtsp-radio",
-  "transport_notes": "Rear-only front sensor push protocol; independent receiver identity; 15 dBm maximum request. Wi-Fi FTM initiator and responder disabled; both VL53L5CX heads retained. Actual Wi-Fi state is read back and conditionally enforced under shared provisioning ownership. Experimental rear JPEG socket uses the existing sensor CS5 / AC_VI priority; qualification required. Experimental rear-only write no-progress budget is four seconds; shared front default remains one second. Live qualification remains required.",
+  "transport_notes": "Rear-only front sensor push protocol; independent receiver identity; 15 dBm maximum request. Wi-Fi FTM initiator and responder disabled; both VL53L5CX heads retained. Actual Wi-Fi state is read back and conditionally enforced under shared provisioning ownership. Rear JPEG uses the front camera's best-effort class; the sensor socket retains CS5. Enrolled devices support authenticated OTA-only boots that skip media and sensors. Experimental rear-only write no-progress budget is four seconds; shared front default remains one second. Live qualification remains required.",
   "bno08x": {
     "module": "GY-BNO08x",
     "optional": true,

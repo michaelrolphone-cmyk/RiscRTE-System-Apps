@@ -125,6 +125,54 @@ class OtaReceiptTests(unittest.TestCase):
         self.receipt.write_text(json.dumps(receipt))
         return receipt
 
+    def test_recovery_requires_a_new_boot_in_the_same_slot_before_upload(self):
+        normal = dict(self.before, ota_mode="normal", boot_id="0" * 32)
+        recovery = dict(normal, ota_mode="recovery", boot_id="1" * 32)
+        other_slot = dict(recovery, running_partition="app0")
+        new_release = dict(recovery, firmware=self.release)
+        live = dict(self.after, ota_mode="normal", boot_id="2" * 32)
+        key = "a" * 64
+        client = mock.Mock()
+        client.getresponse.return_value.status = 202
+
+        def accepted(host, image, password):
+            self.assertEqual(self.clock.now, 3)
+            self.assertEqual(password, key)
+            self.assertTrue(json.loads(self.receipt.read_text())["recovery_mode"])
+
+        observations = [normal, normal, other_slot, new_release, recovery, live]
+        with mock.patch.object(upload_ota, "check_image", return_value=self.image), \
+                mock.patch.object(upload_ota, "board_state", side_effect=observations) as state, \
+                mock.patch.object(upload_ota.http.client, "HTTPConnection", return_value=client), \
+                mock.patch.object(upload_ota, "send_image", side_effect=accepted) as sender, \
+                mock.patch.object(upload_ota.time, "monotonic", self.clock.monotonic), \
+                mock.patch.object(upload_ota.time, "sleep", self.clock.sleep), \
+                redirect_stdout(io.StringIO()):
+            self.assertTrue(upload_ota.install(self.host, self.receiver, self.build, self.digest,
+                                               self.release, receipt_path=self.receipt, recovery_key=key))
+        self.assertTrue(all(call.kwargs == {"recovery": True} for call in state.call_args_list))
+        client.request.assert_called_once_with(
+            "POST", "/api/ota/recovery", headers={"X-Rear-OTA-Proof": mock.ANY})
+        sender.assert_called_once()
+        self.assertEqual(json.loads(self.receipt.read_text())["confirmed_observation"]["ota_mode"], "normal")
+        self.assertNotIn(key, self.receipt.read_text())
+
+    def test_invalid_maintenance_proof_leaves_transfer_unstarted(self):
+        normal = dict(self.before, ota_mode="normal", boot_id="0" * 32)
+        client = mock.Mock()
+        client.getresponse.return_value.status = 403
+        with mock.patch.object(upload_ota, "check_image", return_value=self.image), \
+                mock.patch.object(upload_ota, "board_state", return_value=normal), \
+                mock.patch.object(upload_ota.http.client, "HTTPConnection", return_value=client), \
+                mock.patch.object(upload_ota, "send_image") as sender, \
+                mock.patch.object(upload_ota.time, "monotonic", self.clock.monotonic), \
+                mock.patch.object(upload_ota.time, "sleep", self.clock.sleep), \
+                redirect_stdout(io.StringIO()):
+            self.assertFalse(upload_ota.install(self.host, self.receiver, self.build, self.digest,
+                                                self.release, receipt_path=self.receipt, recovery_key="a" * 64))
+        sender.assert_not_called()
+        self.assertEqual(json.loads(self.receipt.read_text())["transfer"], "not_started")
+
     def test_delayed_reachability_survives_process_reload_without_second_upload(self):
         observations = 0
 
