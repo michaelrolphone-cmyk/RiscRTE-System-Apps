@@ -6,6 +6,7 @@
 #include <Update.h>
 #include <WiFi.h>
 #include <esp_http_server.h>
+#include <esp_netif.h>
 #include <esp_ota_ops.h>
 #include <esp_system.h>
 #include <mbedtls/md.h>
@@ -151,7 +152,10 @@ bool begin(const char *hostname, const char *ssid, const char *wifiPassword) {
     snprintf(receiver, sizeof(receiver), "rear-%012llx",
              static_cast<unsigned long long>(ESP.getEfuseMac()));
     recoveryMode = requested && ssid && ssid[0];
-    startControlServer();
+    // The Arduino Wi-Fi driver is initialized later in a normal IotWebConf boot.
+    // Initialize lwIP before opening the independent maintenance socket.
+    if (esp_netif_init() == ESP_OK) startControlServer();
+    else log_e("Rear OTA network stack initialization failed");
     if (!recoveryMode) return false;
 
     WiFi.persistent(false);
