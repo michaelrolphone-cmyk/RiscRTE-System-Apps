@@ -4,10 +4,9 @@
          if (type == WStype_CONNECTED) ++cameraConnections;
          else if (videoConnected.load()) ++cameraDisconnects;
          else ++cameraDialFailures;
--        videoSocket.transportChanged(false);
-+        // Rear-only experiment: use the sensor socket's existing CS5 / AC_VI
-+        // class for JPEG traffic. Disconnect still only invalidates transport.
-+        videoSocket.transportChanged(type == WStype_CONNECTED);
++        // Match the front camera's best-effort JPEG stream. Keep the
++        // dedicated rear sensor socket in its existing priority class.
+         videoSocket.transportChanged(false);
 +#if LIVE_WEBSOCKET_TCP_DIAGNOSTIC
 +        videoSocket.diagnosticTransportChanged(type == WStype_CONNECTED);
 +#endif

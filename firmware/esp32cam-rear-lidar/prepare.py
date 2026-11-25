@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parent
 UPSTREAM="14057dde6b2c81e7a1d06c6d7740a1b4f130b8b7"
 def main():
- p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--build',action='store_true');p.add_argument('--provisioning-json',type=Path,help='Private one-time factory Wi-Fi settings; never publish the generated image');a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--build',action='store_true');p.add_argument('--ota-key-file',type=Path,help='Private 64-digit hex OTA enrollment key for the one-time USB image');p.add_argument('--provisioning-json',type=Path,help='Private one-time factory Wi-Fi settings; never publish the generated image');a=p.parse_args()
  out=a.output.expanduser().absolute()
  source=ROOT.parents[1]
  manifest=json.loads((ROOT/'manifest.json').read_text())
@@ -44,7 +44,8 @@ def main():
  settings=out/'include/settings.h';s=settings.read_text()
  import re
  s=re.sub(r'#define APP_TITLE .*','#define APP_TITLE "ROVER-REAR-CAMERA"',s)
- s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "1.0-rear.17"',s)
+ version=manifest['variant']+('-factory' if a.provisioning_json else '-usb' if a.ota_key_file else '')
+ s=re.sub(r'#define APP_VERSION .*','#define APP_VERSION "'+version+'"',s)
  for name,value in (('DEFAULT_FRAME_SIZE','"HD (1280x720)"'),('DEFAULT_FRAME_DURATION','200')):
   s,count=re.subn(r'^#define '+name+r' .+$','#define '+name+' '+value,s,flags=re.M)
   if count!=1:raise ValueError('Unexpected camera setting definition: '+name)
@@ -61,6 +62,12 @@ def main():
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'camera-main.patch')],cwd=out,check=True)
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'camera-websocket.patch')],cwd=out,check=True)
  subprocess.run(['git','apply','--whitespace=nowarn',str(ROOT/'live-write-progress.patch')],cwd=out,check=True)
+ if a.ota_key_file:
+  key=a.ota_key_file.expanduser().read_text().strip()
+  if not re.fullmatch(r'[a-f0-9]{64}',key):raise ValueError('OTA key must be 64 lowercase hex digits')
+  header=out/'include/rear_ota_seed.h'
+  header.touch(mode=0o600)
+  header.write_text('#pragma once\n#define REAR_OTA_SEED "'+key+'"\n')
  if a.provisioning_json:
   secret=json.loads(a.provisioning_json.expanduser().read_text())
   ssid=secret.get('ssid');password=secret.get('password')
@@ -90,7 +97,6 @@ def main():
   }
 ''')
   main.write_text(text)
-  settings.write_text(settings.read_text().replace('"1.0-rear.17"','"1.0-rear.17-factory"'))
 
  shutil.copyfile(ROOT/'patch_bno_library.py',out/'patch_bno_library.py')
  shutil.copyfile(ROOT/'patch_lidar_library.py',out/'patch_lidar_library.py')

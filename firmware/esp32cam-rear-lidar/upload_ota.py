@@ -6,6 +6,7 @@ from contextlib import contextmanager
 import fcntl
 from datetime import datetime, timezone
 import hashlib
+import hmac
 import http.client
 import ipaddress
 import json
@@ -65,13 +66,16 @@ def transfer_image(connection, image, *, idle_timeout=90, total_timeout=900, pro
             reported = last_progress
 
 
-def board_state(host, expected_receiver):
+RECOVERY_PORT = 3233
+
+
+def board_state(host, expected_receiver, *, recovery=False):
     headers = {}
     user = os.environ.get("REAR_CAMERA_USER")
-    if user:
+    if user and not recovery:
         credentials = f"{user}:{os.environ['REAR_CAMERA_PASSWORD']}".encode()
         headers["Authorization"] = "Basic " + base64.b64encode(credentials).decode("ascii")
-    client = http.client.HTTPConnection(host, timeout=8)
+    client = http.client.HTTPConnection(host, RECOVERY_PORT if recovery else 80, timeout=8)
     try:
         client.request("GET", "/api/rear", headers=headers)
         response = client.getresponse()
@@ -89,7 +93,42 @@ def board_state(host, expected_receiver):
             or not isinstance(state.get("boot_id"), str) or not state["boot_id"]
             or state.get("ota_supported") is not True):
         raise ValueError("Physical rear identity, partition or OTA availability did not match")
+    if recovery and (state.get("ota_mode") not in ("normal", "recovery")
+                     or len(state["boot_id"]) != 32
+                     or any(value not in "0123456789abcdef" for value in state["boot_id"])):
+        raise ValueError("Rear maintenance identity is invalid")
     return state
+
+
+def enter_recovery(host, receiver, before, key):
+    if before["ota_mode"] == "recovery":
+        return before
+    message = f"rear-ota-enter-v1:{receiver}:{before['boot_id']}".encode()
+    proof = hmac.new(key.encode(), message, hashlib.sha256).hexdigest()
+    client = http.client.HTTPConnection(host, RECOVERY_PORT, timeout=8)
+    try:
+        client.request("POST", "/api/ota/recovery", headers={"X-Rear-OTA-Proof": proof})
+        if client.getresponse().status != 202:
+            raise RuntimeError("Rear camera refused OTA recovery")
+    except (OSError, http.client.RemoteDisconnected):
+        # A reboot can cut the HTTP response short. Check the requested boot directly.
+        pass
+    finally:
+        client.close()
+    deadline = time.monotonic() + 60
+    while time.monotonic() < deadline:
+        try:
+            state = board_state(host, receiver, recovery=True)
+        except (OSError, http.client.HTTPException):
+            time.sleep(1)
+            continue
+        if (state["ota_mode"] == "recovery" and state["boot_id"] != before["boot_id"]
+                and state["running_partition"] == before["running_partition"]
+                and state["firmware"] == before["firmware"]):
+            print("Verified OTA-only boot", receiver, state["boot_id"], flush=True)
+            return state
+        time.sleep(1)
+    raise TimeoutError("Rear camera did not boot into OTA recovery")
 
 
 def invite(remote, listener, password, image):
@@ -119,9 +158,8 @@ def invite(remote, listener, password, image):
 
 def _snapshot(state):
     """Retain identity fields only, never arbitrary endpoint data or credentials."""
-    return {key: state[key] for key in (
-        "receiver_id", "camera_id", "firmware", "boot_id", "running_partition", "ota_supported"
-    )}
+    fields = ("receiver_id", "camera_id", "firmware", "boot_id", "running_partition", "ota_supported")
+    return {key: state[key] for key in (*fields, "ota_mode") if key in state}
 
 
 def _timestamp():
@@ -188,6 +226,7 @@ def _confirmed(receipt, state):
         and isinstance(state.get("boot_id"), str) and bool(state["boot_id"])
         and state["boot_id"] != before["boot_id"]
         and state.get("running_partition") == receipt["expected_partition"]
+        and (not receipt.get("recovery_mode") or state.get("ota_mode") == "normal")
     )
 
 
@@ -198,7 +237,8 @@ def _load_receipt(path):
     before = receipt.get("before", {})
     digest = receipt.get("image_sha256", "")
     if (
-        not isinstance(before, dict)
+        type(receipt.get("recovery_mode", False)) is not bool
+        or not isinstance(before, dict)
         or before.get("receiver_id") != receipt.get("receiver_id")
         or before.get("camera_id") != "rear" or before.get("ota_supported") is not True
         or not isinstance(before.get("firmware"), str) or not before["firmware"]
@@ -252,7 +292,10 @@ def _verify_receipt(path, *, timeout=90):
         # when the preceding observation window confirmed the image.
         _save_receipt(path, receipt)
         try:
-            current = board_state(receipt["host"], receipt["receiver_id"])
+            if receipt.get("recovery_mode"):
+                current = board_state(receipt["host"], receipt["receiver_id"], recovery=True)
+            else:
+                current = board_state(receipt["host"], receipt["receiver_id"])
             receipt["observation"] = _snapshot(current)
             receipt.pop("last_check_error_type", None)
             if _confirmed(receipt, current):
@@ -296,7 +339,7 @@ def send_image(host, image, password):
                            print("Submitted", n, "of", total, flush=True))
 
 
-def install(host, receiver, build, expected_digest, release, *, receipt_path=None):
+def install(host, receiver, build, expected_digest, release, *, receipt_path=None, recovery_key=None):
     image = check_image(build, release)
     if hashlib.sha256(image).hexdigest() != expected_digest:
         raise ValueError("Build does not match the expected image SHA-256")
@@ -304,17 +347,18 @@ def install(host, receiver, build, expected_digest, release, *, receipt_path=Non
         Path(build) / "ota-receipts" / f"{receiver}-{expected_digest}.json"
     )
     with _receipt_lock(path):
-        return _install_attempt(host, receiver, image, expected_digest, release, path)
+        return _install_attempt(host, receiver, image, expected_digest, release, path, recovery_key=recovery_key)
 
 
-def _install_attempt(host, receiver, image, expected_digest, release, path):
+def _install_attempt(host, receiver, image, expected_digest, release, path, *, recovery_key=None):
     if path.exists():
         raise RuntimeError("OTA receipt already exists; no upload attempted. Resume with: "
                            + _resume_command(path))
     deadline = time.monotonic() + 60
     while True:
         try:
-            before = board_state(host, receiver)
+            before = (board_state(host, receiver, recovery=True) if recovery_key
+                      else board_state(host, receiver))
             break
         except (OSError, http.client.HTTPException):
             if time.monotonic() >= deadline:
@@ -323,7 +367,7 @@ def _install_attempt(host, receiver, image, expected_digest, release, path):
     if before.get("firmware") == release:
         print("Board already reports", release, before["running_partition"], before["boot_id"])
         return True
-    password = os.environ["REAR_OTA_PASSWORD"]
+    password = recovery_key or os.environ["REAR_OTA_PASSWORD"]
     receipt = {
         "schema": 1, "host": host, "receiver_id": receiver,
         "expected_release": release, "image_sha256": expected_digest, "image_bytes": len(image),
@@ -332,18 +376,23 @@ def _install_attempt(host, receiver, image, expected_digest, release, path):
         "transfer": "not_started", "boot_confirmation": "pending",
         "verification_status": "pending", "created_at": _timestamp(),
     }
+    if recovery_key:
+        receipt["recovery_mode"] = True
     # Commit the baseline before even inviting the board. A process interruption
     # after this point must be reconciled with --verify-only, never replayed.
     _save_receipt(path, receipt, create=True)
     print("OTA receipt:", path.resolve(), flush=True)
-    receipt["transfer"] = "in_progress"
-    _save_receipt(path, receipt)
     try:
+        if recovery_key:
+            enter_recovery(host, receiver, before, recovery_key)
+        receipt["transfer"] = "in_progress"
+        _save_receipt(path, receipt)
         send_image(host, image, password)
     except (OSError, RuntimeError, ValueError) as error:
         # A final reply can be lost as the board reboots. Keep its transfer outcome
         # separate from the identity/version/new-boot/alternate-slot witness.
-        receipt["transfer"] = "outcome_unknown"
+        if receipt["transfer"] == "in_progress":
+            receipt["transfer"] = "outcome_unknown"
         receipt["transfer_error_type"] = type(error).__name__
         print("Transfer outcome unknown:", type(error).__name__, str(error), flush=True)
     else:
@@ -359,21 +408,27 @@ def main(argv=None):
     parser.add_argument("receiver", nargs="?", help="Enrolled rear receiver ID")
     parser.add_argument("build", nargs="?", type=Path, help="Prepared and compiled normal build directory")
     parser.add_argument("sha256", nargs="?", help="Expected SHA-256 of the compiled OTA application")
+    parser.add_argument("--recovery-key-file", type=Path, help="Private key enrolled on this rear camera")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--receipt", type=Path, help="New receipt path for this upload attempt")
     mode.add_argument("--verify-only", type=Path, metavar="RECEIPT",
                       help="Resume physical boot observation; never invite or upload")
     args = parser.parse_args(argv)
     if args.verify_only:
-        if any(value is not None for value in (args.host, args.receiver, args.build, args.sha256)):
+        if any(value is not None for value in (args.host, args.receiver, args.build, args.sha256, args.recovery_key_file)):
             parser.error("--verify-only takes only a saved receipt, without upload arguments")
         confirmed = verify_receipt(args.verify_only)
     else:
         if any(value is None for value in (args.host, args.receiver, args.build, args.sha256)):
             parser.error("upload requires HOST RECEIVER_ID BUILD_DIR IMAGE_SHA256")
         version = json.loads(Path(__file__).with_name("manifest.json").read_text())["variant"]
+        recovery_key = None
+        if args.recovery_key_file:
+            recovery_key = args.recovery_key_file.read_text().strip()
+            if len(recovery_key) != 64 or any(value not in "0123456789abcdef" for value in recovery_key):
+                parser.error("Recovery key must be 64 lowercase hex digits")
         confirmed = install(str(args.host), args.receiver, args.build, args.sha256, version,
-                            receipt_path=args.receipt)
+                            receipt_path=args.receipt, recovery_key=recovery_key)
     return 0 if confirmed else 3
 
 

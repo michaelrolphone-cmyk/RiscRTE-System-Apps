@@ -1,21 +1,25 @@
 --- a/src/main.cpp
 +++ b/src/main.cpp
-@@ -1,3 +1,6 @@
+@@ -1,2 +1,6 @@
++#include "rear_ota_recovery.h"
 +#include "rear_ranging.h"
 +#include "sensor_push.h"
 +#include <Preferences.h>
  #include <Arduino.h>
  #include <esp_wifi.h>
- #include <soc/rtc_cntl_reg.h>
-@@ -321,6 +324,5 @@
- void handle_restart()
+@@ -92,4 +96,5 @@
+ // Camera initialization result (ESP_FAIL until the camera is initialized)
+ esp_err_t camera_init_result = ESP_FAIL;
++static bool otaRecoveryMode = false;
+
+ void handle_root()
+@@ -322,5 +327,4 @@
  {
    log_v("handle_restart");
 -  WiFi.disconnect(false, true);
    ESP.restart();
  }
-@@ -460,5 +462,8 @@
-   // Network OTA via the espota protocol (port 3232), which allows PlatformIO / Arduino IDE to push new firmware over WiFi.
+@@ -461,4 +465,7 @@
    ArduinoOTA.setHostname(thingName.c_str());
    ArduinoOTA.setPassword(OTA_PASSWORD);
 +  // The receiver sees multi-second gaps on the rear radio. Keep an update
@@ -23,9 +27,7 @@
 +  ArduinoOTA.setTimeout(10000);
    ArduinoOTA
        .onStart([]()
-@@ -589,12 +594,25 @@
-   param_group_auth.addItem(&param_auth_pass);
-   iotWebConf.addParameterGroup(&param_group_auth);
+@@ -588,10 +595,28 @@
 
    iotWebConf.getApTimeoutParameter()->visible = true;
 -  iotWebConf.setConfigSavedCallback(on_config_saved);
@@ -35,6 +37,11 @@
  #endif
 -  iotWebConf.init();
 +  const bool savedConfigLoaded = iotWebConf.init();
++  otaRecoveryMode = rear_ota_recovery::begin(thingName.c_str(),
++      iotWebConf.getWifiSsidParameter()->valueBuffer,
++      iotWebConf.getWifiPasswordParameter()->valueBuffer);
++  if (otaRecoveryMode) return;
++
 +  Preferences cameraProfile;
 +  if (savedConfigLoaded && cameraProfile.begin("rear-camera", false)) {
 +    if (!cameraProfile.getBool("profile-v1", false)) {
@@ -51,18 +58,28 @@
 +  iotWebConf.setConfigSavedCallback(on_config_saved);
 
    // Set the time servers
-@@ -658,9 +676,13 @@
+@@ -653,13 +678,21 @@
+   web_server.on("/api/capture",HTTP_GET,[](){if(is_authenticated())handle_synchronized_capture();});
+   // Start the ArduinoOTA (espota) service for network firmware uploads.
+-  setup_ota();
++  if (!rear_ota_recovery::enrolled()) setup_ota();
+ }
+
  void loop()
  {
 -  iotWebConf.doLoop();
++  if (otaRecoveryMode) {
++    rear_ota_recovery::service();
++    return;
++  }
 +  if (rear_ranging::beginNetworkLoop()) {
 +    iotWebConf.doLoop();
 +    rear_ranging::endNetworkLoop();
 +  }
    rtsp_server.loop();
-   ArduinoOTA.handle();
+-  ArduinoOTA.handle();
++  if (!rear_ota_recovery::enrolled()) ArduinoOTA.handle();
    radio_telemetry::loop();
 +  if (camera_init_result == ESP_OK && !Update.isRunning()) sensor_push::offerCamera(param_frame_duration.value());
- 
+
    // OTA diagnostics: once an update is running, log progress + heap so the
-   // serial monitor shows whether the firmware stream is actually arriving.
