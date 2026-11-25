@@ -128,19 +128,17 @@ class OtaReceiptTests(unittest.TestCase):
     def test_recovery_requires_a_new_boot_in_the_same_slot_before_upload(self):
         normal = dict(self.before, ota_mode="normal", boot_id="0" * 32)
         recovery = dict(normal, ota_mode="recovery", boot_id="1" * 32)
-        other_slot = dict(recovery, running_partition="app0")
-        new_release = dict(recovery, firmware=self.release)
         live = dict(self.after, ota_mode="normal", boot_id="2" * 32)
         key = "a" * 64
         client = mock.Mock()
         client.getresponse.return_value.status = 202
 
         def accepted(host, image, password):
-            self.assertEqual(self.clock.now, 3)
+            self.assertEqual(self.clock.now, 1)
             self.assertEqual(password, key)
             self.assertTrue(json.loads(self.receipt.read_text())["recovery_mode"])
 
-        observations = [normal, normal, other_slot, new_release, recovery, live]
+        observations = [normal, normal, recovery, live]
         with mock.patch.object(upload_ota, "check_image", return_value=self.image), \
                 mock.patch.object(upload_ota, "board_state", side_effect=observations) as state, \
                 mock.patch.object(upload_ota, "udp_control", side_effect=TimeoutError), \
@@ -157,6 +155,27 @@ class OtaReceiptTests(unittest.TestCase):
         sender.assert_called_once()
         self.assertEqual(json.loads(self.receipt.read_text())["confirmed_observation"]["ota_mode"], "normal")
         self.assertNotIn(key, self.receipt.read_text())
+
+    def test_recovery_rejects_an_unexpected_active_partition(self):
+        active = dict(self.before, ota_mode="normal", boot_id="0" * 32)
+        wrong = dict(active, ota_mode="recovery", boot_id="1" * 32, running_partition="app0")
+        with mock.patch.object(upload_ota, "_request_recovery", return_value=202), \
+                mock.patch.object(upload_ota, "board_state", return_value=wrong):
+            with self.assertRaisesRegex(RuntimeError, "partition changed"):
+                upload_ota.enter_recovery(self.host, self.receiver, active, "a" * 64)
+
+    def test_udp_recovery_does_not_need_a_tcp_control_connection(self):
+        active = dict(self.before, ota_mode="normal", boot_id="0" * 32)
+        recovery = dict(active, ota_mode="recovery", boot_id="1" * 32)
+        with mock.patch.object(upload_ota, "udp_control", return_value=b"accepted") as datagram, \
+                mock.patch.object(upload_ota, "board_state", return_value=recovery), \
+                mock.patch.object(upload_ota.http.client, "HTTPConnection") as tcp, \
+                redirect_stdout(io.StringIO()):
+            self.assertEqual(upload_ota.enter_recovery(self.host, self.receiver, active, "a" * 64),
+                             recovery)
+        datagram.assert_called_once()
+        self.assertTrue(datagram.call_args.args[1].startswith(b"rear-ota-enter-v1 "))
+        tcp.assert_not_called()
 
     def test_invalid_maintenance_proof_leaves_transfer_unstarted(self):
         normal = dict(self.before, ota_mode="normal", boot_id="0" * 32)

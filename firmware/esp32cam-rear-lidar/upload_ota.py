@@ -23,7 +23,7 @@ import time
 from check_ota_image import check_image
 
 
-def transfer_image(connection, image, *, idle_timeout=90, total_timeout=900, progress=None):
+def transfer_image(connection, image, *, idle_timeout=90, total_timeout=None, progress=None):
     """Advance only by bytes accepted by send(), while draining the ESP's ACKs."""
     connection.setblocking(False)
     data = memoryview(image)
@@ -32,7 +32,10 @@ def transfer_image(connection, image, *, idle_timeout=90, total_timeout=900, pro
     started = last_progress = reported = time.monotonic()
     while True:
         now = time.monotonic()
-        remaining = min(last_progress + idle_timeout, started + total_timeout) - now
+        deadline = last_progress + idle_timeout
+        if total_timeout is not None:
+            deadline = min(deadline, started + total_timeout)
+        remaining = deadline - now
         if remaining <= 0:
             raise TimeoutError(f"No final ArduinoOTA reply after submitting {sent}/{len(data)} bytes")
         readable, writable, _ = select.select(
@@ -123,38 +126,50 @@ def board_state(host, expected_receiver, *, recovery=False):
     return state
 
 
+def _request_recovery(host, receiver, state, key):
+    message = f"rear-ota-enter-v1:{receiver}:{state['boot_id']}".encode()
+    proof = hmac.new(key.encode(), message, hashlib.sha256).hexdigest()
+    try:
+        if udp_control(host, b"rear-ota-enter-v1 " + proof.encode()) == b"accepted":
+            return 202
+    except OSError:
+        pass
+    client = http.client.HTTPConnection(host, RECOVERY_PORT, timeout=8)
+    try:
+        client.request("POST", "/api/ota/recovery", headers={"X-Rear-OTA-Proof": proof})
+        return client.getresponse().status
+    except (OSError, http.client.RemoteDisconnected):
+        # The restart can interrupt the reply. Reconcile with the board before retrying.
+        return None
+    finally:
+        client.close()
+
+
 def enter_recovery(host, receiver, before, key):
     if before["ota_mode"] == "recovery":
         return before
-    message = f"rear-ota-enter-v1:{receiver}:{before['boot_id']}".encode()
-    proof = hmac.new(key.encode(), message, hashlib.sha256).hexdigest()
-    try:
-        accepted = udp_control(host, b"rear-ota-enter-v1 " + proof.encode()) == b"accepted"
-    except OSError:
-        accepted = False
-    if not accepted:
-        client = http.client.HTTPConnection(host, RECOVERY_PORT, timeout=8)
-        try:
-            client.request("POST", "/api/ota/recovery", headers={"X-Rear-OTA-Proof": proof})
-            if client.getresponse().status != 202:
-                raise RuntimeError("Rear camera refused OTA recovery")
-        except (OSError, http.client.RemoteDisconnected):
-            # A reboot can cut the response short. Check the requested boot directly.
-            pass
-        finally:
-            client.close()
-    deadline = time.monotonic() + 60
+    deadline = time.monotonic() + 90
+    last_normal = before
+    reply = None
     while time.monotonic() < deadline:
+        if reply != 202:
+            reply = _request_recovery(host, receiver, last_normal, key)
         try:
             state = board_state(host, receiver, recovery=True)
         except (OSError, http.client.HTTPException):
             time.sleep(1)
             continue
-        if (state["ota_mode"] == "recovery" and state["boot_id"] != before["boot_id"]
-                and state["running_partition"] == before["running_partition"]
-                and state["firmware"] == before["firmware"]):
+        if (state["running_partition"] != before["running_partition"]
+                or state["firmware"] != before["firmware"]):
+            raise RuntimeError("Rear firmware or partition changed during the recovery request")
+        if state["ota_mode"] == "recovery" and state["boot_id"] != before["boot_id"]:
             print("Verified OTA-only boot", receiver, state["boot_id"], flush=True)
             return state
+        if reply in (403, 409) and state["boot_id"] == last_normal["boot_id"]:
+            raise RuntimeError(f"Rear camera refused OTA recovery ({reply})")
+        if state["ota_mode"] == "normal" and state["boot_id"] != last_normal["boot_id"]:
+            last_normal = state
+            reply = None
         time.sleep(1)
     raise TimeoutError("Rear camera did not boot into OTA recovery")
 
@@ -412,7 +427,8 @@ def _install_attempt(host, receiver, image, expected_digest, release, path, *, r
     print("OTA receipt:", path.resolve(), flush=True)
     try:
         if recovery_key:
-            enter_recovery(host, receiver, before, recovery_key)
+            recovery = enter_recovery(host, receiver, before, recovery_key)
+            receipt["recovery_observation"] = _snapshot(recovery)
         receipt["transfer"] = "in_progress"
         _save_receipt(path, receipt)
         send_image(host, image, password)
