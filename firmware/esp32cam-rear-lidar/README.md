@@ -311,9 +311,10 @@ For subsequent network updates, use the normal build and its checked image hash:
 python3 upload_ota.py HOST RECEIVER_ID BUILD_DIR IMAGE_SHA256 --recovery-key-file /private/path/rear-ota.key
 ```
 
-The maintenance endpoint on TCP 3233 runs independently from the camera web
-server. The uploader reads the board's boot challenge and authenticates a request
-to restart into OTA recovery. The recovery boot connects to the saved Wi-Fi and
+The maintenance endpoints on UDP and TCP 3233 run independently from the camera
+web server. The uploader reads the board's boot challenge and authenticates a
+request to restart into OTA recovery. It tries UDP first so a stalled TCP
+connection can still leave a path to trigger recovery. The recovery boot connects to the saved Wi-Fi and
 starts ArduinoOTA on UDP 3232. It skips camera, RTSP, LiDAR, IMU, and streaming
 startup. A failed transfer leaves the current boot slot intact and the listener
 available for another attempt. After five idle minutes the camera restarts into

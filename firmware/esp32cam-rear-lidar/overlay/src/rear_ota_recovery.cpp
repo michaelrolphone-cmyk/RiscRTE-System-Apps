@@ -10,6 +10,9 @@
 #include <esp_ota_ops.h>
 #include <esp_system.h>
 #include <mbedtls/md.h>
+#include <atomic>
+#include <lwip/sockets.h>
+#include <unistd.h>
 #include <settings.h>
 
 #if __has_include("rear_ota_seed.h")
@@ -30,6 +33,7 @@ char receiver[18]{};
 bool recoveryMode = false;
 bool listenerStarted = false;
 uint32_t lastActivity = 0;
+std::atomic<bool> restartQueued{false};
 httpd_handle_t server = nullptr;
 
 void hexEncode(char *out, const unsigned char *bytes, size_t size) {
@@ -41,56 +45,118 @@ void hexEncode(char *out, const unsigned char *bytes, size_t size) {
     out[size * 2] = '\0';
 }
 
-esp_err_t status(httpd_req_t *req) {
+void formatStatus(char *json, size_t capacity) {
     const auto *running = esp_ota_get_running_partition();
-    char json[352];
-    snprintf(json, sizeof(json),
+    snprintf(json, capacity,
              "{\"receiver_id\":\"%s\",\"camera_id\":\"rear\",\"firmware\":\"%s\","
              "\"boot_id\":\"%s\",\"running_partition\":\"%s\",\"ota_supported\":%s,"
              "\"ota_mode\":\"%s\"}",
              receiver, APP_VERSION, bootId, running ? running->label : "unknown",
              esp_ota_get_next_update_partition(nullptr) ? "true" : "false",
              recoveryMode ? "recovery" : "normal");
+}
+
+esp_err_t status(httpd_req_t *req) {
+    char json[352];
+    formatStatus(json, sizeof(json));
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store");
     return httpd_resp_sendstr(req, json);
 }
 
-esp_err_t enter(httpd_req_t *req) {
-    char provided[65]{};
+bool validProof(const char *provided) {
     unsigned char mac[32];
     char expected[65];
     char message[96];
     snprintf(message, sizeof(message), "rear-ota-enter-v1:%s:%s", receiver, bootId);
-    if (req->content_len != 0 ||
-        httpd_req_get_hdr_value_str(req, "X-Rear-OTA-Proof", provided, sizeof(provided)) != ESP_OK ||
-        strlen(provided) != sizeof(provided) - 1 ||
+    if (strlen(provided) != sizeof(expected) - 1 ||
         mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA256),
                         reinterpret_cast<const unsigned char *>(secret), strlen(secret),
-                        reinterpret_cast<const unsigned char *>(message), strlen(message), mac) != 0) {
-        httpd_resp_set_status(req, "403 Forbidden");
-        return httpd_resp_sendstr(req, "Invalid maintenance proof");
-    }
+                        reinterpret_cast<const unsigned char *>(message), strlen(message), mac) != 0)
+        return false;
     hexEncode(expected, mac, sizeof(mac));
     unsigned char difference = 0;
     for (size_t i = 0; i < sizeof(expected) - 1; ++i)
         difference |= expected[i] ^ provided[i];
-    if (difference) {
+    return difference == 0;
+}
+
+bool queueRecoveryRestart() {
+    if (recoveryMode || restartQueued.exchange(true)) return false;
+    requestedMode = recoveryRequest;
+    requestedModeCheck = ~recoveryRequest;
+    return true;
+}
+
+void restartAfterReply() {
+    delay(150);
+    ESP.restart();
+}
+
+esp_err_t enter(httpd_req_t *req) {
+    char provided[65]{};
+    if (req->content_len != 0 ||
+        httpd_req_get_hdr_value_str(req, "X-Rear-OTA-Proof", provided, sizeof(provided)) != ESP_OK ||
+        !validProof(provided)) {
         httpd_resp_set_status(req, "403 Forbidden");
         return httpd_resp_sendstr(req, "Invalid maintenance proof");
     }
-    if (recoveryMode) return httpd_resp_sendstr(req, "OTA recovery already active");
     if (!esp_ota_get_next_update_partition(nullptr)) {
         httpd_resp_set_status(req, "409 Conflict");
         return httpd_resp_sendstr(req, "OTA partition unavailable");
     }
-    requestedMode = recoveryRequest;
-    requestedModeCheck = ~recoveryRequest;
+    const bool restart = queueRecoveryRestart();
     httpd_resp_set_status(req, "202 Accepted");
-    httpd_resp_sendstr(req, "Restarting into OTA recovery");
-    delay(150);
-    ESP.restart();
-    return ESP_OK;
+    const esp_err_t sent = httpd_resp_sendstr(req, "OTA recovery requested");
+    if (restart) restartAfterReply();
+    return sent;
+}
+
+void listenForDatagrams(void *) {
+    const int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (fd < 0) {
+        log_e("Rear OTA UDP socket could not be opened");
+        vTaskDelete(nullptr);
+        return;
+    }
+    sockaddr_in local{};
+    local.sin_family = AF_INET;
+    local.sin_port = htons(port);
+    local.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (bind(fd, reinterpret_cast<const sockaddr *>(&local), sizeof(local)) != 0) {
+        log_e("Rear OTA UDP socket could not be bound");
+        close(fd);
+        vTaskDelete(nullptr);
+        return;
+    }
+    for (;;) {
+        char packet[96]{};
+        sockaddr_in from{};
+        socklen_t length = sizeof(from);
+        const int count = recvfrom(fd, packet, sizeof(packet) - 1, 0,
+                                   reinterpret_cast<sockaddr *>(&from), &length);
+        if (count <= 0) {
+            delay(10);
+            continue;
+        }
+        constexpr char statusRequest[] = "rear-ota-status-v1";
+        constexpr char enterPrefix[] = "rear-ota-enter-v1 ";
+        char response[352]{};
+        bool restart = false;
+        if (count == sizeof(statusRequest) - 1 && strcmp(packet, statusRequest) == 0) {
+            formatStatus(response, sizeof(response));
+        } else if (count == sizeof(enterPrefix) - 1 + 64 &&
+                   strncmp(packet, enterPrefix, sizeof(enterPrefix) - 1) == 0 &&
+                   validProof(packet + sizeof(enterPrefix) - 1) &&
+                   esp_ota_get_next_update_partition(nullptr)) {
+            restart = queueRecoveryRestart();
+            strlcpy(response, "accepted", sizeof(response));
+        }
+        if (response[0])
+            sendto(fd, response, strlen(response), 0,
+                   reinterpret_cast<const sockaddr *>(&from), length);
+        if (restart) restartAfterReply();
+    }
 }
 
 void startControlServer() {
@@ -154,8 +220,12 @@ bool begin(const char *hostname, const char *ssid, const char *wifiPassword) {
     recoveryMode = requested && ssid && ssid[0];
     // The Arduino Wi-Fi driver is initialized later in a normal IotWebConf boot.
     // Initialize lwIP before opening the independent maintenance socket.
-    if (esp_netif_init() == ESP_OK) startControlServer();
-    else log_e("Rear OTA network stack initialization failed");
+    if (esp_netif_init() == ESP_OK) {
+        startControlServer();
+        if (xTaskCreate(listenForDatagrams, "rear-ota-control", 4096, nullptr,
+                        tskIDLE_PRIORITY + 2, nullptr) != pdPASS)
+            log_e("Rear OTA UDP task could not be started");
+    } else log_e("Rear OTA network stack initialization failed");
     if (!recoveryMode) return false;
 
     WiFi.persistent(false);

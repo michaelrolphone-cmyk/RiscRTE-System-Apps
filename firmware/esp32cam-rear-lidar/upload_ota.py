@@ -69,7 +69,20 @@ def transfer_image(connection, image, *, idle_timeout=90, total_timeout=900, pro
 RECOVERY_PORT = 3233
 
 
-def board_state(host, expected_receiver, *, recovery=False):
+def udp_control(host, message):
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as transport:
+        transport.connect((host, RECOVERY_PORT))
+        transport.settimeout(1)
+        for attempt in range(3):
+            transport.send(message)
+            try:
+                return transport.recv(512)
+            except TimeoutError:
+                if attempt == 2:
+                    raise
+
+
+def _http_state(host, recovery):
     headers = {}
     user = os.environ.get("REAR_CAMERA_USER")
     if user and not recovery:
@@ -83,9 +96,19 @@ def board_state(host, expected_receiver, *, recovery=False):
             raise OSError(f"Rear identity check returned HTTP {response.status}")
         if response.status != 200:
             raise RuntimeError(f"Rear identity check returned HTTP {response.status}")
-        state = json.loads(response.read(131072))
+        return json.loads(response.read(131072))
     finally:
         client.close()
+
+
+def board_state(host, expected_receiver, *, recovery=False):
+    if recovery:
+        try:
+            state = json.loads(udp_control(host, b"rear-ota-status-v1"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            state = _http_state(host, recovery)
+    else:
+        state = _http_state(host, recovery)
     if (not isinstance(state, dict)
             or state.get("receiver_id") != expected_receiver or state.get("camera_id") != "rear"
             or state.get("running_partition") not in ("app0", "app1")
@@ -105,16 +128,21 @@ def enter_recovery(host, receiver, before, key):
         return before
     message = f"rear-ota-enter-v1:{receiver}:{before['boot_id']}".encode()
     proof = hmac.new(key.encode(), message, hashlib.sha256).hexdigest()
-    client = http.client.HTTPConnection(host, RECOVERY_PORT, timeout=8)
     try:
-        client.request("POST", "/api/ota/recovery", headers={"X-Rear-OTA-Proof": proof})
-        if client.getresponse().status != 202:
-            raise RuntimeError("Rear camera refused OTA recovery")
-    except (OSError, http.client.RemoteDisconnected):
-        # A reboot can cut the HTTP response short. Check the requested boot directly.
-        pass
-    finally:
-        client.close()
+        accepted = udp_control(host, b"rear-ota-enter-v1 " + proof.encode()) == b"accepted"
+    except OSError:
+        accepted = False
+    if not accepted:
+        client = http.client.HTTPConnection(host, RECOVERY_PORT, timeout=8)
+        try:
+            client.request("POST", "/api/ota/recovery", headers={"X-Rear-OTA-Proof": proof})
+            if client.getresponse().status != 202:
+                raise RuntimeError("Rear camera refused OTA recovery")
+        except (OSError, http.client.RemoteDisconnected):
+            # A reboot can cut the response short. Check the requested boot directly.
+            pass
+        finally:
+            client.close()
     deadline = time.monotonic() + 60
     while time.monotonic() < deadline:
         try:

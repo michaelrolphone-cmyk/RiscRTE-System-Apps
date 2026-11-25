@@ -143,6 +143,7 @@ class OtaReceiptTests(unittest.TestCase):
         observations = [normal, normal, other_slot, new_release, recovery, live]
         with mock.patch.object(upload_ota, "check_image", return_value=self.image), \
                 mock.patch.object(upload_ota, "board_state", side_effect=observations) as state, \
+                mock.patch.object(upload_ota, "udp_control", side_effect=TimeoutError), \
                 mock.patch.object(upload_ota.http.client, "HTTPConnection", return_value=client), \
                 mock.patch.object(upload_ota, "send_image", side_effect=accepted) as sender, \
                 mock.patch.object(upload_ota.time, "monotonic", self.clock.monotonic), \
@@ -163,6 +164,7 @@ class OtaReceiptTests(unittest.TestCase):
         client.getresponse.return_value.status = 403
         with mock.patch.object(upload_ota, "check_image", return_value=self.image), \
                 mock.patch.object(upload_ota, "board_state", return_value=normal), \
+                mock.patch.object(upload_ota, "udp_control", side_effect=TimeoutError), \
                 mock.patch.object(upload_ota.http.client, "HTTPConnection", return_value=client), \
                 mock.patch.object(upload_ota, "send_image") as sender, \
                 mock.patch.object(upload_ota.time, "monotonic", self.clock.monotonic), \
