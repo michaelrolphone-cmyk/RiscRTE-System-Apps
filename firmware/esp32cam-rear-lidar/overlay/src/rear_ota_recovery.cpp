@@ -9,6 +9,7 @@
 #include <esp_netif.h>
 #include <esp_ota_ops.h>
 #include <esp_system.h>
+#include <esp_wifi.h>
 #include <mbedtls/md.h>
 #include <atomic>
 #include <lwip/sockets.h>
@@ -254,6 +255,10 @@ bool enrolled() { return secret[0] != '\0'; }
 void service() {
     if (WiFi.status() == WL_CONNECTED) {
         if (!listenerStarted) {
+            // Set the driver state after association, even if Arduino's
+            // cached setting already says modem sleep is disabled.
+            if (esp_wifi_set_ps(WIFI_PS_NONE) != ESP_OK)
+                log_w("Rear OTA could not disable Wi-Fi modem sleep");
             ArduinoOTA.begin();
             listenerStarted = true;
         }
