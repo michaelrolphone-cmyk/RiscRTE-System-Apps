@@ -71,12 +71,13 @@ def transfer_image(connection, image, *, idle_timeout=90, total_timeout=None, pr
 
 
 RECOVERY_PORT = 3233
+RECOVERY_BOOT_TIMEOUT = 180
 
 
 def udp_control(host, message):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as transport:
         transport.connect((host, RECOVERY_PORT))
-        transport.settimeout(1)
+        transport.settimeout(2.5)
         for attempt in range(3):
             transport.send(message)
             try:
@@ -149,7 +150,8 @@ def _request_recovery(host, receiver, state, key):
 def enter_recovery(host, receiver, before, key):
     if before["ota_mode"] == "recovery":
         return before
-    deadline = time.monotonic() + 90
+    # A successful restart can take longer to observe over the rear station link.
+    deadline = time.monotonic() + RECOVERY_BOOT_TIMEOUT
     last_normal = before
     reply = None
     while time.monotonic() < deadline:
