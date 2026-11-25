@@ -339,7 +339,11 @@ def _install_attempt(host, receiver, image, expected_digest, release, path):
     receipt["transfer"] = "in_progress"
     _save_receipt(path, receipt)
     try:
-        send_image(host, image, password)
+        if before["firmware"] == "1.0-rear.20":
+            from resumable_transport import send_resumable_image
+            send_resumable_image(host, image, password)
+        else:
+            send_image(host, image, password)
     except (OSError, RuntimeError, ValueError) as error:
         # A final reply can be lost as the board reboots. Keep its transfer outcome
         # separate from the identity/version/new-boot/alternate-slot witness.

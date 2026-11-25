@@ -1,0 +1,149 @@
+--- a/src/RearArduinoOTA.cpp
++++ b/src/RearArduinoOTA.cpp
+@@ -3,7 +3,7 @@
+ #endif
+ #include <functional>
+ #include <WiFiUdp.h>
+-#include "ArduinoOTA.h"
++#include "RearArduinoOTA.h"
+ #include "ESPmDNS.h"
+ #include "MD5Builder.h"
+ #include "Update.h"
+@@ -173,11 +173,17 @@
+ void ArduinoOTAClass::_onRx(){
+     if (_state == OTA_IDLE) {
+         int cmd = parseInt();
+-        if (cmd != U_FLASH && cmd != U_SPIFFS)
+-            return;
+-        _cmd  = cmd;
++        constexpr int resumeFlash = 101;
++        if (cmd != U_FLASH && cmd != U_SPIFFS && cmd != resumeFlash)
++            return;
++        _resumable = cmd == resumeFlash;
++        if (_resumable && !_password.length())
++            return;
++        _cmd = _resumable ? U_FLASH : cmd;
+         _ota_port = parseInt();
+         _size = parseInt();
++        if (_resumable && (_ota_port < 1 || _ota_port > 65535 || _size <= 0))
++            return;
+         _udp_ota.read();
+         _md5 = readStringUntil('\n');
+         _md5.trim();
+@@ -266,6 +272,11 @@
+         _progress_callback(0, _size);
+     }
+ 
++    if (_resumable) {
++        _runResumableUpdate();
++        return;
++    }
++
+     WiFiClient client;
+     if (!client.connect(_ota_ip, _ota_port)) {
+         if (_error_callback) {
+@@ -362,6 +373,86 @@
+     }
+ }
+ 
++
++// This lane preserves the authenticated Update handle across TCP drops. The
++// callback advertises only the position written by the ESP, including its own
++// flash-sector buffer, so neither a lost TCP ACK nor a reconnect replays data.
++void ArduinoOTAClass::_runResumableUpdate() {
++    constexpr uint32_t sessionIdleMs = 120000;
++    constexpr uint32_t connectionIdleMs = 20000;
++    const auto imageSize = static_cast<uint32_t>(_size);
++    uint32_t offset = 0;
++    uint32_t lastWrite = millis();
++    uint8_t buffer[1460];
++    while (millis() - lastWrite < sessionIdleMs) {
++        WiFiClient client;
++        if (!client.connect(_ota_ip, _ota_port, 2000)) {
++            delay(250);
++            continue;
++        }
++        client.setNoDelay(true);
++        if (!client.printf("RESUME %u\n", offset)) {
++            client.stop();
++            delay(250);
++            continue;
++        }
++        const uint32_t connectedAt = millis();
++        const uint32_t startingOffset = offset;
++        while (offset < imageSize) {
++            int length = client.available();
++            if (length <= 0) {
++                const uint32_t start = offset == startingOffset ? connectedAt : lastWrite;
++                if (!client.connected() || millis() - start >= connectionIdleMs ||
++                    millis() - lastWrite >= sessionIdleMs)
++                    break;
++                delay(2);
++                continue;
++            }
++            if (static_cast<size_t>(length) > sizeof(buffer))
++                length = sizeof(buffer);
++            if (static_cast<uint32_t>(length) > imageSize - offset)
++                length = imageSize - offset;
++            const int count = client.read(buffer, length);
++            if (count <= 0)
++                break;
++            const size_t written = Update.write(buffer, count);
++            if (written != static_cast<size_t>(count)) {
++                Update.abort();
++                client.stop();
++                if (_error_callback)
++                    _error_callback(OTA_RECEIVE_ERROR);
++                return;
++            }
++            offset += written;
++            lastWrite = millis();
++            if (_progress_callback)
++                _progress_callback(offset, imageSize);
++        }
++        if (offset == imageSize) {
++            if (!Update.end()) {
++                client.stop();
++                if (_error_callback)
++                    _error_callback(OTA_END_ERROR);
++                return;
++            }
++            client.print("OK\n");
++            client.stop();
++            if (_end_callback)
++                _end_callback();
++            if (_rebootOnSuccess) {
++                delay(110);
++                ESP.restart();
++            }
++            return;
++        }
++        client.stop();
++        delay(250);
++    }
++    Update.abort();
++    if (_error_callback)
++        _error_callback(OTA_RECEIVE_ERROR);
++}
++
+ void ArduinoOTAClass::end() {
+     _initialized = false;
+     _udp_ota.stop();
+--- a/include/RearArduinoOTA.h
++++ b/include/RearArduinoOTA.h
+@@ -95,6 +95,7 @@
+     int _cmd;
+     int _ota_port;
+     int _ota_timeout;
++    bool _resumable = false;
+     IPAddress _ota_ip;
+     String _md5;
+ 
+@@ -104,6 +105,7 @@
+     THandlerFunction_Progress _progress_callback;
+ 
+     void _runUpdate(void);
++    void _runResumableUpdate(void);
+     void _onRx(void);
+     int parseInt(void);
+     String readStringUntil(char end);

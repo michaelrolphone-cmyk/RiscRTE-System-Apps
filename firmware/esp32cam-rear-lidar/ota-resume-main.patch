@@ -1,0 +1,28 @@
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -9,7 +9,7 @@
+ #include <esp_random.h>
+ #include <IotWebConfTParameter.h>
+ #include <ESPmDNS.h>
+-#include <ArduinoOTA.h>
++#include "RearArduinoOTA.h"
+ #include <Update.h>
+ #include <esp_ota_ops.h>
+ #include <lookup_camera_effect.h>
+@@ -483,7 +483,15 @@
+       .onEnd([]()
+              { log_w("OTA update finished"); })
+       .onProgress([](unsigned int progress, unsigned int total)
+-                  { log_i("OTA progress: %u%%", (progress * 100) / total); })
++                  {
++      static unsigned lastPercent = 0;
++      if (progress == 0) lastPercent = 0;
++      if (!total) return;
++      const unsigned percent = (progress * 100u) / total;
++      if (percent >= lastPercent + 5u || percent == 100u) {
++        lastPercent = percent;
++        log_i("OTA progress: %u%%", percent);
++      } })
+       .onError([](ota_error_t error)
+                {
+       switch (error)
