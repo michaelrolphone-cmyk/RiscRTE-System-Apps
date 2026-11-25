@@ -311,15 +311,17 @@ For subsequent network updates, use the normal build and its checked image hash:
 python3 upload_ota.py HOST RECEIVER_ID BUILD_DIR IMAGE_SHA256 --recovery-key-file /private/path/rear-ota.key
 ```
 
-The maintenance endpoints on UDP and TCP 3233 run independently from the camera
-web server. The uploader reads the board's boot challenge and authenticates a
-request to restart into OTA recovery. It tries UDP first so a stalled TCP
-connection can still leave a path to trigger recovery. The recovery boot connects to the saved Wi-Fi and
-starts ArduinoOTA on UDP 3232. It skips camera, RTSP, LiDAR, IMU, and streaming
-startup. A failed transfer leaves the current boot slot intact and the listener
-available for another attempt. After five idle minutes the camera restarts into
-normal operation. The Mac must be able to receive ArduinoOTA's TCP connection
-back from the camera.
+The uploader sends an authenticated reboot request to the independent maintenance
+service on UDP or TCP 3233. The recovery boot uses the saved Wi-Fi credentials
+and skips camera, RTSP, LiDAR, IMU, and streaming startup.
+
+Rear.23 and later transfer the image in authenticated blocks over UDP 3233.
+The receiver acknowledges committed blocks and reports which blocks it has
+buffered. The uploader retries only missing blocks. The camera checks the whole
+image SHA-256 before selecting it as the next boot slot. Five minutes without
+valid update traffic returns the camera to normal operation on its current slot.
+The uploader retains ArduinoOTA on UDP 3232 for earlier recovery builds and
+requires the TCP callback for those builds.
 
 For legacy rear firmware without an enrolled recovery key, omit
 `--recovery-key-file` and supply its ArduinoOTA password in `REAR_OTA_PASSWORD`.
@@ -335,13 +337,13 @@ expires leaves confirmation pending and exits with code 3, with a command to res
 
 `python3 upload_ota.py --verify-only /absolute/saved-receipt.json`
 
-This mode reads the original receipt and observes HTTP identity only. It sends no OTA
+This mode reads the original receipt and observes device identity. It sends no OTA
 invitation or image, needs no `REAR_OTA_PASSWORD`, and can run after the original process
 exits; a retained receipt also works after the build directory is removed. HTTP
 credentials are still needed if configured.
 Confirmation requires the expected receiver and release, a changed boot ID, and the
 originally expected alternate partition. The image digest was checked before upload and
-is retained in the receipt; the HTTP endpoint does not provide a running-image hash.
+is retained in the receipt; the status endpoint does not provide a running-image hash.
 
 An existing receipt prevents an upload replay, including after an interrupted process.
 A nonblocking process lock serializes upload and verification of the same receipt;

@@ -1,4 +1,5 @@
 #include "rear_ota_recovery.h"
+#include "rear_ota_datagrams.h"
 
 #include <Arduino.h>
 #include <ArduinoOTA.h>
@@ -33,7 +34,8 @@ char bootId[33]{};
 char receiver[18]{};
 bool recoveryMode = false;
 bool listenerStarted = false;
-uint32_t lastActivity = 0;
+std::atomic<uint32_t> lastActivity{0};
+SemaphoreHandle_t updateLock = nullptr;
 std::atomic<bool> restartQueued{false};
 httpd_handle_t server = nullptr;
 
@@ -51,10 +53,11 @@ void formatStatus(char *json, size_t capacity) {
     snprintf(json, capacity,
              "{\"receiver_id\":\"%s\",\"camera_id\":\"rear\",\"firmware\":\"%s\","
              "\"boot_id\":\"%s\",\"running_partition\":\"%s\",\"ota_supported\":%s,"
-             "\"ota_mode\":\"%s\"}",
+             "\"ota_mode\":\"%s\",\"ota_datagrams\":%s}",
              receiver, APP_VERSION, bootId, running ? running->label : "unknown",
              esp_ota_get_next_update_partition(nullptr) ? "true" : "false",
-             recoveryMode ? "recovery" : "normal");
+             recoveryMode ? "recovery" : "normal",
+             (!recoveryMode || updateLock) ? "true" : "false");
 }
 
 esp_err_t status(httpd_req_t *req) {
@@ -131,13 +134,29 @@ void listenForDatagrams(void *) {
         return;
     }
     for (;;) {
-        char packet[96]{};
+        char packet[rear_ota_datagrams::maxRequest + 1]{};
         sockaddr_in from{};
         socklen_t length = sizeof(from);
         const int count = recvfrom(fd, packet, sizeof(packet) - 1, 0,
                                    reinterpret_cast<sockaddr *>(&from), &length);
         if (count <= 0) {
             delay(10);
+            continue;
+        }
+        if (recoveryMode && count >= 4 && memcmp(packet, "ROT2", 4) == 0) {
+            uint8_t reply[rear_ota_datagrams::maxReply];
+            bool keepAwake = false;
+            bool reboot = false;
+            if (updateLock && xSemaphoreTake(updateLock, 0) == pdTRUE) {
+                const size_t replySize = rear_ota_datagrams::handle(
+                    reinterpret_cast<const uint8_t *>(packet), count, secret, bootId,
+                    reply, keepAwake, reboot);
+                if (keepAwake) lastActivity = millis();
+                xSemaphoreGive(updateLock);
+                if (replySize)
+                    sendto(fd, reply, replySize, 0, reinterpret_cast<const sockaddr *>(&from), length);
+                if (reboot) restartAfterReply();
+            }
             continue;
         }
         constexpr char statusRequest[] = "rear-ota-status-v1";
@@ -221,9 +240,10 @@ bool begin(const char *hostname, const char *ssid, const char *wifiPassword) {
     recoveryMode = requested && ssid && ssid[0];
     // The Arduino Wi-Fi driver is initialized later in a normal IotWebConf boot.
     // Initialize lwIP before opening the independent maintenance socket.
+    if (recoveryMode) updateLock = xSemaphoreCreateMutex();
     if (esp_netif_init() == ESP_OK) {
         startControlServer();
-        if (xTaskCreate(listenForDatagrams, "rear-ota-control", 4096, nullptr,
+        if (xTaskCreate(listenForDatagrams, "rear-ota-control", recoveryMode ? 8192 : 4096, nullptr,
                         tskIDLE_PRIORITY + 2, nullptr) != pdPASS)
             log_e("Rear OTA UDP task could not be started");
     } else log_e("Rear OTA network stack initialization failed");
@@ -262,12 +282,15 @@ void service() {
             ArduinoOTA.begin();
             listenerStarted = true;
         }
-        ArduinoOTA.handle();
+        if (!updateLock || xSemaphoreTake(updateLock, 0) == pdTRUE) {
+            if (!rear_ota_datagrams::active()) ArduinoOTA.handle();
+            if (updateLock) xSemaphoreGive(updateLock);
+        }
     } else if (listenerStarted) {
         ArduinoOTA.end();
         listenerStarted = false;
     }
-    if (millis() - lastActivity >= idleWindowMs) ESP.restart();
+    if (millis() - lastActivity.load() >= idleWindowMs) ESP.restart();
     delay(2);
 }
 }

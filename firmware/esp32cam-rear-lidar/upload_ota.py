@@ -21,6 +21,7 @@ import tempfile
 import time
 
 from check_ota_image import check_image
+import rear_udp_ota
 
 
 def transfer_image(connection, image, *, idle_timeout=90, total_timeout=None, progress=None):
@@ -426,12 +427,19 @@ def _install_attempt(host, receiver, image, expected_digest, release, path, *, r
     _save_receipt(path, receipt, create=True)
     print("OTA receipt:", path.resolve(), flush=True)
     try:
+        recovery = None
         if recovery_key:
             recovery = enter_recovery(host, receiver, before, recovery_key)
             receipt["recovery_observation"] = _snapshot(recovery)
         receipt["transfer"] = "in_progress"
+        use_datagrams = recovery and recovery.get("ota_datagrams") is True
+        receipt["transfer_protocol"] = "authenticated_udp_blocks" if use_datagrams else "arduinoota"
         _save_receipt(path, receipt)
-        send_image(host, image, password)
+        if use_datagrams:
+            rear_udp_ota.send_image(host, image, password, recovery["boot_id"],
+                                    progress=lambda n, total: print("Flashed", n, "of", total, flush=True))
+        else:
+            send_image(host, image, password)
     except (OSError, RuntimeError, ValueError) as error:
         # A final reply can be lost as the board reboots. Keep its transfer outcome
         # separate from the identity/version/new-boot/alternate-slot witness.

@@ -1,5 +1,7 @@
 from contextlib import closing, redirect_stdout
 import hashlib
+import hmac
+import struct
 import importlib.util
 import io
 import json
@@ -7,6 +9,7 @@ from pathlib import Path
 import tempfile
 from unittest import mock
 
+import rear_udp_ota
 import upload_ota
 import os
 import socket
@@ -409,6 +412,52 @@ class OtaReceiptTests(unittest.TestCase):
         self.assertEqual(saved["boot_confirmation"], "confirmed")
         self.assertEqual(saved["confirmed_observation"]["boot_id"], "after-boot")
         self.assertEqual(saved["before"]["boot_id"], "before-boot")
+
+
+class ResumableDatagramTests(unittest.TestCase):
+    def test_retries_only_missing_blocks_and_rejects_stale_commit_reply(self):
+        image = os.urandom(3500)
+        key = b"a" * 64
+        nonce = b"b" * 32
+        responses = []
+        received = {}
+        attempts = []
+        request = mock.Mock()
+
+        def send(packet):
+            body, proof = packet[:-32], packet[-32:]
+            self.assertEqual(hmac.digest(key, nonce + body, "sha256"), proof)
+            operation = body[4]
+            index = None
+            if operation == rear_udp_ota.BLOCK:
+                index = struct.unpack("!I", body[21:25])[0]
+                attempts.append(index)
+                if index != 0 or attempts.count(index) > 1:
+                    received[index] = body[25:]
+                return
+            base = next((i for i in range(4) if i not in received), 4)
+            bitmap = sum(1 << (i - base) for i in received if i >= base)
+            if operation == rear_udp_ota.BEGIN:
+                self.assertEqual(body[21:], struct.pack("!I", len(image)) + hashlib.sha256(image).digest())
+            elif operation == rear_udp_ota.COMMIT:
+                self.assertEqual(b"".join(received[i] for i in range(4)), image)
+            header = body[:4] + bytes((rear_udp_ota.REPLY,)) + body[5:21]
+
+            def reply(op):
+                ack = header + bytes((op,)) + struct.pack("!BII", 0, base, bitmap)
+                return ack + hmac.digest(key, nonce + ack, "sha256")
+
+            if operation == rear_udp_ota.COMMIT:
+                responses.append(reply(rear_udp_ota.STATUS))
+            responses.append(reply(operation))
+
+        request.send.side_effect = send
+        request.recv.side_effect = lambda _: responses.pop(0)
+        progress = mock.Mock()
+        rear_udp_ota.Transfer(request, image, key.decode(), nonce.decode()).run(progress, 1)
+        self.assertEqual(attempts, [0, 1, 2, 3, 0])
+        self.assertEqual(responses, [])
+        progress.assert_called_once_with(len(image), len(image))
 
 
 if __name__ == "__main__":

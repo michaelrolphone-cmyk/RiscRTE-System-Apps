@@ -14,6 +14,8 @@ def check_image(build_dir, release, factory=False):
         raise ValueError(f"Missing ESP application header or rear version {version}")
     if b"rear-ota-enter-v1 \0" not in image or b"rear-ota-status-v1\0" not in image:
         raise ValueError("The image is missing the rear OTA recovery control paths")
+    if b'"ota_datagrams":' not in image:
+        raise ValueError("The image is missing resumable rear OTA support")
     # Arduino's upload image ends with its ESP image SHA-256, enabled by the
     # hash-appended flag in the extended image header.
     if image[23] != 1 or hashlib.sha256(image[:-32]).digest() != image[-32:]:
