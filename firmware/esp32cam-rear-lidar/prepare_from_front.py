@@ -22,6 +22,7 @@ FRONT = "1970ddf516ad548173c29f1e37ce4d8899eb274c"
 FRONT_PATH = "firmware/esp32cam-rtsp-radio"
 BOARD = "esp32cam_s3_wroom_n16r8"
 VERSION = "1.0-rear.34-front-base"
+REAR_VIDEO_PRIORITY_VERSION = "1.0-rear.35-front-cs5"
 
 
 def replace(text, old, new):
@@ -113,11 +114,11 @@ def install_rear_modules(output):
     ])
 
 
-def configure(output):
+def configure(output, version):
     settings = output / "include/settings.h"
     values = {
         "APP_TITLE": '"ROVER-REAR-CAMERA"',
-        "APP_VERSION": json.dumps(VERSION),
+        "APP_VERSION": json.dumps(version),
         "WIFI_SSID": '"Rover-Rear-Camera"',
         "DEFAULT_FRAME_SIZE": '"HD (1280x720)"',
         "DEFAULT_FRAME_DURATION": "200",
@@ -191,18 +192,26 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--build", action="store_true")
+    parser.add_argument("--rear-video-priority", action="store_true",
+                        help="Apply the existing rear CS5 traffic class to camera traffic")
     args = parser.parse_args()
     output = args.output.expanduser().resolve()
     materialize_front(output)
     install_rear_modules(output)
-    configure(output)
+    version = REAR_VIDEO_PRIORITY_VERSION if args.rear_video_priority else VERSION
+    configure(output, version)
     use_uart_console(output)
+    if args.rear_video_priority:
+        edit(output / "src/camera_websocket.inc", [
+            ("videoSocket.transportChanged(false);",
+             "videoSocket.transportChanged(type == WStype_CONNECTED);"),
+        ])
     if args.build:
         subprocess.run(["pio", "pkg", "install", "-d", output, "-e", BOARD], check=True)
         patch_bno_library(output)
         patch_lidar_library(output)
         subprocess.run(["pio", "run", "-d", output, "-e", BOARD], check=True)
-        check_image(output, VERSION)
+        check_image(output, version)
 
 
 if __name__ == "__main__":
