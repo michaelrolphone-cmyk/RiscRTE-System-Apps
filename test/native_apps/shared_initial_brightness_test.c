@@ -74,7 +74,12 @@ int main(int argc,char**argv){
  test_display.acquire=test_frame;
 #endif
  fx_runtime.acquire=test_acquire;
- assert(app_module_init()==0&&!test_sets&&!test_completes&&!retained);assert(!alarm_output_modes());
+ assert(app_module_init()==0&&!test_sets&&!test_completes&&!retained);
+#if defined(BRIGHTNESS_BASELINE) || !defined(ALARM_SERVICE_TAGGED_V2)
+ assert(!alarm_output_modes());
+#else
+ assert(!portable_alarm_output_modes(&alarms));
+#endif
  unsigned expected=test_saved;
  if(!strcmp(name,"preview-before")||!strcmp(name,"torch-before")){
   bool changed=false;test_user_action=true;

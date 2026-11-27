@@ -2,8 +2,12 @@
 """Rasterize typography already used by NOVA; never copy browser simulation."""
 from pathlib import Path
 from PIL import ImageFont
-import hashlib,json
+import hashlib,json,argparse
 R=Path(__file__).resolve().parents[1];F=R/'Services/scene_host/fonts'
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--output',type=Path,default=F/'telemetry.inc')
+parser.add_argument('--metadata-output',type=Path,default=F/'TELEMETRY-SOURCES.json')
+args=parser.parse_args()
 roles=[(12,'Orbitron-900.ttf'),(7,'Orbitron-700.ttf'),(6.5,'Orbitron-700.ttf'),(52,'Orbitron-900.ttf'),(17,'Orbitron-900.ttf'),(8,'Rajdhani-700.ttf'),(40,'Orbitron-900.ttf'),(13,'Orbitron-900.ttf'),(11,'Rajdhani-700.ttf'),(11,'Orbitron-900.ttf')]
 lines=['/* NOVA telemetry glyphs; generated; SIL OFL-1.1. */'];meta=[]
 for scale in (1,2):
@@ -18,4 +22,4 @@ for scale in (1,2):
    g.append('{%d,%d,%d,%d,%d,%s}'%(w,h,*off,round(font.getlength(text)*64),sym))
   lines+=['static const pc_glyph '+name+'_glyphs[]={'+','.join(g)+'};','static const pc_font '+name+'={'+name+'_glyphs,NULL,0};']
   meta.append(dict(role=role,size=round(sz*scale),source=file,sha256=hashlib.sha256((F/file).read_bytes()).hexdigest()))
-(F/'telemetry.inc').write_text('\n'.join(lines)+'\n');(F/'TELEMETRY-SOURCES.json').write_text(json.dumps(meta,indent=2)+'\n')
+args.output.write_text('\n'.join(lines)+'\n');args.metadata_output.write_text(json.dumps(meta,indent=2)+'\n')

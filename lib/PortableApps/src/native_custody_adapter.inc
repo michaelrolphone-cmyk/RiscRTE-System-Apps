@@ -16,10 +16,13 @@ void portable_adapter_touch_issue(const char *operation,int status,int terminal)
 }
 #endif
 /* One Runtime fence shared by all opt-in X4 paper controllers. */
-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_FOREGROUND_IDLE)
 static void portable_adapter_retain_inner(bool log) {
 #else
 void portable_adapter_retain(void) {
+#endif
+#ifdef PORTABLE_LAST_ATTEMPT_CHECKPOINT
+  portable_last_attempt_stop();
 #endif
   if(!native_custody_retained) {
 #ifdef PORTABLE_FILE_SETUP
@@ -27,7 +30,7 @@ void portable_adapter_retain(void) {
      * providers. The retention barrier itself remains the terminal action. */
     if(!file_setup_io_allowed())log=false;
 #endif
-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_FOREGROUND_IDLE)
     if(log)
 #endif
     portable_stage_log(native_custody_runtime,"app-retain","reason=uncertain-capability-custody");
@@ -41,7 +44,7 @@ void portable_adapter_retain(void) {
   native_sleep_retained=true;
 #endif
 }
-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_FOREGROUND_IDLE)
 void portable_adapter_retain(void) {
 #if defined(PORTABLE_DISPLAY_SETTLED) && defined(PORTABLE_RESIDENT_SHELL_HOST) && defined(PORTABLE_RESIDENT_POLICY)
  portable_adapter_retain_inner(!resident_sleep_present);
@@ -253,12 +256,26 @@ static bool custody_release(risc_runtime_capability_v1 *grant) {
   }
   *grant=released;if(slot)slot->live=false;return true;
 }
+#ifdef RISC_RUNTIME_MONOTONIC_V1_SIZE
+static bool custody_monotonic(uint32_t *out) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return false;
+#endif
+  if(native_custody_retained)return false;
+  uint32_t value;
+  if(!out || !native_custody_runtime ||
+     native_custody_runtime->struct_size<RISC_RUNTIME_MONOTONIC_V1_SIZE ||
+     !native_custody_runtime->monotonic_ms)return false;
+  if(!PORTABLE_ATTEMPT_BOOL("runtime.custody-monotonic",native_custody_runtime->monotonic_ms(&value))){portable_adapter_retain();return false;}
+  *out=value;return true;
+}
+#endif
 static bool custody_health(risc_runtime_health_v1 *out) {
 #ifdef PORTABLE_FILE_SETUP
   if(!file_setup_io_allowed())return false;
 #endif
   if(native_custody_retained)return false;
-  if(!native_custody_runtime->health(out)){portable_adapter_retain();return false;}
+  if(!PORTABLE_ATTEMPT_BOOL("runtime.custody-health",native_custody_runtime->health(out))){portable_adapter_retain();return false;}
   return true;
 }
 static void custody_yield(uint32_t delay) {

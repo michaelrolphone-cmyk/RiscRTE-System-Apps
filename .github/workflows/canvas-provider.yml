@@ -1,0 +1,38 @@
+name: Canvas provider
+on:
+  pull_request:
+    paths: ['Services/canvas_host/**', 'sdk/app/RiscCanvasV1.h', 'test/canvas_provider/**', 'test/canvas_runtime/**', 'scripts/test_canvas_runtime.py', 'scripts/test_canvas_provider.py', 'scripts/build_canvas_services.py', 'scripts/normalize_xtensa_relocations.py', '.github/workflows/canvas-provider.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 318d77283ba707b6f2820d2833e5d7ea3ff3f7e8
+          path: Runtime
+          persist-credentials: false
+      - run: python3 System/test/canvas_provider/test_linker_padding.py
+      - run: python3 System/scripts/test_canvas_provider.py --output evidence
+      - run: python3 System/scripts/test_canvas_runtime.py --runtime Runtime --output runtime-normal
+      - run: python3 System/scripts/test_canvas_runtime.py --runtime Runtime --output runtime-sanitized --sanitize
+      - run: |
+          python3 -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python3 System/scripts/build_canvas_services.py --runtime Runtime --output packages
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canvas-provider-${{ github.sha }}
+          path: |
+            evidence/
+            runtime-normal/
+            runtime-sanitized/
+            packages/

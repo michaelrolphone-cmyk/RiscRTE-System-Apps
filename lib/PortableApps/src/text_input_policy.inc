@@ -80,19 +80,27 @@ int portable_text_adapter_policy_prepare(uint32_t flags,bool *continuity) {
     return 0;
 #endif
 #else
-    bool sleep_due=false,battery_due=false;
+    bool sleep_due=false,battery_due=false,retry_due=false;
 #if defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_SLEEP_MANUAL_ONLY)
+#ifdef PORTABLE_FOREGROUND_IDLE
+    sleep_due=foreground_idle_due(now,true);
+    /* Read preferences only after the host is fully paused in apply, never
+     * while prepare merely observes its settled editor checkpoint. */
+    retry_due=foreground_idle_retry_due(now)&&foreground_idle_ready(true);
+    if(!text_input_alive())return text_input_failure();
+#else
     sleep_due=(uint32_t)(now-last_activity)>=portable_idle_ms()&&!idle_capture_active()
 #if defined(PORTABLE_FILE_BROWSER_APP) && defined(PORTABLE_FILE_SHARING)
         &&portable_file_browser_idle_ready()
 #endif
         ;
 #endif
+#endif
 #ifdef PORTABLE_LOW_BATTERY
     battery_due=!low_battery_sampled||(uint32_t)(now-low_battery_sampled_at)>=5000u;
 #endif
-    if(!sleep_due&&!battery_due)return 0;
-    *continuity=!sleep_due;return 1;
+    if(!sleep_due&&!battery_due&&!retry_due)return 0;
+    *continuity=!sleep_due&&!retry_due;return 1;
 #endif
 }
 int portable_text_adapter_policy_apply(bool continuity,uint32_t *resume_flags) {
@@ -141,11 +149,19 @@ int portable_text_adapter_policy_apply(bool continuity,uint32_t *resume_flags) {
     if(!low_battery_poll()||!text_input_alive())return text_input_failure();
 #endif
 #if defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_SLEEP_MANUAL_ONLY)
+#ifdef PORTABLE_FOREGROUND_IDLE
+    if(!continuity&&!foreground_idle_retry(millis_now(),true))return text_input_failure();
+#endif
     /* A routine battery sample cannot turn into sleep if time or preferences
      * changed since prepare. A fresh detached boundary handles it next time. */
-    if(!continuity&&(uint32_t)(millis_now()-last_activity)>=portable_idle_ms()&&!idle_capture_active()
+    if(!continuity
+#ifdef PORTABLE_FOREGROUND_IDLE
+       &&foreground_idle_due(millis_now(),true)
+#else
+       &&(uint32_t)(millis_now()-last_activity)>=portable_idle_ms()&&!idle_capture_active()
 #if defined(PORTABLE_FILE_BROWSER_APP) && defined(PORTABLE_FILE_SHARING)
        &&portable_file_browser_idle_ready()
+#endif
 #endif
        ) {
         if(!idle_sleep()||!text_input_alive())return text_input_failure();
