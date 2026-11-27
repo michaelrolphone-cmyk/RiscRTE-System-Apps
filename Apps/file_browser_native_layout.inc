@@ -13,6 +13,11 @@ static bool fb_layout_touch(int x,int y,int *out_x,int *out_y){
 static void fb_layout_text(unsigned f,int x,int y,int w,const char*s,uint32_t c){portable_nova_text(f,x,fb_layout_y(y),w,s,c);}
 static void fb_layout_button(int x,int y,int w,int h,const char*s,bool on){portable_nova_button(x,fb_layout_y(y),w,h,s,on);}
 static bool fb_layout_wrap(unsigned f,int x,int y,int w,int h,unsigned n,const char*s,uint32_t c){return portable_nova_wrap(f,x,fb_layout_y(y),w,h,n,s,c);}
+#ifdef PORTABLE_WATCH_SAFE_INSETS
+/* Keyboard action-row fills and their glyphs share the same footer transform. */
+static void fb_layout_fill(int x,int y,int w,int h,uint32_t c){portable_nova_fill(x,fb_layout_y(y),w,h,c);}
+#define portable_nova_fill fb_layout_fill
+#endif
 #define portable_nova_text fb_layout_text
 #define portable_nova_button fb_layout_button
 #define portable_nova_wrap fb_layout_wrap

@@ -1,0 +1,38 @@
+name: Home semantic presentation policy
+on:
+  pull_request:
+    paths: ['Services/home_presentation/**', 'sdk/app/RiscHomePresentationV1.h', 'lib/PortableApps/include/PortableHomeSelection.h', 'test/home_presentation/**', 'scripts/build_home_presentation.py', 'scripts/test_home_presentation.py', '.github/workflows/home-presentation-policy.yml']
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: System
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: a91edf3fada6a559ec107186dd163d0c8da10d29
+          path: Runtime
+          persist-credentials: false
+      - run: python3 System/scripts/test_home_presentation.py --output out/selection
+      - run: |
+          python3 -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python3 System/scripts/build_home_presentation.py --runtime Runtime --output out/packages
+      - name: Exact source receipts
+        if: always()
+        run: |
+          mkdir -p out/source
+          git -C System rev-parse HEAD > out/source/system.head
+          git -C Runtime rev-parse HEAD > out/source/runtime.head
+          git -C System archive HEAD | gzip -n > out/source/system.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-presentation-policy-${{ github.event.pull_request.head.sha }}
+          path: out/

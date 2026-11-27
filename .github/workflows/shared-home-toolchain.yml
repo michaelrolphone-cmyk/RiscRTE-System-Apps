@@ -1,0 +1,71 @@
+name: Shared Home common compiler
+on:
+  pull_request:
+    paths: ['scripts/qualify_home_toolchain.py', '.github/workflows/shared-home-toolchain.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: a91edf3fada6a559ec107186dd163d0c8da10d29
+          path: deps/runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: c98e4222048244b1e729869ed47aa99130025fd3
+          path: deps/reader
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: 6b7d1abe9b2dcc236f6086d07c0f619244c907cb
+          path: deps/x4
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: dcbad832cff91f7988a8e43d84725650b9815953
+          path: deps/utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 8f690e51b8c5f2a1756066879c40636469023639
+          path: deps/tooling
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact modern compiler and selected SDK
+        run: |
+          pip install pyelftools==0.32 Pillow==11.3.0
+          git -C deps/utilities fetch --no-tags --depth=1 origin e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d
+          bash deps/tooling/scripts/install_badge_catalog_toolchain.sh "$RUNNER_TEMP/home-toolchain"
+          echo "f556eb8b42ff8c0bb748243afa391a216b3482b7d3724e5c2aa6870952b76b74  $RUNNER_TEMP/home-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc" | sha256sum -c -
+      - name: Complete selected source, modern code generation, exact repeat
+        run: |
+          python scripts/qualify_home_toolchain.py --x4 deps/x4 --runtime deps/runtime --reader deps/reader --utilities deps/utilities --compiler "$RUNNER_TEMP/home-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc" --output qualification/toolchain
+      - name: Exact source archive
+        if: always()
+        run: |
+          mkdir -p qualification/source
+          git archive HEAD | gzip -n > qualification/source/system.tar.gz
+          for repo in runtime reader x4 utilities tooling; do git -C "deps/$repo" rev-parse HEAD > "qualification/source/$repo.head"; done
+          git rev-parse HEAD > qualification/source/system.head
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-common-compiler-${{ github.event.pull_request.head.sha || github.sha }}
+          path: qualification/
+          retention-days: 30

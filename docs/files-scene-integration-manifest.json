@@ -1,0 +1,216 @@
+{
+  "base": "eb4dd5306906d57e65f24f911d325bc87370666b",
+  "runtime": "0052d1fc42e9cfc82d626c5a247d460919c87935",
+  "utilities_integration": "e472fd66e64c71f10280514beaffd4f400a80773",
+  "preserved_background_patch_sha256": "da397d9ad7d6fb38c59f9901fb9a2ec48db522cbdbd1b1266dcd0ec7627ba538",
+  "files": {
+    "Apps/files_scene.c": {
+      "bytes": 13034,
+      "sha256": "7e85c99016137bce4f4f9c879879b8539756d84988091de586ae5cd0a566ed0c"
+    },
+    "Apps/files_scene_background.c": {
+      "bytes": 8271,
+      "sha256": "7cca031a041d45883b16cf45a05762ba1d82e1c73da7b9de7776f2debb56008d"
+    },
+    "Apps/files_scene_background.h": {
+      "bytes": 889,
+      "sha256": "cf2f4a79475c954765d86f82cb50dba8289cd15478310b679078c79449ac40c6"
+    },
+    "Apps/files_scene_domain.h": {
+      "bytes": 28057,
+      "sha256": "dcd25d3005f62f956474294da55ac84fa4de911be3934c4949d4ab4a57e3bea8"
+    },
+    "Apps/files_scene_effects.h": {
+      "bytes": 3276,
+      "sha256": "f349480fc57f02bafbaf244b04cf61a9b9efa0c1129231dca6c989d801242cb3"
+    },
+    "Apps/files_scene_handoff.inc": {
+      "bytes": 1590,
+      "sha256": "b6f1bf5bc7d96f014418ad394476ae5a3032606e872cc077373b03442767f0d3"
+    },
+    "Apps/files_scene_mount.inc": {
+      "bytes": 16907,
+      "sha256": "939d1f78e4099f8dc03d6d24f01487d3c9e3556acb8bdaf9bceaa846c04e8062"
+    },
+    "Apps/files_scene_operations.inc": {
+      "bytes": 25093,
+      "sha256": "bf7e8779b8a5b01626fc73ea76cbfab6d4aefa94ec20ab3b1e82e40fee98e375"
+    },
+    "Apps/files_scene_peer.inc": {
+      "bytes": 4443,
+      "sha256": "f0b2db1cbd6f4ed355f3df7cb1edb3f61175c318777e665be650f9cf54a20855"
+    },
+    "Apps/files_scene_presenter.inc": {
+      "bytes": 19420,
+      "sha256": "2760e01c2ca1c96a2d37ef5ca592406adafeca8e302ce89e3f6ffa304225aff5"
+    },
+    "Apps/files_scene_reset.inc": {
+      "bytes": 3380,
+      "sha256": "071a5d44ee9f073ace911c6ebcac6cf2bb02bf08351dfa33c5d8db2200993cb7"
+    },
+    "Apps/files_scene_resident.h": {
+      "bytes": 7545,
+      "sha256": "5620262f432cafc23e1ece42d9854afd6f4e3617a878a8f36942d685ba5e2c26"
+    },
+    "Apps/files_scene_setup.inc": {
+      "bytes": 8096,
+      "sha256": "1fc1c3cf9d99385a7126129355183b4cb005160b2ca90abd8522fca7f7b9a9f9"
+    },
+    "Apps/files_scene_shared_input.inc": {
+      "bytes": 5523,
+      "sha256": "483b41f25c789567eab40a837cca89e7df127b417ce0fdd7b058c58740d38a69"
+    },
+    "Apps/files_scene_sharing.inc": {
+      "bytes": 16565,
+      "sha256": "4d551fe107df06f8f24dfa335be86d6395415b16a3dfc0481554532a22770aab"
+    },
+    "Apps/files_scene_source.inc": {
+      "bytes": 15622,
+      "sha256": "badfc4f8a0e38d27e31e7877dca3cac369276528858a5b917e98b6ba15ede012"
+    },
+    "Apps/files_scene_text_bridge.inc": {
+      "bytes": 1904,
+      "sha256": "430bd24ac8b4ba81ac2e9ffe8ecbbf93252ccbd54fdf4c3156261960644082b8"
+    },
+    "Apps/files_scene_text_pending.h": {
+      "bytes": 6658,
+      "sha256": "73c4beea71d6b91e1f3eea779a1a2df1eb14a5521cac08a70291d50c833c5c52"
+    },
+    "Apps/files_scene_ui.h": {
+      "bytes": 6591,
+      "sha256": "61dfe0991e84ec04df4cc5728da789ed9eb13fc0cabf2e9b2bf14b2b0991751d"
+    },
+    "Apps/files_scene_workflow.inc": {
+      "bytes": 8504,
+      "sha256": "4983ae7d6a93b8f4cad37201bf3a8e1e40e8f8889c6b6e718dd6b01262b31862"
+    },
+    "docs/files-scene-cloud-status.md": {
+      "bytes": 3950,
+      "sha256": "5fefe0b53e261a665c923a806aa4b52664dacead330ac97d2fa9cab107b2d53f"
+    },
+    "docs/files-scene-extraction.json": {
+      "bytes": 2718,
+      "sha256": "13f1497b04044d7304bc8cd813c74812b416f3b15fad9cc867be1054b2b9193f"
+    },
+    "docs/files-scene-integration-evidence.json": {
+      "bytes": 8773,
+      "sha256": "2a94a4c527face5a9c6eac6ef0debeba4341b3c4591aeea250b5340d3eacbf93"
+    },
+    "docs/files-selected-recipe-evidence.json": {
+      "bytes": 15312,
+      "sha256": "3e89ad4c910d845d81cedab17a802f7e177ceedcd6909d888059af96a204096b"
+    },
+    "lib/PortableApps/include/PortableResidentSettingsEffects.h": {
+      "bytes": 7860,
+      "sha256": "617544d7260d73841fbf76b129371cf647cc40577f015ee73f72b47917e2dee5"
+    },
+    "lib/RemoteFiles/WebDavClient.cpp": {
+      "bytes": 16324,
+      "sha256": "882d39e21f3f5ddcdaef3ec2ef62d6c656f1a139b29760d5f164bad880c1e471"
+    },
+    "lib/RemoteFiles/WebDavCore.cpp": {
+      "bytes": 24790,
+      "sha256": "c229013e8209549ea98ab7a3f5ef9579d12ec1a162abd1727fe5850b6f8728b3"
+    },
+    "lib/RemoteFiles/WebDavRemoteVolume.cpp": {
+      "bytes": 17899,
+      "sha256": "134bafeb1dec84b91f1d882a26a68c05914850252b44aadba4f71c7d5312ab6b"
+    },
+    "lib/RemoteFiles/WebDavSharing.cpp": {
+      "bytes": 6206,
+      "sha256": "1820be52f7e25107768e244be456910cda8204a24236dae3c4cf9989efdf5ac5"
+    },
+    "lib/RemoteFiles/WebDavVolume.cpp": {
+      "bytes": 22591,
+      "sha256": "a9db4374bbdb6d897614078499ccc73b41537c1128d706414605572e3cd363f8"
+    },
+    "scripts/extract_files_scene_domain.py": {
+      "bytes": 3891,
+      "sha256": "eedd3d1189062a8415ff44a809b1f9a840fca15f08f774c684d65f9be64c03a9"
+    },
+    "scripts/link_files_scene.py": {
+      "bytes": 5522,
+      "sha256": "12c42473d0a6c497ce3f05808fab71dbf1fb9a53d15ce6eed5084b89c5f57a78"
+    },
+    "scripts/qualify_files_scene.py": {
+      "bytes": 6821,
+      "sha256": "17a2b3f0e201d0d7384d1edfd877508283d119f4863bdd8b8a5d2087d3c847f5"
+    },
+    "scripts/test_files_composed_root.py": {
+      "bytes": 2799,
+      "sha256": "e7bc475b689cbaed115f97fee76a2fd60615d5a969042623e6771988a725ce4a"
+    },
+    "scripts/test_files_runtime.py": {
+      "bytes": 4785,
+      "sha256": "5996741aa639394e9e543b280fd8f3ebef65a31eb92261fe8c7bf34d7ea2e445"
+    },
+    "sdk/app/RiscResidentSettingsEffectsV1.h": {
+      "bytes": 1859,
+      "sha256": "877d9378c3bb260ddbc0ed30a0d061a70db65f8d8819aea6024f93b9e2a3cddb"
+    },
+    "test/files_runtime/app.c": {
+      "bytes": 946,
+      "sha256": "67dc5f376df8804a300b3c92527a4dad12863e5a5d221fcc6f015328ecec665c"
+    },
+    "test/files_runtime/hardware.c": {
+      "bytes": 5289,
+      "sha256": "5d529c1532f523d0ee6b2050d91d9f3b8194149ce5976ca1de1918918e4913ed"
+    },
+    "test/files_runtime/launcher.c": {
+      "bytes": 277,
+      "sha256": "4923b9ac18b085b6b62a40f58b4552302550da4a721a05b3a432a062329a9b54"
+    },
+    "test/files_runtime/provenance.json": {
+      "bytes": 671,
+      "sha256": "0b6aaba9a34959720309e0ddead3ca1566dc9bfd803de73bd238f9fd535e56c6"
+    },
+    "test/files_runtime/provider.c": {
+      "bytes": 646,
+      "sha256": "3fcbbdcffbec4ea90f9a7a46846a754090fc1ab50aa097e6f0c18d7d7417edb9"
+    },
+    "test/files_runtime/runtime_test.cpp": {
+      "bytes": 6523,
+      "sha256": "627c757fe3e89fb737e41dcfe1c673d9a5c4b60ac7a6d4b0c986ebf68c0e4ffe"
+    },
+    "test/files_scene/composed_root_test.c": {
+      "bytes": 6781,
+      "sha256": "b79c13f9e3ecf6ae6588779efb17b938f0c1e6ee83a27042512391534a3f090c"
+    },
+    "test/files_scene/effects_test.c": {
+      "bytes": 2305,
+      "sha256": "91c06342027e5510cfc0fa8b8a0c5095c54c0ac1e2587050d737868f6cefe41b"
+    },
+    "test/files_scene/handoff_test.c": {
+      "bytes": 2870,
+      "sha256": "34d1a1afaa589b9d4e6e43e8849477dd21a3b2fa56ca2b4a692dec475a22346c"
+    },
+    "test/files_scene/manifest_test.cpp": {
+      "bytes": 479,
+      "sha256": "6c0bd71c346802404ab23b4bd89bffde5158b02699a6c6b060e0631b50f0c2c8"
+    },
+    "test/files_scene/presenter_test.c": {
+      "bytes": 11569,
+      "sha256": "1322fe208a85756743d347975f59f33df13a9f0cbca96cac5a4331b404e0d95c"
+    },
+    "test/files_scene/provider_configure_test.c": {
+      "bytes": 1767,
+      "sha256": "33a66b554c78fa8e9661374714dee82547e1705b03d86dc592d27edef9c66f5a"
+    },
+    "test/files_scene/resident_test.c": {
+      "bytes": 5016,
+      "sha256": "704865eed051a653921ad134dd208eaa2563d15b02ab73ea1a4a2b394543343c"
+    },
+    "test/files_scene/root_text_test.c": {
+      "bytes": 10148,
+      "sha256": "9797be293edf2b0a5211ca16b5ecae4e53602931c00e0ca3a46d70bd46974de2"
+    },
+    "test/files_scene/text_pending_test.c": {
+      "bytes": 7811,
+      "sha256": "755b9e875cf71a8f889ed271b6e2ff992eca21b40a3da1e27012e6c8a8edb3ea"
+    },
+    "test/files_scene/ui_test.c": {
+      "bytes": 4828,
+      "sha256": "1d1687816b31f0902ca4a2d8a119b1d9e4b37455cef199eed27cb17d7c418e55"
+    }
+  }
+}

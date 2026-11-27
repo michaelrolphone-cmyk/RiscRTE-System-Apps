@@ -45,6 +45,34 @@ static bool resident_touch_open(void) {
 #ifdef PORTABLE_RESIDENT_LOADING
 #include "resident_loading.inc"
 #endif
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+#include "PortableHomeContextReadiness.h"
+extern unsigned portable_home_sleep_modes(void);
+static bool shared_home_contexts_safe(void *unused) {
+ (void)unused;return !native_custody_retained&&!failed&&!quick.retained;
+}
+static int shared_home_contexts_query(uint32_t reason) {
+ const alarm_service_v1 *alarm=alarm_sleep_api();
+ unsigned output=alarm_output_modes();
+ portable_home_readiness state={.power_modes=portable_home_sleep_modes(),.sleep_settings=quick.loaded,
+  .brightness=shared_outputs&&shared_outputs->set_brightness&&quick.ui.brightness_valid,
+  .volume=quick.ui.audio_controls&&quick.ui.volume_valid,.dnd=quick.ui.dnd_valid&&alarm!=NULL,
+  .sound=!!(output&ALARM_MODE_SOUND),.vibrate=!!(output&ALARM_MODE_VIBRATE)};
+#if defined(PORTABLE_QUICK_RADIO_AVAILABILITY) || defined(PORTABLE_QUICK_CAPABILITY_SAFE)
+ state.wifi=quick.ui.wifi_available&&quick.ui.wifi_valid;
+ state.bluetooth=quick.ui.bluetooth_available&&quick.ui.bluetooth_valid;
+#endif
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!portable_home_settings_available())state=(portable_home_readiness){0};
+#endif
+ const alarm_service_descriptor_v2*descriptor=alarm_service_descriptor(alarm);
+ if(!descriptor)state.power_modes=0;
+ else if(!(descriptor->features&ALARM_DESCRIPTOR_RESUME_SLEEP))state.power_modes&=~(PORTABLE_HOME_MODE_LIGHT|PORTABLE_HOME_MODE_HYBRID);
+ /* FACE addresses watch_face, not the independent desk_clock_face key.
+  * This overview controller has no active canonical native-face owner. */
+ return portable_home_readiness_query(&state,reason);
+}
+#endif
 static int32_t resident_dispatch(void *context,const risc_resident_request_v1 *request,risc_resident_reply_v1 *reply) {
  (void)context;
  if(native_custody_retained)return RISC_RESIDENT_RETAINED;
@@ -54,6 +82,33 @@ static int32_t resident_dispatch(void *context,const risc_resident_request_v1 *r
  if(!resident_child_active || resident_dispatching || !request || request->struct_size<sizeof(*request) ||
     !reply || reply->struct_size<sizeof(*reply))return RISC_RESIDENT_INVALID;
  reply->flags=0;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(request->reason>=RISC_CONTEXTS_SETTINGS_PREPARE&&request->reason<UINT32_C(0x43530300)&&
+    (request->flags||request->reserved))return RISC_RESIDENT_INVALID;
+ if(request->reason==RISC_CONTEXTS_SETTINGS_PREPARE){
+  if(failed||surface.frame||paper_token||!display_settled||alarm_modal||quick_modal)return RISC_RESIDENT_BUSY;
+  /* Admission is explicit and separate from the pure field queries below.
+   * Do not call radio policy loaders here: those may toggle hardware. */
+  if(portable_home_sleep_admit(rt)!=1)return native_custody_retained?RISC_RESIDENT_RETAINED:RISC_RESIDENT_BUSY;
+  if(!pqa_session_load(&quick,rt)||!shared_home_contexts_safe(NULL))return RISC_RESIDENT_RETAINED;
+#ifdef PORTABLE_QUICK_RADIOS
+  if(!pqa_radios_inspect(&quick_radios,&quick.ui,rt,shared_home_contexts_safe,NULL)){
+   if(!native_custody_retained)portable_adapter_retain_silent();
+   return RISC_RESIDENT_RETAINED;
+  }
+#endif
+  quick_paper_capabilities();
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  if(!portable_home_settings_poll())return RISC_RESIDENT_RETAINED;
+  home_settings_readonly_controls();
+#endif
+  return shared_home_contexts_safe(NULL)?RISC_RESIDENT_OK:RISC_RESIDENT_RETAINED;
+ }
+ if(request->reason>=UINT32_C(0x43530100)&&request->reason<UINT32_C(0x43530300)){
+  int ready=shared_home_contexts_query(request->reason);
+  return ready<0?RISC_RESIDENT_INVALID:ready?RISC_RESIDENT_OK:RISC_RESIDENT_BUSY;
+ }
+#endif
 #ifdef PORTABLE_RESIDENT_POLICY
  if(request->reason==RISC_RESIDENT_CHECKPOINT_POLL || request->reason==RISC_RESIDENT_CHECKPOINT_POLICY)
   return resident_policy_dispatch(request,reply);
@@ -70,10 +125,16 @@ static int32_t resident_dispatch(void *context,const risc_resident_request_v1 *r
  }
  if(request->reason!=RISC_RESIDENT_CHECKPOINT_CONTROLS)return RISC_RESIDENT_BUSY;
  if(failed || surface.frame || paper_token || !display_settled || alarm_modal || quick_modal)return RISC_RESIDENT_BUSY;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(!alarm_pixels||surface_format!=RISC_DISPLAY_FORMAT_MONO1)return RISC_RESIDENT_BUSY;
+ if(!home_canvas_copy_completed(&shared_canvas,alarm_pixels,quick_frame_bytes(),(uint32_t)quick_row_bytes()))
+  return native_custody_retained?RISC_RESIDENT_RETAINED:RISC_RESIDENT_BUSY;
+#else
  const risc_display_output_api_v1_snapshot *snapshot=risc_display_output_snapshot(display);
  if(!snapshot || !alarm_pixels || surface_format!=RISC_DISPLAY_FORMAT_MONO1)return RISC_RESIDENT_BUSY;
  /* A refused snapshot does not acquire focus, mutate the panel or start UI. */
  if(!snapshot->copy_completed(display->context,surface_format,alarm_pixels,quick_frame_bytes(),(uint32_t)quick_row_bytes()))return RISC_RESIDENT_BUSY;
+#endif
  if(!resident_refresh_preferences())return RISC_RESIDENT_RETAINED;
  alarm_pixels_valid=true;paper_previous_valid=previous_valid=false;
  resident_dispatching=true;

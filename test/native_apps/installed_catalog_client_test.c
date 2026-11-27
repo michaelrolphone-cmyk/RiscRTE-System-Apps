@@ -8,7 +8,15 @@ const unsigned portable_catalog_legacy_style_count=2;
 #endif
 static unsigned volume_acquires,releases,cancels,steps,refreshes;static bool pending=true,refuse_release,dirty_settings,unavailable,missing_sd;
 static uint32_t now_ms;
-static bool health(risc_runtime_health_v1*out){out->uptime_ms=now_ms;return true;}
+#ifdef TEST_MONOTONIC_CATALOG
+static unsigned mono_calls;
+static bool monotonic(uint32_t*out){++mono_calls;*out=now_ms;return true;}
+#endif
+static bool health(risc_runtime_health_v1*out){
+#ifdef TEST_MONOTONIC_CATALOG
+ assert(!"health fallback despite present monotonic callback");
+#endif
+ out->uptime_ms=now_ms;return true;}
 static bool settings_pending(void*p){(void)p;return dirty_settings;}
 static int refresh(void*p){(void)p;++refreshes;return 0;}
 static uint32_t generation(void*p){(void)p;return 7;}
@@ -20,7 +28,7 @@ static installed_apps_v1 api={1,sizeof(api),NULL,refresh,generation,count,get,st
 static bool acquire(const char*cap,uint32_t version,uint64_t instance,risc_runtime_capability_v1*g){assert(version==1);if(!strcmp(cap,"storage.volume")){assert(instance==42);++volume_acquires;if(missing_sd)return false;g->api=(void*)1;}else {assert(!strcmp(cap,INSTALLED_APPS_CAPABILITY));g->api=&api;}return true;}
 static bool release(risc_runtime_capability_v1*g){assert(!pending);if(refuse_release)return false;++releases;g->api=NULL;return true;}
 int main(void){
- risc_runtime_api_v1 runtime={.acquire=acquire,.release=release};
+ risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.acquire=acquire,.release=release};
  const t5_app_manifest_t base[]={ {.display_name="Reader",.file_name="reader.elf",.icon="solid:f02d",.compatible=true} };
  portable_installed_catalog c={0};
  assert(portable_installed_refresh(&c,&runtime,base,1)==0);
@@ -64,6 +72,9 @@ int main(void){
  assert(portable_installed_step(&c,&runtime,42,base,1)==INSTALLED_APPS_UNAVAILABLE&&volume_acquires==delayed+1);
  /* An explicit refresh retries immediately, while idle ticks use monotonic time. */
  runtime.health=health;now_ms=UINT32_MAX-1000u;
+#ifdef TEST_MONOTONIC_CATALOG
+ runtime.monotonic_ms=monotonic;
+#endif
  assert(portable_installed_refresh(&c,&runtime,base,1)==0);
  assert(portable_installed_step(&c,&runtime,42,base,1)==INSTALLED_APPS_UNAVAILABLE);delayed=volume_acquires;
  for(unsigned i=0;i<1000;++i)assert(portable_installed_step(&c,&runtime,42,base,1)==0&&volume_acquires==delayed);
@@ -76,5 +87,8 @@ int main(void){
  assert(!c.volume_grant.api&&c.count==2);missing_sd=false;
  refuse_release=true;assert(portable_installed_close(&c,&runtime)==INSTALLED_APPS_RETAINED);
  unsigned before=cancels;assert(portable_installed_close(&c,&runtime)==INSTALLED_APPS_RETAINED&&cancels==before);
+#ifdef TEST_MONOTONIC_CATALOG
+ assert(mono_calls>0);
+#endif
  puts("Installed catalog client: cache-first snapshot, preserved icons, unknown app, 1000 polls, cancellation and retained lease PASS");
 }

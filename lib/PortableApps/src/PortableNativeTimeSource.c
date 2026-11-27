@@ -8,9 +8,15 @@
 #error "Native toolbar requires one unambiguous app-owned time source"
 #endif
 #include "PortableNativeTimeToolbar.h"
+#include "PortableLastAttempt.h"
 #include "PortableRealtimeClient.h"
 #include "PortableTimeZonePreference.h"
 #include <string.h>
+#ifdef PORTABLE_WATCH_SAFE_INSETS
+#include "PortableTimeFormat.h"
+static unsigned native_time_format;
+bool portable_app_native_hour_24(void){return native_time_format==PORTABLE_TIME_FORMAT_24;}
+#endif
 #ifdef PORTABLE_BLE_BROADCAST
 #include "PortableBroadcastClient.h"
 #endif
@@ -42,7 +48,7 @@ static bool empty(const risc_runtime_capability_v1 *grant) {
 static bool release_zone(const risc_runtime_api_v1 *runtime) {
   if(portable_adapter_retained())return false;
   risc_runtime_capability_v1 released=zone_grant;
-  bool ok=runtime->release(&released);
+  bool ok=PORTABLE_ATTEMPT_BOOL("time.zone-release",runtime->release(&released));
   if(portable_adapter_retained())return false;
   if(!ok || !empty(&released)){portable_adapter_retain();return false;}
   zone_grant=released;zone_source=NULL;return true;
@@ -50,6 +56,7 @@ static bool release_zone(const risc_runtime_api_v1 *runtime) {
 static int32_t zone_get(void *context,const char *key,void *out,uint32_t capacity,uint32_t *used) {
   (void)context;
   if(portable_adapter_retained())return RISC_KEY_VALUE_CONTEXT;
+  PORTABLE_LAST_ATTEMPT("time.zone-get");
   int32_t result=zone_source->get(zone_source->context,key,out,capacity,used);
   if(portable_adapter_retained())return RISC_KEY_VALUE_CONTEXT;
   if(result==RISC_KEY_VALUE_BUSY){zone_busy=true;return result;}
@@ -65,8 +72,8 @@ static bool load_zone(const risc_runtime_api_v1 *runtime,portable_timezone_rule 
   if(!portable_broadcast_stop())return false;
 #endif
   zone_grant=(risc_runtime_capability_v1){.struct_size=sizeof(zone_grant)};
-  bool ok=runtime->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,
-    PORTABLE_TIMEZONE_STORE_INSTANCE,&zone_grant);
+  bool ok=PORTABLE_ATTEMPT_BOOL("time.zone-acquire",runtime->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,
+    PORTABLE_TIMEZONE_STORE_INSTANCE,&zone_grant));
   if(portable_adapter_retained())return false;
   /* A boolean external-provider failure cannot prove clean rollback, even
    * with an empty grant. Typed NOT_FOUND/IO from get remain ordinary failures. */
@@ -83,6 +90,9 @@ static bool load_zone(const risc_runtime_api_v1 *runtime,portable_timezone_rule 
     .struct_size=sizeof(checked),.get=zone_get};
   char id[PORTABLE_TIMEZONE_ID_BYTES];
   int status=portable_timezone_preference_load(&checked,id);
+#ifdef PORTABLE_WATCH_SAFE_INSETS
+  if(!portable_adapter_retained())(void)portable_time_format_load(&checked,&native_time_format);
+#endif
   if(portable_adapter_retained() || !release_zone(runtime))return false;
   /* Reader's absent preference is the checked virtual UTC default. Corrupt
    * or unreadable records remain unavailable and are never overwritten. */
@@ -99,12 +109,15 @@ bool portable_app_native_utc_time(int64_t *out) {
   if(!runtime || runtime->api_version!=RISC_RUNTIME_API_V1 ||
      runtime->struct_size<RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE ||
      !runtime->acquire || !runtime->release || !runtime->retain_invocation)return false;
+  PORTABLE_LAST_ATTEMPT("time.realtime-open");
   int status=portable_realtime_open(&reader,runtime,PORTABLE_REALTIME_READER,
     PORTABLE_REALTIME_TIMER_ONLY,foreground,NULL);
   if(halted(status) || status!=PORTABLE_REALTIME_OK)return false;
   risc_realtime_snapshot_v1 snapshot;
+  PORTABLE_LAST_ATTEMPT("time.realtime-read");
   status=portable_realtime_read(&reader,&snapshot);
   if(halted(status))return false;
+  PORTABLE_LAST_ATTEMPT("time.realtime-close");
   int closed=portable_realtime_close(&reader);
   if(halted(closed) || closed!=PORTABLE_REALTIME_OK || status!=PORTABLE_REALTIME_OK)return false;
   *out=snapshot.epoch_seconds;return true;

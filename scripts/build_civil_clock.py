@@ -10,7 +10,7 @@ def run(runtime,output):
  output.mkdir(parents=True)
  with tempfile.TemporaryDirectory(prefix='civil-clock-') as tmp:
   include=stage_sdk(runtime,ROOT,Path(tmp))
-  for name in ('PortableTimeZone.h','PortableTimeZonePreference.h','PortableRtcClock.h','PortableTime.h'):
+  for name in ('PortableTimeZone.h','PortableTimeZonePreference.h','PortableRtcClock.h','PortableTime.h','PortableRtcBasis.h'):
    shutil.copyfile(ROOT/'lib/PortableApps/include'/name,include/name)
   shutil.copytree(ROOT/'lib/PortableApps/time',Path(tmp)/'time')
   compiler=compiler_path();receipts=[]
