@@ -38,12 +38,10 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
   if(!s || (scale&255u)<1 || (scale&255u)>4 || max_width<=0)return;
 #if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP)
   int zoom=(scale&PAPER_TEXT_CLOCK)?3:(scale&PAPER_TEXT_LARGE)?2:1;
-#else
-  int zoom=(scale&PAPER_TEXT_CLOCK)?3:1;
-#endif
-#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP) || defined(PORTABLE_QUICK_ACTIONS)
   int total=pp_measure(s,heading)*zoom;
   int fitted=(scale&PAPER_TEXT_FIT)&&total>max_width?max_width:total;
+#else
+  int zoom=(scale&PAPER_TEXT_CLOCK)?3:1;
 #endif
   int pen=x*16;
   for(unsigned k=0;k<96 && s[k];k++) {
@@ -59,7 +57,7 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
     if(c<32||c>126)c='?';
     const rpp_glyph *g=&rpp_text[(heading?0:95)+c-32];
     int advance=(int)g->advance_q4*zoom;
-#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP) || defined(PORTABLE_QUICK_ACTIONS)
+#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP)
     if(!(scale&PAPER_TEXT_FIT)&&(pen+advance+15)/16>x+max_width)break;
 #else
     if((pen+advance+15)/16>x+max_width)break;
@@ -76,7 +74,7 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
       if(!(g->bits[n/8]&(0x80u>>(n%8)))){i++;continue;}
       unsigned first=i++;
       while(i<g->width){n=j*g->width+i;if(!(g->bits[n/8]&(0x80u>>(n%8))))break;i++;}
-#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP) || defined(PORTABLE_QUICK_ACTIONS)
+#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP)
       int offset=pen/16-x+((int)g->left+(int)first)*zoom;
       int end=pen/16-x+((int)g->left+(int)i)*zoom;
       int left=total?offset*fitted/total:offset;
@@ -114,12 +112,6 @@ static bool pp_enabled(void) {
     (info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1));
 #endif
 }
-#if defined(PORTABLE_USB_TRANSFER_APP) && defined(PORTABLE_USB_TRANSFER_NATIVE_UI)
-#include "../../../Apps/UsbTransferNative.h"
-bool portable_usb_transfer_native_available(void) {
-  return surface_format==RISC_DISPLAY_FORMAT_RGB565;
-}
-#endif
 const paper_presentation *paper_presentation_get(void) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
   if(failed || native_custody_retained)return NULL;
@@ -127,12 +119,7 @@ const paper_presentation *paper_presentation_get(void) {
   if(!pp_enabled()
 #ifdef PORTABLE_USB_TRANSFER_APP
      /* This awake utility uses the same scalable presentation on RGB panels. */
-     && !(
-#ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
-          width()>=160 && height()>=160 &&
-#else
-          width()>=240 && height()>=240 &&
-#endif
+     && !(width()>=240 && height()>=240 &&
           (info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))
 #endif
      )return NULL;

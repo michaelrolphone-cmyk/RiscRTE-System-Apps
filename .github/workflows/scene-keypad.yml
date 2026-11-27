@@ -1,0 +1,34 @@
+name: Shared semantic keypad
+on:
+  pull_request:
+    paths: ['Services/scene_host/**', 'sdk/app/RiscSceneKeypadV1.h', 'scripts/scene_sdk.py', 'scripts/test_scene_keypad.py', 'test/keypad/**', '.github/workflows/scene-keypad.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 318d77283ba707b6f2820d2833e5d7ea3ff3f7e8
+          path: Runtime
+          persist-credentials: false
+      - run: python3 System/scripts/test_scene_keypad.py --runtime Runtime --output evidence/normal
+      - run: python3 System/scripts/test_scene_keypad.py --runtime Runtime --sanitize --output evidence/sanitized
+      - run: |
+          python3 -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python3 System/scripts/build_scene_services.py --runtime Runtime --host-profile color-dynamic --output packages
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scene-keypad-${{ github.sha }}
+          path: |
+            evidence/
+            packages/

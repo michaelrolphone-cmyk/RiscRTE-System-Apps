@@ -7,7 +7,7 @@
 typedef struct { uint8_t code; int8_t left,top; uint8_t width,height; uint16_t advance_q8; uint32_t offset; } pqa_glyph;
 typedef struct { uint8_t width,height; uint32_t offset; } pqa_icon;
 #include "quick_actions_assets.inc"
-#if defined(PORTABLE_WATCH_NATIVE_HEIGHT) || defined(PORTABLE_QUICK_NATIVE)
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
 #include "quick_native_fonts.inc"
 #endif
 typedef struct { uint16_t *pixels; int y,width; } pqa_row;
@@ -148,13 +148,17 @@ static unsigned torch_edge(int v,int extent) {
     if(d<14)return (unsigned)d*102u/14u;
     return 102u+(unsigned)(d-14)*154u/32u;
 }
-#if defined(PORTABLE_WATCH_NATIVE_HEIGHT) || defined(PORTABLE_QUICK_NATIVE)
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
 #include "quick_native_render.inc"
 #endif
 static bool render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
     if(!f || !s || !f->pixels || f->pixel_format!=RISC_DISPLAY_FORMAT_RGB565)return false;
-#if defined(PORTABLE_WATCH_NATIVE_HEIGHT) || defined(PORTABLE_QUICK_NATIVE)
-    if(s->native_width && (s->native_width!=240 || s->logical_height!=240))
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+    if(s->native_width && (
+#ifdef PORTABLE_QUICK_SAFE_CONTENT
+        true ||
+#endif
+        s->native_width!=240 || s->logical_height!=240))
         return native_render_rows(f,s,time,bv,bp,first,count);
 #endif
     watch_layout layout;

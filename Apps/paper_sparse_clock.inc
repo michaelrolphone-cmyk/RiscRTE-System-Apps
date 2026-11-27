@@ -205,7 +205,7 @@ int portable_desk_clock_mode(void) {
 static bool desk_cancelled(void) {
  if(desk_retained || !portable_desk_adapter_ready() || !desk_ops)return true;
  int status=desk_ops->cancelled(desk_ops->context);
- if(status==-2)desk_fence();
+ if(status!=0&&status!=1)desk_fence();
  return status!=0;
 }
 static bool desk_rect(void *unused,int x,int y,int w,int h,bool black) {
@@ -234,11 +234,6 @@ static bool desk_scene(const portable_desk_config *config,int64_t minute) {
   portable_desk_adapter_caption(canvas.height-78,time.hour<12?"AM":"PM");
  return !desk_cancelled();
 }
-static int desk_restore(void) {
- if(desk_retained)return -2;
- if(desk_ops->resume(desk_ops->context)!=1)return desk_fence();
- desk_held=false;desk_rtc_check.checked=false;portable_desk_adapter_invalidate();return 0;
-}
 /* Pinned Runtime health uses the same esp_timer boot domain as realtime,
  * rounded down to milliseconds. Use its upper microsecond endpoint; at most
  * 999 us quantization error plus the native sampling bracket remains. Low-word
@@ -252,6 +247,21 @@ static bool desk_project(const risc_realtime_snapshot_v1 *sample,
  if(portable_realtime_project(sample,elapsed,DESK_PREPARATION_BUDGET_US,out)!=PORTABLE_REALTIME_OK)return false;
  *sampled_at=health.uptime_ms;return true;
 }
+#include "PortableHomeRetainedClock.h"
+static bool desk_cycle_ready(void *p){(void)p;return !desk_retained&&portable_desk_adapter_ready();}
+static int desk_cycle_cancelled(void *p){(void)p;return desk_cancelled();}
+static int desk_cycle_sample(void *p,risc_realtime_snapshot_v1 *s){(void)p;return desk_sample(false,s);}
+static bool desk_cycle_project(void *p,const risc_realtime_snapshot_v1 *s,portable_realtime_estimate *n,uint32_t *at){(void)p;return desk_project(s,n,at);}
+static bool desk_cycle_scene(void *p,const portable_desk_config *c,int64_t minute){(void)p;return desk_scene(c,minute);}
+static int desk_cycle_seed(void *p){(void)p;return portable_desk_adapter_seed();}
+static bool desk_cycle_present(void *p,bool full){(void)p;return portable_desk_adapter_present(full);}
+#ifdef PORTABLE_DESK_POINTS_FACE
+static int desk_cycle_refresh(void *p,portable_desk_config *c,int64_t now,bool rewind){(void)p;return desk_points_refresh_timer(c,now,rewind);}
+#endif
+static void desk_cycle_held(void *p,bool held){(void)p;desk_held=held;}
+static void desk_cycle_invalidate(void *p){(void)p;portable_desk_adapter_invalidate();}
+static int desk_cycle_resume(void *p){(void)p;int rc=desk_ops->resume(desk_ops->context);if(rc==1)desk_rtc_check.checked=false;return rc;}
+static void desk_cycle_retain(void *p){(void)p;(void)desk_fence();}
 int portable_desk_clock_run(const risc_runtime_api_v1 *runtime,const portable_desk_sleep_ops *ops) {
  if(!runtime || !ops || !ops->cancelled || !ops->stage || !ops->prepare ||
     !ops->resume || !ops->stage_enter || desk_retained || desk_held)return 0;
@@ -265,69 +275,19 @@ int portable_desk_clock_run(const risc_runtime_api_v1 *runtime,const portable_de
 #ifdef PORTABLE_DESK_POINTS_FACE
  if(!desk_boot_timer && !desk_points_capture(&config))return 0;
 #endif
- portable_desk_cycle cycle;
- if(!portable_desk_begin(&cycle,&config,&desk_boot_record,desk_boot_timer))return 0;
+ const portable_home_retained_hooks hooks={
+  .ready=desk_cycle_ready,.cancelled=desk_cycle_cancelled,.sample=desk_cycle_sample,
+  .project=desk_cycle_project,.scene=desk_cycle_scene,.seed=desk_cycle_seed,
+  .present=desk_cycle_present,
 #ifdef PORTABLE_DESK_POINTS_FACE
- bool timer_points=desk_boot_timer;
+  .refresh=desk_cycle_refresh,
 #endif
- desk_boot_timer=false;
- for(unsigned attempt=0;attempt<PORTABLE_DESK_CLOCK_MAX_PRESENTS;attempt++) {
-  risc_realtime_snapshot_v1 sample;portable_desk_frame frame;
-  if(desk_cancelled() || desk_sample(false,&sample)!=PORTABLE_REALTIME_OK)break;
-#ifdef PORTABLE_DESK_POINTS_FACE
-  if(timer_points) {
-   int refreshed=desk_points_refresh_timer(&config,sample.epoch_seconds,
-       cycle.current.has_image && sample.epoch_seconds<cycle.current.displayed_minute);
-   if(refreshed<0)return desk_fence();
-   if(refreshed) {
-    /* The old panel image belongs to the old copied window. Never seed it
-     * with newly projected labels/countdowns. Refresh before any sleep holds,
-     * then re-sample time in case projection crossed a minute boundary. */
-    if(desk_cancelled() || desk_sample(false,&sample)!=PORTABLE_REALTIME_OK)break;
-    if(config.points.status==PORTABLE_DESK_POINTS_READY &&
-       (sample.epoch_seconds<INT64_C(946684800)+config.points.view.seconds ||
-        sample.epoch_seconds>=INT64_C(946684800)+config.points.view.valid_until))
-     config.points=(portable_desk_points_snapshot){.status=PORTABLE_DESK_POINTS_ERROR};
-    cycle.current.config=config;cycle.full=true;
-   }
-  }
-#endif
-  if(!portable_desk_plan_frame(&cycle,sample.epoch_seconds,&frame))break;
-  if(frame.has_previous) {
-   if(!desk_scene(&cycle.current.config,frame.previous_minute))break;
-   int seeded=portable_desk_adapter_seed();if(seeded<0)return desk_fence();
-   if(!seeded)frame.full=true;
-  }
-  if(!desk_scene(&config,frame.minute))break;
-  if(!portable_desk_presented(&cycle,portable_desk_adapter_present(frame.full)))return desk_fence();
-  if(desk_cancelled() || desk_sample(false,&sample)!=PORTABLE_REALTIME_OK)break;
-  portable_desk_record proposal;uint32_t duration=0,sampled_at=0;
-  portable_realtime_estimate now;
-  if(!desk_project(&sample,&now,&sampled_at))break;
-  int plan=portable_desk_prepare_record(&cycle,now.epoch_seconds,(int32_t)(now.nanoseconds/1000u),&proposal,&duration);
-  if(plan==PORTABLE_DESK_REPAINT)continue;
-  if(plan!=PORTABLE_DESK_READY)break;
-  int staged=ops->stage(ops->context,&proposal);
-  if(staged==-2)return desk_fence();
-  if(staged!=1)break;
-  /* Every native/control grant is closed. From here through confirmed resume,
-   * no native read/recovery/release, KV I/O, or cooperative yield is allowed. */
-  desk_held=true;
-  int prepared=ops->prepare(ops->context);
-  if(prepared==-2)return desk_fence();
-  if(prepared!=1){desk_held=false;break;} /* hook already restored */
-  if(desk_cancelled() || !desk_project(&sample,&now,&sampled_at))return desk_restore();
-  plan=portable_desk_prepare_record(&cycle,now.epoch_seconds,(int32_t)(now.nanoseconds/1000u),&proposal,&duration);
-  if(plan==PORTABLE_DESK_READY && !desk_cancelled()) {
-   if(ops->stage_enter(ops->context,&proposal,duration,sampled_at)!=0)return desk_fence();
-   return desk_restore();
-  }
-  if(desk_restore()==-2)return -2;
-  if(plan!=PORTABLE_DESK_REPAINT)break;
-  cycle.full=true;
- }
- if(desk_retained || !portable_desk_adapter_ready())return desk_fence();
- portable_desk_adapter_invalidate();return 0;
+  .held=desk_cycle_held,.invalidate=desk_cycle_invalidate,.retain=desk_cycle_retain};
+ portable_desk_cycle checked;
+ if(!portable_desk_begin(&checked,&config,&desk_boot_record,desk_boot_timer))return 0;
+ portable_desk_sleep_ops cycle_ops=*ops;cycle_ops.resume=desk_cycle_resume;
+ bool timer=desk_boot_timer;desk_boot_timer=false;
+ return portable_home_retained_run(&config,&desk_boot_record,timer,&hooks,&cycle_ops);
 }
 static int desk_promote(void) {
  desk_promotion_attempted=true;desk_boot_timer=false;

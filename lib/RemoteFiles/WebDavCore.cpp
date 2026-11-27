@@ -190,7 +190,7 @@ bool Transaction::propertyRow(const Row&row,uint32_t size,uint64_t revision){
    if(!append("<D:")||!append(names[i])||!append(">"))return false;
    if(properties_.mode!=PropertyMode::Names){char value[48]{};
     if(i==0&&row.directory&&!append("<D:collection/>"))return false;
-    if(i==1){std::snprintf(value,sizeof(value),"%u",size);if(!append(value))return false;}
+    if(i==1){std::snprintf(value,sizeof(value),"%u",static_cast<unsigned>(size));if(!append(value))return false;}
     if(i==2&&!append("application/octet-stream"))return false;
     if(i==3){tag(value,sizeof(value),revision);if(!escaped(value))return false;}
     if(i==5){const char* base=std::strrchr(row.path,'/');if(!escaped(base&&base[1]?base+1:row.path))return false;}

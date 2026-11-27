@@ -49,12 +49,55 @@ void pqa_init(pqa_state *s) {
 bool pqa_set_height(pqa_state *s,unsigned logical_height) {
     if(!s || logical_height<240 || logical_height>2048 || pqa_visible(s) ||
        s->gesture!=PQA_IDLE)return false;
-    s->logical_height=(uint16_t)logical_height;s->native_width=0;return true;
+    s->logical_height=(uint16_t)logical_height;s->native_width=0;
+#ifdef PORTABLE_QUICK_SAFE_CONTENT
+    s->safe_left=s->safe_top=s->safe_width=s->safe_height=0;
+#endif
+    return true;
 }
 bool pqa_set_dimensions(pqa_state *s,unsigned width,unsigned height) {
     if(!s || !width || !height || width>2048 || height>2048 || s->paper ||
        pqa_visible(s) || s->gesture!=PQA_IDLE)return false;
-    s->native_width=(uint16_t)width;s->logical_height=(uint16_t)height;return true;
+    s->native_width=(uint16_t)width;s->logical_height=(uint16_t)height;
+#ifdef PORTABLE_QUICK_SAFE_CONTENT
+    s->safe_left=s->safe_top=s->safe_width=s->safe_height=0;
+#endif
+    return true;
+}
+#ifdef PORTABLE_QUICK_SAFE_CONTENT
+bool pqa_set_safe_content(pqa_state *s,unsigned left,unsigned top,unsigned width,unsigned height) {
+#ifndef PORTABLE_QUICK_MIN_CONTENT
+#define PORTABLE_QUICK_MIN_CONTENT 240
+#endif
+#if PORTABLE_QUICK_MIN_CONTENT < 160 || PORTABLE_QUICK_MIN_CONTENT > 240
+#error Quick minimum content must remain within its native 160 to 240 pixel range
+#endif
+    if(!s || !s->native_width || s->paper || pqa_visible(s) || s->gesture!=PQA_IDLE ||
+       width<PORTABLE_QUICK_MIN_CONTENT || height<PORTABLE_QUICK_MIN_CONTENT || left>=pqa_width(s) || top>=pqa_height(s) ||
+       width>pqa_width(s)-left || height>pqa_height(s)-top)return false;
+    s->safe_left=left;s->safe_top=top;s->safe_width=width;s->safe_height=height;return true;
+}
+#endif
+static bool wifi_valid(const pqa_state *s) {
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+    return s->wifi_valid;
+#else
+    return s->radios_valid;
+#endif
+}
+static bool bluetooth_valid(const pqa_state *s) {
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+    return s->bluetooth_valid;
+#else
+    return s->radios_valid;
+#endif
+}
+static bool contexts_valid(const pqa_state *s) {
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+    return s->contexts_valid && s->contexts_available;
+#else
+    return s->contexts_valid;
+#endif
 }
 void pqa_set_levels(pqa_state *s, bool bv, unsigned b, bool vv, unsigned v) {
     if (!s) return;
@@ -80,6 +123,9 @@ uint32_t pqa_take_action(pqa_state *s) {
 }
 void pqa_cancel_input(pqa_state *s) {
     if (!s) return;
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+    if(s->save_pending){s->save_cancelled=true;return;}
+#endif
     if (s->gesture == PQA_BRIGHTNESS_DRAG && s->brightness != s->saved_brightness) {
         s->brightness = s->saved_brightness;
         emit_brightness(s, false);
@@ -100,6 +146,9 @@ void pqa_cancel_input(pqa_state *s) {
 }
 void pqa_close(pqa_state *s) {
     if (!s) return;
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+    if(s->save_pending){s->save_cancelled=true;return;}
+#endif
     pqa_cancel_input(s);
     s->target_q8 = 0;
 #ifndef PORTABLE_PAPER_TRANSITIONS
@@ -109,6 +158,9 @@ void pqa_close(pqa_state *s) {
 }
 void pqa_cancel(pqa_state *s) {
     if (!s) return;
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+    if(s->save_pending){s->save_cancelled=true;return;}
+#endif
     pqa_close(s);
     s->position_q8 = 0;
 }
@@ -257,10 +309,20 @@ static void release_panel(pqa_state *s, uint32_t now) {
 bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                uint32_t id, int x, int y, bool allow_open) {
     if (!s) return false;
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+    if(s->save_pending){
+        if(!valid||count)s->save_cancelled=true;
+        return route(s,PQA_CONSUMED);
+    }
+#endif
     /* Bound hostile/raw coordinates before subtraction or Q8 conversion. */
     x = clampi(x, -2048, 2048); y = clampi(y, -2048, 2048);
     pqa_layout native={0};if(s->native_width)native=pqa_layout_for(s);
-    int threshold=s->native_width?pqa_layout_size(&native,6):6;
+    pqa_layout gesture_layout=native;
+#ifdef PORTABLE_QUICK_SAFE_CONTENT
+    gesture_layout.unit=(int)(pqa_width(s)<pqa_height(s)?pqa_width(s):pqa_height(s));
+#endif
+    int threshold=s->native_width?pqa_layout_size(&gesture_layout,6):6;
     if (!valid || count > 1u) {
         if (s->gesture == PQA_PANEL_DRAG)
             s->target_q8 = s->position_q8 >= pqa_open_q8(s) / 2 ? pqa_open_q8(s) : 0;
@@ -304,16 +366,16 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                 if (s->volume) { s->last_nonzero_volume = s->volume; s->volume = 0; }
                 else s->volume = s->last_nonzero_volume ? s->last_nonzero_volume : 50;
                 emit_volume(s, PQA_SILENT);
-            } else if(s->pressed_tile==9 && s->contexts_controls && s->contexts_valid) {
+            } else if(s->pressed_tile==9 && s->contexts_controls && contexts_valid(s)) {
                 s->action_contexts=!s->contexts_enabled;s->pending|=PQA_CONTEXTS;
             } else if(s->pressed_tile==1 && s->dnd_valid) {
                 s->dnd_enabled=!s->dnd_enabled;
                 s->action_dnd=s->dnd_enabled;s->pending|=PQA_DND;
             } else if(s->pressed_tile==2 && s->radios_valid) {
                 s->pending|=PQA_AIRPLANE;
-            } else if(s->pressed_tile==4 && s->radios_valid) {
+            } else if(s->pressed_tile==4 && bluetooth_valid(s)) {
                 s->pending|=PQA_BLUETOOTH;
-            } else if (s->pressed_tile == 3 && (!s->radio_controls || s->radios_valid)) {
+            } else if (s->pressed_tile == 3 && (!s->radio_controls || wifi_valid(s))) {
                 s->pending |= PQA_WIFI;if(!s->radio_controls)s->target_q8=0;
             }
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
@@ -345,7 +407,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
         begin_contact(s, now, id, x, y);
         if (s->torch) s->gesture = PQA_TORCH_TAP;
         else if (!pqa_visible(s)) {
-            if (allow_open && y >= 0 && y < (s->paper?72:s->native_width?pqa_layout_size(&native,PQA_TOP_EDGE):PQA_TOP_EDGE) && x >= 0 && x < (s->paper?480:(int)pqa_width(s)))
+            if (allow_open && y >= 0 && y < (s->paper?72:s->native_width?pqa_layout_size(&gesture_layout,PQA_TOP_EDGE):PQA_TOP_EDGE) && x >= 0 && x < (s->paper?480:(int)pqa_width(s)))
                 s->gesture = PQA_TOP_PENDING;
             else s->gesture = PQA_PASS_THROUGH;
         } else {

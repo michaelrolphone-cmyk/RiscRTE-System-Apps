@@ -10,8 +10,8 @@
       !display->acquire || !display->release || !display->submit ||
       !display->present_status)
     return -1;
-  if (!display->get_info(display->context, &info) ||
-      !portable_display_dimensions(info.width, info.height) ||
+  if (!display->get_info(display->context, &info) || info.width < 160 ||
+      info.height < 160 || info.width > 1024 || info.height > 1024 ||
       !(info.supported_formats & (RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)|
                                  RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1))))
     return -1;
@@ -25,9 +25,24 @@
   /* A blocking panel wait would starve the owner-task USB service. */
   if(!(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT))return -1;
 #endif
+#ifdef PORTABLE_SAFE_VIEWPORT
+  if(!portable_safe_viewport_open(&content_view,info.width,info.height,info.safe_insets.left,info.safe_insets.top,info.safe_insets.right,info.safe_insets.bottom))return -1;
+#ifdef PORTABLE_SETTINGS_ROUND_GEOMETRY
+  /* Safe insets remain authoritative for all non-round/non-opt-in clients. */
+  if((info.flags&RISC_DISPLAY_INFO_ROUND) && (info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))
+    content_view=(portable_safe_viewport){0,0,info.width,info.height};
+#endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+  /* Native Timecard derives its controls from this safe content rectangle.
+   * Its controller admits 160 pixels; legacy 240-row consumers keep their
+   * existing minimum below. */
+  if(content_view.width<160 || content_view.height<160)return -1;
+#else
+  if(content_view.width<240 || content_view.height<240)return -1;
+#endif
+#endif
   surface_format=(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565))?
     RISC_DISPLAY_FORMAT_RGB565:RISC_DISPLAY_FORMAT_MONO1;
-  if(!portable_display_geometry(info.width,info.height,surface_format,NULL,NULL))return -1;
   paper_rotated=PORTABLE_DISPLAY_ROTATION==90 && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) && info.width>info.height;
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && !pp_enabled())return -1;
@@ -57,12 +72,12 @@
     if(!paper_preferences_pending)paper_flip_ui=value!=0;
   }
 #endif
-#if defined(PORTABLE_NATIVE_CANVAS)
-  /* Native callers paint capability-sized pixels on any admitted color aspect
-   * ratio. Legacy 240-wide NOVA callers are not implicitly migrated. */
+#if defined(PORTABLE_RF_NATIVE_CANVAS)
+  /* RF paints native pixels on every admitted color aspect ratio. Its editor
+   * layout has its own bounded viewport and does not require 240 logical rows. */
   if(!pp_enabled() && surface_format!=RISC_DISPLAY_FORMAT_RGB565)return -1;
 #elif defined(PORTABLE_WATCH_NATIVE_HEIGHT)
-  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || nu_height()<=0)return -1;
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || !nu_layout_ready() || nu_height()<240)return -1;
 #elif defined(PORTABLE_NOVA_UI)
   if(!pp_enabled() && (info.width!=240 || info.height!=240))return -1;
 #endif
@@ -90,12 +105,17 @@
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(native_custody_retained)return -1;
 #endif
+/* Native-only Settings has no battery requirement. Avoid an undeclared
+   * external acquisition: its strict custody wrapper cannot prove rollback
+   * from a boolean failure. Legacy battery-selected profiles are unchanged. */
+#ifndef PORTABLE_SETTINGS_NATIVE_ONLY
   if (rt->acquire("board.battery", 1, 0, &bg)) {
     gauge = bg.api;
     if (!gauge || gauge->api_version != 1 ||
         gauge->struct_size < sizeof(*gauge) || !gauge->read)
       return -1;
   }
+#endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(native_custody_retained)return -1;
 #endif
@@ -110,9 +130,13 @@
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
   quick.ui.paper=pp_enabled();
-#ifdef PORTABLE_QUICK_NATIVE
-  /* Select native Quick without changing the foreground app or paper profile. */
-  if(!quick.ui.paper && !pqa_set_dimensions(&quick.ui,info.width,info.height))return -1;
+#ifdef PORTABLE_QUICK_NATIVE_GEOMETRY
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || !pqa_set_dimensions(&quick.ui,info.width,info.height))return -1;
+#ifdef PORTABLE_QUICK_SAFE_CONTENT
+  if(!pqa_set_safe_content(&quick.ui,info.safe_insets.left,info.safe_insets.top,
+    info.width-info.safe_insets.left-info.safe_insets.right,
+    info.height-info.safe_insets.top-info.safe_insets.bottom))return -1;
+#endif
 #endif
   if(!pqa_session_load(&quick,rt))return -1;
   initial_brightness_pending=surface_format==RISC_DISPLAY_FORMAT_RGB565 &&
@@ -138,5 +162,10 @@
 #endif
 #if defined(PORTABLE_CONTEXTS_CLIENT) && defined(PORTABLE_RESIDENT_SHELL_CLIENT)
   if(!contexts_controls_load())return -1;
+#endif
+#ifdef PORTABLE_FOREGROUND_IDLE
+  foreground_idle_configured=foreground_idle_retry_pending=false;
+  foreground_idle_retry_delay=0;
+  if(!foreground_idle_configure_once(millis_now()))return -1;
 #endif
   return failed?-1:0;
