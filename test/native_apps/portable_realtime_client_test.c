@@ -58,6 +58,7 @@ static bool acquire(const char *name,uint32_t version,uint64_t instance,risc_run
  assert(g->struct_size==sizeof(*g) && !g->slot && !g->generation && !g->api);
  bool ext=!strcmp(name,TWATCH_RTC_CAPABILITY);bool failed;
  if(ext) {
+  if(version!=2 || instance!=f.instance)fprintf(stderr,"RTC acquire mismatch case=%u events=%s version=%u instance=%llu expected=%llu\\n",cases,f.events,version,(unsigned long long)instance,(unsigned long long)f.instance);
   assert(version==2 && instance==f.instance);assert(!f.rtc_live);
   ++f.rtc_acquires;event('T');failed=f.fail_rtc_acquire;
  } else {

@@ -1,0 +1,197 @@
+name: Shared Firmware Update cumulative delivery
+on:
+  push:
+    branches: ['work/shared-firmware-update-20261104']
+  pull_request:
+    paths: ['Apps/ota_update_scene*', 'Services/update/**', 'lib/PortableApps/include/SoftwareUpdateV1.h', 'scripts/*firmware*', 'scripts/test_ota_update_scene_background.py', 'scripts/build_portable_updates.py', 'test/ota_update_scene/**', 'test/native_apps/firmware*', 'docs/shared-firmware/**', '.github/workflows/firmware-scene-delivery.yml']
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: e817612532beb613376d69a502cd1e11b94ac8c4 # Published tree matches the locally qualified dependency.
+          path: Utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 712ecc3f894dba99d9c9638941778a82f5856b97
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: X4Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: e361e73de14314bb4b8d2fb3a24eb81e2390b0ee
+          path: X4Product
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: c69d7914935fccdc04749f7bfa429c74219bf88a
+          path: WatchProduct
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06
+          ref: 97ca6157aa9c3bba7c7fee3858aa7d0ff896d13b
+          path: WaveProduct
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: ab9ff33975680c5bb8d9a2e7ed346d0300732a4e
+          path: Bootfs
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retain exact source closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/source evidence/logs
+          for source in System Utilities Runtime X4Runtime X4Product WatchProduct WaveProduct Bootfs; do
+            git -C "$source" diff --exit-code HEAD --
+            git -C "$source" archive --format=tar HEAD | gzip -n > "evidence/source/$source.tar.gz"
+            git -C "$source" rev-parse HEAD > "evidence/source/$source.head"
+          done
+          sha256sum evidence/source/*.tar.gz > evidence/source/archives.sha256
+      - name: Qualify controller, background and update compatibility
+        shell: bash
+        env:
+          ASAN_OPTIONS: detect_leaks=0
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          set -euo pipefail
+          python System/scripts/test_firmware_scene.py --runtime Runtime --output evidence/controller --sanitize 2>&1 | tee evidence/logs/controller.log
+          for mode in normal sanitized; do
+            flags=(); if [ "$mode" = sanitized ]; then flags=(--sanitize); fi
+            python System/scripts/test_ota_update_scene_background.py --runtime Runtime --utilities Utilities --output "evidence/background/$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/background-$mode.log"
+          done
+          python System/scripts/test_firmware_update_readiness.py 2>&1 | tee evidence/logs/readiness.log
+          python System/scripts/test_portable_update.py 2>&1 | tee evidence/logs/portable-update.log
+          mkdir -p evidence/legacy
+          cp -a System/build/portable/firmware-readiness-tests evidence/legacy/
+          cp -a System/build/portable/update-tests evidence/legacy/
+      - name: Install pinned target toolchains
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install pyelftools==0.32 platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          bash Utilities/scripts/install_badge_catalog_toolchain.sh "$RUNNER_TEMP/firmware-toolchain" 2>&1 | tee evidence/logs/compiler.log
+          "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" --version | tee evidence/logs/provider-compiler.log
+      - name: Repeat canonical application and independent provider policies
+        shell: bash
+        run: |
+          set -euo pipefail
+          legacy="$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin"
+          python System/scripts/build_shared_firmware_update.py --runtime Runtime --utilities Utilities --compiler "$RUNNER_TEMP/firmware-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc" --legacy-linker "$legacy/xtensa-esp32s3-elf-ld" --output evidence/application 2>&1 | tee evidence/logs/application-build.log
+          export NATIVE_APP_CC="$legacy/xtensa-esp32s3-elf-gcc"
+          for output in providers providers-repeat; do
+            python System/scripts/build_portable_updates.py --services-only --product watch --output-dir "evidence/$output/watch" 2>&1 | tee "evidence/logs/$output-watch.log"
+            python System/scripts/build_portable_updates.py --services-only --product-policy-header WaveProduct/profiles/WaveshareUpdatePolicy.h --output-dir "evidence/$output/wave" 2>&1 | tee "evidence/logs/$output-wave.log"
+            python System/scripts/build_portable_updates.py --services-only --product x4 --catalog-url https://raw.githubusercontent.com/michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO/release-index/release-index.json --output-dir "evidence/$output/x4" 2>&1 | tee "evidence/logs/$output-x4.log"
+          done
+          python - <<'PYCODE'
+          import hashlib,json
+          from pathlib import Path
+          rows={}
+          for lane in ('watch','wave','x4'):
+              rows[lane]={}
+              for name in ('driver.elf','manifest.json'):
+                  a=Path('evidence/providers',lane,'software-update-firmware',name).read_bytes()
+                  b=Path('evidence/providers-repeat',lane,'software-update-firmware',name).read_bytes()
+                  assert a==b,(lane,name,'provider repeat differs')
+                  rows[lane][name]=hashlib.sha256(a).hexdigest()
+          Path('evidence/providers-repeat/receipt.json').write_text(json.dumps({'passed':True,'products':rows},indent=2)+'\n')
+          PYCODE
+      - name: Preserve cumulative products and unchanged native firmware
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/assemble_firmware_scene_delivery.py --bootfs-tools Bootfs/scripts --output evidence/assembly --application evidence/application --providers evidence/providers --downloads evidence/downloads 2>&1 | tee evidence/logs/assembly.log
+          python - <<'PYCODE'
+          import hashlib,json,urllib.request
+          from pathlib import Path
+          root=Path('evidence/downloads')
+          baseline=json.loads(Path('System/docs/shared-firmware/baseline.json').read_text())
+          for asset in baseline['native_assets']:
+              path=root/asset['name']
+              if not path.exists():
+                  with urllib.request.urlopen(asset['url'],timeout=180) as response:
+                      path.write_bytes(response.read())
+              data=path.read_bytes()
+              assert len(data)==asset['size'] and hashlib.sha256(data).hexdigest()==asset['sha256'],asset['name']
+          PYCODE
+      - name: Reject assembly policy and routing mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/test_firmware_scene_assembly.py --application evidence/application --providers evidence/providers --bootfs-tools Bootfs/scripts --assembly evidence/assembly --downloads evidence/downloads --output evidence/assembly-negative 2>&1 | tee evidence/logs/assembly-negative.log
+      - name: Admit actual candidate graphs and ELFs against owning native profiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in normal sanitized; do
+            flags=(); if [ "$mode" = sanitized ]; then flags=(--sanitize); fi
+            python System/scripts/test_home_product_admission.py --runtime Runtime --x4-runtime X4Runtime --x4-product X4Product --watch-product WatchProduct --wave-product WaveProduct --assembly evidence/assembly --output "evidence/admission/$mode" "${flags[@]}" 2>&1 | tee "evidence/logs/admission-$mode.log"
+          done
+      - name: Verify publication boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/publish_firmware_scene.py --build evidence --expected-source "${{ github.event.pull_request.head.sha || github.sha }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: firmware-delivery-${{ github.sha }}
+          path: evidence/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+  publish:
+    needs: qualify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/work/shared-firmware-update-20261104' && github.repository == 'michaelrolphone-cmyk/RiscRTE-System-Apps'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: firmware-delivery-${{ github.sha }}
+          path: evidence
+      - name: Publish and verify exact qualified bytes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python System/scripts/publish_firmware_scene.py --build evidence --publish --expected-source "${{ github.sha }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: firmware-publication-${{ github.sha }}
+          path: |
+            evidence/publication-plan.json
+            evidence/publication.json
+          if-no-files-found: error

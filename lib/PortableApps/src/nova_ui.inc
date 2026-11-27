@@ -1,3 +1,4 @@
+#include "PortableRgb565Blend.h"
 /* Settings is the visual authority: its unmodified Rajdhani/Orbitron glyphs,
  * palette and six-pixel rounded outlines are shared by portable utility apps. */
 #include "PortableNovaUi.h"
@@ -44,16 +45,28 @@ static void nu_pixel(int x,int y,uint32_t rgb,unsigned alpha) {
   {int px=x+(width()-240)/2,py=y+(height()-240)/2;
 #endif
 #if defined(PORTABLE_RASTER_SNAPSHOT) && defined(PORTABLE_WATCH_NATIVE_HEIGHT)
+#ifdef PORTABLE_WATCH_SAFE_INSETS
+  if(raster_replaying&&(py+(int)content_view.y<raster_band_top||py+(int)content_view.y>=raster_band_bottom))continue;
+#else
   if(raster_replaying&&(py<raster_band_top||py>=raster_band_bottom))continue;
 #endif
+#endif
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1){np_pixel(px,py,rgb,alpha);return;}
+#ifdef PORTABLE_WATCH_SAFE_INSETS
+  /* Layout/touch coordinates are already content-local. Add the physical
+   * safe origin once, directly to glyph pixels, never to a finished bitmap. */
+  int native_x=px,native_y=py;native_point(&native_x,&native_y);
+  if(native_x<0||native_y<0||(uint32_t)native_x>=surface.width||(uint32_t)native_y>=surface.height)continue;
+#endif
+#ifdef PORTABLE_WATCH_SAFE_INSETS
+  uint8_t *p=(uint8_t*)surface.pixels+(size_t)native_y*surface.stride_bytes+(size_t)native_x*2;
+#else
   uint8_t *p=(uint8_t*)surface.pixels+(size_t)py*surface.stride_bytes+(size_t)px*2;
-  uint16_t old=(uint16_t)(p[0]|p[1]<<8);
-  if(alpha>255)alpha=255;
-  unsigned r=(((old>>11)&31)*255/31*(255-alpha)+((rgb>>16)&255)*alpha)/255;
-  unsigned g=(((old>>5)&63)*255/63*(255-alpha)+((rgb>>8)&255)*alpha)/255;
-  unsigned b=((old&31)*255/31*(255-alpha)+(rgb&255)*alpha)/255;
-  uint16_t c=(uint16_t)((r>>3)<<11|(g>>2)<<5|(b>>3));p[0]=(uint8_t)c;p[1]=(uint8_t)(c>>8);
+#endif
+  uint16_t c;
+  if(alpha>=255)c=portable_rgb565_pack(rgb);
+  else c=portable_rgb565_over((uint16_t)(p[0]|p[1]<<8),rgb,alpha);
+  p[0]=(uint8_t)c;p[1]=(uint8_t)(c>>8);
   }
 }
 static void nu_rect(int x,int y,int w,int h,uint32_t rgb) {
@@ -163,7 +176,22 @@ void portable_nova_row(int x,int y,int w,int h,const char *caption,const char *v
 }
 void portable_nova_header(const char *title) {
   portable_nova_button(8,4,44,44,"<",false);
+#if defined(PORTABLE_FILE_BROWSER_APP) && defined(PORTABLE_WATCH_SAFE_INSETS) && defined(PORTABLE_NATIVE_TIME_TOOLBAR)
+  twatch_rtc_time_v1 time;bool known=native_toolbar_local(&time);
+  if(failed || native_custody_retained)return;
+  char clock[9]="--:--";
+  if(known){
+    bool hour24=portable_app_native_hour_24();unsigned hour=hour24?time.hour:time.hour%12;
+    if(!hour24&&!hour)hour=12;
+    clock[0]=(char)('0'+hour/10);clock[1]=(char)('0'+hour%10);
+    clock[3]=(char)('0'+time.minute/10);clock[4]=(char)('0'+time.minute%10);
+    if(!hour24){clock[5]=' ';clock[6]=time.hour<12?'A':'P';clock[7]='M';clock[8]=0;}
+  }
+  portable_nova_text(1,62,7,120,title,NOVA_CAP);
+  portable_nova_text(3,62,29,116,clock,NOVA_CYAN);
+#else
   portable_nova_text(portable_nova_measure(0,title)<=168?0:1,62,15,168,title,NOVA_CAP);
+#endif
   portable_nova_rule(16,49,208);
 }
 bool portable_nova_hit(int x,int y,int left,int top,int w,int h) {
@@ -198,6 +226,6 @@ bool portable_nova_wrap(unsigned face,int x,int y,int w,int line_height,unsigned
   return at<96 && !s[at];
 }
 
-#ifdef PORTABLE_NATIVE_CANVAS
+#ifdef PORTABLE_RF_NATIVE_CANVAS
 #include "nova_native.inc"
 #endif

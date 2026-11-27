@@ -1,0 +1,27 @@
+name: Shared Home boot selection
+on:
+  pull_request:
+    paths: ['lib/PortableApps/include/PortableHomeBoot.h', 'lib/PortableApps/src/PortableHomeBoot.c', 'test/home_boot/**', 'scripts/test_home_boot.py', '.github/workflows/home-boot.yml']
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: System
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: a91edf3fada6a559ec107186dd163d0c8da10d29
+          path: Runtime
+          persist-credentials: false
+      - run: python3 System/scripts/test_home_boot.py --runtime Runtime --output out/home-boot
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-boot-${{ github.event.pull_request.head.sha }}
+          path: out/

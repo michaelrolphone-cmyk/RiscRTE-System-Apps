@@ -1,0 +1,270 @@
+{
+  "status": "integration checkpoint; original task incomplete",
+  "focused_groups": 82,
+  "receipts": {
+    "/workspace/files-lane/composed-final-normal/receipt.json": {
+      "sha256": "5bde5bc10938a2f116c1d822687d563e853fe75036593466faf74fbba0da33b4",
+      "cases": 21,
+      "scope": "Full linked native Files root and production scene; Runtime/hardware doubled.",
+      "sanitized": false
+    },
+    "/workspace/files-lane/composed-final-sanitized/receipt.json": {
+      "sha256": "54ec9bbdaba1e0dc2a7693c6b0c8189eb6f78cd5a6b0530c66725c70592eb4ec",
+      "cases": 21,
+      "scope": "Full linked native Files root and production scene; Runtime/hardware doubled.",
+      "sanitized": true
+    },
+    "/workspace/files-lane/composed-final-retained-normal/receipt.json": {
+      "sha256": "a94b989004ae390d81e12070966f6519a0b32af3018c2337f13ea7ff8ec137f2",
+      "cases": 21,
+      "scope": "Full linked native Files root and production scene; Runtime/hardware doubled.",
+      "sanitized": false
+    },
+    "/workspace/files-lane/composed-final-retained-sanitized/receipt.json": {
+      "sha256": "4459a781df8d2e9cbd51ed4a750be1e713cb85d039ef9a96ca5890d6cc7c00f6",
+      "cases": 21,
+      "scope": "Full linked native Files root and production scene; Runtime/hardware doubled.",
+      "sanitized": true
+    },
+    "/workspace/files-lane/runtime-current-normal-2/receipt.json": {
+      "sha256": "0a01677c9637f70da587908014e1c58a56604420f1e0153a670fa7e0d6baf18b",
+      "cases": [
+        {
+          "profile": "paper",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "paper",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "paper",
+          "mode": "no-ui",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "no-ui",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "no-ui",
+          "passed": true
+        }
+      ],
+      "scope": "Full Files and scene ELF lifecycle through actual Runtime; hardware doubled.",
+      "sanitized": false
+    },
+    "/workspace/files-lane/runtime-current-sanitized/receipt.json": {
+      "sha256": "9c6cf2a7f78c2684583c0b7c7783a925af7ece681d7a25d2c83816801f25f82d",
+      "cases": [
+        {
+          "profile": "paper",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "paper",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "paper",
+          "mode": "no-ui",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "no-ui",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "no-ui",
+          "passed": true
+        }
+      ],
+      "scope": "Full Files and scene ELF lifecycle through actual Runtime; hardware doubled.",
+      "sanitized": true
+    },
+    "/workspace/files-lane/runtime-retained-normal/receipt.json": {
+      "sha256": "1fec178121875c90cc33a0e8cd5ea6f52013d0ab39310d97ee391f06788aa345",
+      "cases": [
+        {
+          "profile": "paper",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "paper",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "paper",
+          "mode": "no-ui",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "no-ui",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "no-ui",
+          "passed": true
+        }
+      ],
+      "scope": "Full Files and scene ELF lifecycle through actual Runtime; hardware doubled.",
+      "sanitized": false
+    },
+    "/workspace/files-lane/runtime-retained-sanitized/receipt.json": {
+      "sha256": "bf70d0e2dbf93eaba25281d2147009897281554b82219b925bb9dc096976a50a",
+      "cases": [
+        {
+          "profile": "paper",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "paper",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "paper",
+          "mode": "no-ui",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "watch",
+          "mode": "no-ui",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "demand",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "retained-providers",
+          "passed": true
+        },
+        {
+          "profile": "amoled",
+          "mode": "no-ui",
+          "passed": true
+        }
+      ],
+      "scope": "Full Files and scene ELF lifecycle through actual Runtime; hardware doubled.",
+      "sanitized": true
+    },
+    "/workspace/files-lane/qualification-runtime-fix/qualification.json": {
+      "sha256": "893a262b2235a6b545e1d41d19582c4724d6963927a25896b2455ccef18a2b74"
+    },
+    "/workspace/files-lane/link-runtime-fix/link-receipt.json": {
+      "sha256": "e27fa285ce6c6cbf6294adc6f5f1b4ae20b5f39e9e8059ccff99374c81eff5ef"
+    }
+  },
+  "preserved_failure_logs": {
+    "/workspace/files-handoff/qualification/runtime-current-debug.log": "bb7edfc6e3d582776aea8c3a714070489e458b57a14df1135838526ce04b30eb",
+    "/workspace/files-handoff/qualification/composed-normal-5.log": "f76094e63c2334403783d6ce21ac9e0234cde99c599b2dfa6d5b6a0c6fe45ae2",
+    "/workspace/files-handoff/qualification/runtime-current-normal.log": "e6890cae765b2bba4a4e1b22814391db4bebbdc26206dcf92708efd6b4a65918",
+    "/workspace/files-handoff/qualification/composed-normal-2.log": "d5266071e15ff3d8ff7eb88a4f48f7950c329b8d2592853772710ccf43b02b3d",
+    "/workspace/files-handoff/qualification/composed-normal-8.log": "dbf670911ef4741af0dc2a16b669087bdbcfbc78de00b97043141e7224571ecf",
+    "/workspace/files-handoff/qualification/composed-normal-4.log": "39916a7d0a1bb7739eb922f117d5a44f400f1bc108b818ef0499544ef62a994f",
+    "/workspace/files-handoff/qualification/composed-normal-3.log": "d62e33e3432721828a396b74f09b943215c77f4d874b3eaca83ca21035c04c44",
+    "/workspace/files-handoff/qualification/composed-normal-7.log": "dbf670911ef4741af0dc2a16b669087bdbcfbc78de00b97043141e7224571ecf",
+    "/workspace/files-handoff/qualification/sections-link.log": "b563044e57a0d8e0803763060eb6636d953c56ede352291939295e1a33f85514",
+    "/workspace/files-handoff/qualification/composed-normal-6.log": "38dacbc2f749a38dbf3d65bce368ca4563de977d88d2d3436cb8142409fc7103",
+    "/workspace/files-handoff/qualification/integrated-link.log": "9de2df63d9bce7c0aa6cfa8c4a582b29825a20baf41ba956dffb0d5a5835042a"
+  },
+  "missing_inputs": [
+    "Exact X4 mounted-files-097-final/file_browser-build-record.json referred to by selected owning recipe"
+  ],
+  "remaining": [
+    "Full mutation/peer/setup/text adversarial composed scenarios",
+    "Full Files/Home automatic effects composition",
+    "Parent-owned three-product admission with original authority/data",
+    "Physical hardware execution unavailable"
+  ],
+  "external_stops": [
+    "Files archive upload/inspection",
+    "Scanner publication"
+  ]
+}

@@ -1,6 +1,0 @@
-{
-  "binary": "/tmp/native-quick-color-guard-normal4/test-binary",
-  "sha256": "cbbf5697187c34d0d8985d5ec2c8c4d0c8f48b81dad07eb9490a5ec107d296b8",
-  "bytes": 570544,
-  "failure": "Fixture selected COLOR_ONLY without required WATCH_NATIVE_HEIGHT for non-240 provider extents; app_module_init correctly rejected first120x150 row. Production admits240x240 only in that selection. Add WATCH_NATIVE_HEIGHT as present in actual Wi-Fi recipe; no production correction."
-}

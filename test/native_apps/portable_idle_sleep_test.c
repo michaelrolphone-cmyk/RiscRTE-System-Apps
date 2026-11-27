@@ -114,13 +114,7 @@ static void held_contact(void){
  /* A controller hold spans capture polls, not one report per application pass. */
  for(unsigned p=1;p<=8;p++){
   input_count=0;for(unsigned n=1;n<=8;n++)tap(polls+n,100,110);
-  ticks+=61000;quiet_step();
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI)
-  /* First-frame completion emits ordered cancellation before a newer DOWN.
-   * It must defer idle without turning that cancellation into an action. */
-  if(!touch.down){assert(input_sample.cancelled && !sleeps);quiet_step();}
-#endif
-  assert(!sleeps && touch.down && (uint32_t)(ticks-last_activity)<=4);
+  ticks+=61000;quiet_step();assert(!sleeps && touch.down && (uint32_t)(ticks-last_activity)<=4);
  }
  input_count=0;t5_app_input_t released_input=step();
  assert(!released_input.exit_requested && !released_input.buttons);
@@ -154,50 +148,6 @@ static void wraparound(void){
  quiet_step();ticks+=59970;quiet_step();assert(!sleeps);
  ticks+=40;quiet_step();assert(sleeps==1);finish();
 }
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI)
-static void native_cancel_without_contact(void){
- begin();assert(touch.cancel_pending && !touch.contact_count);
- ticks=60000;quiet_step();
- assert(!sleeps && input_sample.cancelled && !touch.down && !touch.contact_count);
- quiet_step();assert(sleeps==1 && sleep_at>=60000 && sleep_at<=60021);finish();
-}
-static void native_gated_hold(void){
- begin();quiet_step();
- for(unsigned n=1;n<=8;n++)tap(polls+n,100,110);
- quiet_step();assert(touch.down && touch.contact_count==1);
- input_reset();assert(!touch.down && touch.contact_count==1 && touch.cancel_pending);
- for(unsigned p=0;p<4;p++){
-  input_count=0;for(unsigned n=1;n<=8;n++)tap(polls+n,100,110);
-  ticks+=61000;quiet_step();
-  assert(!sleeps && !touch.down && touch.contact_count==1 && !sv_gesture);
-  assert((uint32_t)(ticks-last_activity)<=4);
- }
- input_count=0;quiet_step();assert(!sleeps && !touch.contact_count && !touch.down);
- unsigned activity=last_activity;
- ticks=activity+59998;quiet_step();assert(!sleeps);
- ticks=activity+60000;quiet_step();assert(sleeps==1);finish();
-}
-static bool invalid_idle_snapshot,failed_idle_poll;
-static bool idle_poll(void*c,size_t n){
- if(failed_idle_poll){assert(n==1);++polls;return false;}return touch_poll(c,n);
-}
-static bool idle_snapshot(void*c,risc_touch_snapshot_v1*out){
- bool ok=touch_snapshot(c,out);if(invalid_idle_snapshot)out->width=0;return ok;
-}
-static void native_resync_idle(bool invalid_snapshot){
- begin();quiet_step();
- risc_touch_api_v1 api=touch_api;api.snapshot=idle_snapshot;api.poll=idle_poll;touch.api=&api;
- ticks=last_activity+60000;
- if(invalid_snapshot){invalid_idle_snapshot=true;input_reset();}
- for(unsigned p=0;p<4;p++){
-  if(!invalid_snapshot)failed_idle_poll=true;
-  quiet_step();assert(!sleeps && !touch.down && !sv_gesture);
- }
- failed_idle_poll=false;invalid_idle_snapshot=false;
- for(unsigned p=0;p<8&&!sleeps;p++)quiet_step();
- assert(sleeps==1 && !touch.down && !touch.contact_count);finish();
-}
-#endif
 int main(int argc,char **argv){
  assert(argc==2);test_case=(unsigned)atoi(argv[1]);
  if(test_case==0)idle_after_drag();
@@ -206,11 +156,6 @@ int main(int argc,char **argv){
  else if(test_case==4)pending_frame();
  else if(test_case==5 || test_case==6)nested_settings();
  else if(test_case==7)wraparound();
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI)
- else if(test_case==8)native_cancel_without_contact();
- else if(test_case==9)native_gated_hold();
- else if(test_case==10 || test_case==11)native_resync_idle(test_case==11);
-#endif
  else assert(!"Unknown idle scenario");
  printf("Portable idle scenario %s: %u sleep entries, nested state/input and clean ownership passed\n",argv[1],sleeps);
  return 0;

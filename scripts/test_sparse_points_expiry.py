@@ -7,21 +7,24 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--candidate',type=Path,required=True,help='Qualified host target providing exact compiled SDK headers')
 p.add_argument('--sleep-source',type=Path,required=True)
 p.add_argument('--output',type=Path,required=True)
+p.add_argument('--source-root',type=Path,help='Production source tree; current fixture remains the oracle')
+p.add_argument('--timer-storage',action='store_true',help='Selected product prepares storage.volume on TIMER')
 p.add_argument('--baseline',type=Path,help='Optional clean pre-fix worktree for defect reproduction')
-a=p.parse_args();out=a.output.resolve();include=out/'include';include.mkdir(parents=True,exist_ok=True)
+a=p.parse_args();CODE=a.source_root.resolve() if a.source_root else ROOT;out=a.output.resolve();include=out/'include';include.mkdir(parents=True,exist_ok=True)
 receipt=json.loads((a.candidate/'build-evidence.json').read_text())
 shutil.copytree(receipt['paper_transition']['compiled_include_directory'],include,dirs_exist_ok=True)
 for name in ('PortableHomePointsCatalog.h','PortableDeskPointsSnapshot.h','PortablePointsCatalogView.h','PortableDeskClock.h','PortablePointsState.h'):
- shutil.copyfile(ROOT/'lib/PortableApps/include'/name,include/name)
-shutil.copytree(ROOT/'lib/PortableApps/time',out/'time',dirs_exist_ok=True)
+ shutil.copyfile(CODE/'lib/PortableApps/include'/name,include/name)
+shutil.copytree(CODE/'lib/PortableApps/time',out/'time',dirs_exist_ok=True)
 flags=['-DTEST_NATIVE_LANDSCAPE','-DPORTABLE_DISPLAY_ROTATION=90','-DPORTABLE_APP_OWNS_TOUCH_CHROME',
  '-DPORTABLE_RTC_WALL_TIME','-DPORTABLE_ALARM_CLIENT','-DALARM_SERVICE_TAGGED_V2','-DPORTABLE_ALARM_TERMINAL_RETENTION',
  '-DPORTABLE_INPUT_NAVIGATION','-DPORTABLE_APP_SLEEP_LOCAL','-DPORTABLE_CROWN_SLEEP_LOCAL','-DPORTABLE_SLEEP_MANUAL_ONLY',
  '-DPORTABLE_DESK_CLOCK','-DPORTABLE_DESK_CLOCK_SPARSE_START','-DPORTABLE_DESK_LOCK_HOME','-DPORTABLE_DESK_POINTS_FACE',
  '-DPORTABLE_DESK_POINTS_SNAPSHOT','-DPORTABLE_HOME_POINTS_NATIVE_UTC','-DALARM_NATIVE_UTC']
+if a.timer_storage:flags+=['-DTEST_TIMER_STORAGE_SLEEP']
 names='adapter.c desk_clock_faces.c PortableRealtimeClient.c PortableTimeZone.c PortableTimeZoneCatalog.c PortableTimeZonePreference.c'.split()
-sources=[ROOT/'Apps/paper_clock.c',*[ROOT/'lib/PortableApps/src'/n for n in names],a.sleep_source,ROOT/'test/native_apps/sparse_points_expiry_test.c']
-quick=[ROOT/'lib/PortableApps/src'/n for n in 'quick_actions.c quick_render.c quick_session.c quick_radios.c'.split()]
+sources=[CODE/'Apps/paper_clock.c',*[CODE/'lib/PortableApps/src'/n for n in names],a.sleep_source,ROOT/'test/native_apps/sparse_points_expiry_test.c']
+quick=[CODE/'lib/PortableApps/src'/n for n in 'quick_actions.c quick_render.c quick_session.c quick_radios.c'.split()]
 incs=['-I'+str(include),'-I'+str(ROOT/'lib/NativeApps/include'),'-I'+str(a.sleep_source.parent.parent/'drivers/x4pro_power')]
 cases='valid expired rewind rewind-in-window unavailable other-face cross-minute budget due rtc-error blocked owned projection-error stale-result future-result old-snapshot status-terminal uncertain pump-status-terminal step-uncertain refresh-terminal step-terminal projection-terminal'.split()
 runs=[]
@@ -65,8 +68,8 @@ if a.baseline:
   assert (result.returncode==0)==(case=='valid'),(case,result.stdout,result.stderr)
   baseline.append({'case':case,'returncode':result.returncode,'result':result.stdout+result.stderr})
  (out/'baseline-reproduction.json').write_text(json.dumps(baseline,indent=2)+'\n')
-tracked=[*sources,*quick,ROOT/'Apps/paper_sparse_clock.inc',ROOT/'Apps/paper_home_points.inc',ROOT/'lib/PortableApps/src/sparse_clock_adapter.inc',ROOT/'lib/PortableApps/include/PortableHomePointsCatalog.h',ROOT/'lib/PortableApps/include/PortablePointsState.h',ROOT/'test/native_apps/sparse_clock_startup_test.c',Path(__file__)]
-(out/'receipt.json').write_text(json.dumps({'source':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True)),
+tracked=[*sources,*quick,CODE/'Apps/paper_sparse_clock.inc',CODE/'Apps/paper_home_points.inc',CODE/'lib/PortableApps/src/sparse_clock_adapter.inc',CODE/'lib/PortableApps/include/PortableHomePointsCatalog.h',CODE/'lib/PortableApps/include/PortablePointsState.h',ROOT/'test/native_apps/sparse_clock_startup_test.c',Path(__file__)]
+(out/'receipt.json').write_text(json.dumps({'source':subprocess.check_output(['git','rev-parse','HEAD'],cwd=CODE,text=True).strip(),'fixture_source':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=CODE,text=True)),
  'runs':runs,'process_cases':len(runs),'pixels':'normal and ASan/UBSan byte identical','snapshot_abi_bytes':408,
  'candidate_sdk':str(a.candidate),'baseline':baseline,'source_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in tracked},'hardware':'not run'},indent=2)+'\n')
 print(f'{len(runs)} actual TIMER controller/adapter/sleep cases PASS')

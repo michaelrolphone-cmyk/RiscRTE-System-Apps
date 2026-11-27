@@ -38,7 +38,8 @@ class Transition(C.Structure):
 
 class Rule(C.Structure):
     _fields_ = [('standard_offset', C.c_int32), ('daylight_offset', C.c_int32),
-                ('has_daylight', C.c_uint8), ('start', Transition), ('end', Transition)]
+                ('has_daylight', C.c_uint8), ('start', Transition), ('end', Transition),
+                ('era_year', C.c_uint16), ('era_start', Transition), ('era_end', Transition)]
 
 
 class Candidate(C.Structure):
