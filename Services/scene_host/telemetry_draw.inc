@@ -72,11 +72,14 @@ static void tm_tabs(void){
  for(unsigned i=0;i<document.node_count;i++){
   const risc_scene_node_v1*n=&document.nodes[i];if(n->route!=current_route()||n->kind!=RISC_COMPONENT_TAB_BAR||n->flags&RISC_SCENE_HIDDEN)continue;
   fill(0,y,(int)width,36*s,nc_bg());fill(0,y,(int)width,2*s,nc_fg());
-  for(unsigned j=0;j<4;j++){
-   int x=(int)width*(int)j/4,w=(int)width/4;bool on=n->value==(int)j;char label[24];nc_choice(document.details[i].choices,j,label,sizeof(label));
+  unsigned count=(unsigned)n->maximum+1;
+  for(unsigned j=0;j<count;j++){
+   int x=(int)width*(int)j/(int)count,w=(int)width*(int)(j+1)/(int)count-x;bool on=n->value==(int)j;char label[24];nc_choice(document.details[i].choices,j,label,sizeof(label));
    uint16_t fg=on?nc_bg():nc_fg();if(on)fill(x,y+2*s,w,34*s,nc_fg());
    int tw=tm_measure(label,1),total=tw+16*s,left=x+(w-total)/2;
-   tm_icon(RISC_SYMBOL_GAUGE+j,left,y+13*s,12*s,fg);tm_text(left+16*s,y+22*s,w-16*s,label,1,fg);
+   if(document.details[i].symbol==RISC_SYMBOL_WIFI)nc_icon(j?RISC_SYMBOL_STAR:RISC_SYMBOL_WIFI,left,y+13*s,12*s,fg);
+   else {tm_icon(RISC_SYMBOL_GAUGE+j,left,y+13*s,12*s,fg);}
+   tm_text(left+16*s,y+22*s,w-16*s,label,1,fg);
    if(j==2&&document.details[i].badge[0]){
     nc_round(x+w-20*s,y+3*s,14*s,12*s,6*s,fg);tm_center(x+w-20*s,y+12*s,14*s,document.details[i].badge,1,on?nc_fg():nc_bg());
    }

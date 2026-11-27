@@ -22,6 +22,13 @@ def json_write(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True)+'\n')
 
 
+def target_flags(mapping: Path) -> list[str]:
+    return ['-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
+             '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib',
+             '-nostartfiles', '-shared', '-Wl,--no-relax', '-Wl,--hash-style=sysv',
+             '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror']
+
+
 def build(compiler: str, include: Path, output: Path, manifest: dict,
           sources: list[Path], defines: list[str] | None = None,
           exports: set[str] | None = None) -> dict:
@@ -32,10 +39,7 @@ def build(compiler: str, include: Path, output: Path, manifest: dict,
         raise ValueError('Exports must be a nonempty set of C symbol names')
     mapping = output/'exports.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
-    flags = ['-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
-             '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib',
-             '-nostartfiles', '-shared', '-Wl,--no-relax', '-Wl,--hash-style=sysv',
-             '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror']
+    flags = target_flags(mapping)
     elf = output/manifest['file_name']
     subprocess.run([compiler,*flags,'-I'+str(include),*(defines or []),
                     *map(str,sources),'-o',str(elf)],check=True)

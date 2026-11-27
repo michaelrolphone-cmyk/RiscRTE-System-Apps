@@ -1,0 +1,213 @@
+name: Native Wi-Fi Manager
+on:
+  pull_request:
+    paths: ['Apps/wifi_manager/**', 'Apps/native/wifi_settings.json', 'Services/scene_host/**', 'Services/text_input/**', 'Services/alarm_foreground/**', 'scripts/*alarm_foreground*', 'test/alarm_foreground/**', 'sdk/app/**', 'scripts/*wifi_manager*', 'scripts/*shared_wifi*', 'test/shared_wifi/**', 'docs/shared-wifi/**', 'test/wifi_manager/**', '.github/workflows/wifi-manager.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wifi:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 532c502fb2aad358d46166d5fd1df8358148f20e
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify current main shared typography
+        run: |
+          echo '928e6c01d863767a2fbb641963a8c9f63e76243c95d52208caaa62961909f7a6  Services/scene_host/fonts/telemetry.inc' | sha256sum --check
+      - name: Exercise actual app, scene and shared keyboard
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          status=0
+          python scripts/test_alarm_foreground.py --runtime Runtime --output build/alarm-tests 2>&1 | tee evidence/alarm.log || status=1
+          python scripts/test_alarm_foreground.py --runtime Runtime --output build/alarm-asan --sanitize 2>&1 | tee evidence/alarm-sanitized.log || status=1
+          python scripts/test_wifi_manager.py --runtime Runtime --output build/wifi-tests 2>&1 | tee evidence/wifi.log || status=1
+          python scripts/test_wifi_manager.py --runtime Runtime --output build/wifi-asan --sanitize 2>&1 | tee evidence/wifi-sanitized.log || status=1
+          python scripts/test_scene_components.py --runtime Runtime 2>&1 | tee evidence/components.log || status=1
+          python scripts/test_scene_telemetry.py --runtime Runtime 2>&1 | tee evidence/telemetry.log || status=1
+          python scripts/test_scene_host.py --runtime Runtime 2>&1 | tee evidence/lifecycles.log || status=1
+          python scripts/test_text_input_host.py --runtime Runtime --output build/text-tests --decoupled-attention 2>&1 | tee evidence/text-input.log || status=1
+          exit "$status"
+      - name: Compile ESP32-S3 app and both shared services
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python scripts/build_wifi_manager.py --runtime Runtime --output build/wifi-manager 2>&1 | tee evidence/app-build.log
+          python scripts/build_text_input_services.py --runtime Runtime --output build/providers 2>&1 | tee evidence/provider-build.log
+          python scripts/build_alarm_foreground.py --runtime Runtime --output build/providers/alarm-foreground 2>&1 | tee evidence/alarm-build.log
+          python scripts/build_alarm_foreground.py --runtime Runtime --output build/providers/alarm-foreground-tagged --tagged 2>&1 | tee evidence/alarm-tagged-build.log
+          git rev-parse HEAD > evidence/source.txt
+          sha256sum build/wifi-manager/wifi_settings.elf build/providers/presentation/scene-host/driver.elf build/providers/text-input-host/driver.elf > evidence/SHA256SUMS.txt
+          git diff --exit-code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wifi-manager-shared-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            build/wifi-manager/
+            build/providers/presentation/scene-host/
+            build/providers/text-input-host/
+            build/providers/alarm-foreground/
+            build/providers/alarm-foreground-tagged/
+            build/alarm-tests/
+            build/wifi-tests/frames/behavior/
+            evidence/
+          retention-days: 14
+
+  product-baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: 710b200021b983ea55eb86a6fbddbbf5ce10a984
+          path: PinnedSystem
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: ab9ff33975680c5bb8d9a2e7ed346d0300732a4e
+          path: Bootfs
+          persist-credentials: false
+      - name: Test product preservation gate
+        run: python3 scripts/test_shared_wifi_products.py
+      - name: Inspect published Wi-Fi product contracts
+        run: python3 scripts/inspect_shared_wifi_baseline.py --system PinnedSystem --bootfs-tools Bootfs/scripts --output build/shared-wifi-baseline
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-wifi-product-baseline-${{ github.event.pull_request.head.sha || github.sha }}
+          path: build/shared-wifi-baseline/
+          if-no-files-found: error
+
+  product-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 532c502fb2aad358d46166d5fd1df8358148f20e
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: 710b200021b983ea55eb86a6fbddbbf5ce10a984
+          path: PinnedSystem
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: ab9ff33975680c5bb8d9a2e7ed346d0300732a4e
+          path: Bootfs
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Record exact source inputs
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/product-qualification
+          for source in . Runtime PinnedSystem Bootfs; do
+            printf '%s ' "$source"
+            git -C "$source" rev-parse HEAD
+            git -C "$source" diff --exit-code HEAD --
+          done | tee evidence/product-qualification/sources.txt
+          python scripts/test_shared_wifi_products.py 2>&1 | tee evidence/product-qualification/gate-tests.log
+      - name: Build canonical Wi-Fi and actual product scene profiles
+        run: |
+          set -euo pipefail
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python scripts/build_wifi_manager.py --runtime Runtime --output build/product-wifi 2>&1 | tee evidence/product-qualification/app-build.log
+          python scripts/build_scene_services.py --runtime Runtime --output build/product-providers/watch --host-profile watch-compact 2>&1 | tee evidence/product-qualification/watch-provider-build.log
+          python scripts/build_scene_services.py --runtime Runtime --output build/product-providers/wave --host-profile color-dynamic 2>&1 | tee evidence/product-qualification/wave-provider-build.log
+          python scripts/build_scene_services.py --runtime Runtime --output build/product-providers/x4 --host-profile full 2>&1 | tee evidence/product-qualification/x4-provider-build.log
+          python -c 'import json,pathlib; [print(str(p), json.dumps(json.loads(p.read_text()).get("memory", {}), sort_keys=True)) for p in sorted(pathlib.Path("build/product-providers").glob("*/scene-host/build.json"))]' | tee evidence/product-qualification/provider-memory.log
+          git diff --exit-code HEAD --
+      - name: Verify published product bytes
+        run: |
+          set -euo pipefail
+          python scripts/inspect_shared_wifi_baseline.py --system PinnedSystem --bootfs-tools Bootfs/scripts --output build/product-baseline 2>&1 | tee evidence/product-qualification/baseline.log
+      - name: Enforce product preservation and selected Runtime admission
+        run: |
+          set -euo pipefail
+          phase=assembly
+          trap 'code=$?; printf "{\"stage\":\"%s\",\"exit_code\":%s,\"physical_testing\":false,\"target_execution\":false}\n" "$phase" "$code" > evidence/product-qualification/gate-status.json' EXIT
+          python scripts/assemble_shared_wifi_products.py --system PinnedSystem --bootfs Bootfs --baseline build/product-baseline --baseline-lock docs/shared-wifi/baseline.json --shared build/product-wifi --providers build/product-providers --output build/product-candidate 2>&1 | tee evidence/product-qualification/assembly.log
+          phase=runtime-admission
+          python scripts/qualify_shared_wifi_products.py --runtime Runtime --system PinnedSystem --bootfs Bootfs --baseline build/product-baseline --baseline-lock docs/shared-wifi/baseline.json --shared build/product-wifi --providers build/product-providers --candidate build/product-candidate --output build/product-qualification 2>&1 | tee evidence/product-qualification/admission.log
+          phase=complete
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-wifi-product-qualification-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            evidence/product-qualification/
+            build/product-wifi/
+            build/product-providers/
+            build/product-baseline/
+            build/product-candidate/
+            build/product-qualification/
+          if-no-files-found: error
+          retention-days: 14
+
+  x4-policy-admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: cf7583ca682649819c534d749ecc7d38ec72f63a
+          path: X4
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 532c502fb2aad358d46166d5fd1df8358148f20e
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Qualify isolated production policy profile
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/x4-policy
+          git -C X4 rev-parse HEAD > evidence/x4-policy/product-source.txt
+          git -C Runtime rev-parse HEAD > evidence/x4-policy/runtime-source.txt
+          python3 X4/minimal/test/native_wifi_profile_test.py --runtime Runtime --output build/x4-wifi-policy 2>&1 | tee evidence/x4-policy/admission.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: x4-wifi-policy-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            build/x4-wifi-policy/
+            evidence/x4-policy/
+          if-no-files-found: error

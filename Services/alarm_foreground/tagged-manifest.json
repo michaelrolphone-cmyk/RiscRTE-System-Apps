@@ -1,0 +1,24 @@
+{
+  "architecture": "xtensa-esp32s3",
+  "driver_abi": 2,
+  "file_name": "driver.elf",
+  "id": "alarm-foreground",
+  "provides": [
+    {
+      "api": 1,
+      "capability": "ui.alarm-foreground"
+    }
+  ],
+  "requires": [
+    {
+      "api": 1,
+      "capability": "ui.scene"
+    },
+    {
+      "api": 2,
+      "capability": "alarm.service"
+    }
+  ],
+  "type": "driver",
+  "version": "0.1.0"
+}
