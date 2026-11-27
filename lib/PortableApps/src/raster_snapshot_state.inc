@@ -6,8 +6,8 @@ enum {RS_FILL,RS_ROUNDED,RS_TEXT,RS_ICON,RS_PP_TEXT,RS_PP_CIRCLE,
  RS_SV_PIXEL,RS_SV_RECT,RS_SV_TEXT,RS_SV_BUTTON,RS_SV_FADE,
  RS_WV_PIXEL,RS_WV_RECT,RS_WV_TEXT,RS_WV_BUTTON,
  RS_SBH_TEXT,RS_QR_TEXT,RS_QR_ROUND,RS_QR_ICON,RS_QP_ICON,RS_BITMAP,RS_QA_RENDER,RS_CUSTOM,RS_LAYER_BEGIN,RS_LAYER_END,RS_LAYER_BLIT
-#ifdef PORTABLE_NATIVE_CANVAS
- ,RS_NU_NATIVE_TEXT,RS_NU_NATIVE_ROUND,RS_NU_NATIVE_ICON
+#ifdef PORTABLE_RF_NATIVE_CANVAS
+ ,RS_NU_NATIVE_TEXT,RS_NU_NATIVE_ROUND
 #endif
 };
 typedef struct raster_command {
@@ -36,6 +36,12 @@ static raster_command *raster_commands,*raster_tail,*raster_cursor;
 static bool raster_recording,raster_sealed,raster_replaying,raster_full,raster_begin_allowed;
 static bool raster_ready_to_submit,raster_band_columns;
 static void *raster_offscreen;
+#if defined(PORTABLE_RASTER_UNDERLAY_EXCHANGE) && defined(PORTABLE_ALARM_CLIENT)
+/* Exact completed app-owned copy provenance, never a provider-memory loan. */
+static const void *raster_copied_source;
+static risc_display_frame_v1 raster_copied_frame;
+static void raster_copy_forget(void){raster_copied_source=NULL;raster_copied_frame=0;}
+#endif
 static bool raster_started;
 #include "PortableRasterLayer.h"
 struct portable_raster_layer {
@@ -71,9 +77,6 @@ static uint32_t raster_saved_intent;
 static uint32_t raster_handoff_origin;
 #endif
 static bool raster_saved_app_frame;
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
-static unsigned raster_native_present_owner;
-#endif
 #if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
 static bool raster_saved_clean;
 #endif

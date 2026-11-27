@@ -1,0 +1,15 @@
+{
+  "scanner_fixture_commit": "38877fd5",
+  "scanner_files": {
+    "x4.cpp": "47a21b17fe6a67d3b900b30cf4e2f2fe624371d5569ac4b27a3eaf3016b76ebc",
+    "commands.json": "981be485cfb62bc5a507cffac6a92ef98cdce521a3c3b311c7cddcde553b45ce",
+    "origins.json": "b8d597e1241962f23394d13e31bdbcd6eb58cd330a4b9538a53a99da072c2e86",
+    "wave-settings.h": "37ddfd9feb4b70fbcd9f87b523dec3847a77d4c4bcb6d9b9da5f7fc39fb5382b",
+    "wave.cpp": "df9cda13bb63b2536e8bb6b3c0c550730076c714f03c05250f19e45cfb987ef7",
+    "watch.cpp": "6e40f296492a59405c0c642206ba944bc06940846376bac3c283c1240a88c13a",
+    "x4-settings.h": "6768be378495a2925094c10830a2586ab65a7087e1434f256ea5afe307e12b9c",
+    "app_data_admission_backend.h": "cc854d0c9d083272b09c031f404a5c8b1c9ed3a8fa3c2271ed99efd3233aef26"
+  },
+  "cohort_header_source": "X4 93ee386b7e23628f3776edc6cfd2805cf675d649 minimal/recovery-107/fixtures/cohort_elf_admission.h",
+  "cohort_header_sha256": "525e956fab608220414cba9822603b59dc5087e06e02edf4060623f0a30c4525"
+}

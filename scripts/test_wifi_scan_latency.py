@@ -20,7 +20,17 @@ for n in ['RiscRuntimeV1.h','RiscRealtimeV1.h']:shutil.copyfile(a.runtime/'sdk/a
 for n in ['AlarmServiceV1.h','AlarmServiceV2.h']:shutil.copyfile(a.sdk/n,out/'include'/n)
 (out/'public').mkdir(exist_ok=True)
 for n in ['WifiApi.h','RiscRadioAsyncV1.h']:
- if (out/'include'/n).exists():shutil.copyfile(out/'include'/n,out/'public'/n)
+ if (out/'include'/n).exists():
+  destination=out/'public'/n
+  if destination.is_symlink():destination.unlink()
+  shutil.copyfile(out/'include'/n,destination)
+# Modern Runtime includes this same SDK type before the public WifiApi wrapper.
+# Preserve one pragma-once identity instead of copying a second identical file.
+radio_header=a.runtime/'sdk/driver/RiscRadioAsyncV1.h'
+public_radio=out/'public/RiscRadioAsyncV1.h'
+if radio_header.exists() and public_radio.exists():
+ if radio_header.read_bytes()!=public_radio.read_bytes():raise ValueError('Runtime/System radio async SDK mismatch')
+ public_radio.write_text('#include '+json.dumps(str(radio_header.resolve()))+'\n')
 for n in ['app-cross.c','app-entry.c','cross-host.cpp','native_wifi_sdk_fixture.inc']:shutil.copyfile(fixture/n,out/n)
 commands=json.loads((fixture/'commands.json').read_text())
 replacements={'{SYSTEM}':str(a.system.resolve()),'{RUNTIME}':str(a.runtime.resolve()),'{WATCH}':str(a.watch.resolve()),'{OUTPUT}':str(out)}
@@ -39,4 +49,4 @@ for case in cases:
  (out/(case+'.log')).write_text(result.stdout+result.stderr);results.append({'case':case,'returncode':result.returncode});print(case,result.returncode,flush=True)
  if result.returncode:print((result.stdout+result.stderr)[-1800:]);result.check_returncode()
 paths=[a.system/'Apps/wifi_settings_portable.inc',a.system/'lib/PortableApps/src/adapter.c',a.system/'lib/PortableApps/src/native_custody_adapter.inc',a.runtime/'src/ports/esp32s3/NativeRadio.h',a.runtime/'src/ports/esp32s3/CpuPort.cpp',a.runtime/'src/bootstrap/Runtime.cpp',a.watch/'drivers/twatch_wifi/driver.c',a.watch/'drivers/twatch_ble/driver.c']
-(out/'evidence.json').write_text(json.dumps({'results':results,'sanitized':a.sanitize,'leak_sanitizer':False,'expect_fixed_aged_complete':a.expect_fixed,'hardware':'not accessed','fixture_sha256':{str(x.relative_to(fixture)):hashlib.sha256(x.read_bytes()).hexdigest() for x in fixture.iterdir() if x.is_file()},'limit':'12-second SDK delay is injected; no claim of physical incident causality. Production app/adapter/providers/CpuPort/NativeRadio execute; outer grants, display/time/storage and SDK calls are synthetic.','sha256':{str(x):hashlib.sha256(x.read_bytes()).hexdigest() for x in paths}},indent=2)+'\n')
+(out/'evidence.json').write_text(json.dumps({'runtime_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=a.runtime,text=True).strip(),'runtime_qualification':'Selected-current source semantics; not a promise of historical Runtime compatibility','results':results,'sanitized':a.sanitize,'leak_sanitizer':False,'expect_fixed_aged_complete':a.expect_fixed,'hardware':'not accessed','fixture_sha256':{str(x.relative_to(fixture)):hashlib.sha256(x.read_bytes()).hexdigest() for x in fixture.iterdir() if x.is_file()},'limit':'12-second SDK delay is injected; no claim of physical incident causality. Production app/adapter/providers/CpuPort/NativeRadio execute; outer grants, display/time/storage and SDK calls are synthetic.','sha256':{str(x):hashlib.sha256(x.read_bytes()).hexdigest() for x in paths}},indent=2)+'\n')

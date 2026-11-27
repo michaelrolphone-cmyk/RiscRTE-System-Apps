@@ -1,0 +1,53 @@
+{
+  "no_git_metadata": true,
+  "files_qualification": {
+    "path": "/workspace/files-lane/archive-replay-check/qualification-2/qualification.json",
+    "sha256": "ada5b701c77820318c3dbd32a8f7bb0312c04997ac44198a3cebdbded1c260fa"
+  },
+  "files_elf_sha256": "8f9860dc07c65345a9bb20ac7686e4d4eca39694f00345b6f87e44e2a89692d9",
+  "home": {
+    "watch": {
+      "published_recipe_version": "0.25.1",
+      "new_version": "0.26.1",
+      "newer_version_guard": true,
+      "elf_sha256": "3b7083e435a4c4f02ec96286a7af6495872d1fd4b33a79cdc6f6da5c20a7e8cb",
+      "first_repeat_equal": true,
+      "source_pins_sha256": "9ec78b691719cedfe19f9210e888e525aee858153232e0efbbfd98d6edf7d8ac",
+      "build_receipts": {
+        "/workspace/files-lane/home-effects-packages-v2/watch/first/build.json": "31037b2442e63cb1be8d0e45597601b972e9e20c86eb78ab0526ce0039c1c94b",
+        "/workspace/files-lane/home-effects-packages-v2/watch/repeat/build.json": "31037b2442e63cb1be8d0e45597601b972e9e20c86eb78ab0526ce0039c1c94b"
+      }
+    },
+    "wave": {
+      "published_recipe_version": "0.25.2",
+      "new_version": "0.26.2",
+      "newer_version_guard": true,
+      "elf_sha256": "007b1aa2294b85eaa7dc776480995892513fa4c886eb208d02cda42a3835d534",
+      "first_repeat_equal": true,
+      "source_pins_sha256": "9ec78b691719cedfe19f9210e888e525aee858153232e0efbbfd98d6edf7d8ac",
+      "build_receipts": {
+        "/workspace/files-lane/home-effects-packages-v2/wave/first/build.json": "6c92eb6df4b807bd77822a1e3ff417d7863e549aa37246b87f841b2706db094d",
+        "/workspace/files-lane/home-effects-packages-v2/wave/repeat/build.json": "6c92eb6df4b807bd77822a1e3ff417d7863e549aa37246b87f841b2706db094d"
+      }
+    }
+  },
+  "version_guard_source": "scripts/check_release_parity.py:newer_version",
+  "x4_owning_package_guard": [
+    {
+      "after_elf_sha256": "8f9860dc07c65345a9bb20ac7686e4d4eca39694f00345b6f87e44e2a89692d9",
+      "after_version": "1.6.0",
+      "before_elf_sha256": "bc71abc19495fd946d3fc7d8f953c77b98a3177a39eb9bf1ae34e3e9a4987978",
+      "before_version": "1.5.38",
+      "changed": true,
+      "owning_version_guard": "check_release_parity.newer_version",
+      "package": "Files",
+      "passed": true
+    }
+  ],
+  "provider_identity": "No provider is rebuilt from modified provider source. Existing pinned RTC packages are replayed unchanged; native assembly checks newer version if replacing bytes. Their exact selected versions require the native RTC artifact read.",
+  "failed_attempts_preserved": [
+    "archive-replay-check/qualification.log",
+    "archive-replay-check/home-build.log"
+  ],
+  "scope": "Archive-copy build proof; not native Watch/Wave product admission or physical execution"
+}

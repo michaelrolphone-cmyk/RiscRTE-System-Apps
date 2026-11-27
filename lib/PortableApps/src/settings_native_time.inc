@@ -8,7 +8,9 @@ static portable_timezone_rule snt_rule;
 static portable_set_time_result snt_last_result;
 static char snt_status_text[128];
 static portable_realtime_client snt_reader;
+#ifndef PORTABLE_SETTINGS_NATIVE_ONLY
 static portable_set_time_client snt_writer;
+#endif
 static bool snt_result_available;
 static int snt_guard(void *context) {
   (void)context;
@@ -27,12 +29,20 @@ static bool snt_load_zone(void) {
     portable_timezone_resolve(snt_zone_id,sizeof(snt_zone_id),&snt_rule)==PORTABLE_TIMEZONE_OK;
 }
 static void snt_load_basis(void) {
+#ifdef PORTABLE_SETTINGS_NATIVE_ONLY
+  snt_basis=(portable_rtc_basis){true,0};snt_basis_status=PORTABLE_RTC_BASIS_MISSING;
+#else
   snt_basis_status=portable_rtc_basis_load(settings_store,&snt_basis);
+#endif
 }
 static const char *snt_basis_label(void) {
+#ifdef PORTABLE_SETTINGS_NATIVE_ONLY
+  return "Native UTC clock";
+#else
   return snt_basis_status==PORTABLE_RTC_BASIS_LOADED?(snt_basis.stores_utc?"UTC (saved)":"Local (saved)"):
     snt_basis_status==PORTABLE_RTC_BASIS_MISSING?"Local (default on Save)":
     snt_basis_status==PORTABLE_RTC_BASIS_INVALID?"Invalid - Save blocked":"Unavailable - Save blocked";
+#endif
 }
 static bool snt_read_local(twatch_rtc_time_v1 *out) {
   if(!snt_load_zone()) {snt_snapshot_status=PORTABLE_REALTIME_INVALID;return false;}
@@ -57,6 +67,7 @@ static portable_set_time_request snt_request(int fold) {
     settings_draft.hour,settings_draft.minute,settings_draft.second,settings_draft.weekday};
   return request;
 }
+#ifndef PORTABLE_SETTINGS_NATIVE_ONLY
 static const char *snt_outcome(int state) {
   return state==PORTABLE_SET_TIME_CONFIRMED?"verified":state==PORTABLE_SET_TIME_UNCONFIRMED?"unconfirmed":"not attempted";
 }
@@ -67,6 +78,10 @@ static void snt_describe_result(void) {
     snt_outcome(snt_last_result.metadata_outcome));
   editor_message=snt_status_text;snt_result_available=true;
 }
+#endif
+#ifdef PORTABLE_SETTINGS_CLOCK_EDIT_V2
+#include "settings_native_alarm.inc"
+#endif
 static bool snt_save(int fold) {
 #ifdef PORTABLE_SETTINGS_AVAILABILITY
  if(!settings_availability_save_ready(&editor_message))return false;
@@ -90,6 +105,29 @@ static bool snt_save(int fold) {
     settings_atomic_result(status);editor_message=settings_atomic_message(status);return false;
   }
 #endif
+#ifdef PORTABLE_SETTINGS_NATIVE_ONLY
+#ifdef PORTABLE_SETTINGS_CLOCK_EDIT_V2
+  bool committed=snt_clock_commit(plan.utc_epoch);
+  if(snt_halted(PORTABLE_REALTIME_OK))return false;
+  snt_result_available=true;
+  if(committed){snprintf(snt_status_text,sizeof(snt_status_text),"Native time verified; no external RTC");editor_message=snt_status_text;}
+  return committed;
+#else
+  status=portable_realtime_open(&snt_reader,rt,PORTABLE_REALTIME_CONTROL,PORTABLE_REALTIME_NORMAL_START,snt_guard,NULL);
+  if(snt_halted(status))return false;
+  if(status!=PORTABLE_REALTIME_OK){
+    editor_message="Native time unavailable - not saved";return false;}
+  portable_realtime_seed_result seeded;
+  status=portable_realtime_seed_confirmed(&snt_reader,plan.utc_epoch,1000000u,&seeded);
+  if(snt_halted(status))return false;
+  int closed=portable_realtime_close(&snt_reader);
+  if(snt_halted(closed)||closed!=PORTABLE_REALTIME_OK)return false;
+  snt_result_available=true;snt_last_result.native=seeded;
+  snprintf(snt_status_text,sizeof(snt_status_text),"Native time %s; no external RTC",status==PORTABLE_REALTIME_OK&&seeded.verified?"verified":"unconfirmed");
+  editor_message=snt_status_text;
+  return status==PORTABLE_REALTIME_OK&&seeded.verified;
+#endif
+#else
   status=portable_set_time_open(&snt_writer,rt,snt_guard,NULL);
   if(snt_halted(status))return false;
   if(status!=PORTABLE_REALTIME_OK){editor_message="Native time unavailable - not saved";return false;}
@@ -125,6 +163,7 @@ static bool snt_save(int fold) {
 #endif
   snt_basis=plan.basis;snt_basis.reference_epoch=(uint32_t)snt_last_result.verified_utc_epoch;
   snt_basis_status=PORTABLE_RTC_BASIS_LOADED;return true;
+#endif
 }
 
 #ifdef PORTABLE_QUICK_ACTIONS

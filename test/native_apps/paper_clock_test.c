@@ -19,13 +19,8 @@ void app_main(void);int app_module_init(void);void app_module_fini(void);
 #define CATALOG_COUNT 5
 #endif
 #ifdef TEST_USB_RGB
-#ifdef TEST_USB_NATIVE_WIDTH
-#define PANEL_WIDTH TEST_USB_NATIVE_WIDTH
-#define PANEL_HEIGHT TEST_USB_NATIVE_HEIGHT
-#else
 #define PANEL_WIDTH 410
 #define PANEL_HEIGHT 502
-#endif
 #elif defined(TEST_NATIVE_LANDSCAPE)
 #define PANEL_WIDTH 800
 #define PANEL_HEIGHT 480
@@ -52,7 +47,7 @@ static unsigned status_reads;
 static bool pending_present;
 #endif
 #ifdef TEST_USB_RGB
-static uint8_t pixels[PANEL_WIDTH*PANEL_HEIGHT*2];
+static uint8_t pixels[410*502*2];
 #define TEST_PIXEL_FORMAT RISC_DISPLAY_FORMAT_RGB565
 #define TEST_PIXEL_STRIDE (PANEL_WIDTH*2)
 #else
