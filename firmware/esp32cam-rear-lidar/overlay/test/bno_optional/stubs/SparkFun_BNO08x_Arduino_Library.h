@@ -8,6 +8,8 @@
 #include "sh2.h"
 #include "sh2_err.h"
 #include "sh2_SensorValue.h"
+inline bool rearBnoSpiPending(){return false;}
+inline void rearBnoSpiDiagnostics(int32_t *out){for(int i=0;i<8;++i)out[i]=0;}
 struct TestEvent {sh2_SensorValue_t value{};int decodeStatus=SH2_OK;};
 struct TestImu {
     bool beginResult=true,commandResult=true,reset=false;

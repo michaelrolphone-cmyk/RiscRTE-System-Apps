@@ -576,6 +576,11 @@ The `1.0-rear.28-qos-bno` startup repair keeps the existing harness. The worker
 owns the reset pulse and initial INT check. SH-2 reads each SPI header and
 payload with CS held low and bounds requests that receive no response.
 
+The duplex revision also retains packets clocked in while sending an SH-2
+command. The authorized `GET /api/bno` includes `spi_startup` fields for SH-2
+open, product-ID exchange, INT wait, and receive activity. The product-ID
+status is `-9999` if that request did not run.
+
 | GY-BNO08x label | SPI function | Rear GPIO / connection |
 |---|---|---:|
 | SCL | SCK |14|

@@ -13,6 +13,9 @@
 #include <cstdio>
 #include <initializer_list>
 
+bool rearBnoSpiPending();
+void rearBnoSpiDiagnostics(int32_t *out);
+
 namespace bno_telemetry {
 namespace {
 // Rear-only board profile: camera, LiDAR, UART, LEDs and USB retain their pins.
@@ -58,6 +61,7 @@ struct Snapshot {
     uint32_t product=0;
     uint8_t swMajor=0,swMinor=0;
     uint16_t swPatch=0;
+    int32_t spiDiagnostic[8]={};
     Report quaternion, accel, gyro, mag;
     CommandResult command;
 } current, published;
@@ -66,6 +70,7 @@ uint64_t nowUs(){return static_cast<uint64_t>(esp_timer_get_time());}
 bool fresh(uint64_t at,const Report &r){return r.observed && at>=r.observed && at-r.observed<=FRESH_US;}
 bool isPaused(){return paused.load() || Update.isRunning();}
 void publish(){
+    rearBnoSpiDiagnostics(current.spiDiagnostic);
     portENTER_CRITICAL(&snapshotLock);
     published=current;
     portEXIT_CRITICAL(&snapshotLock);
@@ -209,7 +214,9 @@ void workerStep(){
     }
     // Service first so a reset notification invalidates this same published snapshot.
     bool reset=imu.wasReset();
-    if(!reset && digitalRead(INT_PIN)==LOW){imu.serviceBus();reset=imu.wasReset();}
+    if(!reset && (digitalRead(INT_PIN)==LOW || rearBnoSpiPending())){
+        imu.serviceBus();reset=imu.wasReset();
+    }
     // A reset requires fresh reports; old values must not bridge sensor sessions.
     if(reset){
         ++current.resets;invalidate();
@@ -314,6 +321,11 @@ void begin(WebServer &server,bool (*authorize)()){
     server.on("/api/bno",HTTP_GET,[&server,authorize](){
         if(!authorize || !authorize())return;
         DynamicJsonDocument d(4096);writeJson(d.to<JsonObject>(),nowUs());
+        const auto state=snapshot();
+        JsonObject spi=d.createNestedObject("spi_startup");
+        const char *fields[]={"sh2_open_status","product_id_status","rx_transactions",
+            "last_rx_size","read_frames","write_wait_int","write_transactions","duplex_frames"};
+        for (unsigned i=0;i<8;++i) spi[fields[i]]=state.spiDiagnostic[i];
         String text;serializeJson(d,text);server.send(200,"application/json",text);
     });
     server.on("/api/bno",HTTP_POST,[&server,authorize](){

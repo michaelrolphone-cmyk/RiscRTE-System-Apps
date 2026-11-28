@@ -54,6 +54,20 @@ def main():
             env["ASAN_OPTIONS"] = "detect_stack_use_after_return=1:halt_on_error=1"
         subprocess.run([str(adapter)], check=True, timeout=15, env=env)
 
+        # Build the actual patched HAL functions against a fake SPI peripheral.
+        source = (library / "SparkFun_BNO08x_Arduino_Library.cpp").read_text()
+        close = source.index("static void spihal_close(sh2_Hal_t *self) {")
+        start = source.index("static int spihal_read(", close)
+        write = source.index("static int spihal_write(", start)
+        end = source.index("\n}", write) + 2
+        (directory / "production_spi.inc").write_text(source[start:end] + "\n")
+        duplex = directory / "test-spi-duplex"
+        subprocess.run([cxx, "-std=c++11", "-Wall", "-Wextra", "-Werror",
+                        "-Wno-unused-parameter", *flags, "-I", str(directory),
+                        str(test / "test_spi_duplex.cpp"), "-o", str(duplex)], check=True)
+        subprocess.run([str(duplex)], check=True, timeout=5, env=env)
+        print("PASS SPI writes retain longer inbound replies for SH-2")
+
         def compile_sh2(source, output):
             subprocess.run([cc, "-std=c99", "-D_POSIX_C_SOURCE=200809L",
                             "-Wall", "-Wextra", "-Wno-unused-parameter",
