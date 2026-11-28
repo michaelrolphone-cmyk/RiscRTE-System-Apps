@@ -564,6 +564,10 @@ transport configuration retain their assignments and settings.
 
 This is the implemented signal profile; attached hardware is not yet qualified.
 
+The `1.0-rear.28-qos-bno` startup repair keeps the existing harness. The worker
+owns the reset pulse and initial INT check. SH-2 reads each SPI header and
+payload with CS held low and bounds requests that receive no response.
+
 | GY-BNO08x label | SPI function | Rear GPIO / connection |
 |---|---|---:|
 | SCL | SCK |14|

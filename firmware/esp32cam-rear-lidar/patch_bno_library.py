@@ -28,6 +28,8 @@ def apply(prepared):
     receipt = root.parent / "rear-bno-safety-patch.json"
     if receipt.exists():
         saved = json.loads(receipt.read_text())
+        if saved.get("schema") != 2:
+            raise ValueError("Remove the old patched BNO dependency and reinstall pinned 1.0.6")
         if saved.get("original_git_blobs") != ORIGINAL:
             raise ValueError("Unexpected BNO dependency patch receipt")
         for name in ORIGINAL:
@@ -70,26 +72,63 @@ def apply(prepared):
 """)
     texts["SparkFun_BNO08x_Arduino_Library.cpp"] = once(
         texts["SparkFun_BNO08x_Arduino_Library.cpp"],
+        """	_spiPort->begin(); //Turn on SPI hardware""",
+        """	// The rear worker already started SPI with the harness pin assignments.""")
+    texts["SparkFun_BNO08x_Arduino_Library.cpp"] = once(
+        texts["SparkFun_BNO08x_Arduino_Library.cpp"],
+        """  hardwareReset();
+
+  // Open SH2 interface""",
+        """  if (_HAL.open != spihal_open) hardwareReset();
+
+  // The rear worker owns the SPI reset and has already observed INT low.
+  // Open SH2 interface""")
+    texts["SparkFun_BNO08x_Arduino_Library.cpp"] = once(
+        texts["SparkFun_BNO08x_Arduino_Library.cpp"],
+        """  // Serial.println("SPI HAL open");
+
+  hal_wait_for_int();
+
+  return 0;""",
+        """  return 0; // The application owns reset and attention detection.""")
+    sparkfun = texts["SparkFun_BNO08x_Arduino_Library.cpp"]
+    begin = sparkfun.index("  // Serial.println(\"SPI HAL read\");")
+    end = sparkfun.index("\n}", begin)
+    texts["SparkFun_BNO08x_Arduino_Library.cpp"] = sparkfun[:begin] + """  *t_us = micros();
+  if (len < 4 || digitalRead(_int_pin)) {
+    delay(1);
+    return 0;
+  }
+
+  // INT can deassert as soon as CS goes low. Keep CS asserted from header
+  // through payload, as in CEVA's SH2 SPI reference transport.
+  memset(pBuffer, 0, 4);
+  _spiPort->beginTransaction(SPISettings(_spiPortSpeed, MSBFIRST, SPI_MODE3));
+  digitalWrite(_cs, LOW);
+  _spiPort->transfer(pBuffer, 4);
+  const unsigned size = (pBuffer[0] | (unsigned(pBuffer[1]) << 8)) & 0x7fff;
+  if (size > 4 && size <= len) {
+    memset(pBuffer + 4, 0, size - 4);
+    _spiPort->transfer(pBuffer + 4, size - 4);
+  }
+  digitalWrite(_cs, HIGH);
+  _spiPort->endTransaction();
+  return size > 4 && size <= len ? int(size) : 0;""" + sparkfun[end:]
+
+    texts["SparkFun_BNO08x_Arduino_Library.cpp"] = once(
+        texts["SparkFun_BNO08x_Arduino_Library.cpp"],
         """  if (!hal_wait_for_int()) {
     return 0;
   }
 
   spi_write(pBuffer, len);""",
-        """  if (!hal_wait_for_int()) {
-    return -1; // Abort this transfer; SHTP must not retry a disconnected peer forever.
+        """  if (digitalRead(_int_pin)) {
+    delay(1);
+    return 0; // SHTP retries with a deadline. Only the worker may reset the chip.
   }
 
   spi_write(pBuffer, len);""")
-    texts["SparkFun_BNO08x_Arduino_Library.cpp"] = once(
-        texts["SparkFun_BNO08x_Arduino_Library.cpp"],
-        """  uint16_t packet_size = 0;
-
-  if (!hal_wait_for_int())""",
-        """  uint16_t packet_size = 0;
-  *t_us = micros(); // Supply the host timestamp required by the SH2 HAL contract.
-
-  if (!hal_wait_for_int())""")
-    result = {"schema": 1, "library": "SparkFun BNO08x Cortex Based IMU@1.0.6",
+    result = {"schema": 2, "library": "SparkFun BNO08x Cortex Based IMU@1.0.6",
               "original_git_blobs": ORIGINAL, "sha256": {}}
     for name, text in texts.items():
         data = text.encode()
