@@ -28,6 +28,10 @@ jobs:
           python-version: '3.11'
       - name: Check ArduinoOTA transfer and terminal acknowledgement
         run: python -m unittest discover -s firmware/esp32cam-rear-lidar -p test_upload_ota.py
+      - name: Check automatic OTA rollback and stream-based boot acceptance
+        run: |
+          g++ -std=c++11 -Wall -Wextra -Werror -I firmware/esp32cam-rear-lidar/overlay/include firmware/esp32cam-rear-lidar/overlay/test/rear_boot_health/test_boot_trial.cpp -o /tmp/rear-boot-trial
+          /tmp/rear-boot-trial
       - name: Check independent video and sensor socket progress
         run: |
           g++ -std=c++11 -Wall -Wextra -Werror firmware/esp32cam-rtsp-radio/overlay/test/live_write_progress/test_progress.cpp -o /tmp/live-write-progress

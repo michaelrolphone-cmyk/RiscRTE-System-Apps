@@ -312,6 +312,8 @@ class OtaReceiptTests(unittest.TestCase):
             "boot": dict(self.after, boot_id=self.before["boot_id"]),
             "slot": dict(self.after, running_partition="app1"),
             "availability": dict(self.after, ota_supported=False),
+            "unaccepted trial": dict(self.after, ota_trial="pending"),
+            "missing fallback": dict(self.after, ota_trial="unprotected"),
         }
         for name, observation in variants.items():
             with self.subTest(name=name):

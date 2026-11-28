@@ -1,5 +1,7 @@
 #include "rear_ota_recovery.h"
 #include "rear_ota_datagrams.h"
+#include "rear_boot_health.h"
+#include "sensor_push.h"
 
 #include <Arduino.h>
 #include <ArduinoOTA.h>
@@ -21,6 +23,9 @@
 #include "rear_ota_seed.h"
 #endif
 
+// Arduino otherwise accepts a pending image during initArduino(), before setup.
+extern "C" bool verifyRollbackLater() { return true; }
+
 namespace rear_ota_recovery {
 namespace {
 constexpr uint32_t recoveryRequest = 0x524f5441;
@@ -37,7 +42,49 @@ bool listenerStarted = false;
 std::atomic<uint32_t> lastActivity{0};
 SemaphoreHandle_t updateLock = nullptr;
 std::atomic<bool> restartQueued{false};
+std::atomic<const char *> bootTrial{"not_applicable"};
 httpd_handle_t server = nullptr;
+
+void rollbackTrial() {
+    bootTrial = "rollback";
+    const esp_err_t error = esp_ota_mark_app_invalid_rollback_and_reboot();
+    log_e("Rear OTA rollback returned unexpectedly: %s", esp_err_to_name(error));
+    // A reboot with a pending image still asks the bootloader to select its fallback.
+    ESP.restart();
+}
+
+void watchBootTrial(void *) {
+    rear_boot_health::Trial trial(millis());
+    while (true) {
+        uint32_t cameraAcks, sensorPackets;
+        sensor_push::bootProgress(cameraAcks, sensorPackets);
+        const auto action = trial.observe(millis(), WiFi.status() == WL_CONNECTED,
+                                          cameraAcks, sensorPackets);
+        if (action == rear_boot_health::Action::rollback) rollbackTrial();
+        if (action == rear_boot_health::Action::accept &&
+            esp_ota_mark_app_valid_cancel_rollback() == ESP_OK) {
+            bootTrial = "accepted";
+            vTaskDelete(nullptr);
+            return;
+        }
+        vTaskDelay(pdMS_TO_TICKS(250));
+    }
+}
+
+void startBootTrial() {
+    esp_ota_img_states_t state;
+    if (esp_ota_get_state_partition(esp_ota_get_running_partition(), &state) != ESP_OK) return;
+    if (state == ESP_OTA_IMG_VALID) bootTrial = "accepted";
+    if (state != ESP_OTA_IMG_PENDING_VERIFY) return;
+    if (!esp_ota_check_rollback_is_possible()) {
+        // A factory/serial installation without a previous bootable slot has no fallback.
+        bootTrial = esp_ota_mark_app_valid_cancel_rollback() == ESP_OK ? "unprotected" : "error";
+        return;
+    }
+    bootTrial = "pending";
+    if (xTaskCreate(watchBootTrial, "rear-boot-trial", 4096, nullptr,
+                    tskIDLE_PRIORITY + 2, nullptr) != pdPASS) rollbackTrial();
+}
 
 void hexEncode(char *out, const unsigned char *bytes, size_t size) {
     constexpr char digits[] = "0123456789abcdef";
@@ -53,11 +100,11 @@ void formatStatus(char *json, size_t capacity) {
     snprintf(json, capacity,
              "{\"receiver_id\":\"%s\",\"camera_id\":\"rear\",\"firmware\":\"%s\","
              "\"boot_id\":\"%s\",\"running_partition\":\"%s\",\"ota_supported\":%s,"
-             "\"ota_mode\":\"%s\",\"ota_datagrams\":%s}",
+             "\"ota_mode\":\"%s\",\"ota_datagrams\":%s,\"ota_trial\":\"%s\"}",
              receiver, APP_VERSION, bootId, running ? running->label : "unknown",
              esp_ota_get_next_update_partition(nullptr) ? "true" : "false",
              recoveryMode ? "recovery" : "normal",
-             (!recoveryMode || updateLock) ? "true" : "false");
+             (!recoveryMode || updateLock) ? "true" : "false", bootTrial.load());
 }
 
 esp_err_t status(httpd_req_t *req) {
@@ -225,6 +272,7 @@ void loadKey() {
 }
 
 bool begin(const char *hostname, const char *ssid, const char *wifiPassword) {
+    startBootTrial();
     const bool requested = esp_reset_reason() == ESP_RST_SW &&
         requestedMode == recoveryRequest && requestedModeCheck == ~recoveryRequest;
     requestedMode = 0;

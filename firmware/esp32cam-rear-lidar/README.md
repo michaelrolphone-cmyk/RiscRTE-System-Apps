@@ -345,6 +345,14 @@ Confirmation requires the expected receiver and release, a changed boot ID, and 
 originally expected alternate partition. The image digest was checked before upload and
 is retained in the receipt; the status endpoint does not provide a running-image hash.
 
+Starting with `1.0-rear.28-qos-bno-health`, a pending OTA slot with a bootable
+fallback gets 75 seconds to qualify. The camera keeps the slot only after four
+consecutive five-second samples with Wi-Fi connected, advancing receiver camera
+acknowledgements, and advancing sensor sends. A stalled trial restores the previous
+slot automatically. The updater waits for the reported `ota_trial: accepted`
+before confirming these releases. A first installation without a previous slot
+reports `unprotected` and has no automatic rollback.
+
 An existing receipt prevents an upload replay, including after an interrupted process.
 A nonblocking process lock serializes upload and verification of the same receipt;
 cancelling or exiting the process releases the lock automatically.

@@ -205,7 +205,7 @@ def invite(remote, listener, password, image):
 def _snapshot(state):
     """Retain identity fields only, never arbitrary endpoint data or credentials."""
     fields = ("receiver_id", "camera_id", "firmware", "boot_id", "running_partition", "ota_supported")
-    return {key: state[key] for key in (*fields, "ota_mode") if key in state}
+    return {key: state[key] for key in (*fields, "ota_mode", "ota_trial") if key in state}
 
 
 def _timestamp():
@@ -272,6 +272,7 @@ def _confirmed(receipt, state):
         and isinstance(state.get("boot_id"), str) and bool(state["boot_id"])
         and state["boot_id"] != before["boot_id"]
         and state.get("running_partition") == receipt["expected_partition"]
+        and state.get("ota_trial", "accepted") == "accepted"
         and (not receipt.get("recovery_mode") or state.get("ota_mode") == "normal")
     )
 

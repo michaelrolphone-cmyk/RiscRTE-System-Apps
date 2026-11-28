@@ -412,4 +412,10 @@ void begin(WebServer &http,bool (*authorize)()) {
     workerReady=xTaskCreate(worker,"rear-sensor-websocket",8192,nullptr,sensorPriority,nullptr)==pdPASS;
 }
 void pause(bool value) {paused=value;}
+void bootProgress(uint32_t &cameraAcknowledged, uint32_t &sensorPackets) {
+    cameraAcknowledged = cameraAcks.load();
+    portENTER_CRITICAL(&sampleLock);
+    sensorPackets = static_cast<uint32_t>(lastSentSequence);
+    portEXIT_CRITICAL(&sampleLock);
+}
 } // namespace sensor_push
