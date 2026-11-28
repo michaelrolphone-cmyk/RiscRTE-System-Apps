@@ -1,0 +1,89 @@
+name: Shared scene held-input qualification
+on:
+  pull_request:
+    paths:
+      - 'Services/scene_host/**'
+      - 'Services/canvas_host/**'
+      - 'sdk/app/RiscScene*.h'
+      - 'scripts/scene_sdk.py'
+      - 'scripts/scene_build.py'
+      - 'scripts/build_scene_services.py'
+      - 'scripts/test_scene_hold.py'
+      - 'scripts/test_scene_host.py'
+      - 'scripts/test_scene_canvas.py'
+      - 'scripts/test_scene_keypad.py'
+      - 'test/hold/**'
+      - 'test/scene/**'
+      - 'test/scene_canvas/**'
+      - 'test/keypad/**'
+      - 'lib/NativeApps/src/*DivisionCompat.c'
+      - '.github/workflows/scene-hold.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 0052d1fc42e9cfc82d626c5a247d460919c87935
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: bf1117910f6d0f0e9fd48bc2a28bc03b1f8ad61e
+          path: Utilities
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact source custody
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/source evidence/logs
+          test "$(git -C Runtime rev-parse HEAD)" = 0052d1fc42e9cfc82d626c5a247d460919c87935
+          test "$(git -C Utilities rev-parse HEAD)" = bf1117910f6d0f0e9fd48bc2a28bc03b1f8ad61e
+          for source in System Runtime Utilities; do
+            git -C "$source" archive --format=tar HEAD | gzip -n > "evidence/source/$source.tar.gz"
+            git -C "$source" rev-parse HEAD > "evidence/source/$source.head"
+          done
+          sha256sum evidence/source/*.tar.gz > evidence/source/archives.sha256
+      - name: Held input and unchanged prefix regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for mode in normal sanitized; do
+            san=(); if [ "$mode" = sanitized ]; then san=(--sanitize); fi
+            python System/scripts/test_scene_hold.py --runtime Runtime --output "evidence/hold-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/hold-$mode.log"
+            mkdir -p "evidence/original-$mode"
+            python -c 'import sys; from pathlib import Path; sys.path.insert(0,"System/scripts"); import test_scene_host; n=test_scene_host.run(Path("Runtime").resolve(),Path(sys.argv[1]).resolve(),sys.argv[2]=="sanitized"); Path(sys.argv[1],"result.txt").write_text(str(n)+" passed\n"); print(n,"passed")' "evidence/original-$mode" "$mode" 2>&1 | tee "evidence/logs/original-$mode.log"
+            python System/scripts/test_scene_canvas.py --runtime Runtime --output "evidence/canvas-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/canvas-$mode.log"
+            python System/scripts/test_scene_keypad.py --runtime Runtime --output "evidence/keypad-$mode" "${san[@]}" 2>&1 | tee "evidence/logs/keypad-$mode.log"
+          done
+      - name: Three provider profiles with repeated target validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash Utilities/scripts/install_badge_catalog_toolchain.sh "$RUNNER_TEMP/held-input-toolchain" 2>&1 | tee evidence/logs/compiler.log
+          export NATIVE_APP_CC="$RUNNER_TEMP/held-input-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc"
+          for profile in full color-dynamic watch-compact; do
+            python System/scripts/build_scene_services.py --runtime Runtime --host-profile "$profile" --output "evidence/target-$profile" 2>&1 | tee "evidence/logs/target-$profile.log"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scene-hold-${{ github.sha }}
+          path: evidence/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30

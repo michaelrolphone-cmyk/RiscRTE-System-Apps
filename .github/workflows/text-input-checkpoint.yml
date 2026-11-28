@@ -46,8 +46,7 @@ jobs:
       - name: Reproduce the selected full-profile telemetry font
         run: |
           python -m pip install Pillow==12.3.0
-          python scripts/generate_telemetry_fonts.py
-          echo '2d7501e42d6223ebbc191817715431182c435fea944a1a02166a0748a577eaf1  Services/scene_host/fonts/telemetry.inc' | sha256sum --check
+          python scripts/verify_telemetry_fonts.py
       - name: Checkpoint host/client normal and ASan/UBSan, default leak detection
         run: >-
           python scripts/test_text_input_review_checkpoint.py

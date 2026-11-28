@@ -1,0 +1,55 @@
+name: Shared Home foreground civil consumer
+on:
+  push:
+    branches: [fix/home-civil-unique-rtc-fixture-20261102]
+  pull_request:
+    paths: ['lib/PortableApps/src/home_settings_availability.inc', 'test/native_apps/home_optional_settings_test.c', 'test/native_apps/home_local_custody_test.c', 'lib/PortableApps/src/native_custody_adapter.inc', 'Apps/paper_home_civil.inc', 'Apps/paper_sparse_clock.inc', 'lib/PortableApps/include/PortableRealtimeClient.h', 'lib/PortableApps/src/PortableRealtimeClient.c', 'test/native_apps/home_civil_policy_test.c', 'scripts/test_portable_realtime.py', '.github/workflows/shared-home-civil-consumer.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 341e6e38ce00b7c57d5daaf5f8c829c3575db931
+          path: deps/runtime
+          persist-credentials: false
+      - run: |
+          python3 scripts/test_portable_realtime.py --runtime-repo deps/runtime --reconcile --evidence qualification/reconcile.json
+          python3 scripts/test_portable_realtime.py --runtime-repo deps/runtime --civil-policy --evidence qualification/civil-policy.json
+      - name: Actual Home civil adapter target link and loader proof
+        run: |
+          python3 -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python3 scripts/test_portable_realtime.py --runtime-repo deps/runtime --civil-policy --xtensa-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" --evidence qualification/civil-policy-target.json
+      - name: Actual optional settings controller
+        run: |
+          for mode in normal sanitized; do
+            flags=""
+            if [ "$mode" = sanitized ]; then flags="-fsanitize=address,undefined -fno-sanitize-recover=all -no-pie"; fi
+            for test in home_optional_settings home_local_custody; do
+              cc -std=c11 -O1 -Wall -Wextra -Werror $flags -Ilib/PortableApps/include -Isdk/app -Ideps/runtime/sdk/app "test/native_apps/${test}_test.c" -o "qualification/$test-$mode"
+              ASAN_OPTIONS=detect_leaks=0 "qualification/$test-$mode" | tee "qualification/$test-$mode.log"
+            done
+          done
+      - name: Exact source receipts
+        if: always()
+        run: |
+          mkdir -p qualification/source
+          git archive HEAD | gzip -n > qualification/source/system.tar.gz
+          git -C deps/runtime archive HEAD sdk/app | gzip -n > qualification/source/native-sdk.tar.gz
+          git rev-parse HEAD > qualification/source/system.head
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-civil-consumer-${{ github.event.pull_request.head.sha || github.sha }}
+          path: qualification/
+          retention-days: 30
