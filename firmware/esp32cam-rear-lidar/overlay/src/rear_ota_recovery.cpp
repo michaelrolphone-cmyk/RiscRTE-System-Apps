@@ -366,7 +366,15 @@ void service() {
         ArduinoOTA.end();
         listenerStarted = false;
     }
-    if (millis() - lastActivity.load() >= idleWindowMs) ESP.restart();
+    // A block handled on the other core may refresh lastActivity between
+    // reads. A newer timestamp subtracted from an older clock wraps to ~49 days.
+    const uint32_t observedActivity = lastActivity.load();
+    if (millis() - observedActivity >= idleWindowMs &&
+        (!updateLock || xSemaphoreTake(updateLock, 0) == pdTRUE)) {
+        const uint32_t idleSince = lastActivity.load();
+        if (millis() - idleSince >= idleWindowMs) ESP.restart();
+        if (updateLock) xSemaphoreGive(updateLock);
+    }
     delay(2);
 }
 }
