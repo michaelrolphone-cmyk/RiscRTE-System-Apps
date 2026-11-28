@@ -7,12 +7,13 @@
 #include "InstalledAppsV1.h"
 #include "InstalledAppsFeedV1.h"
 static const installed_apps_feed_v1*inventory_feed;
-static bool inventory_feed_checking,inventory_choice_online;
-static uint32_t inventory_feed_generation,inventory_feed_index;
+static bool inventory_feed_checking;
 static risc_runtime_capability_v1 installed_inventory_grant;
 static const installed_apps_v1 *installed_inventory;
 static const software_update_v1 *release_service;
 #ifdef PORTABLE_APP_STORE_ACTIONS
+static bool inventory_choice_online;
+static uint32_t inventory_feed_generation,inventory_feed_index;
 #ifndef PORTABLE_INSTALLED_VOLUME_INSTANCE
 #define PORTABLE_INSTALLED_VOLUME_INSTANCE 9u
 #endif
