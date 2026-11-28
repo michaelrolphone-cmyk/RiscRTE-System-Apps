@@ -6,6 +6,7 @@ namespace bno_telemetry {
 // Optional GY-BNO08x. Only its worker accesses the SPI/SH2 singleton.
 void begin(WebServer &server, bool (*authorize)());
 void pause(bool value);
+void writeProbe(JsonObject out,uint64_t atUs);
 // Snapshot only: never touches hardware or waits for a command.
 void writeJson(JsonObject output, uint64_t atUs);
 // Accepts work into a bounded queue; success means accepted, not executed.

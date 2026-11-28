@@ -291,21 +291,42 @@ or evidence that the delivery gates pass.
 python3 prepare.py --output /absolute/new/rear-build
 pio run -d /absolute/new/rear-build -e esp32cam_s3_wroom_n16r8
 
-First installation must include the partition table. Subsequent updates use espota
-with the configured device hostname/IP and existing OTA password. Rebuild with
-upload_protocol=espota or pass --upload-protocol espota. Serial commands do not
-enable OTA or grant permission to reconfigure the front camera.
+The serial installation must include the two-slot partition table if the board
+does not already have it. On an existing rear camera, preserve its settings and
+partition table. Build a private serial image once to enroll a per-device key:
 
-For updates on a slow station link, run the verified uploader on the maintenance
-Mac or Linux host with the enrolled IPv4 address, receiver ID, prepared normal build directory
-and independently verified SHA-256 of the application:
+```sh
+umask 077
+openssl rand -hex 32 > /private/path/rear-ota.key
+python3 prepare.py --output /absolute/new/serial-build --ota-key-file /private/path/rear-ota.key --build
+```
 
-`python3 upload_ota.py HOST RECEIVER_ID BUILD_DIR IMAGE_SHA256`
+Keep the key and serial image on the maintenance host. The normal build has no
+embedded key and reads the existing enrollment from NVS. If first installing
+Wi-Fi credentials as well, use the same command with `--provisioning-json`.
 
-Supply the existing ArduinoOTA password in `REAR_OTA_PASSWORD`. For devices
-that require HTTP authentication, also supply `REAR_CAMERA_USER` and
-`REAR_CAMERA_PASSWORD` from the host enrollment. The uploader checks the physical
-identity before sending and maintains one transfer while the TCP socket is backpressured.
+For subsequent network updates, use the normal build and its checked image hash:
+
+```sh
+python3 upload_ota.py HOST RECEIVER_ID BUILD_DIR IMAGE_SHA256 --recovery-key-file /private/path/rear-ota.key
+```
+
+The uploader sends an authenticated reboot request to the independent maintenance
+service on UDP or TCP 3233. The recovery boot uses the saved Wi-Fi credentials
+and skips camera, RTSP, LiDAR, IMU, and streaming startup.
+
+Rear.23 and later transfer the image in authenticated blocks over UDP 3233.
+The receiver acknowledges committed blocks and reports which blocks it has
+buffered. The uploader retries only missing blocks. The camera checks the whole
+image SHA-256 before selecting it as the next boot slot. Five minutes without
+valid update traffic returns the camera to normal operation on its current slot.
+The uploader retains ArduinoOTA on UDP 3232 for earlier recovery builds and
+requires the TCP callback for those builds.
+
+For legacy rear firmware without an enrolled recovery key, omit
+`--recovery-key-file` and supply its ArduinoOTA password in `REAR_OTA_PASSWORD`.
+If that firmware requires HTTP authentication, use `REAR_CAMERA_USER` and
+`REAR_CAMERA_PASSWORD` from the existing host enrollment.
 
 Before inviting the board, it atomically saves a credential-free receipt containing the
 expected image SHA-256 and release, receiver identity, and original boot and partition.
@@ -316,13 +337,21 @@ expires leaves confirmation pending and exits with code 3, with a command to res
 
 `python3 upload_ota.py --verify-only /absolute/saved-receipt.json`
 
-This mode reads the original receipt and observes HTTP identity only. It sends no OTA
+This mode reads the original receipt and observes device identity. It sends no OTA
 invitation or image, needs no `REAR_OTA_PASSWORD`, and can run after the original process
 exits; a retained receipt also works after the build directory is removed. HTTP
 credentials are still needed if configured.
 Confirmation requires the expected receiver and release, a changed boot ID, and the
 originally expected alternate partition. The image digest was checked before upload and
-is retained in the receipt; the HTTP endpoint does not provide a running-image hash.
+is retained in the receipt; the status endpoint does not provide a running-image hash.
+
+Starting with `1.0-rear.28-qos-bno-health`, a pending OTA slot with a bootable
+fallback gets 75 seconds to qualify. The camera keeps the slot only after four
+consecutive five-second samples with Wi-Fi connected, advancing receiver camera
+acknowledgements, and advancing sensor sends. A stalled trial restores the previous
+slot automatically. The updater waits for the reported `ota_trial: accepted`
+before confirming these releases. A first installation without a previous slot
+reports `unprotected` and has no automatic rollback.
 
 An existing receipt prevents an upload replay, including after an interrupted process.
 A nonblocking process lock serializes upload and verification of the same receipt;
@@ -466,6 +495,8 @@ and AP settings, saves them, and reboots once. The generated credential header
 is owner-readable; treat the factory binary as private and never publish it.
 Flash that image by USB, then upload the normal build over Wi-Fi using espota.
 Normal OTA images omit the factory seed and retain the saved network settings.
+For an isolated OTA recovery installation, use the same private provisioning
+build to enroll the recovery key with `--ota-key-file`.
 Version 1.0-rear.4 preserves the Wi-Fi driver profile on an authenticated
 camera restart. It allows ten seconds of inactivity per OTA receive attempt so
 brief wireless stalls can recover before the receiver gives up.
@@ -541,6 +572,26 @@ transport configuration retain their assignments and settings.
 
 This is the implemented signal profile; attached hardware is not yet qualified.
 
+The `1.0-rear.28-qos-bno` startup repair keeps the existing harness. The worker
+owns the reset pulse and initial INT check. SH-2 reads each SPI header and
+payload with CS held low and bounds requests that receive no response.
+
+The duplex revision also retains packets clocked in while sending an SH-2
+command. The authorized `GET /api/bno` includes `spi_startup` fields for SH-2
+open, product-ID exchange, INT wait, and receive activity. The product-ID
+status is `-9999` if that request did not run.
+
+In `1.0-rear.29-bno-start` the clock enters mode 3 while reset is asserted.
+After reset the worker checks INT every millisecond during detection. The same
+SPI diagnostics travel in the sensor stream. A GET on `/api/bno` returns the
+firmware version and maintenance boot ID alongside the measurements. An
+enrolled unit also accepts a read-only UDP probe on port 3233 while in normal
+mode. Send `rear-bno-probe-v1 ` followed by the lowercase hex HMAC-SHA256 of
+`rear-bno-probe-v1:<receiver_id>:<boot_id>` using the enrolled key. The reply
+identifies the boot and returns counters, product number, and a timestamped
+quaternion. Its `spi` array follows the field order in `spi_startup`, ending
+with the first header as a little-endian word and the first payload byte.
+
 | GY-BNO08x label | SPI function | Rear GPIO / connection |
 |---|---|---:|
 | SCL | SCK |14|
@@ -578,7 +629,7 @@ Primary references:
 ### Failure isolation and data contract
 
 A dedicated HSPI instance runs at 1 MHz. Only the idle-priority BNO worker touches
-the sensor or the SH2 singleton. It detects INT after reset before opening SPI,
+the sensor or the SH2 singleton. It detects INT after reset before opening SH2,
 retries an unavailable device every 5 seconds, closes failed SH2 sessions, checks
 every report-enable result, and reconfigures after sensor reset. A ready worker
 checks for data every 2 ms; a missing/paused device uses a 20 ms background sleep.

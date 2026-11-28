@@ -1,5 +1,7 @@
 from contextlib import closing, redirect_stdout
 import hashlib
+import hmac
+import struct
 import importlib.util
 import io
 import json
@@ -7,6 +9,7 @@ from pathlib import Path
 import tempfile
 from unittest import mock
 
+import rear_udp_ota
 import upload_ota
 import os
 import socket
@@ -125,6 +128,75 @@ class OtaReceiptTests(unittest.TestCase):
         self.receipt.write_text(json.dumps(receipt))
         return receipt
 
+    def test_recovery_requires_a_new_boot_in_the_same_slot_before_upload(self):
+        normal = dict(self.before, ota_mode="normal", boot_id="0" * 32)
+        recovery = dict(normal, ota_mode="recovery", boot_id="1" * 32)
+        live = dict(self.after, ota_mode="normal", boot_id="2" * 32)
+        key = "a" * 64
+        client = mock.Mock()
+        client.getresponse.return_value.status = 202
+
+        def accepted(host, image, password):
+            self.assertEqual(self.clock.now, 1)
+            self.assertEqual(password, key)
+            self.assertTrue(json.loads(self.receipt.read_text())["recovery_mode"])
+
+        observations = [normal, normal, recovery, live]
+        with mock.patch.object(upload_ota, "check_image", return_value=self.image), \
+                mock.patch.object(upload_ota, "board_state", side_effect=observations) as state, \
+                mock.patch.object(upload_ota, "udp_control", side_effect=TimeoutError), \
+                mock.patch.object(upload_ota.http.client, "HTTPConnection", return_value=client), \
+                mock.patch.object(upload_ota, "send_image", side_effect=accepted) as sender, \
+                mock.patch.object(upload_ota.time, "monotonic", self.clock.monotonic), \
+                mock.patch.object(upload_ota.time, "sleep", self.clock.sleep), \
+                redirect_stdout(io.StringIO()):
+            self.assertTrue(upload_ota.install(self.host, self.receiver, self.build, self.digest,
+                                               self.release, receipt_path=self.receipt, recovery_key=key))
+        self.assertTrue(all(call.kwargs == {"recovery": True} for call in state.call_args_list))
+        client.request.assert_called_once_with(
+            "POST", "/api/ota/recovery", headers={"X-Rear-OTA-Proof": mock.ANY})
+        sender.assert_called_once()
+        self.assertEqual(json.loads(self.receipt.read_text())["confirmed_observation"]["ota_mode"], "normal")
+        self.assertNotIn(key, self.receipt.read_text())
+
+    def test_recovery_rejects_an_unexpected_active_partition(self):
+        active = dict(self.before, ota_mode="normal", boot_id="0" * 32)
+        wrong = dict(active, ota_mode="recovery", boot_id="1" * 32, running_partition="app0")
+        with mock.patch.object(upload_ota, "_request_recovery", return_value=202), \
+                mock.patch.object(upload_ota, "board_state", return_value=wrong):
+            with self.assertRaisesRegex(RuntimeError, "partition changed"):
+                upload_ota.enter_recovery(self.host, self.receiver, active, "a" * 64)
+
+    def test_udp_recovery_does_not_need_a_tcp_control_connection(self):
+        active = dict(self.before, ota_mode="normal", boot_id="0" * 32)
+        recovery = dict(active, ota_mode="recovery", boot_id="1" * 32)
+        with mock.patch.object(upload_ota, "udp_control", return_value=b"accepted") as datagram, \
+                mock.patch.object(upload_ota, "board_state", return_value=recovery), \
+                mock.patch.object(upload_ota.http.client, "HTTPConnection") as tcp, \
+                redirect_stdout(io.StringIO()):
+            self.assertEqual(upload_ota.enter_recovery(self.host, self.receiver, active, "a" * 64),
+                             recovery)
+        datagram.assert_called_once()
+        self.assertTrue(datagram.call_args.args[1].startswith(b"rear-ota-enter-v1 "))
+        tcp.assert_not_called()
+
+    def test_invalid_maintenance_proof_leaves_transfer_unstarted(self):
+        normal = dict(self.before, ota_mode="normal", boot_id="0" * 32)
+        client = mock.Mock()
+        client.getresponse.return_value.status = 403
+        with mock.patch.object(upload_ota, "check_image", return_value=self.image), \
+                mock.patch.object(upload_ota, "board_state", return_value=normal), \
+                mock.patch.object(upload_ota, "udp_control", side_effect=TimeoutError), \
+                mock.patch.object(upload_ota.http.client, "HTTPConnection", return_value=client), \
+                mock.patch.object(upload_ota, "send_image") as sender, \
+                mock.patch.object(upload_ota.time, "monotonic", self.clock.monotonic), \
+                mock.patch.object(upload_ota.time, "sleep", self.clock.sleep), \
+                redirect_stdout(io.StringIO()):
+            self.assertFalse(upload_ota.install(self.host, self.receiver, self.build, self.digest,
+                                                self.release, receipt_path=self.receipt, recovery_key="a" * 64))
+        sender.assert_not_called()
+        self.assertEqual(json.loads(self.receipt.read_text())["transfer"], "not_started")
+
     def test_delayed_reachability_survives_process_reload_without_second_upload(self):
         observations = 0
 
@@ -240,6 +312,8 @@ class OtaReceiptTests(unittest.TestCase):
             "boot": dict(self.after, boot_id=self.before["boot_id"]),
             "slot": dict(self.after, running_partition="app1"),
             "availability": dict(self.after, ota_supported=False),
+            "unaccepted trial": dict(self.after, ota_trial="pending"),
+            "missing fallback": dict(self.after, ota_trial="unprotected"),
         }
         for name, observation in variants.items():
             with self.subTest(name=name):
@@ -340,6 +414,52 @@ class OtaReceiptTests(unittest.TestCase):
         self.assertEqual(saved["boot_confirmation"], "confirmed")
         self.assertEqual(saved["confirmed_observation"]["boot_id"], "after-boot")
         self.assertEqual(saved["before"]["boot_id"], "before-boot")
+
+
+class ResumableDatagramTests(unittest.TestCase):
+    def test_retries_only_missing_blocks_and_rejects_stale_commit_reply(self):
+        image = os.urandom(3500)
+        key = b"a" * 64
+        nonce = b"b" * 32
+        responses = []
+        received = {}
+        attempts = []
+        request = mock.Mock()
+
+        def send(packet):
+            body, proof = packet[:-32], packet[-32:]
+            self.assertEqual(hmac.digest(key, nonce + body, "sha256"), proof)
+            operation = body[4]
+            index = None
+            if operation == rear_udp_ota.BLOCK:
+                index = struct.unpack("!I", body[21:25])[0]
+                attempts.append(index)
+                if index != 0 or attempts.count(index) > 1:
+                    received[index] = body[25:]
+                return
+            base = next((i for i in range(4) if i not in received), 4)
+            bitmap = sum(1 << (i - base) for i in received if i >= base)
+            if operation == rear_udp_ota.BEGIN:
+                self.assertEqual(body[21:], struct.pack("!I", len(image)) + hashlib.sha256(image).digest())
+            elif operation == rear_udp_ota.COMMIT:
+                self.assertEqual(b"".join(received[i] for i in range(4)), image)
+            header = body[:4] + bytes((rear_udp_ota.REPLY,)) + body[5:21]
+
+            def reply(op):
+                ack = header + bytes((op,)) + struct.pack("!BII", 0, base, bitmap)
+                return ack + hmac.digest(key, nonce + ack, "sha256")
+
+            if operation == rear_udp_ota.COMMIT:
+                responses.append(reply(rear_udp_ota.STATUS))
+            responses.append(reply(operation))
+
+        request.send.side_effect = send
+        request.recv.side_effect = lambda _: responses.pop(0)
+        progress = mock.Mock()
+        rear_udp_ota.Transfer(request, image, key.decode(), nonce.decode()).run(progress, 1)
+        self.assertEqual(attempts, [0, 1, 2, 3, 0])
+        self.assertEqual(responses, [])
+        progress.assert_called_once_with(len(image), len(image))
 
 
 if __name__ == "__main__":
