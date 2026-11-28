@@ -12,7 +12,9 @@ static risc_touch_event_v1 queued;
 static int queued_result;
 static uint64_t subscribe(void*x){(void)x;return 1;}
 static bool unsubscribe(void*x,uint64_t id){(void)x;return id==1;}
-static bool touch_poll(void*x,size_t count){(void)x;(void)count;return true;}
+/* A hardware provider such as CST9217 rejects an oversized report budget.
+ * This test must exercise actual input delivery under a bounded poll. */
+static bool touch_poll(void*x,size_t count){(void)x;assert(count==1);return true;}
 static int32_t touch_next(void*x,uint64_t sub,risc_touch_event_v1*out){(void)x;assert(sub==1);*out=queued;int rc=queued_result;queued_result=0;return rc;}
 static bool snapshot(void*x,risc_touch_snapshot_v1*out){(void)x;*out=touch_snapshot;return true;}
 static unsigned claims,resets;

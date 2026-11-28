@@ -202,7 +202,9 @@ static int32_t canvas_provider_next(void*ctx,uint64_t s,risc_canvas_event_v1*out
   }
  }
  if(!event.kind&&p->touch){
-  bool ok=p->touch->poll(p->touch->context,RISC_TOUCH_QUEUE_LENGTH);if(!canvas_frames_alive(&p->frames))return RISC_CANVAS_RETAINED;risc_touch_event_v1 e={0};
+  /* Queue capacity counts events, not the hardware report budget. Service
+   * one report per next call; bounded physical providers may reject larger batches. */
+  bool ok=p->touch->poll(p->touch->context,1);if(!canvas_frames_alive(&p->frames))return RISC_CANVAS_RETAINED;risc_touch_event_v1 e={0};
   int32_t got=p->touch->next(p->touch->context,p->subscription,&e);if(!canvas_frames_alive(&p->frames))return RISC_CANVAS_RETAINED;
   if(!ok||got<0){p->input_gap=true;p->gap_emitted=false;return canvas_provider_next(ctx,s,out);}
   if(!got)return RISC_CANVAS_IDLE;
