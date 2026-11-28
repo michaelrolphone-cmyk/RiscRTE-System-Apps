@@ -354,11 +354,15 @@ before confirming these releases. A first installation without a previous slot
 reports `unprotected` and has no automatic rollback.
 
 An existing receipt prevents an upload replay, including after an interrupted process.
-A nonblocking process lock serializes upload and verification of the same receipt;
-cancelling or exiting the process releases the lock automatically.
+A receiver lock under `~/.local/state/rear-camera-ota/` allows one uploader for
+that camera across build directories and receipt paths on the maintenance account.
+Verification uses a separate receipt lock. The OS releases both locks on exit.
+If the camera returns to its original slot on a new normal boot while entering
+recovery, the uploader stops. Resume observation with the existing receipt.
 Resume observation with `--verify-only`; choose a new receipt only for an independently
 reconciled new upload attempt. Exit code 0 means boot confirmation succeeded or the
-requested release was already running before any upload. Every `--verify-only` run obtains
+requested release was already running in normal mode. Trial-capable releases
+must explicitly report `ota_trial: accepted` in both cases. Every `--verify-only` run obtains
 a fresh HTTP observation; the receipt retains the most recent positive boot witness
 separately from the current verification status. The camera's authenticated capture
 and live stream still require separate qualification.

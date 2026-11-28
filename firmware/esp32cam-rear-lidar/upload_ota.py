@@ -12,6 +12,7 @@ import ipaddress
 import json
 import os
 from pathlib import Path
+import re
 import secrets
 import select
 import shlex
@@ -82,7 +83,7 @@ def udp_control(host, message):
             transport.send(message)
             try:
                 return transport.recv(512)
-            except TimeoutError:
+            except socket.timeout:
                 if attempt == 2:
                     raise
 
@@ -152,11 +153,12 @@ def enter_recovery(host, receiver, before, key):
         return before
     # A successful restart can take longer to observe over the rear station link.
     deadline = time.monotonic() + RECOVERY_BOOT_TIMEOUT
-    last_normal = before
     reply = None
+    observed_original = True
     while time.monotonic() < deadline:
-        if reply != 202:
-            reply = _request_recovery(host, receiver, last_normal, key)
+        if reply != 202 and observed_original:
+            reply = _request_recovery(host, receiver, before, key)
+            observed_original = False
         try:
             state = board_state(host, receiver, recovery=True)
         except (OSError, http.client.HTTPException):
@@ -168,11 +170,11 @@ def enter_recovery(host, receiver, before, key):
         if state["ota_mode"] == "recovery" and state["boot_id"] != before["boot_id"]:
             print("Verified OTA-only boot", receiver, state["boot_id"], flush=True)
             return state
-        if reply in (403, 409) and state["boot_id"] == last_normal["boot_id"]:
+        if state["ota_mode"] == "normal" and state["boot_id"] != before["boot_id"]:
+            raise RuntimeError("Rear camera returned to normal on a different boot before upload")
+        observed_original = state["ota_mode"] == "normal" and state["boot_id"] == before["boot_id"]
+        if reply in (403, 409) and observed_original:
             raise RuntimeError(f"Rear camera refused OTA recovery ({reply})")
-        if state["ota_mode"] == "normal" and state["boot_id"] != last_normal["boot_id"]:
-            last_normal = state
-            reply = None
         time.sleep(1)
     raise TimeoutError("Rear camera did not boot into OTA recovery")
 
@@ -185,7 +187,7 @@ def invite(remote, listener, password, image):
         try:
             nonce = remote.recv(80).split()
             break
-        except TimeoutError:
+        except socket.timeout:
             if attempt == 2:
                 raise
     if len(nonce) != 2 or nonce[0] != b"AUTH":
@@ -218,8 +220,8 @@ def _resume_command(path):
 
 
 @contextmanager
-def _receipt_lock(path):
-    """Serialize an attempt across processes; the OS releases it on cancellation."""
+def _receipt_lock(path, subject="receipt"):
+    """Hold an advisory lock until the command exits or is interrupted."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(str(path) + ".lock", os.O_CREAT | os.O_RDWR, 0o600)
@@ -228,7 +230,7 @@ def _receipt_lock(path):
             fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as error:
             raise RuntimeError(
-                "OTA receipt is already active; no upload or verification started"
+                f"OTA {subject} is already active; no upload or verification started"
             ) from error
         yield
     finally:
@@ -261,6 +263,16 @@ def _save_receipt(path, receipt, *, create=False):
             os.unlink(temporary)
 
 
+def _boot_accepted(release, state):
+    if "ota_trial" in state:
+        return state["ota_trial"] == "accepted"
+    # Earlier releases did not publish trial state. The .28 health and duplex
+    # builds introduced it before the first .29 release.
+    match = re.fullmatch(r"1\.0-rear\.(\d+)(?:-[\w.-]+)?", release)
+    return bool(match and int(match[1]) < 28) or release in (
+        "1.0-rear.28", "1.0-rear.28-qos", "1.0-rear.28-qos-bno")
+
+
 def _confirmed(receipt, state):
     before = receipt["before"]
     return (
@@ -272,7 +284,7 @@ def _confirmed(receipt, state):
         and isinstance(state.get("boot_id"), str) and bool(state["boot_id"])
         and state["boot_id"] != before["boot_id"]
         and state.get("running_partition") == receipt["expected_partition"]
-        and state.get("ota_trial", "accepted") == "accepted"
+        and _boot_accepted(receipt["expected_release"], state)
         and (not receipt.get("recovery_mode") or state.get("ota_mode") == "normal")
     )
 
@@ -305,6 +317,17 @@ def _load_receipt(path):
         raise ValueError("OTA receipt identity, image or partition binding is invalid")
     if str(ipaddress.IPv4Address(receipt.get("host", ""))) != receipt["host"]:
         raise ValueError("OTA receipt host must be a canonical IPv4 address")
+    # Old uploaders could persist "confirmed" without a trial field. Preserve
+    # the witness and recheck it read-only if all its other identity fields match.
+    for status, field in (("boot_confirmation", "confirmed_observation"),
+                          ("verification_status", "observation")):
+        witness = receipt.get(field)
+        if (receipt[status] == "confirmed" and isinstance(witness, dict)
+                and "ota_trial" not in witness
+                and not _boot_accepted(receipt["expected_release"], witness)
+                and _confirmed(receipt, dict(witness, ota_trial="accepted"))):
+            receipt[status] = "pending"
+            receipt["verification_status"] = "pending"
     if receipt["boot_confirmation"] == "confirmed" and (
         not isinstance(receipt.get("confirmed_at"), str) or not receipt["confirmed_at"]
         or not _confirmed(receipt, receipt.get("confirmed_observation", {}))
@@ -393,7 +416,9 @@ def install(host, receiver, build, expected_digest, release, *, receipt_path=Non
     path = Path(receipt_path) if receipt_path else (
         Path(build) / "ota-receipts" / f"{receiver}-{expected_digest}.json"
     )
-    with _receipt_lock(path):
+    receiver_key = hashlib.sha256(receiver.encode("utf-8")).hexdigest()
+    lock = Path.home() / ".local/state/rear-camera-ota" / receiver_key
+    with _receipt_lock(lock, "receiver"), _receipt_lock(path):
         return _install_attempt(host, receiver, image, expected_digest, release, path, recovery_key=recovery_key)
 
 
@@ -413,7 +438,10 @@ def _install_attempt(host, receiver, image, expected_digest, release, path, *, r
             time.sleep(2)
     if before.get("firmware") == release:
         print("Board already reports", release, before["running_partition"], before["boot_id"])
-        return True
+        accepted = _boot_accepted(release, before) and before.get("ota_mode", "normal") == "normal"
+        if not accepted:
+            print("Normal boot acceptance is unverified.")
+        return accepted
     password = recovery_key or os.environ["REAR_OTA_PASSWORD"]
     receipt = {
         "schema": 1, "host": host, "receiver_id": receiver,
@@ -439,8 +467,13 @@ def _install_attempt(host, receiver, image, expected_digest, release, path, *, r
         receipt["transfer_protocol"] = "authenticated_udp_blocks" if use_datagrams else "arduinoota"
         _save_receipt(path, receipt)
         if use_datagrams:
+            def record_progress(count, total):
+                receipt["acknowledged_bytes"] = count
+                _save_receipt(path, receipt)
+                print("Flashed", count, "of", total, flush=True)
+
             rear_udp_ota.send_image(host, image, password, recovery["boot_id"],
-                                    progress=lambda n, total: print("Flashed", n, "of", total, flush=True))
+                                    progress=record_progress)
         else:
             send_image(host, image, password)
     except (OSError, RuntimeError, ValueError) as error:

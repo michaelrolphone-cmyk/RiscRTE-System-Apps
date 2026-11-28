@@ -1,5 +1,6 @@
 """Authenticated selective-repeat firmware transfer for rear recovery boots."""
 
+import errno
 import hashlib
 import hmac
 import socket
@@ -13,6 +14,11 @@ MAGIC = b"ROT2"
 REPLY = 128
 BEGIN, BLOCK, STATUS, COMMIT = range(1, 5)
 ACK_BYTES = 63
+
+
+def _link_interrupted(error):
+    return isinstance(error, (socket.timeout, TimeoutError)) or error.errno in (
+        errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ENETDOWN, errno.ENETUNREACH)
 
 
 class Transfer:
@@ -32,13 +38,21 @@ class Transfer:
     def exchange(self, operation, body=b"", *, attempts):
         packet = self.packet(operation, body)
         for _ in range(attempts):
-            self.connection.send(packet)
+            try:
+                self.connection.send(packet)
+            except OSError as error:
+                if not _link_interrupted(error):
+                    raise
+                time.sleep(0.25)
+                continue
             deadline = time.monotonic() + 3
             while time.monotonic() < deadline:
                 self.connection.settimeout(max(0.01, deadline - time.monotonic()))
                 try:
                     reply = self.connection.recv(ACK_BYTES + 1)
-                except TimeoutError:
+                except OSError as error:
+                    if not _link_interrupted(error):
+                        raise
                     break
                 if (len(reply) != ACK_BYTES or reply[:5] != MAGIC + bytes((REPLY,))
                         or reply[5:21] != self.session or reply[21] != operation):
@@ -71,14 +85,21 @@ class Transfer:
         while base < self.total:
             if time.monotonic() - last_progress >= idle_timeout:
                 raise TimeoutError(f"Rear UDP flash stopped advancing at {base}/{self.total} blocks")
-            self.send_blocks(base, bitmap)
             try:
+                self.send_blocks(base, bitmap)
                 next_base, next_bitmap = self.exchange(STATUS, attempts=2)
-            except TimeoutError:
+            except OSError as error:
+                if not _link_interrupted(error):
+                    raise
+                time.sleep(0.25)
                 continue
             if next_base < base:
                 continue
-            if next_base > base or next_bitmap & ~bitmap:
+            if next_base == base:
+                # A delayed STATUS reply cannot revoke blocks already seen in
+                # another authenticated reply for this boot and window.
+                next_bitmap |= bitmap
+            if next_base > base or next_bitmap != bitmap:
                 last_progress = time.monotonic()
             base, bitmap = next_base, next_bitmap
             if progress and (base == self.total or last_progress - last_report >= 10):
