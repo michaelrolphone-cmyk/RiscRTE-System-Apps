@@ -1,6 +1,8 @@
 #include "rear_ota_recovery.h"
 #include "rear_ota_datagrams.h"
 #include "rear_boot_health.h"
+#include "bno_telemetry.h"
+#include <esp_timer.h>
 #include "sensor_push.h"
 
 #include <Arduino.h>
@@ -115,11 +117,11 @@ esp_err_t status(httpd_req_t *req) {
     return httpd_resp_sendstr(req, json);
 }
 
-bool validProof(const char *provided) {
+bool validProof(const char *provided, const char *purpose = "rear-ota-enter-v1") {
     unsigned char mac[32];
     char expected[65];
     char message[96];
-    snprintf(message, sizeof(message), "rear-ota-enter-v1:%s:%s", receiver, bootId);
+    snprintf(message, sizeof(message), "%s:%s:%s", purpose, receiver, bootId);
     if (strlen(provided) != sizeof(expected) - 1 ||
         mbedtls_md_hmac(mbedtls_md_info_from_type(MBEDTLS_MD_SHA256),
                         reinterpret_cast<const unsigned char *>(secret), strlen(secret),
@@ -208,6 +210,30 @@ void listenForDatagrams(void *) {
         }
         constexpr char statusRequest[] = "rear-ota-status-v1";
         constexpr char enterPrefix[] = "rear-ota-enter-v1 ";
+        constexpr char probePrefix[] = "rear-bno-probe-v1 ";
+        if (!recoveryMode && count == sizeof(probePrefix)-1+64 &&
+            strncmp(packet,probePrefix,sizeof(probePrefix)-1)==0 &&
+            validProof(packet+sizeof(probePrefix)-1,"rear-bno-probe-v1")) {
+            // Normal HTTP and socket telemetry share the same worker snapshot.
+            // This short authorized datagram also works while those lanes reconnect.
+            static char probeReply[1024];
+            StaticJsonDocument<1024> doc;
+            JsonObject root=doc.to<JsonObject>();
+            root["receiver_id"]=receiver;
+            root["firmware"]=APP_VERSION;
+            root["boot_id"]=bootId;
+            root["ota_trial"]=bootTrial.load();
+            uint32_t cameraAcks,sensorPackets;
+            sensor_push::bootProgress(cameraAcks,sensorPackets);
+            root["camera_acks"]=cameraAcks;
+            root["sensor_sequence"]=sensorPackets;
+            bno_telemetry::writeProbe(root.createNestedObject("bno"),esp_timer_get_time());
+            if (!doc.overflowed() && measureJson(doc)<sizeof(probeReply)) {
+                const size_t used=serializeJson(doc,probeReply,sizeof(probeReply));
+                sendto(fd,probeReply,used,0,reinterpret_cast<const sockaddr *>(&from),length);
+            }
+            continue;
+        }
         char response[352]{};
         bool restart = false;
         if (count == sizeof(statusRequest) - 1 && strcmp(packet, statusRequest) == 0) {
@@ -291,7 +317,7 @@ bool begin(const char *hostname, const char *ssid, const char *wifiPassword) {
     if (recoveryMode) updateLock = xSemaphoreCreateMutex();
     if (esp_netif_init() == ESP_OK) {
         startControlServer();
-        if (xTaskCreate(listenForDatagrams, "rear-ota-control", recoveryMode ? 8192 : 4096, nullptr,
+        if (xTaskCreate(listenForDatagrams, "rear-ota-control", 8192, nullptr,
                         tskIDLE_PRIORITY + 2, nullptr) != pdPASS)
             log_e("Rear OTA UDP task could not be started");
     } else log_e("Rear OTA network stack initialization failed");
@@ -317,6 +343,8 @@ bool begin(const char *hostname, const char *ssid, const char *wifiPassword) {
     lastActivity = millis();
     return true;
 }
+
+const char *bootIdentity() { return bootId; }
 
 bool enrolled() { return secret[0] != '\0'; }
 

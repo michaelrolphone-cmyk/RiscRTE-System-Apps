@@ -116,9 +116,9 @@ int main(){
         assert(!enqueue("calibrate_all"));
         testNowUs+=RETRY_US;
     }
-    assert(testImu.begins==0&&testSpiBegins==0&&testImu.services==0);
-    assert(testImu.closes==0&&testSpiEnds==0);
-    pass("absent module retries detection without SPI/SH2 traffic or valid values");
+    assert(testImu.begins==0&&testSpiBegins==4&&testImu.services==0);
+    assert(testImu.closes==0&&testSpiEnds==4);
+    pass("absent module retries detection without selecting the sensor or opening SH2 or valid values");
 
     reset();testImu.beginResult=false;
     for(int attempt=0;attempt<3;++attempt){
@@ -144,6 +144,11 @@ int main(){
     event(SH2_MAGNETIC_FIELD_CALIBRATED,7,8,9);
     serviceEvents();
     assert(testImu.decodes==4);
+    DynamicJsonDocument probe(1024);
+    writeProbe(probe.to<JsonObject>(),testNowUs);
+    assert(!probe.overflowed() && probe["product"]==10003660 && probe["sequence"]==4);
+    assert(probe["quaternion"]["valid"] && probe["quaternion"]["real"]==1);
+    assert(probe["spi"].size()==10);
     const uint64_t quaternionAt=testNowUs;
     auto all=status();assert(all["sequence"].as<unsigned>()==4);
     assert(all["quaternion"]["real"].as<float>()==1);

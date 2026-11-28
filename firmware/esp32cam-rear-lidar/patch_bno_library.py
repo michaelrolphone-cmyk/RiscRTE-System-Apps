@@ -28,7 +28,7 @@ def apply(prepared):
     receipt = root.parent / "rear-bno-safety-patch.json"
     if receipt.exists():
         saved = json.loads(receipt.read_text())
-        if saved.get("schema") != 3:
+        if saved.get("schema") != 4:
             raise ValueError("Remove the old patched BNO dependency and reinstall pinned 1.0.6")
         if saved.get("original_git_blobs") != ORIGINAL:
             raise ValueError("Unexpected BNO dependency patch receipt")
@@ -89,7 +89,7 @@ def apply(prepared):
         """static uint8_t rearSpiReply[SH2_HAL_MAX_TRANSFER_IN];
 static unsigned rearSpiReplySize;
 static uint32_t rearSpiReplyTime;
-static int32_t rearSpiDiagnostic[8];
+static int32_t rearSpiDiagnostic[10];
 
 bool rearBnoSpiPending() { return rearSpiReplySize != 0; }
 
@@ -121,6 +121,12 @@ bool BNO08x::_init(int32_t sensor_id) {""")
         texts["SparkFun_BNO08x_Arduino_Library.cpp"],
         """  // Serial.println("SPI HAL close");""",
         """  rearSpiReplySize = 0;""")
+    # Report configuration passes through the bounded SPI HAL. The upstream
+    # pre-wait can reset the chip while it is processing the previous command.
+    name = "SparkFun_BNO08x_Arduino_Library.cpp"
+    texts[name] = once(texts[name],
+        "  config.reportInterval_us = interval_us;\n\n  if(_int_pin != -1)",
+        "  config.reportInterval_us = interval_us;\n\n  if(_HAL.open != spihal_open && _int_pin != -1)")
     sparkfun = texts["SparkFun_BNO08x_Arduino_Library.cpp"]
     begin = sparkfun.index("  // Serial.println(\"SPI HAL read\");")
     end = sparkfun.index("\n}", begin)
@@ -145,11 +151,18 @@ bool BNO08x::_init(int32_t sensor_id) {""")
   digitalWrite(_cs, LOW);
   _spiPort->transfer(pBuffer, 4);
   const unsigned size = (pBuffer[0] | (unsigned(pBuffer[1]) << 8)) & 0x7fff;
+  if (rearSpiDiagnostic[2] == 0) {
+    uint32_t header;
+    memcpy(&header, pBuffer, sizeof(header));
+    rearSpiDiagnostic[8] = static_cast<int32_t>(header);
+    rearSpiDiagnostic[9] = -1;
+  }
   ++rearSpiDiagnostic[2]; // Receive transactions that saw INT low.
   rearSpiDiagnostic[3] = size;
   if (size > 4 && size <= len) {
     memset(pBuffer + 4, 0, size - 4);
     _spiPort->transfer(pBuffer + 4, size - 4);
+    if (rearSpiDiagnostic[4] == 0) rearSpiDiagnostic[9] = pBuffer[4];
   }
   digitalWrite(_cs, HIGH);
   _spiPort->endTransaction();
@@ -190,7 +203,7 @@ bool BNO08x::_init(int32_t sensor_id) {""")
     ++rearSpiDiagnostic[7];
     rearSpiReplySize = received;
   }""")
-    result = {"schema": 3, "library": "SparkFun BNO08x Cortex Based IMU@1.0.6",
+    result = {"schema": 4, "library": "SparkFun BNO08x Cortex Based IMU@1.0.6",
               "original_git_blobs": ORIGINAL, "sha256": {}}
     for name, text in texts.items():
         data = text.encode()

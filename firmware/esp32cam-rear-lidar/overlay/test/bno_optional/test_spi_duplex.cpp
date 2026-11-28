@@ -9,7 +9,7 @@ constexpr int _int_pin=3, _cs=40, _spiPortSpeed=1000000;
 static uint8_t rearSpiReply[384];
 static unsigned rearSpiReplySize;
 static uint32_t rearSpiReplyTime;
-static int32_t rearSpiDiagnostic[8];
+static int32_t rearSpiDiagnostic[10];
 static int attention=LOW, selections=0;
 static bool selected=false;
 static size_t offset=0;
@@ -64,6 +64,7 @@ int main(){
     incoming={7,0,2,1,0xf8,8,9};
     outbound.clear();
     assert(spihal_read(nullptr,response,sizeof(response),&timestamp)==7);
+    assert(rearSpiDiagnostic[8]==0x01020007 && rearSpiDiagnostic[9]==0xf8);
     assert(selections==3 && outbound==std::vector<uint8_t>(7,0));
     assert(!memcmp(response,incoming.data(),incoming.size()));
 }

@@ -27,7 +27,7 @@
 +  ArduinoOTA.setTimeout(10000);
    ArduinoOTA
        .onStart([]()
-@@ -588,10 +595,28 @@
+@@ -588,10 +595,29 @@
 
    iotWebConf.getApTimeoutParameter()->visible = true;
 -  iotWebConf.setConfigSavedCallback(on_config_saved);
@@ -41,6 +41,7 @@
 +      iotWebConf.getWifiSsidParameter()->valueBuffer,
 +      iotWebConf.getWifiPasswordParameter()->valueBuffer);
 +  if (otaRecoveryMode) return;
++  if (savedConfigLoaded && rear_ota_recovery::enrolled()) iotWebConf.skipApStartup();
 +
 +  Preferences cameraProfile;
 +  if (savedConfigLoaded && cameraProfile.begin("rear-camera", false)) {
@@ -58,7 +59,7 @@
 +  iotWebConf.setConfigSavedCallback(on_config_saved);
 
    // Set the time servers
-@@ -653,13 +678,21 @@
+@@ -653,13 +679,21 @@
    web_server.on("/api/capture",HTTP_GET,[](){if(is_authenticated())handle_synchronized_capture();});
    // Start the ArduinoOTA (espota) service for network firmware uploads.
 -  setup_ota();

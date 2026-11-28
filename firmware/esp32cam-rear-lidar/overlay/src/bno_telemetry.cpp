@@ -1,5 +1,7 @@
 #include "bno_telemetry.h"
 #include <Arduino.h>
+#include "rear_ota_recovery.h"
+#include "settings.h"
 #include <SPI.h>
 #include <SparkFun_BNO08x_Arduino_Library.h>
 #include <Update.h>
@@ -61,7 +63,7 @@ struct Snapshot {
     uint32_t product=0;
     uint8_t swMajor=0,swMinor=0;
     uint16_t swPatch=0;
-    int32_t spiDiagnostic[8]={};
+    int32_t spiDiagnostic[10]={};
     Report quaternion, accel, gyro, mag;
     CommandResult command;
 } current, published;
@@ -178,7 +180,14 @@ void workerStep(){
         if(commands && xQueueReceive(commands,&cmd,0)==pdTRUE)commandResult(cmd,false,"not_ready");
         if(now<nextAction)return;
         ++current.attempts;current.state="detecting";current.error=nullptr;
-        digitalWrite(RST_PIN,LOW);phase=Phase::ResetLow;nextAction=now+RESET_US;
+        digitalWrite(RST_PIN,LOW);
+        // Establish the mode-3 idle clock with CS high before releasing sensor reset.
+        sensorSpi.begin(SCK_PIN,MISO_PIN,MOSI_PIN,CS_PIN);
+        spiStarted=true;
+        sensorSpi.beginTransaction(SPISettings(SPI_HZ,MSBFIRST,SPI_MODE3));
+        sensorSpi.transfer(uint8_t(0));
+        sensorSpi.endTransaction();
+        phase=Phase::ResetLow;nextAction=nowUs()+RESET_US;
         publish();return;
     }
     if(phase==Phase::ResetLow){
@@ -186,13 +195,12 @@ void workerStep(){
         digitalWrite(RST_PIN,HIGH);phase=Phase::WaitReady;nextAction=now+DETECT_US;return;
     }
     if(phase==Phase::WaitReady){
-        // With no module, the pulled-up INT stays high: no SPI or SH2 call is made.
+        // With no module the pulled-up INT stays high and CS stays inactive.
         if(digitalRead(INT_PIN)!=LOW){
             if(now>=nextAction)fail("not_detected",false);
             return;
         }
         current.state="initializing";publish();
-        sensorSpi.begin(SCK_PIN,MISO_PIN,MOSI_PIN,CS_PIN);spiStarted=true;
         sessionStarted=true;
         if(!imu.beginSPI(CS_PIN,INT_PIN,RST_PIN,SPI_HZ,sensorSpi)){
             fail("initialization_failed");return;
@@ -234,7 +242,9 @@ void workerStep(){
 void worker(void *){
     for(;;){
         workerStep();
-        vTaskDelay(pdMS_TO_TICKS(phase==Phase::Running?2:20));
+        // Sample the first attention pulse promptly after releasing reset.
+        const uint32_t waitMs=phase==Phase::WaitReady?1:(phase==Phase::Running?2:20);
+        vTaskDelay(pdMS_TO_TICKS(waitMs));
     }
 }
 void writeReport(JsonObject out,const Report &r,uint64_t at,bool available,bool quaternion=false){
@@ -257,6 +267,17 @@ bool knownCommand(const char *op){
     return false;
 }
 }
+void writeProbe(JsonObject out,uint64_t at){
+    const Snapshot s=snapshot();
+    out["state"]=s.state;
+    out["error"]=s.error;
+    out["attempts"]=s.attempts;
+    out["product"]=s.product;
+    out["sequence"]=s.sequence;
+    JsonArray spi=out.createNestedArray("spi");
+    for(auto value:s.spiDiagnostic) spi.add(value);
+    writeReport(out.createNestedObject("quaternion"),s.quaternion,at,s.ready && !isPaused(),true);
+}
 void writeJson(JsonObject out,uint64_t at){
     const Snapshot s=snapshot();
     const bool halted=isPaused();
@@ -276,6 +297,11 @@ void writeJson(JsonObject out,uint64_t at){
     JsonObject pins=out.createNestedObject("pins");
     pins["sck"]=SCK_PIN;pins["mosi"]=MOSI_PIN;pins["miso"]=MISO_PIN;
     pins["cs"]=CS_PIN;pins["int"]=INT_PIN;pins["rst"]=RST_PIN;
+    JsonObject spi=out.createNestedObject("spi_startup");
+    const char *fields[]={"sh2_open_status","product_id_status","rx_transactions",
+        "last_rx_size","read_frames","write_wait_int","write_transactions","duplex_frames",
+        "first_header_le","first_payload_byte"};
+    for(unsigned i=0;i<sizeof(fields)/sizeof(fields[0]);++i) spi[fields[i]]=s.spiDiagnostic[i];
     if(s.product){
         JsonObject product=out.createNestedObject("product");
         product["part_number"]=s.product;product["sw_major"]=s.swMajor;
@@ -321,11 +347,8 @@ void begin(WebServer &server,bool (*authorize)()){
     server.on("/api/bno",HTTP_GET,[&server,authorize](){
         if(!authorize || !authorize())return;
         DynamicJsonDocument d(4096);writeJson(d.to<JsonObject>(),nowUs());
-        const auto state=snapshot();
-        JsonObject spi=d.createNestedObject("spi_startup");
-        const char *fields[]={"sh2_open_status","product_id_status","rx_transactions",
-            "last_rx_size","read_frames","write_wait_int","write_transactions","duplex_frames"};
-        for (unsigned i=0;i<8;++i) spi[fields[i]]=state.spiDiagnostic[i];
+        d["firmware"]=APP_VERSION;
+        d["boot_id"]=rear_ota_recovery::bootIdentity();
         String text;serializeJson(d,text);server.send(200,"application/json",text);
     });
     server.on("/api/bno",HTTP_POST,[&server,authorize](){

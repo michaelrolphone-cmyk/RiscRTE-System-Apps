@@ -581,6 +581,17 @@ command. The authorized `GET /api/bno` includes `spi_startup` fields for SH-2
 open, product-ID exchange, INT wait, and receive activity. The product-ID
 status is `-9999` if that request did not run.
 
+In `1.0-rear.29-bno-start` the clock enters mode 3 while reset is asserted.
+After reset the worker checks INT every millisecond during detection. The same
+SPI diagnostics travel in the sensor stream. A GET on `/api/bno` returns the
+firmware version and maintenance boot ID alongside the measurements. An
+enrolled unit also accepts a read-only UDP probe on port 3233 while in normal
+mode. Send `rear-bno-probe-v1 ` followed by the lowercase hex HMAC-SHA256 of
+`rear-bno-probe-v1:<receiver_id>:<boot_id>` using the enrolled key. The reply
+identifies the boot and returns counters, product number, and a timestamped
+quaternion. Its `spi` array follows the field order in `spi_startup`, ending
+with the first header as a little-endian word and the first payload byte.
+
 | GY-BNO08x label | SPI function | Rear GPIO / connection |
 |---|---|---:|
 | SCL | SCK |14|
@@ -618,7 +629,7 @@ Primary references:
 ### Failure isolation and data contract
 
 A dedicated HSPI instance runs at 1 MHz. Only the idle-priority BNO worker touches
-the sensor or the SH2 singleton. It detects INT after reset before opening SPI,
+the sensor or the SH2 singleton. It detects INT after reset before opening SH2,
 retries an unavailable device every 5 seconds, closes failed SH2 sessions, checks
 every report-enable result, and reconfigures after sensor reset. A ready worker
 checks for data every 2 ms; a missing/paused device uses a 20 ms background sleep.
