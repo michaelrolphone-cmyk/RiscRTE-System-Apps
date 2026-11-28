@@ -1,5 +1,6 @@
 from contextlib import closing, redirect_stdout
 import hashlib
+import errno
 import hmac
 import struct
 import importlib.util
@@ -166,6 +167,63 @@ class OtaReceiptTests(unittest.TestCase):
                 mock.patch.object(upload_ota, "board_state", return_value=wrong):
             with self.assertRaisesRegex(RuntimeError, "partition changed"):
                 upload_ota.enter_recovery(self.host, self.receiver, active, "a" * 64)
+
+    def test_return_to_original_slot_never_requests_another_recovery_boot(self):
+        normal = dict(self.before, ota_mode="normal", boot_id="0" * 32)
+        fallback = dict(normal, boot_id="1" * 32)
+        with mock.patch.object(upload_ota, "_request_recovery", return_value=202) as enter, \
+                mock.patch.object(upload_ota, "board_state", side_effect=[fallback]) as observe:
+            with self.assertRaisesRegex(RuntimeError, "returned to normal"):
+                upload_ota.enter_recovery(self.host, self.receiver, normal, "a" * 64)
+        enter.assert_called_once()
+        observe.assert_called_once()
+
+    def test_receiver_lock_covers_independent_receipts_and_builds(self):
+        def nested_attempt(*args, **kwargs):
+            self.assertEqual(run.call_count, 1, "two receiver uploads acquired different receipts")
+            with self.assertRaisesRegex(RuntimeError, "receiver"):
+                upload_ota.install(self.host, self.receiver, self.build / "other", self.digest,
+                                   self.release, receipt_path=self.build / "other.json")
+            return True
+
+        with mock.patch.object(Path, "home", return_value=self.build), \
+                mock.patch.object(upload_ota, "check_image", return_value=self.image), \
+                mock.patch.object(upload_ota, "_install_attempt", side_effect=nested_attempt) as run:
+            self.assertTrue(self.install())
+        run.assert_called_once()
+
+    def test_trial_capable_release_requires_explicit_acceptance(self):
+        receipt = self.pending()
+        for release in ("1.0-rear.28-qos-bno-health", "1.0-rear.28-qos-bno-duplex",
+                        "1.0-rear.30-bno-start"):
+            receipt["expected_release"] = release
+            state = dict(self.after, firmware=release)
+            self.assertFalse(upload_ota._confirmed(receipt, state))
+            for trial in ("pending", "unprotected", "rollback", None):
+                self.assertFalse(upload_ota._confirmed(receipt, dict(state, ota_trial=trial)))
+            self.assertTrue(upload_ota._confirmed(receipt, dict(state, ota_trial="accepted")))
+
+    def test_already_running_candidate_cannot_bypass_trial_check(self):
+        self.release = "1.0-rear.30-bno-start"
+        with mock.patch.object(upload_ota, "check_image", return_value=self.image), \
+                mock.patch.object(upload_ota, "board_state", return_value=dict(
+                    self.before, firmware=self.release, ota_trial="pending")), \
+                mock.patch.object(upload_ota, "send_image") as sender:
+            self.assertFalse(self.install())
+        sender.assert_not_called()
+
+    def test_old_receipt_missing_trial_can_still_be_verified_read_only(self):
+        self.release = "1.0-rear.30-bno-start"
+        receipt = self.pending()
+        witness = dict(self.after, firmware=self.release)
+        receipt.update(boot_confirmation="confirmed", verification_status="confirmed",
+                       confirmed_observation=witness, observation=witness, confirmed_at="earlier")
+        self.receipt.write_text(json.dumps(receipt))
+        self.assertEqual(upload_ota._load_receipt(self.receipt)["boot_confirmation"], "pending")
+        with mock.patch.object(upload_ota, "board_state", return_value=dict(
+                witness, ota_trial="accepted")), mock.patch.object(upload_ota, "send_image") as sender:
+            self.assertTrue(upload_ota.verify_receipt(self.receipt))
+        sender.assert_not_called()
 
     def test_udp_recovery_does_not_need_a_tcp_control_connection(self):
         active = dict(self.before, ota_mode="normal", boot_id="0" * 32)
@@ -417,6 +475,55 @@ class OtaReceiptTests(unittest.TestCase):
 
 
 class ResumableDatagramTests(unittest.TestCase):
+    def test_socket_timeout_before_begin_reply_reuses_signed_request(self):
+        connection = mock.Mock()
+        transfer = rear_udp_ota.Transfer(connection, b"data", "a" * 64, "0" * 32)
+        header = (rear_udp_ota.MAGIC + bytes([rear_udp_ota.REPLY]) + transfer.session
+                  + bytes([rear_udp_ota.BEGIN]) + struct.pack("!BII", 0, 0, 0))
+        connection.recv.side_effect = [socket.timeout(), header + hmac.digest(
+            transfer.key, transfer.boot + header, "sha256")]
+        self.assertEqual(transfer.exchange(rear_udp_ota.BEGIN, attempts=2), (0, 0))
+        first, second = connection.send.call_args_list
+        self.assertEqual(first, second)
+
+    def test_host_outage_expires_without_committing_or_reentering(self):
+        connection = mock.Mock()
+        clock = SimulatedClock()
+        transfer = rear_udp_ota.Transfer(connection, b"data", "a" * 64, "0" * 32)
+        connection.send.side_effect = OSError(errno.EHOSTUNREACH, "Host unreachable")
+        with mock.patch.object(transfer, "exchange", return_value=(0, 0)) as exchange, \
+                mock.patch.object(rear_udp_ota.time, "monotonic", clock.monotonic), \
+                mock.patch.object(rear_udp_ota.time, "sleep", clock.sleep):
+            with self.assertRaisesRegex(TimeoutError, "0/1 blocks"):
+                transfer.run(None, 1)
+        self.assertEqual(exchange.call_count, 1)
+        self.assertEqual(exchange.call_args.args[0], rear_udp_ota.BEGIN)
+
+    def test_temporary_host_unreachable_resumes_same_session_before_commit(self):
+        connection = mock.Mock()
+        transfer = rear_udp_ota.Transfer(connection, b"data", "a" * 64, "0" * 32)
+        packets = []
+
+        def deliver(packet):
+            packets.append(packet)
+            if packet[4] == rear_udp_ota.BLOCK and len(packets) == 2:
+                raise OSError(errno.EHOSTDOWN, "Host is down")
+
+        def acknowledge(_):
+            op = packets[-1][4]
+            base = 0 if op == rear_udp_ota.BEGIN else 1
+            header = (rear_udp_ota.MAGIC + bytes([rear_udp_ota.REPLY]) + transfer.session
+                      + bytes([op]) + struct.pack("!BII", 0, base, 0))
+            return header + hmac.digest(transfer.key, transfer.boot + header, "sha256")
+
+        connection.send.side_effect = deliver
+        connection.recv.side_effect = acknowledge
+        with mock.patch.object(rear_udp_ota.time, "sleep"):
+            transfer.run(None, 5)
+        self.assertEqual([p[4] for p in packets], [rear_udp_ota.BEGIN, rear_udp_ota.BLOCK,
+                         rear_udp_ota.BLOCK, rear_udp_ota.STATUS, rear_udp_ota.COMMIT])
+        self.assertEqual(packets[1], packets[2])
+
     def test_retries_only_missing_blocks_and_rejects_stale_commit_reply(self):
         image = os.urandom(3500)
         key = b"a" * 64
